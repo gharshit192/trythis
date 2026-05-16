@@ -72,15 +72,10 @@ See [MONOREPO_STRUCTURE.md](./MONOREPO_STRUCTURE.md) for detailed breakdown.
 
 ### Setup
 
-1. **Clone the repository with submodules**
+1. **Clone the repository**
    ```bash
-   git clone --recurse-submodules https://github.com/gharshit192/trythis.git
+   git clone https://github.com/gharshit192/trythis.git
    cd TryThis
-   ```
-   
-   Or if you already cloned without submodules:
-   ```bash
-   git submodule update --init --recursive
    ```
 
 2. **Install dependencies**
