@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TryThis · Home</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css">
+<link rel="stylesheet" href="../shared/theme.css">
+<style>
+.home { background: var(--paper); min-height: 100%; display: flex; flex-direction: column; }
+.greeting { padding: 12px 20px 14px; display: flex; justify-content: space-between; align-items: flex-start; }
+.search-bar { height: 44px; background: var(--linen); border-radius: 12px; display: flex; align-items: center; padding: 0 14px; gap: 10px; margin: 0 20px 16px; }
+.search-bar i { font-size: 16px; color: var(--slate); }
+.search-bar span { font-size: 14px; color: var(--slate); flex: 1; }
+
+.pills-row { display: flex; gap: 8px; padding: 0 20px 18px; overflow-x: auto; scrollbar-width: none; }
+.pills-row::-webkit-scrollbar { display: none; }
+
+.smart-banner { margin: 0 20px 16px; background: linear-gradient(135deg, var(--forest) 0%, #0a2118 100%); border-radius: 16px; padding: 16px; color: var(--linen); display: flex; align-items: center; gap: 12px; }
+.smart-banner .icon-circle { width: 40px; height: 40px; background: rgba(247,246,242,0.15); border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.smart-banner .icon-circle i { font-size: 20px; color: var(--linen); }
+
+.feat-card { margin: 0 20px 16px; border-radius: 16px; background: var(--linen); overflow: hidden; }
+.feat-img { height: 140px; position: relative; }
+.feat-source-pill { position: absolute; top: 12px; left: 12px; }
+.feat-bookmark { position: absolute; top: 12px; right: 12px; width: 32px; height: 32px; background: rgba(255,255,255,0.95); border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+.feat-bookmark i { font-size: 14px; color: var(--forest); }
+
+.section-head { display: flex; justify-content: space-between; align-items: baseline; padding: 4px 20px 12px; }
+.see-all { font-size: 12px; color: var(--forest); font-weight: 500; }
+
+.save-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 0 20px; }
+.save-card { background: var(--paper); border: 0.5px solid var(--hairline); border-radius: 14px; overflow: hidden; }
+.save-card .thumb { height: 90px; display: flex; align-items: center; justify-content: center; }
+.save-card .thumb i { font-size: 28px; color: var(--forest); }
+.save-card .info { padding: 8px 10px 10px; }
+.save-card .title { font-size: 12px; font-weight: 500; line-height: 1.3; }
+.save-card .meta { font-size: 10px; color: var(--slate); margin-top: 4px; }
+</style>
+</head>
+<body>
+<div class="phone-frame">
+  <div class="phone-notch"></div>
+  <div class="home">
+
+    <div class="status-bar">
+      <span>9:41</span>
+      <div class="status-icons">
+        <i class="ti ti-signal-4g" style="font-size: 14px;"></i>
+        <i class="ti ti-wifi" style="font-size: 14px;"></i>
+        <i class="ti ti-battery-3" style="font-size: 14px;"></i>
+      </div>
+    </div>
+
+    <div class="greeting">
+      <div>
+        <p style="font-size: 13px; color: var(--slate);">Hello, Harshit</p>
+        <h1 class="display" style="font-size: 22px; margin-top: 2px;">Your saves</h1>
+      </div>
+      <div class="avatar">HG</div>
+    </div>
+
+    <div class="search-bar">
+      <i class="ti ti-search"></i>
+      <span>Search saves, places, vibes…</span>
+    </div>
+
+    <div class="pills-row">
+      <div class="pill active">All</div>
+      <div class="pill">Travel</div>
+      <div class="pill">Cafes</div>
+      <div class="pill">Experiences</div>
+      <div class="pill">Shopping</div>
+    </div>
+
+    <div class="smart-banner">
+      <div class="icon-circle"><i class="ti ti-calendar-event"></i></div>
+      <div style="flex: 1;">
+        <p style="font-size: 13px; font-weight: 500;">Long weekend in 12 days</p>
+        <p style="font-size: 11px; opacity: 0.75; margin-top: 3px;">3 Goa trips · 1 Himachal stay you saved</p>
+      </div>
+      <i class="ti ti-arrow-right" style="font-size: 16px;"></i>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-img thumb-1">
+        <div class="feat-source-pill source-pill"><i class="ti ti-brand-instagram" style="font-size: 12px;"></i><span>Instagram</span></div>
+        <div class="feat-bookmark"><i class="ti ti-bookmark"></i></div>
+      </div>
+      <div style="padding: 12px 14px 14px;">
+        <div style="display: flex; gap: 6px; margin-bottom: 6px;">
+          <span class="tag tag-forest">CAFE</span>
+          <span class="tag tag-neutral">BENGALURU</span>
+        </div>
+        <p class="display" style="font-size: 16px; font-weight: 500;">Third Wave Coffee, Indiranagar</p>
+        <p style="font-size: 12px; color: var(--slate); margin-top: 4px; line-height: 1.4;">Quiet mornings, oat flat white, plant-filled windows.</p>
+      </div>
+    </div>
+
+    <div class="section-head">
+      <p style="font-size: 14px; font-weight: 500;">Recently saved</p>
+      <span class="see-all">See all</span>
+    </div>
+
+    <div class="save-grid">
+      <div class="save-card">
+        <div class="thumb" style="background: var(--dune);"><i class="ti ti-mountain"></i></div>
+        <div class="info"><p class="title">Tirthan Valley homestay</p><p class="meta">Travel · Himachal</p></div>
+      </div>
+      <div class="save-card">
+        <div class="thumb" style="background: var(--clay);"><i class="ti ti-coffee"></i></div>
+        <div class="info"><p class="title">Blue Tokai single origin</p><p class="meta">Food · Beans</p></div>
+      </div>
+      <div class="save-card">
+        <div class="thumb" style="background: var(--mist);"><i class="ti ti-confetti"></i></div>
+        <div class="info"><p class="title">Pottery workshop, JP Nagar</p><p class="meta">Experience</p></div>
+      </div>
+      <div class="save-card">
+        <div class="thumb" style="background: var(--sage);"><i class="ti ti-tent"></i></div>
+        <div class="info"><p class="title">Camping near Coorg</p><p class="meta">Travel · Karnataka</p></div>
+      </div>
+    </div>
+
+    <div style="height: 24px;"></div>
+
+    <div class="tab-bar">
+      <div class="tab active"><i class="ti ti-home tab-icon"></i><span class="tab-label">Home</span></div>
+      <div class="tab"><i class="ti ti-search tab-icon"></i><span class="tab-label">Search</span></div>
+      <div class="fab"><i class="ti ti-plus"></i></div>
+      <div class="tab"><i class="ti ti-folder tab-icon"></i><span class="tab-label">Collections</span></div>
+      <div class="tab"><i class="ti ti-user tab-icon"></i><span class="tab-label">Profile</span></div>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,2501 @@
+{
+  "_meta": {
+    "ingestedAt": "2026-05-15T12:14:03.207Z",
+    "totalSeeds": 50,
+    "successFullFetch": 41,
+    "partialFetch": 9,
+    "failed": 0
+  },
+  "saves": [
+    {
+      "_id": "save_mp6vm8kr_040l7x1",
+      "userId": "user_dummy_harshit",
+      "url": "https://lbb.in/bangalore/the-most-instagrammable-insta-worthy-cafes-bangalore/",
+      "source": "web",
+      "sourceType": "article",
+      "fetchedAt": "2026-05-15T12:11:11.211Z",
+      "fetchStatus": "ok",
+      "metadata": {
+        "title": "We Found The Most Instagrammable Cafes In Bangalore And They Are Gorgeous | LBB",
+        "description": "OK, we’ll admit it. Bangalore is beautiful. It’s a place you can easily Instagram, and get plenty of likes on too. But since the world is upping their Insta-game, we thought you shouldn’t be left behind either. So from art decor cafes with high ceilings to one that is straight out of Alice In Wonderland, check out these cafes for that perfect Instagram shot.",
+        "image": "https://imgstaticcontent.lbb.in/lbbnew/wp-content/uploads/sites/2/2017/04/12121555/CafeDownTheAlley2.jpg?w=1200&h=628&fill=blur&fit=fill",
+        "siteName": "LBB, Bangalore",
+        "creator": "LBB Bangalore"
+      },
+      "extracted": {
+        "category": "Food",
+        "subCategory": "Cafe",
+        "intent": "Visit",
+        "places": [
+          "Amour",
+          "Enerjuvate",
+          "Champaca",
+          "Hard Rock Cafe"
+        ],
+        "cities": [
+          "Bangalore"
+        ],
+        "brand": null,
+        "productType": null,
+        "cuisine": null,
+        "vibes": [
+          "Aesthetic"
+        ],
+        "hashtags": [],
+        "mentions": [],
+        "prices": []
+      },
+      "embedding": null,
+      "collections": [],
+      "tags": [
+        "cafe",
+        "instagrammable",
+        "aesthetic",
+        "date"
+      ],
+      "createdAt": "2026-05-15T12:11:11.212Z",
+      "updatedAt": "2026-05-15T12:11:11.212Z",
+      "revisitCount": 0,
+      "lastVisited": null,
+      "_debug": {
+        "seedId": "seed_cafe_04",
+        "fetchError": null
+      }
+    },
+    {
+      "_id": "save_mp6vm94b_5cfvcx9",
+      "userId": "user_dummy_harshit",
+      "url": "https://www.instagram.com/cafesofbangalore/",
+      "source": "instagram",
+      "sourceType": "instagram_profile",
+      "fetchedAt": "2026-05-15T12:11:11.915Z",
+      "fetchStatus": "ok",
+      "metadata": {
+        "title": "Cafes of Bangalore (@cafesofbangalore) • Instagram photos and videos",
+        "description": "3,766 Followers, 97 Following, 45 Posts - See Instagram photos and videos from Cafes of Bangalore (@cafesofbangalore)",
+        "image": "https://scontent.cdninstagram.com/v/t51.2885-19/60197454_2107868346170233_5195228948463616000_n.jpg?stp=dst-jpg_s100x100_tt6&_nc_cat=101&ccb=7-5&_nc_sid=bf7eb4&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLnd3dy4xMDgwLkMzIn0%3D&_nc_ohc=aR6yBP9yqrcQ7kNvwGJQlvQ&_nc_oc=AdpNptqfDp3K0DfNQ2QcpBqs_WByAujiRoVY5GGqyss6_QPDdnkgCHnlLdXHPG7LiYo&_nc_zt=24&_nc_ht=scontent.cdninstagram.com&_nc_ss=7c289&oh=00_Af6SHG5k9aUyu9HlWac0R4504jotSx8LQwQK_z1EexiN4w&oe=6A0CCF73",
+        "siteName": null,
+        "creator": "@cafesofbangalore"
+      },
+      "extracted": {
+        "category": "Food",
+        "subCategory": "Cafe",
+        "intent": "Visit",
+        "places": [
+          "Bangalore"
+        ],
+        "cities": [
+          "Bangalore"
+        ],
+        "brand": null,
+        "productType": null,
+        "cuisine": null,
+        "vibes": [
+          "Cafe hopping"
+        ],
+        "hashtags": [],
+        "mentions": [
+          "cafesofbangalore",
+          "cafesofbangalore"
+        ],
+        "prices": []
+      },
+      "embedding": null,
+      "collections": [],
+      "tags": [
+        "cafe",
+        "bengaluru",
+        "creator",
+        "discovery"
+      ],
+      "createdAt": "2026-05-15T12:11:11.915Z",
+      "updatedAt": "2026-05-15T12:11:11.915Z",
+      "revisitCount": 0,
+      "lastVisited": null,
+      "_debug": {
+        "seedId": "seed_cafe_01",
+        "fetchError": null
+      }
+    },
+    {
+      "_id": "save_mp6vm9co_9d9oo9n",
+      "userId": "user_dummy_harshit",
+      "url": "https://socialoffline.in/blogs/best-cafes-in-bangalore/",
+      "source": "web",
+      "sourceType": "article",
+      "fetchedAt": "2026-05-15T12:11:12.216Z",
+      "fetchStatus": "ok",
+      "metadata": {
+        "title": "Best Cafes in Bangalore I Editor Picks for 2026",
+        "description": "Editor-picked cafes in Bangalore with cozy ambience, great food, and comfy seating—perfect for work, meetups, dates, or relaxing outings.",
+        "image": "https://socialoffline.in/cdn/uploads/Frame-9135.png",
+        "siteName": null,
+        "creator": "Social Offline"
+      },
+      "extracted": {
+        "category": "Food",
+        "subCategory": "Cafe",
+        "intent": "Visit",
+        "places": [
+          "DYU Art Cafe",
+          "ARAKU Coffee",
+          "Cafe Noir",
+          "Paper & Pie",
+          "Champaca"
+        ],
+        "cities": [
+          "Bangalore"
+        ],
+        "brand": null,
+        "productType": null,
+        "cuisine": null,
+        "vibes": [
+          "Editorial"
+        ],
+        "hashtags": [],
+        "mentions": [],
+        "prices": []
+      },
+      "embedding": null,
+      "collections": [],
+      "tags": [
+        "cafe",
+        "editorial",
+        "premium",
+        "bengaluru"
+      ],
+      "createdAt": "2026-05-15T12:11:12.216Z",
+      "updatedAt": "2026-05-15T12:11:12.216Z",
+      "revisitCount": 0,
+      "lastVisited": null,
+      "_debug": {
+        "seedId": "seed_cafe_05",
+        "fetchError": null
+      }
+    },
+    {
+      "_id": "save_mp6vm9gm_i65i68m",
+      "userId": "user_dummy_harshit",
+      "url": "https://www.explorebangalore.com/best-cafes-in-bangalore",
+      "source": "web",
+      "sourceType": "article",
+      "fetchedAt": "2026-05-15T12:11:12.358Z",
+      "fetchStatus": "ok",
+      "metadata": {
+        "title": "Best Cafes in Bangalore 2026 — Top Coffee Shops & Brunch",
+        "description": "Discover Bangalore's best cafes ranked by atmosphere, coffee quality, and overall experience. From Lazy Suzy to Kind Roastery, find your perfect coffee spot.",
+        "image": "https://www.explorebangalore.com/og-best-cafes.jpg",
+        "siteName": "Explore Bangalore",
+        "creator": "Explore Bangalore"
+      },
+      "extracted": {
+        "category": "Food",
+        "subCategory": "Cafe",
+        "intent": "Visit",
+        "places": [
+          "Kind Roastery",
+          "Third Wave Coffee",
+          "Matteo Coffea",
+          "Maverick & Farmer",
+          "Araku Coffee"
+        ],
+        "cities": [
+          "Bangalore"
+        ],
+        "brand": null,
+        "productType": null,
+        "cuisine": null,
+        "vibes": [
+          "Specialty coffee"
+        ],
+        "hashtags": [],
+        "mentions": [],
+        "prices": []
+      },
+      "embedding": null,
+      "collections": [],
+      "tags": [
+        "cafe",
+        "specialty-coffee",
+        "wfh",
+        "bengaluru"
+      ],
+      "createdAt": "2026-05-15T12:11:12.358Z",
+      "updatedAt": "2026-05-15T12:11:12.358Z",
+      "revisitCount": 0,
+      "lastVisited": null,
+      "_debug": {
+        "seedId": "seed_cafe_03",
+        "fetchError": null
+      }
+    },
+    {
+      "_id": "save_mp6vm9pr_o3qf9u7",
+      "userId": "user_dummy_harshit",
+      "url": "https://www.swiggy.com/restaurants/blue-tokai-coffee-roasters",
+      "source": "swiggy",
+      "sourceType": "delivery_product",
+      "fetchedAt": "2026-05-15T12:11:12.687Z",
+      "fetchStatus": "ok",
+      "metadata": {
+        "title": "Order Food Online from India's Best Food Delivery Service | Swiggy",
+        "description": "Order food online from restaurants and get it delivered. Serving in Bangalore, Hyderabad, Delhi and more. Order Pizzas, Biryanis, from Swiggy.",
+        "image": "https://media-assets.swiggy.com/swiggy/image/upload/c_scale,w_715/portal/m/brand_logos/Swiggy_OG.png",
+        "siteName": "Swiggy.com",
+        "creator": "Blue Tokai (via Swiggy)"
+      },
+      "extracted": {
+        "category": "Food",
+        "subCategory": "Restaurant",
+        "intent": "Visit",
+        "places": [
+          "Bangalore",
+          "Delhi",
+          "Hyderabad"
+        ],
+        "cities": [
+          "Bangalore",
+          "Delhi",
+          "Hyderabad"
+        ],
+        "brand": "Blue Tokai",
+        "productType": null,
+        "cuisine": null,
+        "vibes": [],
+        "hashtags": [],
+        "mentions": [],
+        "prices": []
+      },
+      "embedding": null,
+      "collections": [],
+      "tags": [
+        "coffee",
+        "beans",
+        "specialty"
+      ],
+      "createdAt": "2026-05-15T12:11:12.687Z",
+      "updatedAt": "2026-05-15T12:11:12.687Z",
+      "revisitCount": 0,
+      "lastVisited": null,
+      "_debug": {
+        "seedId": "seed_food_02",
+        "fetchError": null
+      }
+    },
+    {
+      "_id": "save_mp6vmaf6_00swemz",
+      "userId": "user_dummy_harshit",
+      "url": "https://www.instagram.com/bombayfoodie/",
+      "source": "instagram",
+      "sourceType": "instagram_profile",
+      "fetchedAt": "2026-05-15T12:11:13.602Z",
+      "fetchStatus": "ok",
+      "metadata": {
+        "title": "FOOD LOVER (@bombayfoodie) • Instagram photos and videos",
+        "description": "32 Followers, 16 Following, 4 Posts - See Instagram photos and videos from FOOD LOVER (@bombayfoodie)",
+        "image": "https://scontent.cdninstagram.com/v/t51.2885-19/22430438_2017555478460279_8115172287239421952_n.jpg?stp=dst-jpg_s100x100_tt6&_nc_cat=108&ccb=7-5&_nc_sid=bf7eb4&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLnd3dy4xMDgwLkMzIn0%3D&_nc_ohc=2D0FgW7z_x0Q7kNvwHqrYrx&_nc_oc=AdoBoNFasbC2svT6PPJJXJXMrxA9NawWBHUs9u_7j2qGe56mGzVi49S7-_PVaenb3rI&_nc_zt=24&_nc_ht=scontent.cdninstagram.com&_nc_ss=7c689&oh=00_Af4pdsxb4PE9yHVZXTD7StgtVMejzDDWLXaXikuQ5QhrRQ&oe=6A0CFB99",
+        "siteName": null,
+        "creator": "@bombayfoodie"
+      },
+      "extracted": {
+        "category": "Uncategorized",
+        "subCategory": "Food creator",
+        "intent": "Save",
+        "places": [],
+        "cities": [],
+        "brand": null,
+        "productType": null,
+        "cuisine": null,
+        "vibes": [],
+        "hashtags": [],
+        "mentions": [
+          "bombayfoodie",
+          "bombayfoodie"
+        ],
+        "prices": []
+      },
+      "embedding": null,
+      "collections": [],
+      "tags": [
+        "food",
+        "mumbai",
+        "creator",
+        "discovery"
+      ],
+      "createdAt": "2026-05-15T12:11:13.602Z",
+      "updatedAt": "2026-05-15T12:11:13.602Z",
+      "revisitCount": 0,
+      "lastVisited": null,
+      "_debug": {
+        "seedId": "seed_food_03",
+        "fetchError": null
+      }
+    },
+    {
+      "_id": "save_mp6vmaox_v5qydus",
+      "userId": "user_dummy_harshit",
+      "url": "https://www.bluetokaicoffee.com/products/attikan-estate",
+      "source": "web",
+      "sourceType": "product",
+      "fetchedAt": "2026-05-15T12:11:13.953Z",
+      "fetchStatus": "ok",
+      "metadata": {
+        "title": "Attikan Estate",
+        "description": "Attikan Estate's arabica coffee beans come from the Biligiriranga Hills in Karnataka and is make for one of our most popular coffees. Sweet with fruity overtones and balanced acidity, this is the darkest of our standard medium roasts and recommended for espresso lovers. It is a versatile coffee t...",
+        "image": "https://bluetokaicoffee.com/cdn/shop/files/Attikan-estate-Front.jpg?v=1734956514",
+        "siteName": "Blue Tokai Coffee Roasters",
+        "creator": "Blue Tokai"
+      },
+      "extracted": {
+        "category": "Food",
+        "subCategory": "Cafe",
+        "intent": "Visit",
+        "places": [],
+        "cities": [],
+        "brand": "Blue Tokai",
+        "productType": null,
+        "cuisine": null,
+        "vibes": [],
+        "hashtags": [],
+        "mentions": [],
+        "prices": [
+          {
+            "value": 750,
+            "currency": "INR"
+          }
+        ]
+      },
+      "embedding": null,
+      "collections": [],
+      "tags": [
+        "coffee",
+        "single-origin",
+        "beans"
+      ],
+      "createdAt": "2026-05-15T12:11:13.953Z",
+      "updatedAt": "2026-05-15T12:11:13.953Z",
+      "revisitCount": 0,
+      "lastVisited": null,
+      "_debug": {
+        "seedId": "seed_food_04",
+        "fetchError": null
+      }
+    },
+    {
+      "_id": "save_mp6vmbkn_l3rf82v",
+      "userId": "user_dummy_harshit",
+      "url": "https://www.instagram.com/tanyakhanijow/",
+      "source": "instagram",
+      "sourceType": "instagram_profile",
+      "fetchedAt": "2026-05-15T12:11:15.095Z",
+      "fetchStatus": "ok",
+      "metadata": {
+        "title": "Tanya Khanijow (@tanyakhanijow) • Instagram photos and videos",
+        "description": "1M Followers, 1,307 Following, 1,952 Posts - See Instagram photos and videos from Tanya Khanijow (@tanyakhanijow)",
+        "image": "https://scontent.cdninstagram.com/v/t51.82787-19/573875307_18534031543013778_6865597282754471392_n.jpg?stp=dst-jpg_s100x100_tt6&_nc_cat=102&ccb=7-5&_nc_sid=bf7eb4&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLnd3dy4xMDgwLkMzIn0%3D&_nc_ohc=wtdFCD6PUi8Q7kNvwF4Eujy&_nc_oc=AdomEtA377fIeMkJ_RMFCKfuyrqo2g3MUSobuYMxyqC4guLJ5q0RIZA_jy2Tosj1e00&_nc_zt=24&_nc_ht=scontent.cdninstagram.com&_nc_gid=LE8s8Cr_cnWwbzHipN2gig&_nc_ss=7c689&oh=00_Af71JPCO9lWV0iixdfuyZwwyq8LhX0323eRrbmIeSH-85g&oe=6A0CED9C",
+        "siteName": null,
+        "creator": "@tanyakhanijow"
+      },
+      "extracted": {
+        "category": "Uncategorized",
+        "subCategory": "Creator",
+        "intent": "Save",
+        "places": [],
+        "cities": [],
+        "brand": null,
+        "productType": null,
+        "cuisine": null,
+        "vibes": [
+          "Offbeat, eco-friendly"
+        ],
+        "hashtags": [],
+        "mentions": [
+          "tanyakhanijow",
+          "tanyakhanijow"
+        ],
+        "prices": []
+      },
+      "embedding": null,
+      "collections": [],
+      "tags": [
+        "travel",
+        "offbeat",
+        "northeast",
+        "creator"
+      ],
+      "createdAt": "2026-05-15T12:11:15.095Z",
+      "updatedAt": "2026-05-15T12:11:15.095Z",
+      "revisitCount": 0,
+      "lastVisited": null,
+      "_debug": {
+        "seedId": "seed_travel_01",
+        "fetchError": null
+      }
+    },
+    {
+      "_id": "save_mp6vmcf4_gw3eb4m",
+      "userId": "user_dummy_harshit",
+      "url": "https://www.instagram.com/larissadsa/",
+      "source": "instagram",
+      "sourceType": "instagram_profile",
+      "fetchedAt": "2026-05-15T12:11:16.192Z",
+      "fetchStatus": "ok",
+      "metadata": {
+        "title": "Larissa Santo André (@larissadsa) • Instagram photos and videos",
+        "description": "1,585 Followers, 1,852 Following, 2,564 Posts - See Instagram photos and videos from Larissa Santo André (@larissadsa)",
+        "image": "https://scontent.cdninstagram.com/v/t51.2885-19/448545698_1597855904107665_2471342345206504122_n.jpg?stp=dst-jpg_s100x100_tt6&_nc_cat=106&ccb=7-5&_nc_sid=bf7eb4&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLnd3dy4xMDgwLkMzIn0%3D&_nc_ohc=WkdnDkh1PlkQ7kNvwEZM-YK&_nc_oc=AdriYIIAcElfhW_EV-Z4Ch95G2VT3wBVeSrXCue6DS0kzgOaK1lgUAgP7KzSNDJ04gw&_nc_zt=24&_nc_ht=scontent.cdninstagram.com&_nc_ss=7c689&oh=00_Af6goB4S68ZAZGltwBpUKgJg0tR-PXG5jMVVsELT77Uxpw&oe=6A0CD1DA",
+        "siteName": null,
+        "creator": "@larissadsa"
+      },
+      "extracted": {
+        "category": "Uncategorized",
+        "subCategory": "Creator",
+        "intent": "Save",
+        "places": [],
+        "cities": [],
+        "brand": null,
+        "productType": null,
+        "cuisine": null,
+        "vibes": [
+          "Lifestyle travel"
+        ],
+        "hashtags": [],
+        "mentions": [
+          "larissadsa",
+          "larissadsa"
+        ],
+        "prices": []
+      },
+      "embedding": null,
+      "collections": [],
+      "tags": [
+        "travel",
+        "goa",
+        "creator",
+        "lifestyle"
+      ],
+      "createdAt": "2026-05-15T12:11:16.192Z",
+      "updatedAt": "2026-05-15T12:11:16.192Z",
+      "revisitCount": 0,
+      "lastVisited": null,
+      "_debug": {
+        "seedId": "seed_travel_02",
+        "fetchError": null
+      }
+    },
+    {
+      "_id": "save_mp6vmd84_fsg0mvx",
+      "userId": "user_dummy_harshit",
+      "url": "https://www.instagram.com/wanderwithsky/",
+      "source": "instagram",
+      "sourceType": "instagram_profile",
+      "fetchedAt": "2026-05-15T12:11:17.236Z",
+      "fetchStatus": "ok",
+      "metadata": {
+        "title": "Aakash 𖢘𖤇 The OG Awara (@wanderwithsky) • Instagram photos and videos",
+        "description": "2M Followers, 163 Following, 818 Posts - See Instagram photos and videos from Aakash 𖢘𖤇 The OG Awara (@wanderwithsky)",
+        "image": "https://scontent.cdninstagram.com/v/t51.2885-19/474019158_634501072380878_6073666437688032898_n.jpg?stp=dst-jpg_s100x100_tt6&_nc_cat=1&ccb=7-5&_nc_sid=bf7eb4&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLnd3dy4xMDgwLkMzIn0%3D&_nc_ohc=rFhPiEoxsswQ7kNvwER3HOv&_nc_oc=Adq0fKQHNTskfDE6EWuFI7e7yqIxRF57XFGGeXGXXaPDTdf71hN5IgGgwEU8EUzz8mo&_nc_zt=24&_nc_ht=scontent.cdninstagram.com&_nc_ss=7c689&oh=00_Af61uzrD5AN4jLmzRiq0KQyNUQ_g_BOBzcVGyo31kyc4Nw&oe=6A0CDA62",
+        "siteName": null,
+        "creator": "@wanderwithsky"
+      },
+      "extracted": {
+        "category": "Uncategorized",
+        "subCategory": "Creator",
+        "intent": "Save",
+        "places": [],
+        "cities": [],
+        "brand": null,
+        "productType": null,
+        "cuisine": null,
+        "vibes": [
+          "Cinematic, offbeat"
+        ],
+        "hashtags": [],
+        "mentions": [
+          "wanderwithsky",
+          "wanderwithsky"
+        ],
+        "prices": []
+      },
+      "embedding": null,
+      "collections": [],
+      "tags": [
+        "travel",
+        "cinematic",
+        "offbeat",
+        "creator"
+      ],
+      "createdAt": "2026-05-15T12:11:17.236Z",
+      "updatedAt": "2026-05-15T12:11:17.236Z",
+      "revisitCount": 0,
+      "lastVisited": null,
+      "_debug": {
+        "seedId": "seed_travel_03",
+        "fetchError": null
+      }
+    },
+    {
+      "_id": "save_mp6vme09_quicbf1",
+      "userId": "user_dummy_harshit",
+      "url": "https://www.instagram.com/bruisedpassports/",
+      "source": "instagram",
+      "sourceType": "instagram_profile",
+      "fetchedAt": "2026-05-15T12:11:18.249Z",
+      "fetchStatus": "ok",
+      "metadata": {
+        "title": "Travel & Love - Savi & Vid (@bruisedpassports) • Instagram photos and videos",
+        "description": "1M Followers, 205 Following, 3,715 Posts - See Instagram photos and videos from Travel & Love - Savi & Vid (@bruisedpassports)",
+        "image": "https://scontent.cdninstagram.com/v/t51.2885-19/11380040_175519466133278_2123720527_a.jpg?stp=dst-jpg_s100x100_tt6&_nc_cat=108&ccb=7-5&_nc_sid=bf7eb4&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLnd3dy42NDAuQzMifQ%3D%3D&_nc_ohc=ktKnZy8wfqYQ7kNvwHR0Sg-&_nc_oc=AdrSDjT_iIn-TFdSjttZbcASLOuv_456OizsOSrpKqW3Tz1X2M2K0tq9iXD7LXtfw2w&_nc_zt=24&_nc_ht=scontent.cdninstagram.com&_nc_ss=7c689&oh=00_Af5_XVfSPONpc3u2Ynbw9aalvpxwvsJ5yom_Ue04QBGh1w&oe=6A0CC927",
+        "siteName": null,
+        "creator": "@bruisedpassports"
+      },
+      "extracted": {
+        "category": "Uncategorized",
+        "subCategory": "Creator",
+        "intent": "Save",
+        "places": [],
+        "cities": [],
+        "brand": null,
+        "productType": null,
+        "cuisine": null,
+        "vibes": [
+          "Couple travel, premium"
+        ],
+        "hashtags": [],
+        "mentions": [
+          "bruisedpassports",
+          "bruisedpassports"
+        ],
+        "prices": []
+      },
+      "embedding": null,
+      "collections": [],
+      "tags": [
+        "travel",
+        "couple",
+        "premium",
+        "creator"
+      ],
+      "createdAt": "2026-05-15T12:11:18.249Z",
+      "updatedAt": "2026-05-15T12:11:18.249Z",
+      "revisitCount": 0,
+      "lastVisited": null,
+      "_debug": {
+        "seedId": "seed_travel_04",
+        "fetchError": null
+      }
+    },
+    {
+      "_id": "save_mp6vmea9_hu0bkwd",
+      "userId": "user_dummy_harshit",
+      "url": "https://www.tripoto.com/trip/tirthan-valley-himachal-pradesh-travel-guide",
+      "source": "tripoto",
+      "sourceType": "article",
+      "fetchedAt": "2026-05-15T12:11:18.609Z",
+      "fetchStatus": "ok",
+      "metadata": {
+        "title": "Tripoto: Share and Discover Travel Stories, Community, Tourism Guides, Hotels & Holidays",
+        "description": null,
+        "image": null,
+        "siteName": null,
+        "creator": "Tripoto"
+      },
+      "extracted": {
+        "category": "Travel",
+        "subCategory": "Destination",
+        "intent": "Trip Planning",
+        "places": [
+          "Tirthan Valley",
+          "Jibhi",
+          "Great Himalayan National Park"
+        ],
+        "cities": [],
+        "brand": null,
+        "productType": null,
+        "cuisine": null,
+        "vibes": [
+          "Mountain, offbeat"
+        ],
+        "hashtags": [],
+        "mentions": [],
+        "prices": []
+      },
+      "embedding": null,
+      "collections": [],
+      "tags": [
+        "travel",
+        "himachal",
+        "mountains",
+        "offbeat"
+      ],
+      "createdAt": "2026-05-15T12:11:18.609Z",
+      "updatedAt": "2026-05-15T12:11:18.609Z",
+      "revisitCount": 0,
+      "lastVisited": null,
+      "_debug": {
+        "seedId": "seed_travel_05",
+        "fetchError": null
+      }
+    },
+    {
+      "_id": "save_mp6vnzri_mkty7qr",
+      "userId": "user_dummy_harshit",
+      "url": "https://www.zomato.com/bangalore/picturesque-cafes-insta-worthy",
+      "source": "zomato",
+      "sourceType": "article",
+      "fetchedAt": "2026-05-15T12:12:33.102Z",
+      "fetchStatus": "partial",
+      "metadata": {
+        "title": "20 Insta-worthy Restaurants in Bengaluru",
+        "description": null,
+        "image": null,
+        "siteName": null,
+        "creator": "Zomato Editorial"
+      },
+      "extracted": {
+        "category": "Food",
+        "subCategory": "Restaurant",
+        "intent": "Visit",
+        "places": [
+          "BLR Brewing Co.",
+          "Hard Rock Cafe",
+          "Cafe Down The Alley"
+        ],
+        "cities": [],
+        "brand": null,
+        "productType": null,
+        "cuisine": null,
+        "vibes": [
+          "Aesthetic"
+        ],
+        "hashtags": [],
+        "mentions": [],
+        "prices": []
+      },
+      "embedding": null,
+      "collections": [],
+      "tags": [
+        "cafe",
+        "bengaluru",
+        "instagrammable"
+      ],
+      "createdAt": "2026-05-15T12:12:33.102Z",
+      "updatedAt": "2026-05-15T12:12:33.102Z",
+      "revisitCount": 0,
+      "lastVisited": null,
+      "_debug": {
+        "seedId": "seed_cafe_02",
+        "fetchError": "timeout of 12000ms exceeded"
+      }
+    },
+    {
+      "_id": "save_mp6vo184_be2rxlm",
+      "userId": "user_dummy_harshit",
+      "url": "https://www.airbnb.co.in/s/Goa--India/homes",
+      "source": "airbnb",
+      "sourceType": "listing_search",
+      "fetchedAt": "2026-05-15T12:12:34.996Z",
+      "fetchStatus": "ok",
+      "metadata": {
+        "title": "Airbnb | Goa – Holiday Rentals & Places to Stay - India",
+        "description": "Rent from people in Goa, India from ₹1,915/night. Find unique places to stay with local hosts in 191 countries. Belong anywhere with Airbnb.",
+        "image": "https://a0.muscache.com/im/pictures/fe7217ff-0b24-438d-880d-b94722c75bf5.jpg",
+        "siteName": "Airbnb",
+        "creator": "Airbnb"
+      },
+      "extracted": {
+        "category": "Travel",
+        "subCategory": "Destination",
+        "intent": "Trip Planning",
+        "places": [
+          "Goa"
+        ],
+        "cities": [
+          "Goa"
+        ],
+        "brand": null,
+        "productType": null,
+        "cuisine": null,
+        "vibes": [],
+        "hashtags": [],
+        "mentions": [],
+        "prices": [
+          {
+            "raw": "₹1,915",
+            "value": 1915,
+            "currency": "INR"
+          }
+        ]
+      },
+      "embedding": null,
+      "collections": [],
+      "tags": [
+        "travel",
+        "goa",
+        "stays",
+        "airbnb"
+      ],
+      "createdAt": "2026-05-15T12:12:34.996Z",
+      "updatedAt": "2026-05-15T12:12:34.996Z",
+      "revisitCount": 0,
+      "lastVisited": null,
+      "_debug": {
+        "seedId": "seed_travel_07",
+        "fetchError": null
+      }
+    },
+    {
+      "_id": "save_mp6vo1uo_kbsrrmm",
+      "userId": "user_dummy_harshit",
+      "url": "https://www.tripadvisor.in/Attractions-g297604-Activities-Kasol_Kullu_District_Himachal_Pradesh.html",
+      "source": "web",
+      "sourceType": "destination",
+      "fetchedAt": "2026-05-15T12:12:35.808Z",
+      "fetchStatus": "ok",
+      "metadata": {
+        "title": "Things to do in Kasol",
+        "description": null,
+        "image": null,
+        "siteName": null,
+        "creator": "Tripadvisor"
+      },
+      "extracted": {
+        "category": "Uncategorized",
+        "subCategory": "Destination",
+        "intent": "Save",
+        "places": [
+          "Kasol",
+          "Kheerganga",
+          "Tosh"
+        ],
+        "cities": [],
+        "brand": null,
+        "productType": null,
+        "cuisine": null,
+        "vibes": [
+          "Backpacking, mountain"
+        ],
+        "hashtags": [],
+        "mentions": [],
+        "prices": []
+      },
+      "embedding": null,
+      "collections": [],
+      "tags": [
+        "travel",
+        "kasol",
+        "himachal",
+        "backpacking"
+      ],
+      "createdAt": "2026-05-15T12:12:35.808Z",
+      "updatedAt": "2026-05-15T12:12:35.808Z",
+      "revisitCount": 0,
+      "lastVisited": null,
+      "_debug": {
+        "seedId": "seed_travel_08",
+        "fetchError": null
+      }
+    },
+    {
+      "_id": "save_mp6vo3i2_fpuvv7b",
+      "userId": "user_dummy_harshit",
+      "url": "https://www.youtube.com/@MountainTrekker",
+      "source": "youtube",
+      "sourceType": "youtube_channel",
+      "fetchedAt": "2026-05-15T12:12:37.946Z",
+      "fetchStatus": "ok",
+      "metadata": {
+        "title": "MOUNTAIN TREKKER",
+        "description": "I'm Varun, and I'm currently a full-time traveler pursuing my dreams. I love solo traveling & meeting people. After traveling extensively in Incredible India for years, I stepped out of my country and realized how beautiful the world is! I started making travel series in Hindi with full of travel tips and tricks, especially for budget travel. My dream is to inspire people to explore this beautiful world and learn the best things to make our world a better place to live in. I'm honored to have received the prestigious 'National Tourism Award' from the Government of India for my contributions to promoting tourism. Thanks to my viewers, they are the reason I get invitations from across the globe to visit new places.\n\nFOLLOW ME ON\n# INSTAGRAM - https://www.instagram.com/varunvagish\n# FACEBOOK - https://www.facebook.com/varun.vagish \n# TWITTER - https://twitter.com/varunvagish \n\nBusiness Queries - business@touristhelpline.com",
+        "image": "https://yt3.googleusercontent.com/ytc/AIdro_ls63HaERQsNTRJte6EktlVMJGwceIBo0nlEcF8HY5-haQ=s900-c-k-c0x00ffffff-no-rj",
+        "siteName": "YouTube",
+        "creator": "Mountain Trekker (Manish Solanki)"
+      },
+      "extracted": {
+        "category": "Uncategorized",
+        "subCategory": "Creator",
+        "intent": "Save",
+        "places": [],
+        "cities": [],
+        "brand": null,
+        "productType": null,
+        "cuisine": null,
+        "vibes": [
+          "Solo mountain travel"
+        ],
+        "hashtags": [],
+        "mentions": [
+          "touristhelpline"
+        ],
+        "prices": []
+      },
+      "embedding": null,
+      "collections": [],
+      "tags": [
+        "travel",
+        "mountains",
+        "trekking",
+        "creator"
+      ],
+      "createdAt": "2026-05-15T12:12:37.946Z",
+      "updatedAt": "2026-05-15T12:12:37.946Z",
+      "revisitCount": 0,
+      "lastVisited": null,
+      "_debug": {
+        "seedId": "seed_travel_09",
+        "fetchError": null
+      }
+    },
+    {
+      "_id": "save_mp6vo3i7_uy3i4vd",
+      "userId": "user_dummy_harshit",
+      "url": "https://www.zomato.com/bangalore/indiranagar-restaurants/north-indian",
+      "source": "zomato",
+      "sourceType": "listing",
+      "fetchedAt": "2026-05-15T12:12:37.951Z",
+      "fetchStatus": "partial",
+      "metadata": {
+        "title": "North Indian Restaurants in Indiranagar",
+        "description": null,
+        "image": null,
+        "siteName": null,
+        "creator": "Zomato"
+      },
+      "extracted": {
+        "category": "Food",
+        "subCategory": "Restaurant",
+        "intent": "Visit",
+        "places": [],
+        "cities": [],
+        "brand": null,
+        "productType": null,
+        "cuisine": "North Indian",
+        "vibes": [],
+        "hashtags": [],
+        "mentions": [],
+        "prices": []
+      },
+      "embedding": null,
+      "collections": [],
+      "tags": [
+        "restaurant",
+        "dinner",
+        "indiranagar"
+      ],
+      "createdAt": "2026-05-15T12:12:37.951Z",
+      "updatedAt": "2026-05-15T12:12:37.951Z",
+      "revisitCount": 0,
+      "lastVisited": null,
+      "_debug": {
+        "seedId": "seed_food_01",
+        "fetchError": "timeout of 12000ms exceeded"
+      }
+    },
+    {
+      "_id": "save_mp6vo3i8_1uutoai",
+      "userId": "user_dummy_harshit",
+      "url": "https://www.zomato.com/bangalore/third-wave-coffee-roasters-3-indiranagar",
+      "source": "zomato",
+      "sourceType": "restaurant_listing",
+      "fetchedAt": "2026-05-15T12:12:37.952Z",
+      "fetchStatus": "partial",
+      "metadata": {
+        "title": "Third Wave Coffee, Indiranagar",
+        "description": null,
+        "image": null,
+        "siteName": null,
+        "creator": "Zomato"
+      },
+      "extracted": {
+        "category": "Food",
+        "subCategory": "Restaurant",
+        "intent": "Visit",
+        "places": [],
+        "cities": [],
+        "brand": null,
+        "productType": null,
+        "cuisine": null,
+        "vibes": [
+          "WFH, quiet"
+        ],
+        "hashtags": [],
+        "mentions": [],
+        "prices": []
+      },
+      "embedding": null,
+      "collections": [],
+      "tags": [
+        "cafe",
+        "wfh",
+        "specialty-coffee"
+      ],
+      "createdAt": "2026-05-15T12:12:37.952Z",
+      "updatedAt": "2026-05-15T12:12:37.952Z",
+      "revisitCount": 0,
+      "lastVisited": null,
+      "_debug": {
+        "seedId": "seed_food_05",
+        "fetchError": "timeout of 12000ms exceeded"
+      }
+    },
+    {
+      "_id": "save_mp6vo3y9_saqp54j",
+      "userId": "user_dummy_harshit",
+      "url": "https://www.flipkart.com/nike-air-max-90-running-shoes-men/p/itm1234567890",
+      "source": "flipkart",
+      "sourceType": "product",
+      "fetchedAt": "2026-05-15T12:12:38.529Z",
+      "fetchStatus": "partial",
+      "metadata": {
+        "title": "Nike Air Max 90 Sail",
+        "description": null,
+        "image": null,
+        "siteName": null,
+        "creator": "Flipkart"
+      },
+      "extracted": {
+        "category": "Shopping",
+        "subCategory": "General",
+        "intent": "Buy",
+        "places": [],
+        "cities": [],
+        "brand": "Nike",
+        "productType": "Sneakers",
+        "cuisine": null,
+        "vibes": [],
+        "hashtags": [],
+        "mentions": [],
+        "prices": [
+          {
+            "value": 8995,
+            "currency": "INR"
+          }
+        ]
+      },
+      "embedding": null,
+      "collections": [],
+      "tags": [
+        "sneakers",
+        "nike",
+        "running",
+        "lifestyle"
+      ],
+      "createdAt": "2026-05-15T12:12:38.529Z",
+      "updatedAt": "2026-05-15T12:12:38.529Z",
+      "revisitCount": 0,
+      "lastVisited": null,
+      "_debug": {
+        "seedId": "seed_shop_02",
+        "fetchError": "Request failed with status code 500"
+      }
+    },
+    {
+      "_id": "save_mp6vo44u_fcv5vdm",
+      "userId": "user_dummy_harshit",
+      "url": "https://www.amazon.in/Sony-WH-1000XM5-Cancelling-Wireless-Headphones/dp/B09Y2MZSZN",
+      "source": "amazon",
+      "sourceType": "product",
+      "fetchedAt": "2026-05-15T12:12:38.766Z",
+      "fetchStatus": "partial",
+      "metadata": {
+        "title": "Sony WH-1000XM5 wireless headphones",
+        "description": null,
+        "image": null,
+        "siteName": null,
+        "creator": "Amazon"
+      },
+      "extracted": {
+        "category": "Shopping",
+        "subCategory": "General",
+        "intent": "Buy",
+        "places": [],
+        "cities": [],
+        "brand": "Sony",
+        "productType": "Headphones",
+        "cuisine": null,
+        "vibes": [],
+        "hashtags": [],
+        "mentions": [],
+        "prices": [
+          {
+            "value": 29990,
+            "currency": "INR"
+          }
+        ]
+      },
+      "embedding": null,
+      "collections": [],
+      "tags": [
+        "headphones",
+        "audio",
+        "sony",
+        "premium"
+      ],
+      "createdAt": "2026-05-15T12:12:38.766Z",
+      "updatedAt": "2026-05-15T12:12:38.766Z",
+      "revisitCount": 0,
+      "lastVisited": null,
+      "_debug": {
+        "seedId": "seed_shop_01",
+        "fetchError": "Request failed with status code 500"
+      }
+    },
+    {
+      "_id": "save_mp6vo4tm_46o5s9w",
+      "userId": "user_dummy_harshit",
+      "url": "https://suta.in/products/linen-mid-length-kurta-set",
+      "source": "web",
+      "sourceType": "product",
+      "fetchedAt": "2026-05-15T12:12:39.658Z",
+      "fetchStatus": "ok",
+      "metadata": {
+        "title": "404 Not Found",
+        "description": null,
+        "image": null,
+        "siteName": "Suta",
+        "creator": "Suta"
+      },
+      "extracted": {
+        "category": "Uncategorized",
+        "subCategory": "Fashion",
+        "intent": "Save",
+        "places": [],
+        "cities": [],
+        "brand": "Suta",
+        "productType": "Kurta",
+        "cuisine": null,
+        "vibes": [],
+        "hashtags": [],
+        "mentions": [],
+        "prices": [
+          {
+            "value": 2400,
+            "currency": "INR"
+          }
+        ]
+      },
+      "embedding": null,
+      "collections": [],
+      "tags": [
+        "kurta",
+        "linen",
+        "ethnic",
+        "women"
+      ],
+      "createdAt": "2026-05-15T12:12:39.658Z",
+      "updatedAt": "2026-05-15T12:12:39.658Z",
+      "revisitCount": 0,
+      "lastVisited": null,
+      "_debug": {
+        "seedId": "seed_shop_03",
+        "fetchError": null
+      }
+    },
+    {
+      "_id": "save_mp6vo55u_25rerkg",
+      "userId": "user_dummy_harshit",
+      "url": "https://www.keychron.com/products/keychron-q1-pro",
+      "source": "web",
+      "sourceType": "product",
+      "fetchedAt": "2026-05-15T12:12:40.098Z",
+      "fetchStatus": "ok",
+      "metadata": {
+        "title": "Keychron | Custom Mechanical Keyboards for Mac, Windows and Phones",
+        "description": "Keychron specializes in designing and building high-quality keyboards and mice. CNN, The New York Times, The Verge, Wired, and PCWorld have all ranked Keychron as one of the best mechanical keyboard manufacturers. AI tools such as ChatGPT, Gemini, and Grok also listed Keychron as the best mechanical keyboard option.",
+        "image": "https://cdn.shopify.com/s/files/1/0059/0630/1017/files/Keychron_Launcher_menu.jpg?v=1775128114",
+        "siteName": "Keychron",
+        "creator": "Keychron"
+      },
+      "extracted": {
+        "category": "Uncategorized",
+        "subCategory": "Tech",
+        "intent": "Save",
+        "places": [],
+        "cities": [],
+        "brand": "Keychron",
+        "productType": "Keyboard",
+        "cuisine": null,
+        "vibes": [],
+        "hashtags": [],
+        "mentions": [],
+        "prices": [
+          {
+            "value": 22400,
+            "currency": "INR"
+          }
+        ]
+      },
+      "embedding": null,
+      "collections": [],
+      "tags": [
+        "keyboard",
+        "mechanical",
+        "tech",
+        "wfh"
+      ],
+      "createdAt": "2026-05-15T12:12:40.098Z",
+      "updatedAt": "2026-05-15T12:12:40.098Z",
+      "revisitCount": 0,
+      "lastVisited": null,
+      "_debug": {
+        "seedId": "seed_shop_04",
+        "fetchError": null
+      }
+    },
+    {
+      "_id": "save_mp6vo5df_lunpdzx",
+      "userId": "user_dummy_harshit",
+      "url": "https://www.lonelyplanet.com/india/meghalaya",
+      "source": "web",
+      "sourceType": "article",
+      "fetchedAt": "2026-05-15T12:12:40.371Z",
+      "fetchStatus": "ok",
+      "metadata": {
+        "title": "404 Page Not Found - Lonely Planet",
+        "description": null,
+        "image": null,
+        "siteName": "Lonely Planet",
+        "creator": "Lonely Planet"
+      },
+      "extracted": {
+        "category": "Uncategorized",
+        "subCategory": "Destination guide",
+        "intent": "Save",
+        "places": [
+          "Shillong",
+          "Cherrapunji",
+          "Living root bridges",
+          "Mawlynnong"
+        ],
+        "cities": [],
+        "brand": null,
+        "productType": null,
+        "cuisine": null,
+        "vibes": [
+          "Lush, monsoon, offbeat"
+        ],
+        "hashtags": [],
+        "mentions": [],
+        "prices": []
+      },
+      "embedding": null,
+      "collections": [],
+      "tags": [
+        "travel",
+        "meghalaya",
+        "northeast",
+        "monsoon"
+      ],
+      "createdAt": "2026-05-15T12:12:40.371Z",
+      "updatedAt": "2026-05-15T12:12:40.371Z",
+      "revisitCount": 0,
+      "lastVisited": null,
+      "_debug": {
+        "seedId": "seed_travel_10",
+        "fetchError": null
+      }
+    },
+    {
+      "_id": "save_mp6vo62s_rkttpht",
+      "userId": "user_dummy_harshit",
+      "url": "https://www.makemytrip.com/blog/best-places-visit-spiti-valley",
+      "source": "makemytrip",
+      "sourceType": "article",
+      "fetchedAt": "2026-05-15T12:12:41.284Z",
+      "fetchStatus": "partial",
+      "metadata": {
+        "title": "Spiti Valley travel guide",
+        "description": null,
+        "image": null,
+        "siteName": null,
+        "creator": "MakeMyTrip"
+      },
+      "extracted": {
+        "category": "Travel",
+        "subCategory": "Destination",
+        "intent": "Trip Planning",
+        "places": [
+          "Spiti Valley",
+          "Key Monastery",
+          "Chandratal Lake"
+        ],
+        "cities": [],
+        "brand": null,
+        "productType": null,
+        "cuisine": null,
+        "vibes": [
+          "High-altitude, adventure"
+        ],
+        "hashtags": [],
+        "mentions": [],
+        "prices": []
+      },
+      "embedding": null,
+      "collections": [],
+      "tags": [
+        "travel",
+        "spiti",
+        "himalaya",
+        "adventure"
+      ],
+      "createdAt": "2026-05-15T12:12:41.284Z",
+      "updatedAt": "2026-05-15T12:12:41.284Z",
+      "revisitCount": 0,
+      "lastVisited": null,
+      "_debug": {
+        "seedId": "seed_travel_06",
+        "fetchError": "timeout of 12000ms exceeded"
+      }
+    },
+    {
+      "_id": "save_mp6vo68v_n1w6ode",
+      "userId": "user_dummy_harshit",
+      "url": "https://www.ajio.com/c/8262423",
+      "source": "ajio",
+      "sourceType": "listing",
+      "fetchedAt": "2026-05-15T12:12:41.503Z",
+      "fetchStatus": "ok",
+      "metadata": {
+        "title": "Access Denied",
+        "description": null,
+        "image": null,
+        "siteName": null,
+        "creator": "Ajio"
+      },
+      "extracted": {
+        "category": "Shopping",
+        "subCategory": "General",
+        "intent": "Buy",
+        "places": [],
+        "cities": [],
+        "brand": null,
+        "productType": "Dress",
+        "cuisine": null,
+        "vibes": [],
+        "hashtags": [],
+        "mentions": [],
+        "prices": []
+      },
+      "embedding": null,
+      "collections": [],
+      "tags": [
+        "dress",
+        "women",
+        "ajio"
+      ],
+      "createdAt": "2026-05-15T12:12:41.503Z",
+      "updatedAt": "2026-05-15T12:12:41.503Z",
+      "revisitCount": 0,
+      "lastVisited": null,
+      "_debug": {
+        "seedId": "seed_shop_08",
+        "fetchError": null
+      }
+    },
+    {
+      "_id": "save_mp6vo6n6_qz4mw8e",
+      "userId": "user_dummy_harshit",
+      "url": "https://www.amazon.in/Apple-iPhone-15-128-GB/dp/B0CHX1W1XY",
+      "source": "amazon",
+      "sourceType": "product",
+      "fetchedAt": "2026-05-15T12:12:42.018Z",
+      "fetchStatus": "ok",
+      "metadata": {
+        "title": "Amazon",
+        "description": "Amazon",
+        "image": "https://m.media-amazon.com/images/G/01/share-icons/previewdoh/amazon.png",
+        "siteName": null,
+        "creator": "Amazon"
+      },
+      "extracted": {
+        "category": "Shopping",
+        "subCategory": "General",
+        "intent": "Buy",
+        "places": [],
+        "cities": [],
+        "brand": "Apple",
+        "productType": "Smartphone",
+        "cuisine": null,
+        "vibes": [],
+        "hashtags": [],
+        "mentions": [],
+        "prices": [
+          {
+            "value": 79900,
+            "currency": "INR"
+          }
+        ]
+      },
+      "embedding": null,
+      "collections": [],
+      "tags": [
+        "iphone",
+        "apple",
+        "smartphone",
+        "premium"
+      ],
+      "createdAt": "2026-05-15T12:12:42.018Z",
+      "updatedAt": "2026-05-15T12:12:42.018Z",
+      "revisitCount": 0,
+      "lastVisited": null,
+      "_debug": {
+        "seedId": "seed_shop_06",
+        "fetchError": null
+      }
+    },
+    {
+      "_id": "save_mp6vo7pm_gufnxee",
+      "userId": "user_dummy_harshit",
+      "url": "https://urbanladder.com/products/heath-2-seater-sofa-charcoal-grey",
+      "source": "web",
+      "sourceType": "product",
+      "fetchedAt": "2026-05-15T12:12:43.402Z",
+      "fetchStatus": "ok",
+      "metadata": {
+        "title": "Buy Furniture Online: Upto 70% off in this Festive Season",
+        "description": "Buy Wooden Furniture Online at India's biggest Online Furniture Store. Shop from 100000+ Home & Office Furniture Options. 0% EMI, 50+ Stores Nationwide",
+        "image": null,
+        "siteName": null,
+        "creator": "Urban Ladder"
+      },
+      "extracted": {
+        "category": "Uncategorized",
+        "subCategory": "Home & Decor",
+        "intent": "Save",
+        "places": [],
+        "cities": [],
+        "brand": "Urban Ladder",
+        "productType": "Sofa",
+        "cuisine": null,
+        "vibes": [],
+        "hashtags": [],
+        "mentions": [],
+        "prices": [
+          {
+            "value": 34999,
+            "currency": "INR"
+          }
+        ]
+      },
+      "embedding": null,
+      "collections": [],
+      "tags": [
+        "sofa",
+        "furniture",
+        "home"
+      ],
+      "createdAt": "2026-05-15T12:12:43.402Z",
+      "updatedAt": "2026-05-15T12:12:43.402Z",
+      "revisitCount": 0,
+      "lastVisited": null,
+      "_debug": {
+        "seedId": "seed_shop_09",
+        "fetchError": null
+      }
+    },
+    {
+      "_id": "save_mp6vo7rg_0rcpqrk",
+      "userId": "user_dummy_harshit",
+      "url": "https://nykaa.com/the-ordinary-niacinamide-10-zinc-1-30ml/p/305928",
+      "source": "nykaa",
+      "sourceType": "product",
+      "fetchedAt": "2026-05-15T12:12:43.468Z",
+      "fetchStatus": "ok",
+      "metadata": {
+        "title": "Nykaa Logo",
+        "description": null,
+        "image": null,
+        "siteName": null,
+        "creator": "Nykaa"
+      },
+      "extracted": {
+        "category": "Shopping",
+        "subCategory": "General",
+        "intent": "Buy",
+        "places": [],
+        "cities": [],
+        "brand": "The Ordinary",
+        "productType": "Skincare serum",
+        "cuisine": null,
+        "vibes": [],
+        "hashtags": [],
+        "mentions": [],
+        "prices": [
+          {
+            "value": 750,
+            "currency": "INR"
+          }
+        ]
+      },
+      "embedding": null,
+      "collections": [],
+      "tags": [
+        "skincare",
+        "niacinamide",
+        "serum",
+        "the-ordinary"
+      ],
+      "createdAt": "2026-05-15T12:12:43.468Z",
+      "updatedAt": "2026-05-15T12:12:43.468Z",
+      "revisitCount": 0,
+      "lastVisited": null,
+      "_debug": {
+        "seedId": "seed_shop_10",
+        "fetchError": null
+      }
+    },
+    {
+      "_id": "save_mp6vo80i_3yb8b32",
+      "userId": "user_dummy_harshit",
+      "url": "https://insider.in/experiences",
+      "source": "insider",
+      "sourceType": "listing",
+      "fetchedAt": "2026-05-15T12:12:43.794Z",
+      "fetchStatus": "ok",
+      "metadata": {
+        "title": "Not Found",
+        "description": null,
+        "image": null,
+        "siteName": null,
+        "creator": "Insider.in"
+      },
+      "extracted": {
+        "category": "Experiences",
+        "subCategory": "Event",
+        "intent": "Book",
+        "places": [],
+        "cities": [],
+        "brand": null,
+        "productType": null,
+        "cuisine": null,
+        "vibes": [],
+        "hashtags": [],
+        "mentions": [],
+        "prices": []
+      },
+      "embedding": null,
+      "collections": [],
+      "tags": [
+        "experiences",
+        "events",
+        "workshops"
+      ],
+      "createdAt": "2026-05-15T12:12:43.794Z",
+      "updatedAt": "2026-05-15T12:12:43.794Z",
+      "revisitCount": 0,
+      "lastVisited": null,
+      "_debug": {
+        "seedId": "seed_exp_01",
+        "fetchError": null
+      }
+    },
+    {
+      "_id": "save_mp6vo87j_z481xdr",
+      "userId": "user_dummy_harshit",
+      "url": "https://www.fabindia.com/men/kurtas",
+      "source": "web",
+      "sourceType": "listing",
+      "fetchedAt": "2026-05-15T12:12:44.047Z",
+      "fetchStatus": "ok",
+      "metadata": {
+        "title": "Buy Men's Clothing, Footwear, and Accessories Online at Fabindia",
+        "description": "Shop Men's Clothing, Footwear, and Accessories Online. Explore a wide range of Clothing for Men in Ethnic Wear and Westernwear at Fabindia. ✯COD ✯Easy returns  ✯Free Shipping*",
+        "image": null,
+        "siteName": null,
+        "creator": "Fabindia"
+      },
+      "extracted": {
+        "category": "Uncategorized",
+        "subCategory": "Fashion",
+        "intent": "Save",
+        "places": [],
+        "cities": [],
+        "brand": "Fabindia",
+        "productType": "Kurta",
+        "cuisine": null,
+        "vibes": [],
+        "hashtags": [],
+        "mentions": [],
+        "prices": []
+      },
+      "embedding": null,
+      "collections": [],
+      "tags": [
+        "kurta",
+        "ethnic",
+        "men",
+        "fabindia"
+      ],
+      "createdAt": "2026-05-15T12:12:44.047Z",
+      "updatedAt": "2026-05-15T12:12:44.047Z",
+      "revisitCount": 0,
+      "lastVisited": null,
+      "_debug": {
+        "seedId": "seed_shop_07",
+        "fetchError": null
+      }
+    },
+    {
+      "_id": "save_mp6vo8cu_dambyj3",
+      "userId": "user_dummy_harshit",
+      "url": "https://www.bookmyshow.com/explore/home/bengaluru",
+      "source": "bookmyshow",
+      "sourceType": "events",
+      "fetchedAt": "2026-05-15T12:12:44.238Z",
+      "fetchStatus": "ok",
+      "metadata": {
+        "title": "Attention Required! | Cloudflare",
+        "description": null,
+        "image": null,
+        "siteName": null,
+        "creator": "BookMyShow"
+      },
+      "extracted": {
+        "category": "Experiences",
+        "subCategory": "Event",
+        "intent": "Book",
+        "places": [],
+        "cities": [],
+        "brand": null,
+        "productType": null,
+        "cuisine": null,
+        "vibes": [],
+        "hashtags": [],
+        "mentions": [],
+        "prices": []
+      },
+      "embedding": null,
+      "collections": [],
+      "tags": [
+        "events",
+        "concerts",
+        "shows"
+      ],
+      "createdAt": "2026-05-15T12:12:44.238Z",
+      "updatedAt": "2026-05-15T12:12:44.238Z",
+      "revisitCount": 0,
+      "lastVisited": null,
+      "_debug": {
+        "seedId": "seed_exp_03",
+        "fetchError": null
+      }
+    },
+    {
+      "_id": "save_mp6vo8h8_e7aawx8",
+      "userId": "user_dummy_harshit",
+      "url": "https://www.tripoto.com/experiences/pottery-workshops-bangalore",
+      "source": "tripoto",
+      "sourceType": "article",
+      "fetchedAt": "2026-05-15T12:12:44.396Z",
+      "fetchStatus": "ok",
+      "metadata": {
+        "title": "Errors",
+        "description": null,
+        "image": null,
+        "siteName": null,
+        "creator": "Tripoto"
+      },
+      "extracted": {
+        "category": "Travel",
+        "subCategory": "Destination",
+        "intent": "Trip Planning",
+        "places": [],
+        "cities": [],
+        "brand": null,
+        "productType": null,
+        "cuisine": null,
+        "vibes": [],
+        "hashtags": [],
+        "mentions": [],
+        "prices": []
+      },
+      "embedding": null,
+      "collections": [],
+      "tags": [
+        "pottery",
+        "workshop",
+        "weekend",
+        "creative"
+      ],
+      "createdAt": "2026-05-15T12:12:44.396Z",
+      "updatedAt": "2026-05-15T12:12:44.396Z",
+      "revisitCount": 0,
+      "lastVisited": null,
+      "_debug": {
+        "seedId": "seed_exp_04",
+        "fetchError": null
+      }
+    },
+    {
+      "_id": "save_mp6vo8qx_6i998hy",
+      "userId": "user_dummy_harshit",
+      "url": "https://www.thrillophilia.com/cities/bangalore",
+      "source": "web",
+      "sourceType": "listing",
+      "fetchedAt": "2026-05-15T12:12:44.745Z",
+      "fetchStatus": "ok",
+      "metadata": {
+        "title": "Bangalore Tourism & Travel Guide | Thrillophilia",
+        "description": "Plan a Bangalore getaway with expert insights on routes, seasons, costs, and itineraries. See how Thrillophilia designs and operates Bangalore travel end-to-end.",
+        "image": "https://media1.thrillophilia.com/filestore/thrillophilia.png?h=100&w=100",
+        "siteName": "https://www.thrillophilia.com/",
+        "creator": "Thrillophilia"
+      },
+      "extracted": {
+        "category": "Travel",
+        "subCategory": "Destination",
+        "intent": "Trip Planning",
+        "places": [
+          "Bangalore"
+        ],
+        "cities": [
+          "Bangalore"
+        ],
+        "brand": null,
+        "productType": null,
+        "cuisine": null,
+        "vibes": [],
+        "hashtags": [],
+        "mentions": [],
+        "prices": []
+      },
+      "embedding": null,
+      "collections": [],
+      "tags": [
+        "activities",
+        "weekend",
+        "bengaluru"
+      ],
+      "createdAt": "2026-05-15T12:12:44.745Z",
+      "updatedAt": "2026-05-15T12:12:44.745Z",
+      "revisitCount": 0,
+      "lastVisited": null,
+      "_debug": {
+        "seedId": "seed_exp_05",
+        "fetchError": null
+      }
+    },
+    {
+      "_id": "save_mp6vo8r4_xd1ax3s",
+      "userId": "user_dummy_harshit",
+      "url": "https://www.airbnb.co.in/s/experiences/Bengaluru",
+      "source": "airbnb",
+      "sourceType": "listing",
+      "fetchedAt": "2026-05-15T12:12:44.752Z",
+      "fetchStatus": "ok",
+      "metadata": {
+        "title": "Page not found - Airbnb",
+        "description": null,
+        "image": null,
+        "siteName": null,
+        "creator": "Airbnb Experiences"
+      },
+      "extracted": {
+        "category": "Travel",
+        "subCategory": "Destination",
+        "intent": "Trip Planning",
+        "places": [],
+        "cities": [],
+        "brand": null,
+        "productType": null,
+        "cuisine": null,
+        "vibes": [],
+        "hashtags": [],
+        "mentions": [],
+        "prices": []
+      },
+      "embedding": null,
+      "collections": [],
+      "tags": [
+        "experiences",
+        "local",
+        "airbnb"
+      ],
+      "createdAt": "2026-05-15T12:12:44.752Z",
+      "updatedAt": "2026-05-15T12:12:44.752Z",
+      "revisitCount": 0,
+      "lastVisited": null,
+      "_debug": {
+        "seedId": "seed_exp_02",
+        "fetchError": null
+      }
+    },
+    {
+      "_id": "save_mp6vo9i1_ijlswpl",
+      "userId": "user_dummy_harshit",
+      "url": "https://www.instagram.com/komalpandeyofficial/",
+      "source": "instagram",
+      "sourceType": "instagram_profile",
+      "fetchedAt": "2026-05-15T12:12:45.721Z",
+      "fetchStatus": "ok",
+      "metadata": {
+        "title": "Komal Pandey (@komalpandeyofficial) • Instagram photos and videos",
+        "description": "2M Followers, 2,583 Following, 3,347 Posts - See Instagram photos and videos from Komal Pandey (@komalpandeyofficial)",
+        "image": "https://scontent.cdninstagram.com/v/t51.82787-19/619874974_18561784492058497_7544884398987847179_n.jpg?stp=dst-jpg_s100x100_tt6&_nc_cat=1&ccb=7-5&_nc_sid=bf7eb4&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLnd3dy4xMDgwLkMzIn0%3D&_nc_ohc=Z8081GNolnwQ7kNvwGSZN6v&_nc_oc=Adpk2u2TOT9Fe9O4oe7LazHjYh4uF2RjkoTsbiLOjIYCkjUkc2ZXnoP8kZwW_QiahaM&_nc_zt=24&_nc_ht=scontent.cdninstagram.com&_nc_gid=V4jSw1rZkVq2G9MCm71EwQ&_nc_ss=7c689&oh=00_Af4pNh6KaYUKlUV_2RPegqWVBekmgK4M8a5RN_vje9WMDA&oe=6A0CE7FE",
+        "siteName": null,
+        "creator": "@komalpandeyofficial"
+      },
+      "extracted": {
+        "category": "Uncategorized",
+        "subCategory": "Creator",
+        "intent": "Save",
+        "places": [],
+        "cities": [],
+        "brand": null,
+        "productType": null,
+        "cuisine": null,
+        "vibes": [
+          "Statement, editorial"
+        ],
+        "hashtags": [],
+        "mentions": [
+          "komalpandeyofficial",
+          "komalpandeyofficial"
+        ],
+        "prices": []
+      },
+      "embedding": null,
+      "collections": [],
+      "tags": [
+        "fashion",
+        "women",
+        "creator",
+        "indian"
+      ],
+      "createdAt": "2026-05-15T12:12:45.721Z",
+      "updatedAt": "2026-05-15T12:12:45.721Z",
+      "revisitCount": 0,
+      "lastVisited": null,
+      "_debug": {
+        "seedId": "seed_fashion_01",
+        "fetchError": null
+      }
+    },
+    {
+      "_id": "save_mp6voaas_mfwuxr7",
+      "userId": "user_dummy_harshit",
+      "url": "https://www.instagram.com/komal.pandey/",
+      "source": "instagram",
+      "sourceType": "instagram_profile",
+      "fetchedAt": "2026-05-15T12:12:46.756Z",
+      "fetchStatus": "ok",
+      "metadata": {
+        "title": "komal pandey (@komal.pandey) • Instagram photos and videos",
+        "description": "6 Followers, 47 Following, 13 Posts - See Instagram photos and videos from komal pandey (@komal.pandey)",
+        "image": "https://scontent.cdninstagram.com/v/t51.2885-19/95426643_708962529872118_7079450278247792640_n.jpg?stp=dst-jpg_s100x100_tt6&_nc_cat=109&ccb=7-5&_nc_sid=bf7eb4&efg=eyJ2ZW5jb2RlX3RhZyI6InByb2ZpbGVfcGljLnd3dy45NjAuQzMifQ%3D%3D&_nc_ohc=iRlGMjV7n2YQ7kNvwHy7gsL&_nc_oc=AdpaZunCnAxMgNdNI-7mWAjvt3AhNv9ITosbZlnZNjHxcGgPXIy1E8iQaE8MgpyUkis&_nc_zt=24&_nc_ht=scontent.cdninstagram.com&_nc_ss=7c689&oh=00_Af40RqzpBItXfkX9iNvYz8A51RAc9s7HfXv_0a331YPtcg&oe=6A0CCF4E",
+        "siteName": null,
+        "creator": "Fashion creator"
+      },
+      "extracted": {
+        "category": "Uncategorized",
+        "subCategory": "Creator",
+        "intent": "Save",
+        "places": [],
+        "cities": [],
+        "brand": null,
+        "productType": null,
+        "cuisine": null,
+        "vibes": [],
+        "hashtags": [],
+        "mentions": [
+          "komal",
+          "komal"
+        ],
+        "prices": []
+      },
+      "embedding": null,
+      "collections": [],
+      "tags": [
+        "fashion",
+        "outfits",
+        "creator"
+      ],
+      "createdAt": "2026-05-15T12:12:46.756Z",
+      "updatedAt": "2026-05-15T12:12:46.756Z",
+      "revisitCount": 0,
+      "lastVisited": null,
+      "_debug": {
+        "seedId": "seed_fashion_02",
+        "fetchError": null
+      }
+    },
+    {
+      "_id": "save_mp6vob37_0ptek1r",
+      "userId": "user_dummy_harshit",
+      "url": "https://nicobar.com/collections/men",
+      "source": "web",
+      "sourceType": "listing",
+      "fetchedAt": "2026-05-15T12:12:47.779Z",
+      "fetchStatus": "ok",
+      "metadata": {
+        "title": "Men",
+        "description": "Since you made it this far, we'd love to tell you about Nicobar's womenswear. We make tops, dresses, kurtas, trousers and more that are fresh, modern, contemporary and designed to be worn in versatile ways and all through the year. Our prints and fabrics are classic (we love a good stripe or polka dot) and all our clot",
+        "image": "https://www.nicobar.com/cdn/shop/products/1_b65049b5-cf96-4c43-8f4e-3f28ac23f1cd_grande.jpg?v=1709801341",
+        "siteName": "Nicobar",
+        "creator": "Nicobar"
+      },
+      "extracted": {
+        "category": "Uncategorized",
+        "subCategory": "Brand",
+        "intent": "Save",
+        "places": [],
+        "cities": [],
+        "brand": "Nicobar",
+        "productType": null,
+        "cuisine": null,
+        "vibes": [],
+        "hashtags": [],
+        "mentions": [],
+        "prices": []
+      },
+      "embedding": null,
+      "collections": [],
+      "tags": [
+        "fashion",
+        "men",
+        "premium"
+      ],
+      "createdAt": "2026-05-15T12:12:47.779Z",
+      "updatedAt": "2026-05-15T12:12:47.779Z",
+      "revisitCount": 0,
+      "lastVisited": null,
+      "_debug": {
+        "seedId": "seed_fashion_05",
+        "fetchError": null
+      }
+    },
+    {
+      "_id": "save_mp6vober_4efthzw",
+      "userId": "user_dummy_harshit",
+      "url": "https://nicobar.com/collections/women",
+      "source": "web",
+      "sourceType": "listing",
+      "fetchedAt": "2026-05-15T12:12:48.195Z",
+      "fetchStatus": "ok",
+      "metadata": {
+        "title": "All Women",
+        "description": "Explore timeless, India-inspired silhouettes crafted in nature-friendly fabrics.",
+        "image": "https://www.nicobar.com/cdn/shop/collections/top-navigation-all-women-hover_b_grande.jpg?v=1730781747",
+        "siteName": "Nicobar",
+        "creator": "Nicobar"
+      },
+      "extracted": {
+        "category": "Uncategorized",
+        "subCategory": "Brand",
+        "intent": "Save",
+        "places": [],
+        "cities": [],
+        "brand": "Nicobar",
+        "productType": null,
+        "cuisine": null,
+        "vibes": [
+          "Modern Indian"
+        ],
+        "hashtags": [],
+        "mentions": [],
+        "prices": []
+      },
+      "embedding": null,
+      "collections": [],
+      "tags": [
+        "fashion",
+        "women",
+        "premium",
+        "indian"
+      ],
+      "createdAt": "2026-05-15T12:12:48.195Z",
+      "updatedAt": "2026-05-15T12:12:48.195Z",
+      "revisitCount": 0,
+      "lastVisited": null,
+      "_debug": {
+        "seedId": "seed_fashion_03",
+        "fetchError": null
+      }
+    },
+    {
+      "_id": "save_mp6vobor_qqcums6",
+      "userId": "user_dummy_harshit",
+      "url": "https://www.thelabellife.com/collections/dresses",
+      "source": "web",
+      "sourceType": "listing",
+      "fetchedAt": "2026-05-15T12:12:48.555Z",
+      "fetchStatus": "ok",
+      "metadata": {
+        "title": "404 Not Found",
+        "description": "TheLabelLife is a decade old contemporary fashion brand that creates transitional hero pieces made to last—accented with elevated details.",
+        "image": "http://thelabellife.com/cdn/shop/files/TLL_logo_Key_small_3e849fb2-cfba-4a57-a90a-f7c11a4b014e.jpg?v=1595939761&width=1200",
+        "siteName": "The Label Life",
+        "creator": "The Label Life"
+      },
+      "extracted": {
+        "category": "Uncategorized",
+        "subCategory": "Brand",
+        "intent": "Save",
+        "places": [],
+        "cities": [],
+        "brand": "The Label Life",
+        "productType": "Dresses",
+        "cuisine": null,
+        "vibes": [],
+        "hashtags": [],
+        "mentions": [],
+        "prices": []
+      },
+      "embedding": null,
+      "collections": [],
+      "tags": [
+        "fashion",
+        "women",
+        "dresses"
+      ],
+      "createdAt": "2026-05-15T12:12:48.555Z",
+      "updatedAt": "2026-05-15T12:12:48.555Z",
+      "revisitCount": 0,
+      "lastVisited": null,
+      "_debug": {
+        "seedId": "seed_fashion_04",
+        "fetchError": null
+      }
+    },
+    {
+      "_id": "save_mp6voc0f_zakf3g4",
+      "userId": "user_dummy_harshit",
+      "url": "https://www.amazon.in/Apple-MacBook-Air-13-3-inch-Display/dp/B0CX23V2ZK",
+      "source": "amazon",
+      "sourceType": "product",
+      "fetchedAt": "2026-05-15T12:12:48.975Z",
+      "fetchStatus": "partial",
+      "metadata": {
+        "title": "MacBook Air M3",
+        "description": null,
+        "image": null,
+        "siteName": null,
+        "creator": "Amazon"
+      },
+      "extracted": {
+        "category": "Shopping",
+        "subCategory": "General",
+        "intent": "Buy",
+        "places": [],
+        "cities": [],
+        "brand": "Apple",
+        "productType": "Laptop",
+        "cuisine": null,
+        "vibes": [],
+        "hashtags": [],
+        "mentions": [],
+        "prices": [
+          {
+            "value": 114900,
+            "currency": "INR"
+          }
+        ]
+      },
+      "embedding": null,
+      "collections": [],
+      "tags": [
+        "macbook",
+        "apple",
+        "laptop",
+        "premium"
+      ],
+      "createdAt": "2026-05-15T12:12:48.975Z",
+      "updatedAt": "2026-05-15T12:12:48.975Z",
+      "revisitCount": 0,
+      "lastVisited": null,
+      "_debug": {
+        "seedId": "seed_tech_02",
+        "fetchError": "Request failed with status code 500"
+      }
+    },
+    {
+      "_id": "save_mp6vodfk_l9uyuf3",
+      "userId": "user_dummy_harshit",
+      "url": "https://www.youtube.com/@mkbhd",
+      "source": "youtube",
+      "sourceType": "youtube_channel",
+      "fetchedAt": "2026-05-15T12:12:50.816Z",
+      "fetchStatus": "ok",
+      "metadata": {
+        "title": "Marques Brownlee",
+        "description": "MKBHD: Quality Tech Videos | YouTuber | Geek | Consumer Electronics | Tech Head | Internet Personality!\n\nbusiness@MKBHD.com\n\nNYC",
+        "image": "https://yt3.googleusercontent.com/qu4TmIaYUlS41-dJ9gZ7DUR3nilvmB5_11i6OKSdvNnBNiyOusZP1bMN6ICnuxtjFBb6ioKgRQ=s900-c-k-c0x00ffffff-no-rj",
+        "siteName": "YouTube",
+        "creator": "MKBHD"
+      },
+      "extracted": {
+        "category": "Uncategorized",
+        "subCategory": "Creator",
+        "intent": "Save",
+        "places": [],
+        "cities": [],
+        "brand": null,
+        "productType": null,
+        "cuisine": null,
+        "vibes": [],
+        "hashtags": [],
+        "mentions": [
+          "MKBHD"
+        ],
+        "prices": []
+      },
+      "embedding": null,
+      "collections": [],
+      "tags": [
+        "tech",
+        "reviews",
+        "gadgets",
+        "creator"
+      ],
+      "createdAt": "2026-05-15T12:12:50.816Z",
+      "updatedAt": "2026-05-15T12:12:50.816Z",
+      "revisitCount": 0,
+      "lastVisited": null,
+      "_debug": {
+        "seedId": "seed_tech_01",
+        "fetchError": null
+      }
+    },
+    {
+      "_id": "save_mp6vodvf_x2w2gpb",
+      "userId": "user_dummy_harshit",
+      "url": "https://www.amazon.in/Logitech-MX-Master-3S-Wireless/dp/B09HM5MZWS",
+      "source": "amazon",
+      "sourceType": "product",
+      "fetchedAt": "2026-05-15T12:12:51.387Z",
+      "fetchStatus": "partial",
+      "metadata": {
+        "title": "Logitech MX Master 3S",
+        "description": null,
+        "image": null,
+        "siteName": null,
+        "creator": "Amazon"
+      },
+      "extracted": {
+        "category": "Shopping",
+        "subCategory": "General",
+        "intent": "Buy",
+        "places": [],
+        "cities": [],
+        "brand": "Logitech",
+        "productType": "Mouse",
+        "cuisine": null,
+        "vibes": [],
+        "hashtags": [],
+        "mentions": [],
+        "prices": [
+          {
+            "value": 9495,
+            "currency": "INR"
+          }
+        ]
+      },
+      "embedding": null,
+      "collections": [],
+      "tags": [
+        "mouse",
+        "wfh",
+        "productivity",
+        "logitech"
+      ],
+      "createdAt": "2026-05-15T12:12:51.387Z",
+      "updatedAt": "2026-05-15T12:12:51.387Z",
+      "revisitCount": 0,
+      "lastVisited": null,
+      "_debug": {
+        "seedId": "seed_tech_04",
+        "fetchError": "Request failed with status code 500"
+      }
+    },
+    {
+      "_id": "save_mp6vof6d_dxlo138",
+      "userId": "user_dummy_harshit",
+      "url": "https://www.youtube.com/@geekyranjit",
+      "source": "youtube",
+      "sourceType": "youtube_channel",
+      "fetchedAt": "2026-05-15T12:12:53.077Z",
+      "fetchStatus": "ok",
+      "metadata": {
+        "title": "Geekyranjit",
+        "description": "Thanks for making this channel the Biggest and most Subscribed English Tech Channel in India! Here you would find Reviews on Gadgets & Smartphones and how to effectively use them in your daily life.\n\nI have been working with computers for over 30 years and being a resident geek I have lot's to share, I have been posting videos on this channel from 2011 so be sure you are subscribed to my Youtube channel, it's free to Subscribe  :)\n\nFor Advertising / other business related enquiries you can mail me via the email listed below, PLEASE NOTE IGNORE e-mails sent to you from any non \"@geekyranjit.com\" e-mail addresses might be from SCAMMERS!  \n\n[DO NOT EMAIL ME regarding any tech support / buying queries those emails will not be answered.]",
+        "image": "https://yt3.googleusercontent.com/ytc/AIdro_mBCGGoIIr8ZiS4VStRD629GxasSwkNlcv8CKtdguxwKqQ=s900-c-k-c0x00ffffff-no-rj",
+        "siteName": "YouTube",
+        "creator": "Geekyranjit"
+      },
+      "extracted": {
+        "category": "Uncategorized",
+        "subCategory": "Creator",
+        "intent": "Save",
+        "places": [],
+        "cities": [],
+        "brand": null,
+        "productType": null,
+        "cuisine": null,
+        "vibes": [],
+        "hashtags": [],
+        "mentions": [
+          "geekyranjit"
+        ],
+        "prices": []
+      },
+      "embedding": null,
+      "collections": [],
+      "tags": [
+        "tech",
+        "reviews",
+        "india",
+        "creator"
+      ],
+      "createdAt": "2026-05-15T12:12:53.077Z",
+      "updatedAt": "2026-05-15T12:12:53.077Z",
+      "revisitCount": 0,
+      "lastVisited": null,
+      "_debug": {
+        "seedId": "seed_tech_05",
+        "fetchError": null
+      }
+    },
+    {
+      "_id": "save_mp6vof6g_jkfr3k1",
+      "userId": "user_dummy_harshit",
+      "url": "https://store.dji.com/in/product/osmo-pocket-3",
+      "source": "web",
+      "sourceType": "product",
+      "fetchedAt": "2026-05-15T12:12:53.080Z",
+      "fetchStatus": "ok",
+      "metadata": {
+        "title": "DJI Osmo Pocket 3",
+        "description": null,
+        "image": null,
+        "siteName": null,
+        "creator": "DJI"
+      },
+      "extracted": {
+        "category": "Uncategorized",
+        "subCategory": "Camera",
+        "intent": "Save",
+        "places": [],
+        "cities": [],
+        "brand": "DJI",
+        "productType": "Vlog camera",
+        "cuisine": null,
+        "vibes": [],
+        "hashtags": [],
+        "mentions": [],
+        "prices": [
+          {
+            "value": 71900,
+            "currency": "INR"
+          }
+        ]
+      },
+      "embedding": null,
+      "collections": [],
+      "tags": [
+        "camera",
+        "vlog",
+        "dji",
+        "tech"
+      ],
+      "createdAt": "2026-05-15T12:12:53.080Z",
+      "updatedAt": "2026-05-15T12:12:53.080Z",
+      "revisitCount": 0,
+      "lastVisited": null,
+      "_debug": {
+        "seedId": "seed_tech_03",
+        "fetchError": null
+      }
+    },
+    {
+      "_id": "save_mp6vofn6_jkj5pmx",
+      "userId": "user_dummy_harshit",
+      "url": "https://www.amazon.in/Creative-Act-Way-Being/dp/0593652886",
+      "source": "amazon",
+      "sourceType": "product",
+      "fetchedAt": "2026-05-15T12:12:53.682Z",
+      "fetchStatus": "ok",
+      "metadata": {
+        "title": "Amazon",
+        "description": "Amazon",
+        "image": "https://m.media-amazon.com/images/G/01/share-icons/previewdoh/amazon.png",
+        "siteName": null,
+        "creator": "Amazon"
+      },
+      "extracted": {
+        "category": "Shopping",
+        "subCategory": "General",
+        "intent": "Buy",
+        "places": [],
+        "cities": [],
+        "brand": null,
+        "productType": null,
+        "cuisine": null,
+        "vibes": [],
+        "hashtags": [],
+        "mentions": [],
+        "prices": [
+          {
+            "value": 599,
+            "currency": "INR"
+          }
+        ]
+      },
+      "embedding": null,
+      "collections": [],
+      "tags": [
+        "book",
+        "creativity",
+        "non-fiction",
+        "rubin"
+      ],
+      "createdAt": "2026-05-15T12:12:53.682Z",
+      "updatedAt": "2026-05-15T12:12:53.682Z",
+      "revisitCount": 0,
+      "lastVisited": null,
+      "_debug": {
+        "seedId": "seed_book_01",
+        "fetchError": null
+      }
+    },
+    {
+      "_id": "save_mp6vogh2_abdoii6",
+      "userId": "user_dummy_harshit",
+      "url": "https://www.instagram.com/champaca.in/",
+      "source": "instagram",
+      "sourceType": "instagram_profile",
+      "fetchedAt": "2026-05-15T12:12:54.758Z",
+      "fetchStatus": "ok",
+      "metadata": {
+        "title": "Instagram",
+        "description": null,
+        "image": null,
+        "siteName": null,
+        "creator": "@champaca.in"
+      },
+      "extracted": {
+        "category": "Uncategorized",
+        "subCategory": "Bookstore",
+        "intent": "Save",
+        "places": [],
+        "cities": [],
+        "brand": null,
+        "productType": null,
+        "cuisine": null,
+        "vibes": [],
+        "hashtags": [],
+        "mentions": [],
+        "prices": []
+      },
+      "embedding": null,
+      "collections": [],
+      "tags": [
+        "books",
+        "bookstore",
+        "bengaluru",
+        "indie"
+      ],
+      "createdAt": "2026-05-15T12:12:54.758Z",
+      "updatedAt": "2026-05-15T12:12:54.758Z",
+      "revisitCount": 0,
+      "lastVisited": null,
+      "_debug": {
+        "seedId": "seed_book_04",
+        "fetchError": null
+      }
+    },
+    {
+      "_id": "save_mp6vogzi_eii5vzx",
+      "userId": "user_dummy_harshit",
+      "url": "https://www.amazon.in/Sapiens-Brief-History-Humankind-Yuval/dp/0099590085",
+      "source": "amazon",
+      "sourceType": "product",
+      "fetchedAt": "2026-05-15T12:12:55.422Z",
+      "fetchStatus": "ok",
+      "metadata": {
+        "title": "Amazon",
+        "description": "Amazon",
+        "image": "https://m.media-amazon.com/images/G/01/share-icons/previewdoh/amazon.png",
+        "siteName": null,
+        "creator": "Amazon"
+      },
+      "extracted": {
+        "category": "Shopping",
+        "subCategory": "General",
+        "intent": "Buy",
+        "places": [],
+        "cities": [],
+        "brand": null,
+        "productType": null,
+        "cuisine": null,
+        "vibes": [],
+        "hashtags": [],
+        "mentions": [],
+        "prices": []
+      },
+      "embedding": null,
+      "collections": [],
+      "tags": [
+        "book",
+        "history",
+        "non-fiction",
+        "sapiens"
+      ],
+      "createdAt": "2026-05-15T12:12:55.422Z",
+      "updatedAt": "2026-05-15T12:12:55.422Z",
+      "revisitCount": 0,
+      "lastVisited": null,
+      "_debug": {
+        "seedId": "seed_book_03",
+        "fetchError": null
+      }
+    },
+    {
+      "_id": "save_mp6voh1v_zlszm6o",
+      "userId": "user_dummy_harshit",
+      "url": "https://champaca.in/",
+      "source": "web",
+      "sourceType": "website",
+      "fetchedAt": "2026-05-15T12:12:55.507Z",
+      "fetchStatus": "ok",
+      "metadata": {
+        "title": "Champaca Bookstore",
+        "description": "Champaca is an independent bookstore, based in Bangalore. A women-owned and run space, we carefully curate our selection to highlight lesser-known voices, publishers and regions. Our online store ships books all across India. Buy our books online!",
+        "image": null,
+        "siteName": "Champaca Bookstore",
+        "creator": "Champaca"
+      },
+      "extracted": {
+        "category": "Uncategorized",
+        "subCategory": "Bookstore",
+        "intent": "Save",
+        "places": [
+          "Champaca Vasanth Nagar",
+          "Champaca Indiranagar"
+        ],
+        "cities": [
+          "Bangalore"
+        ],
+        "brand": null,
+        "productType": null,
+        "cuisine": null,
+        "vibes": [],
+        "hashtags": [],
+        "mentions": [],
+        "prices": []
+      },
+      "embedding": null,
+      "collections": [],
+      "tags": [
+        "bookstore",
+        "cafe",
+        "bengaluru",
+        "indie"
+      ],
+      "createdAt": "2026-05-15T12:12:55.507Z",
+      "updatedAt": "2026-05-15T12:12:55.507Z",
+      "revisitCount": 0,
+      "lastVisited": null,
+      "_debug": {
+        "seedId": "seed_book_05",
+        "fetchError": null
+      }
+    },
+    {
+      "_id": "save_mp6vohpb_xdusa1o",
+      "userId": "user_dummy_harshit",
+      "url": "https://www.goodreads.com/book/show/40121378-atomic-habits",
+      "source": "web",
+      "sourceType": "book_listing",
+      "fetchedAt": "2026-05-15T12:12:56.351Z",
+      "fetchStatus": "ok",
+      "metadata": {
+        "title": "Atomic Habits: An Easy & Proven Way to Build Good Habit…",
+        "description": "No matter your goals, Atomic Habits offers a proven fra…",
+        "image": "https://m.media-amazon.com/images/S/compressed.photo.goodreads.com/books/1655988385i/40121378.jpg",
+        "siteName": "Goodreads",
+        "creator": "Goodreads"
+      },
+      "extracted": {
+        "category": "Uncategorized",
+        "subCategory": "Book",
+        "intent": "Save",
+        "places": [],
+        "cities": [],
+        "brand": null,
+        "productType": null,
+        "cuisine": null,
+        "vibes": [],
+        "hashtags": [],
+        "mentions": [],
+        "prices": []
+      },
+      "embedding": null,
+      "collections": [],
+      "tags": [
+        "book",
+        "habits",
+        "self-help",
+        "clear"
+      ],
+      "createdAt": "2026-05-15T12:12:56.351Z",
+      "updatedAt": "2026-05-15T12:12:56.351Z",
+      "revisitCount": 0,
+      "lastVisited": null,
+      "_debug": {
+        "seedId": "seed_book_02",
+        "fetchError": null
+      }
+    },
+    {
+      "_id": "save_mp6vpxaf_35ldujj",
+      "userId": "user_dummy_harshit",
+      "url": "https://www.myntra.com/sneakers/adidas/adidas-originals-unisex-samba-og-leather-sneakers/22678500/buy",
+      "source": "myntra",
+      "sourceType": "product",
+      "fetchedAt": "2026-05-15T12:14:03.207Z",
+      "fetchStatus": "partial",
+      "metadata": {
+        "title": "Adidas Samba OG sneakers",
+        "description": null,
+        "image": null,
+        "siteName": null,
+        "creator": "Myntra"
+      },
+      "extracted": {
+        "category": "Shopping",
+        "subCategory": "General",
+        "intent": "Buy",
+        "places": [],
+        "cities": [],
+        "brand": "Adidas",
+        "productType": "Sneakers",
+        "cuisine": null,
+        "vibes": [],
+        "hashtags": [],
+        "mentions": [],
+        "prices": [
+          {
+            "value": 9999,
+            "currency": "INR"
+          }
+        ]
+      },
+      "embedding": null,
+      "collections": [],
+      "tags": [
+        "sneakers",
+        "adidas",
+        "samba",
+        "lifestyle"
+      ],
+      "createdAt": "2026-05-15T12:14:03.207Z",
+      "updatedAt": "2026-05-15T12:14:03.207Z",
+      "revisitCount": 0,
+      "lastVisited": null,
+      "_debug": {
+        "seedId": "seed_shop_05",
+        "fetchError": "timeout of 12000ms exceeded"
+      }
+    }
+  ]
+}

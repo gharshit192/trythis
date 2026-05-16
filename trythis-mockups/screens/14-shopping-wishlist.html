@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TryThis · Shopping Wishlist</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css">
+<link rel="stylesheet" href="../shared/theme.css">
+<style>
+.shop { background: var(--paper); min-height: 100%; display: flex; flex-direction: column; }
+.shop-header { padding: 16px 20px 14px; display: flex; justify-content: space-between; align-items: center; }
+.icon-btn { width: 34px; height: 34px; background: var(--linen); border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+.shop-title { padding: 0 20px 14px; }
+
+.summary-row { display: flex; gap: 8px; padding: 0 20px 16px; }
+.summary-card { flex: 1; background: var(--linen); border-radius: 12px; padding: 10px 12px; }
+.summary-label { font-size: 10px; color: var(--slate); letter-spacing: 0.04em; }
+.summary-val { font-size: 18px; font-weight: 600; font-family: var(--font-display); margin-top: 2px; }
+.summary-val.good { color: var(--forest); }
+
+.sale-banner { margin: 0 20px 16px; background: linear-gradient(135deg, var(--amber-link) 0%, #8a3f17 100%); border-radius: 14px; padding: 14px 16px; display: flex; align-items: center; gap: 12px; color: var(--linen); }
+.sale-banner i { font-size: 22px; }
+
+.section-title { padding: 0 20px 10px; font-size: 14px; font-weight: 500; }
+
+.item-card { display: flex; gap: 12px; padding: 12px 20px; align-items: center; }
+.item-card:not(:last-child) { border-bottom: 0.5px solid var(--hairline-soft); }
+.item-thumb { width: 64px; height: 64px; border-radius: 12px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; position: relative; }
+.item-thumb i { font-size: 26px; color: var(--forest); }
+.item-badge { position: absolute; top: -4px; right: -4px; background: var(--amber-link); color: var(--linen); font-size: 9px; padding: 2px 5px; border-radius: 999px; font-weight: 500; }
+.item-info { flex: 1; }
+.item-name { font-size: 13px; font-weight: 500; }
+.item-brand { font-size: 11px; color: var(--slate); margin-top: 2px; }
+.item-price { display: flex; align-items: baseline; gap: 6px; margin-top: 4px; }
+.price-now { font-size: 13px; font-weight: 600; color: var(--forest); }
+.price-old { font-size: 11px; color: var(--mute); text-decoration: line-through; }
+.price-drop { font-size: 10px; color: var(--amber-link); font-weight: 500; }
+</style>
+</head>
+<body>
+<div class="phone-frame">
+  <div class="phone-notch"></div>
+  <div class="shop">
+
+    <div class="status-bar">
+      <span>9:41</span>
+      <div class="status-icons">
+        <i class="ti ti-signal-4g" style="font-size: 14px;"></i>
+        <i class="ti ti-wifi" style="font-size: 14px;"></i>
+        <i class="ti ti-battery-3" style="font-size: 14px;"></i>
+      </div>
+    </div>
+
+    <div class="shop-header">
+      <div class="icon-btn"><i class="ti ti-arrow-left" style="font-size: 16px;"></i></div>
+      <span style="font-size: 13px; color: var(--slate); display: flex; align-items: center; gap: 4px;">
+        <i class="ti ti-sparkles" style="font-size: 11px; color: var(--forest);"></i> Auto
+      </span>
+      <div class="icon-btn"><i class="ti ti-dots" style="font-size: 16px;"></i></div>
+    </div>
+
+    <div class="shop-title">
+      <h1 class="display" style="font-size: 24px;">Shopping wishlist</h1>
+      <p style="font-size: 13px; color: var(--slate); margin-top: 4px;">19 items · 3 on sale right now</p>
+    </div>
+
+    <div class="summary-row">
+      <div class="summary-card">
+        <p class="summary-label">SAVED VALUE</p>
+        <p class="summary-val">₹54,200</p>
+      </div>
+      <div class="summary-card">
+        <p class="summary-label">DROPPED</p>
+        <p class="summary-val good">₹8,400</p>
+      </div>
+      <div class="summary-card">
+        <p class="summary-label">IN STOCK</p>
+        <p class="summary-val">17/19</p>
+      </div>
+    </div>
+
+    <div class="sale-banner">
+      <i class="ti ti-tag"></i>
+      <div style="flex: 1;">
+        <p style="font-size: 13px; font-weight: 500;">Big Billion Days starts Aug 22</p>
+        <p style="font-size: 11px; opacity: 0.85; margin-top: 2px;">4 saved items expected to drop</p>
+      </div>
+      <i class="ti ti-arrow-right" style="font-size: 16px;"></i>
+    </div>
+
+    <p class="section-title">Price changed</p>
+
+    <div class="item-card">
+      <div class="item-thumb" style="background: var(--dune);">
+        <i class="ti ti-shoe"></i>
+        <div class="item-badge">-22%</div>
+      </div>
+      <div class="item-info">
+        <p class="item-name">Air Max 90 'Sail'</p>
+        <p class="item-brand">Nike · Flipkart</p>
+        <div class="item-price">
+          <span class="price-now">₹6,995</span>
+          <span class="price-old">₹8,995</span>
+          <span class="price-drop">-₹2,000</span>
+        </div>
+      </div>
+      <i class="ti ti-chevron-right" style="font-size: 14px; color: var(--mute);"></i>
+    </div>
+
+    <div class="item-card">
+      <div class="item-thumb" style="background: var(--mist);">
+        <i class="ti ti-headphones"></i>
+        <div class="item-badge">-15%</div>
+      </div>
+      <div class="item-info">
+        <p class="item-name">Sony WH-1000XM5</p>
+        <p class="item-brand">Sony · Amazon</p>
+        <div class="item-price">
+          <span class="price-now">₹24,990</span>
+          <span class="price-old">₹29,990</span>
+          <span class="price-drop">-₹5,000</span>
+        </div>
+      </div>
+      <i class="ti ti-chevron-right" style="font-size: 14px; color: var(--mute);"></i>
+    </div>
+
+    <div class="item-card">
+      <div class="item-thumb" style="background: var(--clay);">
+        <i class="ti ti-shirt"></i>
+      </div>
+      <div class="item-info">
+        <p class="item-name">Linen kurta set</p>
+        <p class="item-brand">Suta · Suta.in</p>
+        <div class="item-price">
+          <span class="price-now">₹2,400</span>
+          <span style="font-size: 10px; color: var(--slate);">Stable</span>
+        </div>
+      </div>
+      <i class="ti ti-chevron-right" style="font-size: 14px; color: var(--mute);"></i>
+    </div>
+
+    <p class="section-title" style="padding-top: 12px;">Back in stock</p>
+
+    <div class="item-card">
+      <div class="item-thumb" style="background: var(--sage);">
+        <i class="ti ti-keyboard"></i>
+      </div>
+      <div class="item-info">
+        <p class="item-name">Keychron Q1 Pro</p>
+        <p class="item-brand">Keychron · Available again</p>
+        <div class="item-price">
+          <span class="price-now">₹22,400</span>
+        </div>
+      </div>
+      <i class="ti ti-chevron-right" style="font-size: 14px; color: var(--mute);"></i>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

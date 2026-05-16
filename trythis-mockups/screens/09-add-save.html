@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TryThis · Add a Save</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css">
+<link rel="stylesheet" href="../shared/theme.css">
+<style>
+.bg-blur { background: rgba(14,14,12,0.45); min-height: 100%; display: flex; flex-direction: column; justify-content: flex-end; }
+.sheet { background: var(--paper); border-radius: 24px 24px 0 0; padding: 16px 20px 32px; }
+.handle { width: 36px; height: 4px; background: var(--hairline); border-radius: 2px; margin: 0 auto 18px; }
+.action { background: var(--linen); border-radius: 14px; padding: 14px; display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+.action-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.action-icon.primary { background: var(--forest); }
+.action-icon.primary i { color: var(--linen); font-size: 18px; }
+.action-icon.secondary { background: var(--paper); border: 0.5px solid var(--hairline); }
+.action-icon.secondary i { color: var(--forest); font-size: 18px; }
+.clip-card { background: var(--paper); border: 1px dashed var(--sand); border-radius: 12px; padding: 12px 14px; display: flex; align-items: center; gap: 10px; margin-top: 12px; }
+</style>
+</head>
+<body>
+<div class="phone-frame">
+  <div class="phone-notch"></div>
+  <div class="bg-blur">
+
+    <div class="sheet">
+      <div class="handle"></div>
+
+      <h2 class="display" style="font-size: 20px; margin-bottom: 4px;">Add a save</h2>
+      <p style="font-size: 13px; color: var(--slate); margin-bottom: 20px;">Paste it, snap it, or share from any app.</p>
+
+      <div class="action">
+        <div class="action-icon primary"><i class="ti ti-link"></i></div>
+        <div style="flex: 1;">
+          <p style="font-size: 14px; font-weight: 500;">Paste a link</p>
+          <p style="font-size: 12px; color: var(--slate); margin-top: 2px;">Instagram, YouTube, or any URL</p>
+        </div>
+        <i class="ti ti-chevron-right" style="font-size: 16px; color: var(--mute);"></i>
+      </div>
+
+      <div class="action">
+        <div class="action-icon secondary"><i class="ti ti-photo"></i></div>
+        <div style="flex: 1;">
+          <p style="font-size: 14px; font-weight: 500;">Upload screenshots</p>
+          <p style="font-size: 12px; color: var(--slate); margin-top: 2px;">We'll categorize and summarize them</p>
+        </div>
+        <i class="ti ti-chevron-right" style="font-size: 16px; color: var(--mute);"></i>
+      </div>
+
+      <div class="action">
+        <div class="action-icon secondary"><i class="ti ti-camera"></i></div>
+        <div style="flex: 1;">
+          <p style="font-size: 14px; font-weight: 500;">Snap a photo</p>
+          <p style="font-size: 12px; color: var(--slate); margin-top: 2px;">Menu, signboard, anything</p>
+        </div>
+        <i class="ti ti-chevron-right" style="font-size: 16px; color: var(--mute);"></i>
+      </div>
+
+      <div class="clip-card">
+        <i class="ti ti-clipboard" style="font-size: 16px; color: var(--forest);"></i>
+        <div style="flex: 1;">
+          <p style="font-size: 12px; color: var(--slate);">We found a link on your clipboard</p>
+          <p style="font-size: 12px; color: var(--forest); font-weight: 500; margin-top: 2px;">instagram.com/reel/C8x…</p>
+        </div>
+        <span style="font-size: 13px; color: var(--forest); font-weight: 500;">Save</span>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

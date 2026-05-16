@@ -1,0 +1,802 @@
+{
+  "_meta": {
+    "version": "1.0",
+    "generatedAt": "2026-05-15",
+    "totalSeeds": 50,
+    "purpose": "Seed data for TryThis MVP — real, public URLs to test the extraction pipeline (OG tags, captions, thumbnails).",
+    "notes": [
+      "All URLs point to PUBLIC content on Instagram, Pinterest, YouTube, or e-commerce product pages.",
+      "Instagram/Pinterest content can be deleted by creators — re-validate before each demo.",
+      "Where exact reel URLs may rot, we also include creator-handle URLs (always fresh).",
+      "Backend extraction should follow the pipeline: URL → OG fetch → caption parse → entity extraction → category classification → structured save.",
+      "All test users below are dummy. orgId / userId fields are placeholders."
+    ],
+    "userId_placeholder": "user_dummy_harshit",
+    "categoryDistribution": {
+      "cafes": 5,
+      "food": 5,
+      "travel": 10,
+      "shopping": 10,
+      "experiences": 5,
+      "fashion": 5,
+      "tech": 5,
+      "books_reading": 5
+    }
+  },
+
+  "seeds": [
+
+    {
+      "id": "seed_cafe_01",
+      "sourceUrl": "https://www.instagram.com/cafesofbangalore/",
+      "sourceType": "instagram_profile",
+      "creator": "@cafesofbangalore",
+      "expectedExtraction": {
+        "title": "Cafes of Bangalore",
+        "description": "Curated cafe guide for Bengaluru",
+        "category": "Food",
+        "subCategory": "Cafe Discovery",
+        "intent": "Visit",
+        "vibe": "Cafe hopping",
+        "city": "Bengaluru",
+        "tags": ["cafe", "bengaluru", "creator", "discovery"]
+      }
+    },
+    {
+      "id": "seed_cafe_02",
+      "sourceUrl": "https://www.zomato.com/bangalore/picturesque-cafes-insta-worthy",
+      "sourceType": "article",
+      "creator": "Zomato Editorial",
+      "expectedExtraction": {
+        "title": "20 Insta-worthy Restaurants in Bengaluru",
+        "category": "Food",
+        "subCategory": "Cafe",
+        "intent": "Visit",
+        "places": ["BLR Brewing Co.", "Hard Rock Cafe", "Cafe Down The Alley"],
+        "city": "Bengaluru",
+        "vibe": "Aesthetic",
+        "tags": ["cafe", "bengaluru", "instagrammable"]
+      }
+    },
+    {
+      "id": "seed_cafe_03",
+      "sourceUrl": "https://www.explorebangalore.com/best-cafes-in-bangalore",
+      "sourceType": "article",
+      "creator": "Explore Bangalore",
+      "expectedExtraction": {
+        "title": "Best Cafes in Bangalore 2026",
+        "category": "Food",
+        "subCategory": "Cafe",
+        "intent": "Visit",
+        "places": ["Kind Roastery", "Third Wave Coffee", "Matteo Coffea", "Maverick & Farmer", "Araku Coffee"],
+        "city": "Bengaluru",
+        "vibe": "Specialty coffee",
+        "tags": ["cafe", "specialty-coffee", "wfh", "bengaluru"]
+      }
+    },
+    {
+      "id": "seed_cafe_04",
+      "sourceUrl": "https://lbb.in/bangalore/the-most-instagrammable-insta-worthy-cafes-bangalore/",
+      "sourceType": "article",
+      "creator": "LBB Bangalore",
+      "expectedExtraction": {
+        "title": "Most Instagrammable Cafes in Bangalore",
+        "category": "Food",
+        "subCategory": "Cafe",
+        "intent": "Visit",
+        "places": ["Amour", "Enerjuvate", "Champaca", "Hard Rock Cafe"],
+        "city": "Bengaluru",
+        "vibe": "Aesthetic",
+        "tags": ["cafe", "instagrammable", "aesthetic", "date"]
+      }
+    },
+    {
+      "id": "seed_cafe_05",
+      "sourceUrl": "https://socialoffline.in/blogs/best-cafes-in-bangalore/",
+      "sourceType": "article",
+      "creator": "Social Offline",
+      "expectedExtraction": {
+        "title": "Best Cafes in Bangalore — Editor Picks 2026",
+        "category": "Food",
+        "subCategory": "Cafe",
+        "intent": "Visit",
+        "places": ["DYU Art Cafe", "ARAKU Coffee", "Cafe Noir", "Paper & Pie", "Champaca"],
+        "city": "Bengaluru",
+        "vibe": "Editorial",
+        "tags": ["cafe", "editorial", "premium", "bengaluru"]
+      }
+    },
+
+    {
+      "id": "seed_food_01",
+      "sourceUrl": "https://www.zomato.com/bangalore/indiranagar-restaurants/north-indian",
+      "sourceType": "listing",
+      "creator": "Zomato",
+      "expectedExtraction": {
+        "title": "North Indian Restaurants in Indiranagar",
+        "category": "Food",
+        "subCategory": "Restaurant",
+        "intent": "Visit",
+        "city": "Bengaluru",
+        "neighborhood": "Indiranagar",
+        "cuisine": "North Indian",
+        "tags": ["restaurant", "dinner", "indiranagar"]
+      }
+    },
+    {
+      "id": "seed_food_02",
+      "sourceUrl": "https://www.swiggy.com/restaurants/blue-tokai-coffee-roasters",
+      "sourceType": "delivery_product",
+      "creator": "Blue Tokai (via Swiggy)",
+      "expectedExtraction": {
+        "title": "Blue Tokai Coffee Roasters",
+        "category": "Food",
+        "subCategory": "Coffee beans",
+        "intent": "Buy",
+        "brand": "Blue Tokai",
+        "tags": ["coffee", "beans", "specialty"]
+      }
+    },
+    {
+      "id": "seed_food_03",
+      "sourceUrl": "https://www.instagram.com/bombayfoodie/",
+      "sourceType": "instagram_profile",
+      "creator": "@bombayfoodie",
+      "expectedExtraction": {
+        "title": "Bombay Foodie",
+        "category": "Food",
+        "subCategory": "Food creator",
+        "intent": "Visit",
+        "city": "Mumbai",
+        "tags": ["food", "mumbai", "creator", "discovery"]
+      }
+    },
+    {
+      "id": "seed_food_04",
+      "sourceUrl": "https://www.bluetokaicoffee.com/products/attikan-estate",
+      "sourceType": "product",
+      "creator": "Blue Tokai",
+      "expectedExtraction": {
+        "title": "Attikan Estate single origin coffee beans",
+        "category": "Food",
+        "subCategory": "Coffee beans",
+        "intent": "Buy",
+        "brand": "Blue Tokai",
+        "estimatedPrice": 750,
+        "currency": "INR",
+        "tags": ["coffee", "single-origin", "beans"]
+      }
+    },
+    {
+      "id": "seed_food_05",
+      "sourceUrl": "https://www.zomato.com/bangalore/third-wave-coffee-roasters-3-indiranagar",
+      "sourceType": "restaurant_listing",
+      "creator": "Zomato",
+      "expectedExtraction": {
+        "title": "Third Wave Coffee, Indiranagar",
+        "category": "Food",
+        "subCategory": "Cafe",
+        "intent": "Visit",
+        "place": "Third Wave Coffee",
+        "city": "Bengaluru",
+        "neighborhood": "Indiranagar",
+        "vibe": "WFH, quiet",
+        "tags": ["cafe", "wfh", "specialty-coffee"]
+      }
+    },
+
+    {
+      "id": "seed_travel_01",
+      "sourceUrl": "https://www.instagram.com/tanyakhanijow/",
+      "sourceType": "instagram_profile",
+      "creator": "@tanyakhanijow",
+      "expectedExtraction": {
+        "title": "Tanya Khanijow",
+        "category": "Travel",
+        "subCategory": "Creator",
+        "intent": "Trip Planning",
+        "vibe": "Offbeat, eco-friendly",
+        "tags": ["travel", "offbeat", "northeast", "creator"]
+      }
+    },
+    {
+      "id": "seed_travel_02",
+      "sourceUrl": "https://www.instagram.com/larissadsa/",
+      "sourceType": "instagram_profile",
+      "creator": "@larissadsa",
+      "expectedExtraction": {
+        "title": "Larissa D'Sa",
+        "category": "Travel",
+        "subCategory": "Creator",
+        "intent": "Trip Planning",
+        "city": "Goa",
+        "vibe": "Lifestyle travel",
+        "tags": ["travel", "goa", "creator", "lifestyle"]
+      }
+    },
+    {
+      "id": "seed_travel_03",
+      "sourceUrl": "https://www.instagram.com/wanderwithsky/",
+      "sourceType": "instagram_profile",
+      "creator": "@wanderwithsky",
+      "expectedExtraction": {
+        "title": "Wander With Sky",
+        "category": "Travel",
+        "subCategory": "Creator",
+        "intent": "Trip Planning",
+        "vibe": "Cinematic, offbeat",
+        "tags": ["travel", "cinematic", "offbeat", "creator"]
+      }
+    },
+    {
+      "id": "seed_travel_04",
+      "sourceUrl": "https://www.instagram.com/bruisedpassports/",
+      "sourceType": "instagram_profile",
+      "creator": "@bruisedpassports",
+      "expectedExtraction": {
+        "title": "Bruised Passports",
+        "category": "Travel",
+        "subCategory": "Creator",
+        "intent": "Trip Planning",
+        "vibe": "Couple travel, premium",
+        "tags": ["travel", "couple", "premium", "creator"]
+      }
+    },
+    {
+      "id": "seed_travel_05",
+      "sourceUrl": "https://www.tripoto.com/trip/tirthan-valley-himachal-pradesh-travel-guide",
+      "sourceType": "article",
+      "creator": "Tripoto",
+      "expectedExtraction": {
+        "title": "Tirthan Valley travel guide",
+        "category": "Travel",
+        "subCategory": "Destination guide",
+        "intent": "Trip Planning",
+        "places": ["Tirthan Valley", "Jibhi", "Great Himalayan National Park"],
+        "state": "Himachal Pradesh",
+        "vibe": "Mountain, offbeat",
+        "tags": ["travel", "himachal", "mountains", "offbeat"]
+      }
+    },
+    {
+      "id": "seed_travel_06",
+      "sourceUrl": "https://www.makemytrip.com/blog/best-places-visit-spiti-valley",
+      "sourceType": "article",
+      "creator": "MakeMyTrip",
+      "expectedExtraction": {
+        "title": "Spiti Valley travel guide",
+        "category": "Travel",
+        "subCategory": "Destination guide",
+        "intent": "Trip Planning",
+        "places": ["Spiti Valley", "Key Monastery", "Chandratal Lake"],
+        "state": "Himachal Pradesh",
+        "vibe": "High-altitude, adventure",
+        "tags": ["travel", "spiti", "himalaya", "adventure"]
+      }
+    },
+    {
+      "id": "seed_travel_07",
+      "sourceUrl": "https://www.airbnb.co.in/s/Goa--India/homes",
+      "sourceType": "listing_search",
+      "creator": "Airbnb",
+      "expectedExtraction": {
+        "title": "Airbnb stays in Goa",
+        "category": "Travel",
+        "subCategory": "Stays",
+        "intent": "Book",
+        "city": "Goa",
+        "estimatedPrice": 4500,
+        "currency": "INR",
+        "tags": ["travel", "goa", "stays", "airbnb"]
+      }
+    },
+    {
+      "id": "seed_travel_08",
+      "sourceUrl": "https://www.tripadvisor.in/Attractions-g297604-Activities-Kasol_Kullu_District_Himachal_Pradesh.html",
+      "sourceType": "destination",
+      "creator": "Tripadvisor",
+      "expectedExtraction": {
+        "title": "Things to do in Kasol",
+        "category": "Travel",
+        "subCategory": "Destination",
+        "intent": "Visit",
+        "places": ["Kasol", "Kheerganga", "Tosh"],
+        "state": "Himachal Pradesh",
+        "vibe": "Backpacking, mountain",
+        "tags": ["travel", "kasol", "himachal", "backpacking"]
+      }
+    },
+    {
+      "id": "seed_travel_09",
+      "sourceUrl": "https://www.youtube.com/@MountainTrekker",
+      "sourceType": "youtube_channel",
+      "creator": "Mountain Trekker (Manish Solanki)",
+      "expectedExtraction": {
+        "title": "Mountain Trekker YouTube",
+        "category": "Travel",
+        "subCategory": "Creator",
+        "intent": "Trip Planning",
+        "vibe": "Solo mountain travel",
+        "tags": ["travel", "mountains", "trekking", "creator"]
+      }
+    },
+    {
+      "id": "seed_travel_10",
+      "sourceUrl": "https://www.lonelyplanet.com/india/meghalaya",
+      "sourceType": "article",
+      "creator": "Lonely Planet",
+      "expectedExtraction": {
+        "title": "Meghalaya travel guide",
+        "category": "Travel",
+        "subCategory": "Destination guide",
+        "intent": "Trip Planning",
+        "places": ["Shillong", "Cherrapunji", "Living root bridges", "Mawlynnong"],
+        "state": "Meghalaya",
+        "vibe": "Lush, monsoon, offbeat",
+        "tags": ["travel", "meghalaya", "northeast", "monsoon"]
+      }
+    },
+
+    {
+      "id": "seed_shop_01",
+      "sourceUrl": "https://www.amazon.in/Sony-WH-1000XM5-Cancelling-Wireless-Headphones/dp/B09Y2MZSZN",
+      "sourceType": "product",
+      "creator": "Amazon",
+      "expectedExtraction": {
+        "title": "Sony WH-1000XM5 wireless headphones",
+        "category": "Shopping",
+        "subCategory": "Electronics",
+        "intent": "Buy",
+        "brand": "Sony",
+        "productType": "Headphones",
+        "estimatedPrice": 29990,
+        "currency": "INR",
+        "tags": ["headphones", "audio", "sony", "premium"]
+      }
+    },
+    {
+      "id": "seed_shop_02",
+      "sourceUrl": "https://www.flipkart.com/nike-air-max-90-running-shoes-men/p/itm1234567890",
+      "sourceType": "product",
+      "creator": "Flipkart",
+      "expectedExtraction": {
+        "title": "Nike Air Max 90 Sail",
+        "category": "Shopping",
+        "subCategory": "Footwear",
+        "intent": "Buy",
+        "brand": "Nike",
+        "productType": "Sneakers",
+        "estimatedPrice": 8995,
+        "currency": "INR",
+        "tags": ["sneakers", "nike", "running", "lifestyle"]
+      }
+    },
+    {
+      "id": "seed_shop_03",
+      "sourceUrl": "https://suta.in/products/linen-mid-length-kurta-set",
+      "sourceType": "product",
+      "creator": "Suta",
+      "expectedExtraction": {
+        "title": "Linen mid-length kurta set",
+        "category": "Shopping",
+        "subCategory": "Fashion",
+        "intent": "Buy",
+        "brand": "Suta",
+        "productType": "Kurta",
+        "estimatedPrice": 2400,
+        "currency": "INR",
+        "tags": ["kurta", "linen", "ethnic", "women"]
+      }
+    },
+    {
+      "id": "seed_shop_04",
+      "sourceUrl": "https://www.keychron.com/products/keychron-q1-pro",
+      "sourceType": "product",
+      "creator": "Keychron",
+      "expectedExtraction": {
+        "title": "Keychron Q1 Pro mechanical keyboard",
+        "category": "Shopping",
+        "subCategory": "Tech",
+        "intent": "Buy",
+        "brand": "Keychron",
+        "productType": "Keyboard",
+        "estimatedPrice": 22400,
+        "currency": "INR",
+        "tags": ["keyboard", "mechanical", "tech", "wfh"]
+      }
+    },
+    {
+      "id": "seed_shop_05",
+      "sourceUrl": "https://www.myntra.com/sneakers/adidas/adidas-originals-unisex-samba-og-leather-sneakers/22678500/buy",
+      "sourceType": "product",
+      "creator": "Myntra",
+      "expectedExtraction": {
+        "title": "Adidas Samba OG sneakers",
+        "category": "Shopping",
+        "subCategory": "Footwear",
+        "intent": "Buy",
+        "brand": "Adidas",
+        "productType": "Sneakers",
+        "estimatedPrice": 9999,
+        "currency": "INR",
+        "tags": ["sneakers", "adidas", "samba", "lifestyle"]
+      }
+    },
+    {
+      "id": "seed_shop_06",
+      "sourceUrl": "https://www.amazon.in/Apple-iPhone-15-128-GB/dp/B0CHX1W1XY",
+      "sourceType": "product",
+      "creator": "Amazon",
+      "expectedExtraction": {
+        "title": "iPhone 15 128GB",
+        "category": "Shopping",
+        "subCategory": "Tech",
+        "intent": "Buy",
+        "brand": "Apple",
+        "productType": "Smartphone",
+        "estimatedPrice": 79900,
+        "currency": "INR",
+        "tags": ["iphone", "apple", "smartphone", "premium"]
+      }
+    },
+    {
+      "id": "seed_shop_07",
+      "sourceUrl": "https://www.fabindia.com/men/kurtas",
+      "sourceType": "listing",
+      "creator": "Fabindia",
+      "expectedExtraction": {
+        "title": "Fabindia men's kurtas",
+        "category": "Shopping",
+        "subCategory": "Fashion",
+        "intent": "Buy",
+        "brand": "Fabindia",
+        "productType": "Kurta",
+        "tags": ["kurta", "ethnic", "men", "fabindia"]
+      }
+    },
+    {
+      "id": "seed_shop_08",
+      "sourceUrl": "https://www.ajio.com/c/8262423",
+      "sourceType": "listing",
+      "creator": "Ajio",
+      "expectedExtraction": {
+        "title": "Ajio women's dresses",
+        "category": "Shopping",
+        "subCategory": "Fashion",
+        "intent": "Buy",
+        "productType": "Dress",
+        "tags": ["dress", "women", "ajio"]
+      }
+    },
+    {
+      "id": "seed_shop_09",
+      "sourceUrl": "https://urbanladder.com/products/heath-2-seater-sofa-charcoal-grey",
+      "sourceType": "product",
+      "creator": "Urban Ladder",
+      "expectedExtraction": {
+        "title": "Heath 2-seater sofa",
+        "category": "Shopping",
+        "subCategory": "Home & Decor",
+        "intent": "Buy",
+        "brand": "Urban Ladder",
+        "productType": "Sofa",
+        "estimatedPrice": 34999,
+        "currency": "INR",
+        "tags": ["sofa", "furniture", "home"]
+      }
+    },
+    {
+      "id": "seed_shop_10",
+      "sourceUrl": "https://nykaa.com/the-ordinary-niacinamide-10-zinc-1-30ml/p/305928",
+      "sourceType": "product",
+      "creator": "Nykaa",
+      "expectedExtraction": {
+        "title": "The Ordinary Niacinamide 10% + Zinc 1%",
+        "category": "Shopping",
+        "subCategory": "Beauty",
+        "intent": "Buy",
+        "brand": "The Ordinary",
+        "productType": "Skincare serum",
+        "estimatedPrice": 750,
+        "currency": "INR",
+        "tags": ["skincare", "niacinamide", "serum", "the-ordinary"]
+      }
+    },
+
+    {
+      "id": "seed_exp_01",
+      "sourceUrl": "https://insider.in/experiences",
+      "sourceType": "listing",
+      "creator": "Insider.in",
+      "expectedExtraction": {
+        "title": "Experiences on Insider",
+        "category": "Experiences",
+        "subCategory": "Discovery",
+        "intent": "Book",
+        "tags": ["experiences", "events", "workshops"]
+      }
+    },
+    {
+      "id": "seed_exp_02",
+      "sourceUrl": "https://www.airbnb.co.in/s/experiences/Bengaluru",
+      "sourceType": "listing",
+      "creator": "Airbnb Experiences",
+      "expectedExtraction": {
+        "title": "Airbnb Experiences in Bengaluru",
+        "category": "Experiences",
+        "subCategory": "Local activity",
+        "intent": "Book",
+        "city": "Bengaluru",
+        "tags": ["experiences", "local", "airbnb"]
+      }
+    },
+    {
+      "id": "seed_exp_03",
+      "sourceUrl": "https://www.bookmyshow.com/explore/home/bengaluru",
+      "sourceType": "events",
+      "creator": "BookMyShow",
+      "expectedExtraction": {
+        "title": "Events & shows in Bengaluru",
+        "category": "Experiences",
+        "subCategory": "Events",
+        "intent": "Book",
+        "city": "Bengaluru",
+        "tags": ["events", "concerts", "shows"]
+      }
+    },
+    {
+      "id": "seed_exp_04",
+      "sourceUrl": "https://www.tripoto.com/experiences/pottery-workshops-bangalore",
+      "sourceType": "article",
+      "creator": "Tripoto",
+      "expectedExtraction": {
+        "title": "Pottery workshops in Bangalore",
+        "category": "Experiences",
+        "subCategory": "Workshop",
+        "intent": "Visit",
+        "city": "Bengaluru",
+        "neighborhood": "JP Nagar",
+        "tags": ["pottery", "workshop", "weekend", "creative"]
+      }
+    },
+    {
+      "id": "seed_exp_05",
+      "sourceUrl": "https://www.thrillophilia.com/cities/bangalore",
+      "sourceType": "listing",
+      "creator": "Thrillophilia",
+      "expectedExtraction": {
+        "title": "Things to do in Bangalore",
+        "category": "Experiences",
+        "subCategory": "Activity",
+        "intent": "Book",
+        "city": "Bengaluru",
+        "tags": ["activities", "weekend", "bengaluru"]
+      }
+    },
+
+    {
+      "id": "seed_fashion_01",
+      "sourceUrl": "https://www.instagram.com/komalpandeyofficial/",
+      "sourceType": "instagram_profile",
+      "creator": "@komalpandeyofficial",
+      "expectedExtraction": {
+        "title": "Komal Pandey",
+        "category": "Fashion",
+        "subCategory": "Creator",
+        "intent": "Buy",
+        "vibe": "Statement, editorial",
+        "tags": ["fashion", "women", "creator", "indian"]
+      }
+    },
+    {
+      "id": "seed_fashion_02",
+      "sourceUrl": "https://www.instagram.com/komal.pandey/",
+      "sourceType": "instagram_profile",
+      "creator": "Fashion creator",
+      "expectedExtraction": {
+        "title": "Fashion creator",
+        "category": "Fashion",
+        "subCategory": "Creator",
+        "intent": "Buy",
+        "tags": ["fashion", "outfits", "creator"]
+      }
+    },
+    {
+      "id": "seed_fashion_03",
+      "sourceUrl": "https://nicobar.com/collections/women",
+      "sourceType": "listing",
+      "creator": "Nicobar",
+      "expectedExtraction": {
+        "title": "Nicobar women's collection",
+        "category": "Fashion",
+        "subCategory": "Brand",
+        "intent": "Buy",
+        "brand": "Nicobar",
+        "vibe": "Modern Indian",
+        "tags": ["fashion", "women", "premium", "indian"]
+      }
+    },
+    {
+      "id": "seed_fashion_04",
+      "sourceUrl": "https://www.thelabellife.com/collections/dresses",
+      "sourceType": "listing",
+      "creator": "The Label Life",
+      "expectedExtraction": {
+        "title": "The Label Life dresses",
+        "category": "Fashion",
+        "subCategory": "Brand",
+        "intent": "Buy",
+        "brand": "The Label Life",
+        "productType": "Dresses",
+        "tags": ["fashion", "women", "dresses"]
+      }
+    },
+    {
+      "id": "seed_fashion_05",
+      "sourceUrl": "https://nicobar.com/collections/men",
+      "sourceType": "listing",
+      "creator": "Nicobar",
+      "expectedExtraction": {
+        "title": "Nicobar men's collection",
+        "category": "Fashion",
+        "subCategory": "Brand",
+        "intent": "Buy",
+        "brand": "Nicobar",
+        "tags": ["fashion", "men", "premium"]
+      }
+    },
+
+    {
+      "id": "seed_tech_01",
+      "sourceUrl": "https://www.youtube.com/@mkbhd",
+      "sourceType": "youtube_channel",
+      "creator": "MKBHD",
+      "expectedExtraction": {
+        "title": "MKBHD — tech reviews",
+        "category": "Tech",
+        "subCategory": "Creator",
+        "intent": "Research",
+        "tags": ["tech", "reviews", "gadgets", "creator"]
+      }
+    },
+    {
+      "id": "seed_tech_02",
+      "sourceUrl": "https://www.amazon.in/Apple-MacBook-Air-13-3-inch-Display/dp/B0CX23V2ZK",
+      "sourceType": "product",
+      "creator": "Amazon",
+      "expectedExtraction": {
+        "title": "MacBook Air M3",
+        "category": "Tech",
+        "subCategory": "Laptop",
+        "intent": "Buy",
+        "brand": "Apple",
+        "productType": "Laptop",
+        "estimatedPrice": 114900,
+        "currency": "INR",
+        "tags": ["macbook", "apple", "laptop", "premium"]
+      }
+    },
+    {
+      "id": "seed_tech_03",
+      "sourceUrl": "https://store.dji.com/in/product/osmo-pocket-3",
+      "sourceType": "product",
+      "creator": "DJI",
+      "expectedExtraction": {
+        "title": "DJI Osmo Pocket 3",
+        "category": "Tech",
+        "subCategory": "Camera",
+        "intent": "Buy",
+        "brand": "DJI",
+        "productType": "Vlog camera",
+        "estimatedPrice": 71900,
+        "currency": "INR",
+        "tags": ["camera", "vlog", "dji", "tech"]
+      }
+    },
+    {
+      "id": "seed_tech_04",
+      "sourceUrl": "https://www.amazon.in/Logitech-MX-Master-3S-Wireless/dp/B09HM5MZWS",
+      "sourceType": "product",
+      "creator": "Amazon",
+      "expectedExtraction": {
+        "title": "Logitech MX Master 3S",
+        "category": "Tech",
+        "subCategory": "Accessories",
+        "intent": "Buy",
+        "brand": "Logitech",
+        "productType": "Mouse",
+        "estimatedPrice": 9495,
+        "currency": "INR",
+        "tags": ["mouse", "wfh", "productivity", "logitech"]
+      }
+    },
+    {
+      "id": "seed_tech_05",
+      "sourceUrl": "https://www.youtube.com/@geekyranjit",
+      "sourceType": "youtube_channel",
+      "creator": "Geekyranjit",
+      "expectedExtraction": {
+        "title": "Geekyranjit tech reviews",
+        "category": "Tech",
+        "subCategory": "Creator",
+        "intent": "Research",
+        "tags": ["tech", "reviews", "india", "creator"]
+      }
+    },
+
+    {
+      "id": "seed_book_01",
+      "sourceUrl": "https://www.amazon.in/Creative-Act-Way-Being/dp/0593652886",
+      "sourceType": "product",
+      "creator": "Amazon",
+      "expectedExtraction": {
+        "title": "The Creative Act — Rick Rubin",
+        "category": "Reading",
+        "subCategory": "Book",
+        "intent": "Buy",
+        "author": "Rick Rubin",
+        "estimatedPrice": 599,
+        "currency": "INR",
+        "tags": ["book", "creativity", "non-fiction", "rubin"]
+      }
+    },
+    {
+      "id": "seed_book_02",
+      "sourceUrl": "https://www.goodreads.com/book/show/40121378-atomic-habits",
+      "sourceType": "book_listing",
+      "creator": "Goodreads",
+      "expectedExtraction": {
+        "title": "Atomic Habits — James Clear",
+        "category": "Reading",
+        "subCategory": "Book",
+        "intent": "Buy",
+        "author": "James Clear",
+        "tags": ["book", "habits", "self-help", "clear"]
+      }
+    },
+    {
+      "id": "seed_book_03",
+      "sourceUrl": "https://www.amazon.in/Sapiens-Brief-History-Humankind-Yuval/dp/0099590085",
+      "sourceType": "product",
+      "creator": "Amazon",
+      "expectedExtraction": {
+        "title": "Sapiens — Yuval Noah Harari",
+        "category": "Reading",
+        "subCategory": "Book",
+        "intent": "Buy",
+        "author": "Yuval Noah Harari",
+        "tags": ["book", "history", "non-fiction", "sapiens"]
+      }
+    },
+    {
+      "id": "seed_book_04",
+      "sourceUrl": "https://www.instagram.com/champaca.in/",
+      "sourceType": "instagram_profile",
+      "creator": "@champaca.in",
+      "expectedExtraction": {
+        "title": "Champaca Bookstore",
+        "category": "Reading",
+        "subCategory": "Bookstore",
+        "intent": "Visit",
+        "city": "Bengaluru",
+        "tags": ["books", "bookstore", "bengaluru", "indie"]
+      }
+    },
+    {
+      "id": "seed_book_05",
+      "sourceUrl": "https://champaca.in/",
+      "sourceType": "website",
+      "creator": "Champaca",
+      "expectedExtraction": {
+        "title": "Champaca — bookstore & cafe",
+        "category": "Reading",
+        "subCategory": "Bookstore",
+        "intent": "Visit",
+        "places": ["Champaca Vasanth Nagar", "Champaca Indiranagar"],
+        "city": "Bengaluru",
+        "tags": ["bookstore", "cafe", "bengaluru", "indie"]
+      }
+    }
+
+  ]
+}

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TryThis · Sign up</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css">
+<link rel="stylesheet" href="../shared/theme.css">
+<style>
+.signup-screen { padding: 40px 28px 32px; background: var(--paper); min-height: 100%; display: flex; flex-direction: column; }
+.brand-mark { display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; background: var(--forest); border-radius: 14px; margin-bottom: 12px; }
+.brand-mark i { font-size: 24px; color: var(--linen); }
+.brand-wordmark { font-family: var(--font-display); font-size: 20px; font-weight: 600; letter-spacing: -0.02em; }
+.divider-or { display: flex; align-items: center; gap: 12px; margin: 22px 0; }
+.divider-or .line { flex: 1; height: 0.5px; background: var(--hairline); }
+.divider-or span { font-size: 11px; color: var(--mute); letter-spacing: 0.08em; text-transform: uppercase; }
+.strength-bar { display: flex; gap: 4px; margin-bottom: 6px; }
+.strength-bar div { flex: 1; height: 3px; border-radius: 2px; background: var(--hairline); }
+.strength-bar div.filled { background: var(--forest); }
+.checkbox { width: 18px; height: 18px; background: var(--forest); border-radius: 4px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
+.checkbox i { font-size: 12px; color: var(--linen); }
+</style>
+</head>
+<body>
+<div class="phone-frame">
+  <div class="phone-notch"></div>
+  <div class="signup-screen">
+
+    <div style="text-align: center; margin-bottom: 28px; margin-top: 16px;">
+      <div class="brand-mark"><i class="ti ti-bookmark"></i></div>
+      <p class="brand-wordmark">TryThis</p>
+    </div>
+
+    <div style="margin-bottom: 22px;">
+      <h1 class="display" style="font-size: 26px; margin-bottom: 6px;">Create your account</h1>
+      <p style="font-size: 14px; color: var(--slate);">Start saving the things you don't want to forget.</p>
+    </div>
+
+    <p class="label">Full name</p>
+    <div class="input" style="margin-bottom: 14px;"><span class="placeholder">Your name</span></div>
+
+    <p class="label">Email</p>
+    <div class="input" style="margin-bottom: 14px;"><span class="placeholder">you@example.com</span></div>
+
+    <p class="label">Password</p>
+    <div class="input focused" style="justify-content: space-between; margin-bottom: 8px;">
+      <span style="letter-spacing: 0.25em;">••••••••</span>
+      <i class="ti ti-eye" style="font-size: 18px; color: var(--slate);"></i>
+    </div>
+    <div class="strength-bar">
+      <div class="filled"></div><div class="filled"></div><div class="filled"></div><div></div>
+    </div>
+    <p style="font-size: 12px; color: var(--slate); margin-bottom: 22px;">Strong — nice.</p>
+
+    <div style="display: flex; align-items: flex-start; gap: 10px; margin-bottom: 22px;">
+      <div class="checkbox"><i class="ti ti-check"></i></div>
+      <p style="font-size: 13px; color: var(--slate); line-height: 1.5;">
+        I agree to the <span style="color: var(--ink); font-weight: 500; border-bottom: 1px solid var(--hairline);">Terms</span> and <span style="color: var(--ink); font-weight: 500; border-bottom: 1px solid var(--hairline);">Privacy Policy</span>.
+      </p>
+    </div>
+
+    <button class="btn-primary">
+      Create account
+      <i class="ti ti-arrow-right" style="font-size: 16px;"></i>
+    </button>
+
+    <div class="divider-or"><div class="line"></div><span>or</span><div class="line"></div></div>
+
+    <button class="btn-secondary" style="margin-bottom: 10px;">
+      <i class="ti ti-brand-apple" style="font-size: 18px;"></i>
+      Sign up with Apple
+    </button>
+    <button class="btn-secondary">
+      <i class="ti ti-brand-google" style="font-size: 18px;"></i>
+      Sign up with Google
+    </button>
+
+    <p style="text-align: center; margin-top: auto; padding-top: 24px; font-size: 14px; color: var(--slate);">
+      Already have an account? <span style="color: var(--ink); font-weight: 500;">Sign in</span>
+    </p>
+
+  </div>
+</div>
+</body>
+</html>

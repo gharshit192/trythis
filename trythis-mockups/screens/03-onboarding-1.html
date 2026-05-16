@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TryThis · Onboarding 1</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css">
+<link rel="stylesheet" href="../shared/theme.css">
+<style>
+.ob { padding: 24px 24px 32px; background: var(--paper); min-height: 100%; display: flex; flex-direction: column; }
+.dots { display: flex; gap: 5px; }
+.dot { width: 24px; height: 3px; background: var(--hairline); border-radius: 2px; }
+.dot.active { background: var(--forest); }
+.visual { padding: 56px 32px 32px; display: flex; justify-content: center; }
+.phone-illustration { position: relative; width: 240px; height: 220px; }
+.illus-phone { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 150px; height: 200px; background: var(--linen); border-radius: 18px; border: 0.5px solid var(--hairline); padding: 14px 12px; }
+.illus-img { height: 90px; border-radius: 10px; margin-bottom: 8px; }
+.illus-line { height: 8px; background: var(--hairline); border-radius: 4px; margin-bottom: 5px; }
+.illus-line.short { width: 50%; height: 6px; }
+.illus-source { position: absolute; top: 50%; left: -8px; transform: translateY(-50%); display: flex; align-items: center; gap: 4px; }
+.illus-source-icon { width: 36px; height: 36px; background: var(--paper); border: 0.5px solid var(--hairline); border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+.illus-target { position: absolute; bottom: 0; right: -8px; width: 48px; height: 48px; background: var(--forest); border-radius: 14px; display: flex; align-items: center; justify-content: center; }
+.illus-target i { font-size: 22px; color: var(--linen); }
+</style>
+</head>
+<body>
+<div class="phone-frame">
+  <div class="phone-notch"></div>
+  <div class="ob">
+
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 24px;">
+      <div class="dots">
+        <div class="dot active"></div><div class="dot"></div><div class="dot"></div>
+      </div>
+      <span style="font-size: 13px; color: var(--slate);">Skip</span>
+    </div>
+
+    <div class="visual">
+      <div class="phone-illustration">
+        <div class="illus-phone">
+          <div class="illus-img thumb-1"></div>
+          <div class="illus-line" style="width: 80%;"></div>
+          <div class="illus-line short"></div>
+        </div>
+        <div class="illus-source">
+          <div class="illus-source-icon"><i class="ti ti-brand-instagram" style="font-size: 18px;"></i></div>
+          <i class="ti ti-arrow-right" style="font-size: 16px; color: var(--forest);"></i>
+        </div>
+        <div class="illus-target"><i class="ti ti-bookmark"></i></div>
+      </div>
+    </div>
+
+    <div style="text-align: center; padding: 0 16px;">
+      <h1 class="display" style="font-size: 26px; margin-bottom: 12px;">Save anything in seconds</h1>
+      <p style="font-size: 14px; color: var(--slate); line-height: 1.55;">Share a reel, paste a link, snap a screenshot. TryThis catches it before you forget.</p>
+    </div>
+
+    <div style="margin-top: auto;">
+      <button class="btn-primary">Next <i class="ti ti-arrow-right" style="font-size: 16px;"></i></button>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

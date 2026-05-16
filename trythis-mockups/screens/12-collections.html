@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TryThis · Collections</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css">
+<link rel="stylesheet" href="../shared/theme.css">
+<style>
+.coll { background: var(--paper); min-height: 100%; display: flex; flex-direction: column; }
+.coll-header { padding: 16px 20px 14px; }
+.tabs-row { display: flex; gap: 18px; padding: 0 20px; border-bottom: 0.5px solid var(--hairline); }
+.tabs-row .tab-item { padding: 10px 0; font-size: 13px; color: var(--slate); }
+.tabs-row .tab-item.active { color: var(--forest); font-weight: 500; border-bottom: 2px solid var(--forest); }
+.tabs-row .tab-item .badge { display: inline-block; background: var(--forest); color: var(--linen); font-size: 9px; padding: 1px 5px; border-radius: 6px; margin-left: 4px; font-weight: 500; vertical-align: top; margin-top: -1px; }
+
+.ai-banner { margin: 16px 20px 8px; background: var(--forest-faint); border-radius: 12px; padding: 12px 14px; display: flex; align-items: center; gap: 10px; }
+.ai-banner i { font-size: 16px; color: var(--forest); }
+
+.featured-large { margin: 12px 20px 16px; background: var(--linen); border-radius: 16px; overflow: hidden; }
+.featured-mosaic { display: grid; grid-template-columns: 2fr 1fr; gap: 2px; height: 130px; }
+.featured-mosaic > div:first-child { display: flex; align-items: center; justify-content: center; }
+.featured-mosaic > div:first-child i { font-size: 36px; color: var(--linen); opacity: 0.8; }
+.featured-mosaic .right-stack { display: grid; grid-template-rows: 1fr 1fr; gap: 2px; }
+.featured-mosaic .right-stack > div { display: flex; align-items: center; justify-content: center; }
+.featured-mosaic .right-stack > div i { font-size: 18px; color: var(--forest); }
+.auto-tag { display: inline-flex; align-items: center; gap: 4px; background: var(--forest-soft); color: var(--forest); padding: 2px 8px; border-radius: 999px; font-size: 10px; font-weight: 500; }
+
+.col-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 0 20px 20px; }
+.col-card { background: var(--paper); border: 0.5px solid var(--hairline); border-radius: 14px; overflow: hidden; }
+.col-thumb { height: 90px; display: flex; align-items: center; justify-content: center; position: relative; }
+.col-thumb i { font-size: 28px; color: var(--forest); }
+.col-count { position: absolute; bottom: 8px; right: 8px; background: rgba(14,14,12,0.7); color: var(--linen); font-size: 10px; padding: 2px 7px; border-radius: 4px; font-weight: 500; }
+.col-auto-flag { position: absolute; top: 8px; left: 8px; background: rgba(255,255,255,0.95); padding: 2px 7px; border-radius: 4px; font-size: 9px; font-weight: 500; color: var(--forest); display: flex; align-items: center; gap: 3px; }
+.col-info { padding: 9px 11px 11px; }
+.col-title { font-size: 12px; font-weight: 500; }
+.col-meta { font-size: 10px; color: var(--slate); margin-top: 3px; }
+</style>
+</head>
+<body>
+<div class="phone-frame">
+  <div class="phone-notch"></div>
+  <div class="coll">
+
+    <div class="status-bar">
+      <span>9:41</span>
+      <div class="status-icons">
+        <i class="ti ti-signal-4g" style="font-size: 14px;"></i>
+        <i class="ti ti-wifi" style="font-size: 14px;"></i>
+        <i class="ti ti-battery-3" style="font-size: 14px;"></i>
+      </div>
+    </div>
+
+    <div class="coll-header">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h1 class="display" style="font-size: 22px;">Collections</h1>
+        <div style="width: 34px; height: 34px; background: var(--linen); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+          <i class="ti ti-plus" style="font-size: 16px; color: var(--forest);"></i>
+        </div>
+      </div>
+      <p style="font-size: 13px; color: var(--slate); margin-top: 4px;">12 collections · 248 saves</p>
+    </div>
+
+    <div class="tabs-row">
+      <div class="tab-item">Mine</div>
+      <div class="tab-item active">Auto <span class="badge">5</span></div>
+      <div class="tab-item">Shared</div>
+    </div>
+
+    <div class="ai-banner">
+      <i class="ti ti-sparkles"></i>
+      <p style="font-size: 12px; color: var(--forest); line-height: 1.4;">TryThis grouped your saves into 5 collections based on patterns it spotted.</p>
+    </div>
+
+    <div class="featured-large">
+      <div class="featured-mosaic">
+        <div class="thumb-1"><i class="ti ti-mountain"></i></div>
+        <div class="right-stack">
+          <div style="background: var(--sage);"><i class="ti ti-tent"></i></div>
+          <div style="background: var(--dune);"><i class="ti ti-sun"></i></div>
+        </div>
+      </div>
+      <div style="padding: 12px 14px 14px;">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+          <span class="auto-tag"><i class="ti ti-sparkles" style="font-size: 9px;"></i> Auto</span>
+        </div>
+        <p style="font-size: 15px; font-weight: 500;">Himalayan getaways</p>
+        <p style="font-size: 12px; color: var(--slate); margin-top: 4px; display: flex; align-items: center; gap: 6px;">
+          <span>34 saves</span>
+          <span style="width: 2px; height: 2px; background: var(--slate); border-radius: 50%;"></span>
+          <span>Updated 2d ago</span>
+        </p>
+      </div>
+    </div>
+
+    <div class="col-grid">
+      <div class="col-card">
+        <div class="col-thumb" style="background: var(--clay);">
+          <div class="col-auto-flag"><i class="ti ti-sparkles" style="font-size: 8px;"></i>Auto</div>
+          <i class="ti ti-coffee"></i>
+          <div class="col-count">28</div>
+        </div>
+        <div class="col-info">
+          <p class="col-title">Bangalore cafes</p>
+          <p class="col-meta">Cafes · Updated today</p>
+        </div>
+      </div>
+
+      <div class="col-card">
+        <div class="col-thumb" style="background: var(--dune);">
+          <div class="col-auto-flag"><i class="ti ti-sparkles" style="font-size: 8px;"></i>Auto</div>
+          <i class="ti ti-shirt"></i>
+          <div class="col-count">19</div>
+        </div>
+        <div class="col-info">
+          <p class="col-title">Shopping wishlist</p>
+          <p class="col-meta">Shop · 3 on sale</p>
+        </div>
+      </div>
+
+      <div class="col-card">
+        <div class="col-thumb" style="background: var(--mist);">
+          <i class="ti ti-confetti"></i>
+          <div class="col-count">12</div>
+        </div>
+        <div class="col-info">
+          <p class="col-title">Date night ideas</p>
+          <p class="col-meta">Experience · Manual</p>
+        </div>
+      </div>
+
+      <div class="col-card">
+        <div class="col-thumb" style="background: var(--sage);">
+          <div class="col-auto-flag"><i class="ti ti-sparkles" style="font-size: 8px;"></i>Auto</div>
+          <i class="ti ti-beach"></i>
+          <div class="col-count">22</div>
+        </div>
+        <div class="col-info">
+          <p class="col-title">Goa research</p>
+          <p class="col-meta">Travel · 12 days to weekend</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-bar">
+      <div class="tab"><i class="ti ti-home tab-icon"></i><span class="tab-label">Home</span></div>
+      <div class="tab"><i class="ti ti-search tab-icon"></i><span class="tab-label">Search</span></div>
+      <div class="fab"><i class="ti ti-plus"></i></div>
+      <div class="tab active"><i class="ti ti-folder tab-icon"></i><span class="tab-label">Collections</span></div>
+      <div class="tab"><i class="ti ti-user tab-icon"></i><span class="tab-label">Profile</span></div>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

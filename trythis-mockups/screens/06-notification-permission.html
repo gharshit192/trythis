@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TryThis · Notification Permission</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css">
+<link rel="stylesheet" href="../shared/theme.css">
+<style>
+.perm { padding: 32px 24px 32px; background: var(--paper); min-height: 100%; display: flex; flex-direction: column; }
+.perm-icon { width: 72px; height: 72px; background: var(--forest-soft); border-radius: 22px; display: flex; align-items: center; justify-content: center; margin: 24px auto 24px; }
+.perm-icon i { font-size: 32px; color: var(--forest); }
+.feature-row { display: flex; align-items: flex-start; gap: 14px; padding: 14px 0; }
+.feature-row:not(:last-child) { border-bottom: 0.5px solid var(--hairline-soft); }
+.feature-icon { width: 32px; height: 32px; background: var(--linen); border-radius: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.feature-icon i { font-size: 16px; color: var(--forest); }
+</style>
+</head>
+<body>
+<div class="phone-frame">
+  <div class="phone-notch"></div>
+  <div class="perm">
+
+    <div style="margin-top: 24px;"></div>
+    <div class="perm-icon"><i class="ti ti-bell"></i></div>
+
+    <div style="text-align: center; margin-bottom: 28px;">
+      <h1 class="display" style="font-size: 24px; margin-bottom: 10px;">Stay one step ahead</h1>
+      <p style="font-size: 14px; color: var(--slate); line-height: 1.55;">A few quiet nudges, no spam. You're in control of what you get.</p>
+    </div>
+
+    <div style="background: var(--paper); border: 0.5px solid var(--hairline); border-radius: 14px; padding: 4px 16px; margin-bottom: 24px;">
+      <div class="feature-row">
+        <div class="feature-icon"><i class="ti ti-map-pin"></i></div>
+        <div>
+          <p style="font-size: 13px; font-weight: 500;">When you're nearby</p>
+          <p style="font-size: 12px; color: var(--slate); margin-top: 2px;">A cafe or place you saved is close.</p>
+        </div>
+      </div>
+      <div class="feature-row">
+        <div class="feature-icon"><i class="ti ti-calendar-event"></i></div>
+        <div>
+          <p style="font-size: 13px; font-weight: 500;">When the timing's right</p>
+          <p style="font-size: 12px; color: var(--slate); margin-top: 2px;">Long weekends, good weather, or sale season.</p>
+        </div>
+      </div>
+      <div class="feature-row">
+        <div class="feature-icon"><i class="ti ti-tag"></i></div>
+        <div>
+          <p style="font-size: 13px; font-weight: 500;">When price drops</p>
+          <p style="font-size: 12px; color: var(--slate); margin-top: 2px;">Flights, gadgets, or items you've saved.</p>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top: auto;">
+      <button class="btn-primary" style="margin-bottom: 10px;">Allow notifications</button>
+      <button class="btn-secondary" style="border: none; background: transparent;">Maybe later</button>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

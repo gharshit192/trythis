@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: trythis-mongodb
+    ports:
+      - '27017:27017'
+    environment:
+      MONGO_INITDB_DATABASE: trythis
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - trythis-network
+
+  redis:
+    image: redis:7.0-alpine
+    container_name: trythis-redis
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    networks:
+      - trythis-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: trythis-backend
+    ports:
+      - '4000:4000'
+    depends_on:
+      - mongodb
+      - redis
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: mongodb://mongodb:27017/trythis
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-in-production}
+      LOG_LEVEL: debug
+    volumes:
+      - ./backend/src:/app/src
+    networks:
+      - trythis-network
+
+volumes:
+  mongodb_data:
+  redis_data:
+
+networks:
+  trythis-network:
+    driver: bridge

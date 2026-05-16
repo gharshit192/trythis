@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>TryThis · Food Nearby</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css">
+<link rel="stylesheet" href="../shared/theme.css">
+<style>
+.food { background: var(--paper); min-height: 100%; display: flex; flex-direction: column; }
+.food-header { padding: 16px 20px 12px; display: flex; justify-content: space-between; align-items: center; }
+.icon-btn { width: 34px; height: 34px; background: var(--linen); border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+.food-title { padding: 0 20px 16px; }
+
+.toggle-row { display: flex; gap: 6px; padding: 0 20px 16px; }
+.toggle-pill { padding: 7px 14px; border-radius: 999px; font-size: 12px; border: 1px solid var(--hairline); background: var(--paper); color: var(--ink); }
+.toggle-pill.active { background: var(--forest); color: var(--linen); border-color: var(--forest); font-weight: 500; }
+.toggle-pill .dot { width: 6px; height: 6px; background: #4ade80; border-radius: 50%; display: inline-block; margin-right: 5px; }
+
+.live-banner { margin: 0 20px 16px; background: var(--forest-faint); border: 0.5px solid var(--forest-soft); border-radius: 14px; padding: 12px 14px; display: flex; align-items: center; gap: 10px; }
+.live-dot { width: 8px; height: 8px; background: var(--forest); border-radius: 50%; flex-shrink: 0; animation: pulse 2s ease-in-out infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+.section-title { padding: 4px 20px 10px; font-size: 14px; font-weight: 500; display: flex; justify-content: space-between; align-items: baseline; }
+
+.near-card { margin: 0 20px 10px; background: var(--paper); border: 0.5px solid var(--hairline); border-radius: 14px; padding: 12px; display: flex; gap: 12px; align-items: center; }
+.near-thumb { width: 64px; height: 64px; border-radius: 10px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+.near-thumb i { font-size: 24px; color: var(--forest); }
+.near-info { flex: 1; }
+.near-name { font-size: 14px; font-weight: 500; }
+.near-meta { font-size: 11px; color: var(--slate); margin-top: 3px; }
+.near-distance { display: inline-flex; align-items: center; gap: 4px; background: var(--forest-soft); color: var(--forest); padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: 500; margin-top: 6px; }
+.near-distance i { font-size: 11px; }
+
+.list-row { display: flex; gap: 12px; padding: 10px 20px; align-items: center; }
+.list-row:not(:last-child) { border-bottom: 0.5px solid var(--hairline-soft); }
+.list-thumb { width: 48px; height: 48px; border-radius: 10px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+.list-thumb i { font-size: 20px; color: var(--forest); }
+.list-info { flex: 1; }
+.list-name { font-size: 13px; font-weight: 500; }
+.list-meta { font-size: 11px; color: var(--slate); margin-top: 2px; }
+</style>
+</head>
+<body>
+<div class="phone-frame">
+  <div class="phone-notch"></div>
+  <div class="food">
+
+    <div class="status-bar">
+      <span>9:41</span>
+      <div class="status-icons">
+        <i class="ti ti-signal-4g" style="font-size: 14px;"></i>
+        <i class="ti ti-wifi" style="font-size: 14px;"></i>
+        <i class="ti ti-battery-3" style="font-size: 14px;"></i>
+      </div>
+    </div>
+
+    <div class="food-header">
+      <div class="icon-btn"><i class="ti ti-arrow-left" style="font-size: 16px;"></i></div>
+      <span style="font-size: 13px; color: var(--slate); display: flex; align-items: center; gap: 4px;">
+        <i class="ti ti-sparkles" style="font-size: 11px; color: var(--forest);"></i> Auto
+      </span>
+      <div class="icon-btn"><i class="ti ti-filter" style="font-size: 16px;"></i></div>
+    </div>
+
+    <div class="food-title">
+      <h1 class="display" style="font-size: 24px;">Bangalore cafes</h1>
+      <p style="font-size: 13px; color: var(--slate); margin-top: 4px;">28 saves · 4 within walking distance</p>
+    </div>
+
+    <div class="toggle-row">
+      <div class="toggle-pill active"><span class="dot"></span>Nearby</div>
+      <div class="toggle-pill">All</div>
+      <div class="toggle-pill">By neighborhood</div>
+    </div>
+
+    <div class="live-banner">
+      <div class="live-dot"></div>
+      <div style="flex: 1;">
+        <p style="font-size: 13px; font-weight: 500; color: var(--forest);">You're in Indiranagar</p>
+        <p style="font-size: 11px; color: var(--slate); margin-top: 2px;">Showing live distances from your location</p>
+      </div>
+      <i class="ti ti-map-pin" style="font-size: 16px; color: var(--forest);"></i>
+    </div>
+
+    <p class="section-title">
+      <span>Walk over now</span>
+      <span style="font-size: 11px; color: var(--mute);">Updated 1m ago</span>
+    </p>
+
+    <div class="near-card">
+      <div class="near-thumb" style="background: var(--clay);"><i class="ti ti-coffee"></i></div>
+      <div class="near-info">
+        <p class="near-name">Third Wave Coffee</p>
+        <p class="near-meta">100 Feet Road · Open till 11pm</p>
+        <div class="near-distance"><i class="ti ti-walk"></i>400m · 5 min walk</div>
+      </div>
+    </div>
+
+    <div class="near-card">
+      <div class="near-thumb" style="background: var(--mist);"><i class="ti ti-cup"></i></div>
+      <div class="near-info">
+        <p class="near-name">Maverick & Farmer</p>
+        <p class="near-meta">12th Main · Quiet · Pour-over</p>
+        <div class="near-distance"><i class="ti ti-walk"></i>800m · 11 min walk</div>
+      </div>
+    </div>
+
+    <p class="section-title" style="padding-top: 16px;">
+      <span>Across the city</span>
+      <span style="font-size: 11px; color: var(--mute);">By car/auto</span>
+    </p>
+
+    <div class="list-row">
+      <div class="list-thumb" style="background: var(--dune);"><i class="ti ti-coffee"></i></div>
+      <div class="list-info">
+        <p class="list-name">Subko Specialty</p>
+        <p class="list-meta">Koramangala · 3.2 km · 12 min drive</p>
+      </div>
+      <i class="ti ti-chevron-right" style="font-size: 14px; color: var(--mute);"></i>
+    </div>
+
+    <div class="list-row">
+      <div class="list-thumb" style="background: var(--sage);"><i class="ti ti-cup-off"></i></div>
+      <div class="list-info">
+        <p class="list-name">Dyu Art Cafe</p>
+        <p class="list-meta">Koramangala 1st Block · 4.1 km</p>
+      </div>
+      <i class="ti ti-chevron-right" style="font-size: 14px; color: var(--mute);"></i>
+    </div>
+
+    <div class="list-row">
+      <div class="list-thumb" style="background: var(--clay);"><i class="ti ti-coffee"></i></div>
+      <div class="list-info">
+        <p class="list-name">Matteo Coffea</p>
+        <p class="list-meta">Church Street · 5.8 km · 22 min</p>
+      </div>
+      <i class="ti ti-chevron-right" style="font-size: 14px; color: var(--mute);"></i>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>
