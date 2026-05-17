@@ -54,7 +54,7 @@ export default function Login({ onNavigate }) {
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '6px' }}>
           <span className="label" style={{ marginBottom: '0' }}>Password</span>
-          <a style={{ fontSize: '13px', color: 'var(--amber-link)', fontWeight: '500', textDecoration: 'none', cursor: 'pointer' }}>Forgot?</a>
+          <button type="button" style={{ background: 'transparent', border: 'none', padding: 0, fontSize: '13px', color: 'var(--amber-link)', fontWeight: '500', cursor: 'pointer' }}>Forgot?</button>
         </div>
         <input
           type="password"

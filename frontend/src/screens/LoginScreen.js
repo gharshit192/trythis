@@ -12,9 +12,10 @@ import {
 import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
 import * as api from '../services/api';
-import * as storage from '../services/storage';
+import { useAuth } from '../services/AuthContext';
 
 export default function LoginScreen({ navigation }) {
+  const { signIn } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -47,11 +48,9 @@ export default function LoginScreen({ navigation }) {
       });
 
       if (response.status === 'success') {
-        await storage.setAuthToken(response.data.token);
-        await storage.setUser(response.data.user);
-
+        await signIn(response.data.token, response.data.user);
         console.log('✅ Login successful:', email);
-        navigation.replace('Tabs');
+        // RootNavigator will swap stacks automatically when signed in.
       }
     } catch (error) {
       console.error('❌ Login error:', error);

@@ -53,7 +53,7 @@ export default function Collections({ onNavigate }) {
             <p style={{ fontSize: '13px', color: 'var(--slate)', gridColumn: '1 / -1', textAlign: 'center' }}>Loading collections...</p>
           ) : collections.length > 0 ? (
             collections.map(col => (
-              <div key={col._id} className="card" style={{ cursor: 'pointer' }} onClick={() => onNavigate('collection-detail')}>
+              <div key={col._id} className="card" style={{ cursor: 'pointer' }} onClick={() => onNavigate('collection-detail', { id: col._id })}>
                 <div style={{ height: '90px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--dune)', position: 'relative' }}>
                   {col.metadata?.isAuto && <div style={{ position: 'absolute', top: '8px', left: '8px', background: 'rgba(255,255,255,0.95)', padding: '2px 7px', borderRadius: '4px', fontSize: '9px', fontWeight: '500', color: 'var(--forest)', display: 'flex', alignItems: 'center', gap: '3px' }}>
                     <i className="ti ti-sparkles" style={{ fontSize: '8px' }}></i> Auto

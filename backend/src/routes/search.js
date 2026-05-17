@@ -8,7 +8,7 @@ router.use(authMiddleware);
 
 router.get('/', async (req, res) => {
   try {
-    const { q, category, location, minPrice, maxPrice, domain } = req.query;
+    const { q, category, intentStatus, source, tag } = req.query;
 
     const query = {
       userId: req.user.id,
@@ -19,33 +19,19 @@ router.get('/', async (req, res) => {
       query.$or = [
         { title: { $regex: q, $options: 'i' } },
         { description: { $regex: q, $options: 'i' } },
-        { 'metadata.location': { $regex: q, $options: 'i' } },
+        { tags: { $regex: q, $options: 'i' } },
+        { 'aiAnalysis.summary': { $regex: q, $options: 'i' } },
+        { 'aiAnalysis.structuredData.place.city': { $regex: q, $options: 'i' } },
+        { 'aiAnalysis.structuredData.recipe.title': { $regex: q, $options: 'i' } },
       ];
     }
 
-    if (category) {
-      query.category = category;
-    }
+    if (category) query.category = category;
+    if (intentStatus) query.intentStatus = intentStatus;
+    if (source) query.source = source;
+    if (tag) query.tags = tag;
 
-    if (location) {
-      query['metadata.location'] = location;
-    }
-
-    if (domain) {
-      query['metadata.domain'] = domain;
-    }
-
-    if (minPrice || maxPrice) {
-      // Price filtering would require parsing price strings
-      // For now, implement simple string contains matching
-      if (minPrice || maxPrice) {
-        logger.debug(`Price filter requested but requires parsing: ${minPrice}-${maxPrice}`);
-      }
-    }
-
-    const saves = await Save.find(query)
-      .sort({ createdAt: -1 })
-      .limit(50);
+    const saves = await Save.find(query).sort({ createdAt: -1 }).limit(50);
 
     logger.info(`Search executed for user ${req.user.id}: found ${saves.length} results`);
     res.json({
@@ -53,12 +39,7 @@ router.get('/', async (req, res) => {
       data: {
         total: saves.length,
         saves,
-        filters: {
-          query: q,
-          category,
-          location,
-          domain,
-        },
+        filters: { query: q, category, intentStatus, source, tag },
       },
     });
   } catch (error) {

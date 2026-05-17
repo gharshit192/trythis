@@ -1,12 +1,17 @@
 import React from 'react';
-import { View, Text, Image, StyleSheet, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
+import SmartImage from './SmartImage';
 import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
 
 export default function SaveCard({ item, onPress, large = false }) {
   return (
     <Pressable style={[styles.card, large && styles.largeCard]} onPress={onPress}>
-      <Image source={{ uri: item.image }} style={[styles.image, large && styles.largeImage]} />
+      <SmartImage
+        saveId={item._id || item.id}
+        source={{ uri: item.image }}
+        style={[styles.image, large && styles.largeImage]}
+      />
       <View style={styles.body}>
         <View style={styles.row}>
           <Text style={styles.intent}>{item.intent}</Text>

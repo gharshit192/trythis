@@ -21,40 +21,43 @@ import CollectionDetail from './screens/CollectionDetail';
 
 function App() {
   const [currentScreen, setCurrentScreen] = useState('login');
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [payload, setPayload] = useState(null);
 
   useEffect(() => {
     const token = localStorage.getItem('auth_token');
     if (token) {
-      setIsAuthenticated(true);
       setCurrentScreen('home');
     }
   }, []);
 
-  const navigate = (screen) => {
+  // navigate(screen) or navigate(screen, payload)
+  const navigate = (screen, nextPayload = null) => {
+    setPayload(nextPayload);
     setCurrentScreen(screen);
   };
 
+  const props = { onNavigate: navigate, payload };
+
   const screenMap = {
-    'login': <Login onNavigate={navigate} />,
-    'signup': <Signup onNavigate={navigate} />,
-    'onboarding-1': <Onboarding step={1} onNavigate={navigate} />,
-    'onboarding-2': <Onboarding step={2} onNavigate={navigate} />,
-    'onboarding-3': <Onboarding step={3} onNavigate={navigate} />,
-    'notification-permission': <NotificationPermission onNavigate={navigate} />,
-    'home-empty': <HomeEmpty onNavigate={navigate} />,
-    'home': <HomeFeed onNavigate={navigate} />,
-    'add-save': <AddSave onNavigate={navigate} />,
-    'save-detail': <SaveDetail onNavigate={navigate} />,
-    'screenshot-summary': <ScreenshotSummary onNavigate={navigate} />,
-    'collections': <Collections onNavigate={navigate} />,
-    'collection-detail': <CollectionDetail onNavigate={navigate} />,
-    'trip-collection': <TripCollection onNavigate={navigate} />,
-    'shopping-wishlist': <ShoppingWishlist onNavigate={navigate} />,
-    'food-nearby': <FoodNearby onNavigate={navigate} />,
-    'search': <Search onNavigate={navigate} />,
-    'notifications': <Notifications onNavigate={navigate} />,
-    'profile': <Profile onNavigate={navigate} />,
+    'login': <Login {...props} />,
+    'signup': <Signup {...props} />,
+    'onboarding-1': <Onboarding step={1} {...props} />,
+    'onboarding-2': <Onboarding step={2} {...props} />,
+    'onboarding-3': <Onboarding step={3} {...props} />,
+    'notification-permission': <NotificationPermission {...props} />,
+    'home-empty': <HomeEmpty {...props} />,
+    'home': <HomeFeed {...props} />,
+    'add-save': <AddSave {...props} />,
+    'save-detail': <SaveDetail {...props} />,
+    'screenshot-summary': <ScreenshotSummary {...props} />,
+    'collections': <Collections {...props} />,
+    'collection-detail': <CollectionDetail {...props} />,
+    'trip-collection': <TripCollection {...props} />,
+    'shopping-wishlist': <ShoppingWishlist {...props} />,
+    'food-nearby': <FoodNearby {...props} />,
+    'search': <Search {...props} />,
+    'notifications': <Notifications {...props} />,
+    'profile': <Profile {...props} />,
   };
 
   return (

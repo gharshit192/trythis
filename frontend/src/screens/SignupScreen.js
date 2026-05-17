@@ -12,9 +12,10 @@ import {
 import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
 import * as api from '../services/api';
-import * as storage from '../services/storage';
+import { useAuth } from '../services/AuthContext';
 
 export default function SignupScreen({ navigation }) {
+  const { signIn } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -53,11 +54,8 @@ export default function SignupScreen({ navigation }) {
       });
 
       if (response.status === 'success') {
-        await storage.setAuthToken(response.data.token);
-        await storage.setUser(response.data.user);
-
+        await signIn(response.data.token, response.data.user);
         console.log('✅ Signup successful:', email);
-        navigation.replace('Tabs');
       }
     } catch (error) {
       console.error('❌ Signup error:', error);

@@ -37,7 +37,7 @@ cp .env.example .env
 npm run dev
 ```
 
-Server runs at `http://localhost:3000`
+Server runs at `http://localhost:4000`
 
 ---
 

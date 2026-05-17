@@ -21,16 +21,17 @@ router.get('/:saveId', async (req, res) => {
       saves
     );
 
-    // Log recommendations for analytics
-    const savedRecs = await Recommendation.insertMany(
-      recommendations.map((rec) => ({
-        userId: req.user.id,
-        fromSaveId: req.params.saveId,
-        recommendedSaveId: rec._id,
-        score: rec.score,
-        reason: 'category_match',
-      }))
-    );
+    if (recommendations.length > 0) {
+      await Recommendation.insertMany(
+        recommendations.map((rec) => ({
+          userId: req.user.id,
+          fromSaveId: req.params.saveId,
+          recommendedSaveId: rec._id,
+          score: Math.max(0, Math.min(1, rec.score || 0)),
+          reason: 'category_match',
+        }))
+      );
+    }
 
     logger.info(`Generated ${recommendations.length} recommendations for save ${req.params.saveId}`);
     res.json({

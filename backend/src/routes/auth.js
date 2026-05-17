@@ -122,7 +122,16 @@ router.post('/login', async (req, res) => {
 
 router.post('/refresh', (req, res) => {
   try {
-    const { token } = req.body;
+    const token =
+      req.headers.authorization?.split(' ')[1] || req.body?.token;
+
+    if (!token) {
+      return res.status(401).json({
+        status: 'error',
+        error: { code: 'UNAUTHORIZED', message: 'No token provided' },
+      });
+    }
+
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     const newToken = jwt.sign(
@@ -131,13 +140,13 @@ router.post('/refresh', (req, res) => {
       { expiresIn: '30d' }
     );
 
-    logger.info(`✅ Token refreshed`);
+    logger.info(`✅ Token refreshed for ${decoded.email}`);
     res.json({ status: 'success', data: { token: newToken } });
   } catch (error) {
     logger.error(`❌ Token refresh error: ${error.message}`);
     res.status(401).json({
       status: 'error',
-      error: { code: 'INVALID_TOKEN', message: 'Invalid token' },
+      error: { code: 'INVALID_TOKEN', message: 'Invalid or expired token' },
     });
   }
 });

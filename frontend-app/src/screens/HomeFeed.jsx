@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../api';
+import SmartImage from '../components/SmartImage';
 
 export default function HomeFeed({ onNavigate }) {
   const [saves, setSaves] = useState([]);
@@ -91,10 +92,10 @@ export default function HomeFeed({ onNavigate }) {
             <p style={{ fontSize: '13px', color: 'var(--slate)', gridColumn: '1 / -1', textAlign: 'center' }}>Loading saves...</p>
           ) : saves.length > 0 ? (
             saves.slice(0, 4).map(save => (
-              <div key={save._id} className="card" style={{ cursor: 'pointer' }} onClick={() => onNavigate('save-detail')}>
+              <div key={save._id} className="card" style={{ cursor: 'pointer' }} onClick={() => onNavigate('save-detail', { id: save._id })}>
                 <div style={{ height: '90px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--dune)', overflow: 'hidden' }}>
                   {save.image ? (
-                    <img src={save.image} alt={save.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <SmartImage saveId={save._id} src={save.image} alt={save.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   ) : (
                     <i className="ti ti-bookmark" style={{ fontSize: '28px', color: 'var(--forest)' }}></i>
                   )}

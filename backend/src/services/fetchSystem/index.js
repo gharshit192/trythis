@@ -1,6 +1,3 @@
-const axios = require('axios');
-const cheerio = require('cheerio');
-const ogs = require('open-graph-scraper');
 const logger = require('../../utils/logger');
 
 const fetchHandlers = {
@@ -9,15 +6,27 @@ const fetchHandlers = {
   screenshot: require('./handlers/screenshotHandler'),
 };
 
-const fetchContent = async (source) => {
+const safeHostname = (urlStr) => {
+  if (!urlStr || typeof urlStr !== 'string') return null;
   try {
-    const handler = fetchHandlers[source.type];
-    if (!handler) {
-      throw new Error(`Unsupported source type: ${source.type}`);
-    }
+    return new URL(urlStr).hostname;
+  } catch {
+    return null;
+  }
+};
 
+const fetchContent = async (source) => {
+  if (!source || !source.type) {
+    throw new Error('source.type is required');
+  }
+  const handler = fetchHandlers[source.type];
+  if (!handler) {
+    throw new Error(`Unsupported source type: ${source.type}`);
+  }
+
+  try {
     const metadata = await handler.fetch(source);
-    logger.info(`Fetched content from ${source.type}: ${source.url || source.id}`);
+    logger.info(`Fetched content from ${source.type}: ${source.url || source.id || ''}`);
     return metadata;
   } catch (error) {
     logger.error(`Fetch failed for ${source.type}: ${error.message}`);
@@ -25,18 +34,19 @@ const fetchContent = async (source) => {
   }
 };
 
-const extractMetadata = async (content) => {
-  const metadata = {
+const extractMetadata = async (content = {}) => {
+  return {
     title: content.title || '',
     description: content.description || '',
     image: content.image || null,
     url: content.url || '',
     source: content.source || 'unknown',
-    domain: new URL(content.url).hostname,
+    domain: content.domain || safeHostname(content.url),
+    provider: content.provider || null,
+    author: content.author || null,
+    extra: content.extra || null,
     fetchedAt: new Date(),
   };
-
-  return metadata;
 };
 
 module.exports = {

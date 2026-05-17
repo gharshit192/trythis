@@ -1,14 +1,28 @@
-const API_BASE_URL = 'http://localhost:4000';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
+
+const authHeader = () => {
+  const token = localStorage.getItem('auth_token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
+
+const handle = async (response) => {
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok && response.status === 401) {
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('user');
+  }
+  return data;
+};
 
 const api = {
-  // Auth endpoints
+  // ---- Auth ----
   async signup(email, password, name) {
-    const response = await fetch(`${API_BASE_URL}/auth/signup`, {
+    const res = await fetch(`${API_BASE_URL}/auth/signup`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password, name }),
     });
-    const data = await response.json();
+    const data = await handle(res);
     if (data.status === 'success') {
       localStorage.setItem('auth_token', data.data.token);
       localStorage.setItem('user', JSON.stringify(data.data.user));
@@ -17,12 +31,12 @@ const api = {
   },
 
   async login(email, password) {
-    const response = await fetch(`${API_BASE_URL}/auth/login`, {
+    const res = await fetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
     });
-    const data = await response.json();
+    const data = await handle(res);
     if (data.status === 'success') {
       localStorage.setItem('auth_token', data.data.token);
       localStorage.setItem('user', JSON.stringify(data.data.user));
@@ -30,116 +44,137 @@ const api = {
     return data;
   },
 
-  async logout() {
+  async refresh() {
+    const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
+    });
+    const data = await handle(res);
+    if (data.status === 'success') localStorage.setItem('auth_token', data.data.token);
+    return data;
+  },
+
+  logout() {
     localStorage.removeItem('auth_token');
     localStorage.removeItem('user');
   },
 
-  // Saves endpoints
-  async createSave(title, url, sourceType = 'url', notes = '') {
-    const token = localStorage.getItem('auth_token');
-    const response = await fetch(`${API_BASE_URL}/saves`, {
+  // ---- Saves ----
+  async createSave({ title, url, sourceType, notes, description } = {}) {
+    const res = await fetch(`${API_BASE_URL}/saves`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({ title, url, sourceType, notes }),
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
+      body: JSON.stringify({ title, url, sourceType, notes, description }),
     });
-    return await response.json();
+    return handle(res);
   },
 
   async getSaves() {
-    const token = localStorage.getItem('auth_token');
-    const response = await fetch(`${API_BASE_URL}/saves`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
-    });
-    return await response.json();
+    const res = await fetch(`${API_BASE_URL}/saves`, { headers: authHeader() });
+    return handle(res);
   },
 
   async getSaveById(id) {
-    const token = localStorage.getItem('auth_token');
-    const response = await fetch(`${API_BASE_URL}/saves/${id}`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
-    });
-    return await response.json();
+    const res = await fetch(`${API_BASE_URL}/saves/${id}`, { headers: authHeader() });
+    return handle(res);
   },
 
-  // Collections endpoints
-  async createCollection(name, description = '', icon = '📌', color = '#1B3A2F') {
-    const token = localStorage.getItem('auth_token');
-    const response = await fetch(`${API_BASE_URL}/collections`, {
+  async patchSave(id, patch) {
+    const res = await fetch(`${API_BASE_URL}/saves/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
+      body: JSON.stringify(patch),
+    });
+    return handle(res);
+  },
+
+  async deleteSave(id) {
+    const res = await fetch(`${API_BASE_URL}/saves/${id}`, {
+      method: 'DELETE',
+      headers: authHeader(),
+    });
+    return handle(res);
+  },
+
+  async refreshThumb(id) {
+    const res = await fetch(`${API_BASE_URL}/saves/${id}/refresh-thumb`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
+      headers: authHeader(),
+    });
+    return handle(res);
+  },
+
+  // ---- Collections ----
+  async createCollection(name, description = '', icon = '📌', color = '#1B3A2F') {
+    const res = await fetch(`${API_BASE_URL}/collections`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
       body: JSON.stringify({ name, description, icon, color }),
     });
-    return await response.json();
+    return handle(res);
   },
 
   async getCollections() {
-    const token = localStorage.getItem('auth_token');
-    const response = await fetch(`${API_BASE_URL}/collections`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
-    });
-    return await response.json();
+    const res = await fetch(`${API_BASE_URL}/collections`, { headers: authHeader() });
+    return handle(res);
   },
 
   async getCollectionById(id) {
-    const token = localStorage.getItem('auth_token');
-    const response = await fetch(`${API_BASE_URL}/collections/${id}`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
-    });
-    return await response.json();
+    const res = await fetch(`${API_BASE_URL}/collections/${id}`, { headers: authHeader() });
+    return handle(res);
   },
 
   async addSaveToCollection(collectionId, saveId) {
-    const token = localStorage.getItem('auth_token');
-    const response = await fetch(`${API_BASE_URL}/collections/${collectionId}/saves/${saveId}`, {
+    const res = await fetch(`${API_BASE_URL}/collections/${collectionId}/saves/${saveId}`, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
+      headers: authHeader(),
     });
-    return await response.json();
+    return handle(res);
   },
 
-  // Search endpoint
+  async removeSaveFromCollection(collectionId, saveId) {
+    const res = await fetch(`${API_BASE_URL}/collections/${collectionId}/saves/${saveId}`, {
+      method: 'DELETE',
+      headers: authHeader(),
+    });
+    return handle(res);
+  },
+
+  // ---- Search ----
   async search(query) {
-    const token = localStorage.getItem('auth_token');
-    const response = await fetch(`${API_BASE_URL}/search?q=${encodeURIComponent(query)}`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
+    const res = await fetch(`${API_BASE_URL}/search?q=${encodeURIComponent(query)}`, {
+      headers: authHeader(),
     });
-    return await response.json();
+    return handle(res);
   },
 
-  // Notifications endpoint
+  // ---- Recommendations ----
+  async getRecommendations(saveId) {
+    const res = await fetch(`${API_BASE_URL}/recommendations/${saveId}`, { headers: authHeader() });
+    return handle(res);
+  },
+
+  // ---- Notifications ----
   async getNotifications() {
-    const token = localStorage.getItem('auth_token');
-    const response = await fetch(`${API_BASE_URL}/notifications`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
+    const res = await fetch(`${API_BASE_URL}/notifications`, { headers: authHeader() });
+    return handle(res);
+  },
+
+  async markNotificationRead(id) {
+    const res = await fetch(`${API_BASE_URL}/notifications/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
+      body: JSON.stringify({ read: true }),
     });
-    return await response.json();
+    return handle(res);
+  },
+
+  async dismissNotification(id) {
+    const res = await fetch(`${API_BASE_URL}/notifications/${id}/dismiss`, {
+      method: 'POST',
+      headers: authHeader(),
+    });
+    return handle(res);
   },
 };
 

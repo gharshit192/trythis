@@ -3,15 +3,17 @@ const app = require('./app');
 const connectDB = require('./config/database');
 const redisClient = require('./config/redis');
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 4000;
 
 const startServer = async () => {
   try {
-    // Connect to MongoDB
     await connectDB();
 
-    // Connect to Redis
-    await redisClient.connect();
+    try {
+      await redisClient.connect();
+    } catch (err) {
+      console.warn(`⚠️  Redis not available, continuing without it: ${err.message}`);
+    }
 
     app.listen(PORT, () => {
       console.log(`🚀 Server running at http://localhost:${PORT}`);

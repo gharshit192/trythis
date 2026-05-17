@@ -1,4 +1,45 @@
+import { useState } from 'react';
+import api from '../api';
+
+const detectType = (url) => {
+  if (!url) return 'screenshot';
+  if (/instagram\.com/i.test(url)) return 'instagram';
+  return 'url';
+};
+
 export default function AddSave({ onNavigate }) {
+  const [url, setUrl] = useState('');
+  const [title, setTitle] = useState('');
+  const [notes, setNotes] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
+
+  const handleSave = async () => {
+    setError(null);
+    if (!url.trim() && !title.trim()) {
+      setError('Add a link or a title.');
+      return;
+    }
+    setSaving(true);
+    try {
+      const res = await api.createSave({
+        title: title.trim() || undefined,
+        url: url.trim() || undefined,
+        notes: notes.trim() || undefined,
+        sourceType: detectType(url.trim()),
+      });
+      if (res.status === 'success') {
+        onNavigate('home');
+      } else {
+        setError(res.error?.message || 'Save failed');
+      }
+    } catch (err) {
+      setError(err.message || 'Save failed');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="phone-frame">
       <div style={{ background: 'rgba(14,14,12,0.45)', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
@@ -6,51 +47,46 @@ export default function AddSave({ onNavigate }) {
           <div style={{ width: '36px', height: '4px', background: 'var(--hairline)', borderRadius: '2px', margin: '0 auto 18px' }}></div>
 
           <h2 className="display" style={{ fontSize: '20px', marginBottom: '4px' }}>Add a save</h2>
-          <p style={{ fontSize: '13px', color: 'var(--slate)', marginBottom: '20px' }}>Paste it, snap it, or share from any app.</p>
+          <p style={{ fontSize: '13px', color: 'var(--slate)', marginBottom: '16px' }}>Paste it, snap it, or share from any app.</p>
 
-          <div style={{ background: 'var(--linen)', borderRadius: '14px', padding: '14px', display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px', cursor: 'pointer' }}>
-            <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'var(--forest)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <i className="ti ti-link" style={{ color: 'var(--linen)', fontSize: '18px' }}></i>
-            </div>
-            <div style={{ flex: 1 }}>
-              <p style={{ fontSize: '14px', fontWeight: '500' }}>Paste a link</p>
-              <p style={{ fontSize: '12px', color: 'var(--slate)', marginTop: '2px' }}>Instagram, YouTube, or any URL</p>
-            </div>
-            <i className="ti ti-chevron-right" style={{ fontSize: '16px', color: 'var(--mute)' }}></i>
-          </div>
+          <p className="label">Link (Instagram, YouTube, any URL)</p>
+          <input
+            type="url"
+            className="input"
+            placeholder="https://…"
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            style={{ marginBottom: 12 }}
+            disabled={saving}
+          />
 
-          <div style={{ background: 'var(--linen)', borderRadius: '14px', padding: '14px', display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px', cursor: 'pointer' }}>
-            <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'var(--paper)', border: '0.5px solid var(--hairline)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <i className="ti ti-photo" style={{ color: 'var(--forest)', fontSize: '18px' }}></i>
-            </div>
-            <div style={{ flex: 1 }}>
-              <p style={{ fontSize: '14px', fontWeight: '500' }}>Upload screenshots</p>
-              <p style={{ fontSize: '12px', color: 'var(--slate)', marginTop: '2px' }}>We'll categorize and summarize them</p>
-            </div>
-            <i className="ti ti-chevron-right" style={{ fontSize: '16px', color: 'var(--mute)' }}></i>
-          </div>
+          <p className="label">Title</p>
+          <input
+            type="text"
+            className="input"
+            placeholder="Optional if you supply a link"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            style={{ marginBottom: 12 }}
+            disabled={saving}
+          />
 
-          <div style={{ background: 'var(--linen)', borderRadius: '14px', padding: '14px', display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px', cursor: 'pointer' }}>
-            <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'var(--paper)', border: '0.5px solid var(--hairline)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <i className="ti ti-camera" style={{ color: 'var(--forest)', fontSize: '18px' }}></i>
-            </div>
-            <div style={{ flex: 1 }}>
-              <p style={{ fontSize: '14px', fontWeight: '500' }}>Snap a photo</p>
-              <p style={{ fontSize: '12px', color: 'var(--slate)', marginTop: '2px' }}>Menu, signboard, anything</p>
-            </div>
-            <i className="ti ti-chevron-right" style={{ fontSize: '16px', color: 'var(--mute)' }}></i>
-          </div>
+          <p className="label">Notes</p>
+          <textarea
+            className="input"
+            placeholder="Why are you saving this?"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            style={{ minHeight: 80, marginBottom: 12, resize: 'vertical' }}
+            disabled={saving}
+          />
 
-          <div style={{ background: 'var(--paper)', border: '1px dashed var(--sand)', borderRadius: '12px', padding: '12px 14px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <i className="ti ti-clipboard" style={{ fontSize: '16px', color: 'var(--forest)' }}></i>
-            <div style={{ flex: 1 }}>
-              <p style={{ fontSize: '12px', color: 'var(--slate)' }}>We found a link on your clipboard</p>
-              <p style={{ fontSize: '12px', color: 'var(--forest)', fontWeight: '500', marginTop: '2px' }}>instagram.com/reel/C8x…</p>
-            </div>
-            <span style={{ fontSize: '13px', color: 'var(--forest)', fontWeight: '500', cursor: 'pointer' }}>Save</span>
-          </div>
+          {error && <p style={{ color: 'var(--error,#d33)', fontSize: 13, marginBottom: 8 }}>{error}</p>}
 
-          <button className="btn-primary" style={{ marginTop: '20px' }} onClick={() => onNavigate('home')}>Done</button>
+          <button className="btn-primary" disabled={saving} onClick={handleSave}>
+            {saving ? 'Saving…' : 'Save & Extract'}
+          </button>
+          <button className="btn-secondary" style={{ marginTop: 8 }} onClick={() => onNavigate('home')} disabled={saving}>Cancel</button>
         </div>
       </div>
     </div>

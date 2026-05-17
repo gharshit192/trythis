@@ -6,23 +6,87 @@ const EXTRACTION_LAYERS = {
   LLM: 'llm',
 };
 
-const extractEntities = async (content) => {
+const HEURISTIC_CONFIDENCE_THRESHOLD = 0.7;
+
+const safeHostname = (urlStr) => {
+  if (!urlStr || typeof urlStr !== 'string') return null;
   try {
-    // Layer 1: Heuristics (free, 92% success rate)
+    return new URL(urlStr).hostname;
+  } catch {
+    return null;
+  }
+};
+
+const heuristics = {
+  extract: (content) => {
+    const urlStr = content.url || '';
+    const titleStr = content.title || '';
+    const descStr = content.description || '';
+
+    const priceMatch = descStr.match(/\$[\d,]+\.?\d*/);
+    const locationMatch = descStr.match(
+      /(?:in|at|near|from)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)/
+    );
+
+    const domain = safeHostname(urlStr);
+
+    // Confidence reflects how much we actually extracted.
+    let signals = 0;
+    if (priceMatch) signals += 1;
+    if (locationMatch) signals += 1;
+    if (domain) signals += 1;
+    if (titleStr) signals += 1;
+    const confidence = signals / 4;
+
+    return {
+      price: priceMatch ? priceMatch[0] : null,
+      location: locationMatch ? locationMatch[1] : null,
+      domain,
+      title: titleStr,
+      confidence,
+    };
+  },
+};
+
+const embeddings = {
+  extract: async (_content) => {
+    // Placeholder for embeddings-based extraction.
+    return { confidence: 0 };
+  },
+};
+
+const llm = {
+  extract: async (_content) => {
+    // Placeholder for LLM-based extraction.
+    return { confidence: 0 };
+  },
+};
+
+const extractEntities = async (content) => {
+  if (!content || typeof content !== 'object') {
+    return { price: null, location: null, domain: null, title: '', confidence: 0, layer: null };
+  }
+
+  try {
     const heuristicResult = heuristics.extract(content);
-    if (heuristicResult.confidence > 0.7) {
+    if (heuristicResult.confidence >= HEURISTIC_CONFIDENCE_THRESHOLD) {
       logger.debug('Extraction via heuristics');
       return { ...heuristicResult, layer: EXTRACTION_LAYERS.HEURISTICS };
     }
 
-    // Layer 2: Embeddings (cheap, 5% success rate)
-    // Would call embeddings API here
-    logger.debug('Extraction via embeddings');
+    const embeddingsResult = await embeddings.extract(content);
+    if (embeddingsResult.confidence >= HEURISTIC_CONFIDENCE_THRESHOLD) {
+      logger.debug('Extraction via embeddings');
+      return { ...heuristicResult, ...embeddingsResult, layer: EXTRACTION_LAYERS.EMBEDDINGS };
+    }
 
-    // Layer 3: Claude API (expensive, 3% success rate)
-    // logger.debug('Extraction via LLM');
+    const llmResult = await llm.extract(content);
+    if (llmResult.confidence > 0) {
+      logger.debug('Extraction via LLM');
+      return { ...heuristicResult, ...llmResult, layer: EXTRACTION_LAYERS.LLM };
+    }
 
-    return heuristicResult;
+    return { ...heuristicResult, layer: EXTRACTION_LAYERS.HEURISTICS };
   } catch (error) {
     logger.error(`Entity extraction failed: ${error.message}`);
     throw error;
@@ -30,6 +94,8 @@ const extractEntities = async (content) => {
 };
 
 const classifyCategory = (content) => {
+  const text = typeof content === 'string' ? content : (content?.title || '') + ' ' + (content?.description || '');
+
   const keywords = {
     travel: ['hotel', 'flight', 'destination', 'trip', 'booking', 'vacation'],
     shopping: ['price', 'product', 'buy', 'order', 'deal', 'sale'],
@@ -40,10 +106,9 @@ const classifyCategory = (content) => {
   let bestMatch = 'general';
   let maxMatches = 0;
 
+  const lower = text.toLowerCase();
   for (const [category, words] of Object.entries(keywords)) {
-    const matches = words.filter((word) =>
-      content.toLowerCase().includes(word)
-    ).length;
+    const matches = words.filter((word) => lower.includes(word)).length;
     if (matches > maxMatches) {
       maxMatches = matches;
       bestMatch = category;
@@ -56,28 +121,10 @@ const classifyCategory = (content) => {
   };
 };
 
-const heuristics = {
-  extract: (content) => {
-    const urlMatch = content.url || '';
-    const titleMatch = content.title || '';
-    const descMatch = content.description || '';
-    const priceMatch = descMatch.match(/\$[\d,]+\.?\d*/);
-    const locationMatch = descMatch.match(
-      /(?:in|at|near|from)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)/
-    );
-
-    return {
-      price: priceMatch ? priceMatch[0] : null,
-      location: locationMatch ? locationMatch[1] : null,
-      domain: new URL(urlMatch).hostname,
-      title: titleMatch,
-      confidence: 0.8,
-    };
-  },
-};
-
 module.exports = {
   extractEntities,
   classifyCategory,
   EXTRACTION_LAYERS,
+  HEURISTIC_CONFIDENCE_THRESHOLD,
+  __test__: { heuristics, embeddings, llm, safeHostname },
 };

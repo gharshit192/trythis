@@ -1,7 +1,11 @@
 import axios from 'axios';
 import * as storage from './storage';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
+// Expo exposes EXPO_PUBLIC_* to client code. Fall back to localhost for web dev.
+const API_URL =
+  process.env.EXPO_PUBLIC_API_URL ||
+  process.env.REACT_APP_API_URL ||
+  'http://localhost:4000';
 
 const api = axios.create({
   baseURL: API_URL,
@@ -77,6 +81,8 @@ export const getSaveDetail = (id) => api.get(`/saves/${id}`);
 export const updateSave = (id, data) => api.patch(`/saves/${id}`, data);
 
 export const deleteSave = (id) => api.delete(`/saves/${id}`);
+
+export const refreshThumb = (id) => api.post(`/saves/${id}/refresh-thumb`);
 
 // ============ COLLECTION APIs ============
 export const getCollections = () => api.get('/collections');

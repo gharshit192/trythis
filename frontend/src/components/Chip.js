@@ -2,9 +2,9 @@ import React from 'react';
 import { Text, StyleSheet, Pressable } from 'react-native';
 import { colors } from '../theme/colors';
 
-export default function Chip({ label, active }) {
+export default function Chip({ label, active, onPress }) {
   return (
-    <Pressable style={[styles.chip, active && styles.active]}>
+    <Pressable style={[styles.chip, active && styles.active]} onPress={onPress}>
       <Text style={[styles.text, active && styles.activeText]}>{label}</Text>
     </Pressable>
   );

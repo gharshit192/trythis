@@ -30,7 +30,7 @@ const recommendationSchema = new mongoose.Schema(
     },
     metadata: {
       clicked: { type: Boolean, default: false },
-      clicked: Date,
+      clickedAt: Date,
       saved: { type: Boolean, default: false },
     },
     expiresAt: {
