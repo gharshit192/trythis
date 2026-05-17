@@ -43,8 +43,23 @@ const collectionSchema = new mongoose.Schema(
       itemCount: { type: Number, default: 0 },
       lastUpdated: Date,
     },
+    isAuto: {
+      type: Boolean,
+      default: false,
+    },
+    autoCategory: {
+      type: String,
+      enum: ['recipe', 'product', 'itinerary', 'event', 'article', 'listing', 'place', 'other'],
+      // No default — left undefined for manual collections.
+    },
   },
   { timestamps: true }
+);
+
+// One auto-collection per (user, category). Sparse so manual collections (no autoCategory) don't collide.
+collectionSchema.index(
+  { userId: 1, autoCategory: 1 },
+  { unique: true, partialFilterExpression: { isAuto: true } }
 );
 
 module.exports = mongoose.model('Collection', collectionSchema);

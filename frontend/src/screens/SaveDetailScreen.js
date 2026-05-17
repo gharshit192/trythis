@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Alert, ActivityIndicator, Linking } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Alert, ActivityIndicator, Linking, Image } from 'react-native';
 import Chip from '../components/Chip';
 import SmartImage from '../components/SmartImage';
 import * as api from '../services/api';
@@ -93,6 +93,27 @@ export default function SaveDetailScreen({ route, navigation }) {
           </>
         ) : null}
 
+        {save?.raw?.screenshots?.length > 0 && (
+          <>
+            <Text style={styles.section}>📷 Screenshots ({save.raw.screenshots.length})</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: spacing.sm }}>
+              {[...save.raw.screenshots].sort((a, b) => (a.order || 0) - (b.order || 0)).map((sc, i) => (
+                <Pressable
+                  key={i}
+                  onPress={() => {
+                    if (sc.url) Linking.openURL(sc.url);
+                    else Alert.alert('Purged', 'Original purged after 2 working days. Thumbnail + OCR preserved.');
+                  }}
+                  style={{ marginRight: 6 }}
+                >
+                  <Image source={{ uri: sc.thumbnailUrl }} style={{ width: 88, height: 88, borderRadius: 8, opacity: sc.url ? 1 : 0.65 }} />
+                  {!sc.url && <Text style={styles.purgedBadge}>purged</Text>}
+                </Pressable>
+              ))}
+            </ScrollView>
+          </>
+        )}
+
         {save?.raw?.aiAnalysis?.structuredData?.recipe?.isRecipe && (
           <>
             <Text style={styles.section}>🍳 {save.raw.aiAnalysis.structuredData.recipe.title || 'Recipe'}</Text>
@@ -177,4 +198,5 @@ const styles = StyleSheet.create({
   button: { backgroundColor: colors.text, padding: 16, borderRadius: 16, alignItems: 'center', marginTop: spacing.sm },
   delete: { backgroundColor: colors.coral || '#e74c3c', marginTop: spacing.lg },
   buttonText: { color: '#fff', fontWeight: '800' },
+  purgedBadge: { position: 'absolute', bottom: 4, left: 4, color: '#fff', fontSize: 9, backgroundColor: 'rgba(0,0,0,0.7)', paddingHorizontal: 4, borderRadius: 3 },
 });

@@ -8,6 +8,9 @@ export default function SaveDetail({ onNavigate, payload }) {
   const [recs, setRecs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState(null);
 
   useEffect(() => {
     if (!id) { setLoading(false); return; }
@@ -30,10 +33,22 @@ export default function SaveDetail({ onNavigate, payload }) {
   }, [id]);
 
   const handleDelete = async () => {
-    if (!id || !window.confirm('Delete this save?')) return;
-    const res = await api.deleteSave(id);
-    if (res.status === 'success') onNavigate('home');
-    else alert(res.error?.message || 'Delete failed');
+    if (!id) return;
+    setDeleteError(null);
+    setDeleting(true);
+    try {
+      const res = await api.deleteSave(id);
+      if (res.status === 'success') {
+        setConfirmDelete(false);
+        onNavigate('home');
+      } else {
+        setDeleteError(res.error?.message || 'Delete failed');
+      }
+    } catch (err) {
+      setDeleteError(err.message || 'Delete failed');
+    } finally {
+      setDeleting(false);
+    }
   };
 
   if (!id) {
@@ -58,7 +73,7 @@ export default function SaveDetail({ onNavigate, payload }) {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
           <i className="ti ti-arrow-left" style={{ fontSize: '20px', cursor: 'pointer' }} onClick={() => onNavigate('home')}></i>
           <h1 className="display" style={{ fontSize: '18px' }}>Save Details</h1>
-          <i className="ti ti-trash" style={{ fontSize: '20px', cursor: 'pointer', color: 'var(--error,#d33)' }} onClick={handleDelete}></i>
+          <i className="ti ti-trash" style={{ fontSize: '20px', cursor: 'pointer', color: 'var(--error,#d33)' }} onClick={() => setConfirmDelete(true)}></i>
         </div>
         <div style={{ borderRadius: '12px', marginBottom: '16px', overflow: 'hidden', background: '#000' }}>
           {save?.videoUrl ? (
@@ -79,6 +94,34 @@ export default function SaveDetail({ onNavigate, payload }) {
         {save?.processingStatus && save.processingStatus !== 'done' && (
           <div style={{ fontSize: 12, color: 'var(--slate)', marginBottom: 12 }}>
             ⏳ Processing: {save.processingStatus}…
+          </div>
+        )}
+
+        {save?.screenshots?.length > 0 && (
+          <div style={{ marginBottom: 16 }}>
+            <p style={{ fontSize: 13, fontWeight: 500, marginBottom: 6 }}>📷 Screenshots ({save.screenshots.length})</p>
+            <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4 }}>
+              {save.screenshots
+                .slice()
+                .sort((a, b) => (a.order || 0) - (b.order || 0))
+                .map((sc, i) => (
+                <div key={i} style={{ flexShrink: 0, width: 88 }}>
+                  <a
+                    href={sc.url || sc.thumbnailUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={(e) => { if (!sc.url) { e.preventDefault(); alert('Original purged after 2 working days — thumbnail and OCR text preserved.'); } }}
+                    style={{ display: 'block', borderRadius: 8, overflow: 'hidden', position: 'relative' }}
+                    title={sc.ocrText ? sc.ocrText.slice(0, 200) : ''}
+                  >
+                    <img src={sc.thumbnailUrl} alt={`Screenshot ${i + 1}`} style={{ width: '100%', height: 88, objectFit: 'cover', display: 'block', opacity: sc.url ? 1 : 0.65 }} />
+                    {!sc.url && (
+                      <span style={{ position: 'absolute', bottom: 2, left: 2, background: 'rgba(0,0,0,0.7)', color: '#fff', fontSize: 9, padding: '1px 4px', borderRadius: 3 }}>purged</span>
+                    )}
+                  </a>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
@@ -200,6 +243,43 @@ export default function SaveDetail({ onNavigate, payload }) {
         )}
         <button className="btn-primary" style={{ marginTop: 'auto' }} onClick={() => onNavigate('home')}>Back</button>
       </div>
+
+      {confirmDelete && (
+        <div
+          onClick={() => !deleting && setConfirmDelete(false)}
+          style={{ position: 'absolute', inset: 0, background: 'rgba(14,14,12,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: 24 }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{ background: 'var(--paper)', borderRadius: 16, padding: 20, width: '100%', maxWidth: 320, boxShadow: '0 8px 24px rgba(0,0,0,0.18)' }}
+          >
+            <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'rgba(211,51,51,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
+              <i className="ti ti-trash" style={{ fontSize: 20, color: 'var(--error,#d33)' }}></i>
+            </div>
+            <h3 className="display" style={{ fontSize: 17, textAlign: 'center', marginBottom: 6 }}>Delete this save?</h3>
+            <p style={{ fontSize: 13, color: 'var(--slate)', textAlign: 'center', marginBottom: 16 }}>
+              It will be removed from your feed and any collections. This can't be undone.
+            </p>
+            {deleteError && <p style={{ color: 'var(--error,#d33)', fontSize: 13, textAlign: 'center', marginBottom: 8 }}>{deleteError}</p>}
+            <button
+              className="btn-primary"
+              style={{ background: 'var(--error,#d33)' }}
+              onClick={handleDelete}
+              disabled={deleting}
+            >
+              {deleting ? 'Deleting…' : 'Delete'}
+            </button>
+            <button
+              className="btn-secondary"
+              style={{ marginTop: 8 }}
+              onClick={() => setConfirmDelete(false)}
+              disabled={deleting}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -23,20 +23,25 @@ Given a video/article's transcript and metadata, return ONLY valid JSON in this 
 
 Rules:
 - Pick exactly ONE structuredData.type. Set other keys to null.
-- Recipe content (cooking/baking) → type="recipe", fill recipe{}. Set isRecipe=true.
+- Recipe content (cooking/baking with ingredients OR steps) → type="recipe", fill recipe{}. Set isRecipe=true.
 - Travel destinations / city guides → type="itinerary" and also fill place{} if a specific location.
 - Buying a product / wishlist item → type="product".
 - Events / concerts / tickets → type="event" and fill place{} if venue known.
 - Articles / blog posts → type="article".
 - Outfit ideas / shoppable list → type="listing".
-- If nothing fits → type="other".
+- If nothing fits, or you cannot extract concrete content → type="other".
+
+IMPORTANT — when input is sparse:
+- If the transcript is empty, very short, or appears to be background music / song lyrics with no instruction, DO NOT invent recipes, itineraries, or products from thin air. Set type="other" and use the caption + visible context for the summary instead.
+- Do NOT include the author's handle/username as a tag.
 - Tags must be lowercase with hyphens, no spaces. Return ONLY JSON, no preamble.`;
 
 const truncate = (s, n) => (s && s.length > n ? s.slice(0, n) + '…' : s || '');
 
-const extractAnalysis = async ({ transcript, title, description, source, category }) => {
+const extractAnalysis = async ({ transcript, title, description, source, category, authorHandle, visualText } = {}) => {
   const text = (transcript || '').trim();
-  if (!text && !description) {
+  const visible = (visualText || '').trim();
+  if (!text && !description && !visible) {
     return emptyResult(title);
   }
 
@@ -48,16 +53,19 @@ const extractAnalysis = async ({ transcript, title, description, source, categor
   const prompt = [
     `Video/article title: ${truncate(title, 200)}`,
     description ? `Caption/description: ${truncate(description, 500)}` : null,
+    authorHandle ? `Author handle: @${authorHandle}` : null,
     source ? `Source: ${source}` : null,
     category ? `Category hint: ${category}` : null,
-    text ? `Transcript:\n"""${truncate(text, 4000)}"""` : null,
+    visible ? `Text visible on-screen (OCR from video frames):\n"""${truncate(visible, 2000)}"""` : null,
+    text ? `Audio transcript:\n"""${truncate(text, 4000)}"""` : null,
+    !text && !visible ? 'NOTE: no transcript or visible text available — base your answer on the title + caption alone, and prefer type="other".' : null,
     '',
     'Return JSON only.',
   ].filter(Boolean).join('\n');
 
   try {
     const json = await llm.generateJson({ system: SYSTEM, prompt, temperature: 0.1 });
-    return normalize(json);
+    return normalize(json, { authorHandle });
   } catch (err) {
     logger.warn(`audioAnalyzer LLM failed: ${err.message}`);
     return { ...emptyResult(title), _provider: 'error', _error: err.message };
@@ -71,7 +79,29 @@ const emptyResult = (title) => ({
   _provider: 'empty',
 });
 
-const normalize = (json) => {
+// Strip tags that are essentially the author's username (P7 fix).
+// Drops:
+//   - exact kebab transform of the handle ("indian-food-lover-reels")
+//   - squashed transform with separators removed ("indianfoodloverreels")
+//   - distinctive single tokens (>4 chars) from the handle ("lover", "reels")
+// Keeps short generic words even if they appear in the handle ("food", "desi").
+const stripAuthorTags = (tags, authorHandle) => {
+  if (!authorHandle) return tags;
+  const lower = String(authorHandle).toLowerCase();
+  const kebab = lower.replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  const squashed = lower.replace(/[^a-z0-9]/g, '');
+  const distinctiveTokens = new Set(lower.split(/[^a-z0-9]+/).filter((p) => p.length > 4));
+
+  return tags.filter((t) => {
+    if (!t) return false;
+    if (t === kebab) return false;
+    if (t.replace(/[^a-z0-9]/g, '') === squashed) return false;
+    if (distinctiveTokens.has(t)) return false;
+    return true;
+  });
+};
+
+const normalize = (json, { authorHandle } = {}) => {
   const sd = json?.structuredData || {};
   const out = {
     summary: json?.summary || '',
@@ -88,6 +118,9 @@ const normalize = (json) => {
     },
     _provider: 'ollama',
   };
+
+  // Filter author handle out of tags (P7)
+  out.audioTags = stripAuthorTags(out.audioTags, authorHandle);
 
   if (sd.recipe) {
     const r = sd.recipe;
@@ -158,7 +191,34 @@ const normalize = (json) => {
     };
   }
 
+  // P5: downward-correct type if the claimed type has no payload.
+  out.structuredData.type = reconcileType(out.structuredData);
+
   return out;
 };
 
-module.exports = { extractAnalysis };
+// If the LLM picked a type but didn't populate the matching object, demote to 'other'.
+const reconcileType = (sd) => {
+  switch (sd.type) {
+    case 'recipe':
+      if (!sd.recipe?.isRecipe || (sd.recipe.ingredients.length === 0 && sd.recipe.steps.length === 0)) return 'other';
+      return 'recipe';
+    case 'product':
+      if (!sd.product?.name && sd.product?.price == null) return 'other';
+      return 'product';
+    case 'itinerary':
+      if (!sd.itinerary?.destination && (sd.itinerary?.highlights?.length || 0) === 0) return 'other';
+      return 'itinerary';
+    case 'event':
+      if (!sd.event?.eventName && !sd.event?.venue) return 'other';
+      return 'event';
+    case 'article':
+    case 'listing':
+    case 'place':
+    case 'other':
+    default:
+      return sd.type || 'other';
+  }
+};
+
+module.exports = { extractAnalysis, __test__: { stripAuthorTags, reconcileType, normalize } };

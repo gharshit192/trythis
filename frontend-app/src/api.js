@@ -60,11 +60,11 @@ const api = {
   },
 
   // ---- Saves ----
-  async createSave({ title, url, sourceType, notes, description } = {}) {
+  async createSave({ title, url, sourceType, notes, description, collectionIds } = {}) {
     const res = await fetch(`${API_BASE_URL}/saves`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...authHeader() },
-      body: JSON.stringify({ title, url, sourceType, notes, description }),
+      body: JSON.stringify({ title, url, sourceType, notes, description, collectionIds }),
     });
     return handle(res);
   },
@@ -92,6 +92,31 @@ const api = {
     const res = await fetch(`${API_BASE_URL}/saves/${id}`, {
       method: 'DELETE',
       headers: authHeader(),
+    });
+    return handle(res);
+  },
+
+  async uploadScreenshots({ files, title, notes, collectionId, category } = {}) {
+    if (!files || !files.length) throw new Error('files[] required');
+    const fd = new FormData();
+    for (const f of files) fd.append('images', f);
+    if (title) fd.append('title', title);
+    if (notes) fd.append('notes', notes);
+    if (collectionId) fd.append('collectionId', collectionId);
+    if (category) fd.append('category', category);
+    const res = await fetch(`${API_BASE_URL}/saves/upload-screenshots`, {
+      method: 'POST',
+      headers: authHeader(), // no Content-Type — browser sets multipart boundary
+      body: fd,
+    });
+    return handle(res);
+  },
+
+  async updateIntent(id, { intentStatus, plannedFor, triedAt } = {}) {
+    const res = await fetch(`${API_BASE_URL}/saves/${id}/intent`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
+      body: JSON.stringify({ intentStatus, plannedFor, triedAt }),
     });
     return handle(res);
   },

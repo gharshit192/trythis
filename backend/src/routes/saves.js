@@ -1,4 +1,7 @@
 const express = require('express');
+const path = require('path');
+const os = require('os');
+const multer = require('multer');
 const router = express.Router();
 const Save = require('../models/Save');
 const UserBehavior = require('../models/UserBehavior');
@@ -7,7 +10,26 @@ const fetchSystem = require('../services/fetchSystem');
 const extractionEngine = require('../services/extractionEngine');
 const transcription = require('../services/transcription');
 const mediaProcessor = require('../services/mediaProcessor');
+const screenshotPipeline = require('../services/screenshotPipeline');
+const autoCollectionEngine = require('../services/autoCollectionEngine');
+const thumbnailCache = require('../services/thumbnailCache');
+const typeToCategory = require('../utils/structuredTypeToCategory');
 const logger = require('../utils/logger');
+
+// Multer config: disk storage to OS temp dir (pipeline moves files into uploads/).
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: os.tmpdir(),
+    filename: (req, file, cb) => cb(null, `trythis-upload-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`),
+  }),
+  limits: { fileSize: 10 * 1024 * 1024, files: 10 },
+  fileFilter: (req, file, cb) => {
+    if (!/^image\/(png|jpe?g|webp)$/i.test(file.mimetype)) {
+      return cb(new Error(`unsupported mime ${file.mimetype}`));
+    }
+    cb(null, true);
+  },
+});
 
 router.use(authMiddleware);
 
@@ -146,6 +168,22 @@ router.post('/', async (req, res) => {
     await save.save();
     logger.info(`Save created: ${save._id}`);
 
+    // Cache the remote thumbnail to our own /static so the UI doesn't pay
+    // a separate CDN round-trip after rendering the save data. Done inline
+    // (not background) so the create response already has the local URL.
+    if (save.thumbnail && !save.thumbnail.startsWith('/static/')) {
+      const cached = await thumbnailCache.fetchAndCache(save.thumbnail, save._id.toString());
+      if (cached?.localUrl) {
+        save.thumbnail = cached.localUrl;
+        await save.save();
+      }
+    }
+
+    // Sync manual collection picks (two-way: push save id into each Collection.saves).
+    if (Array.isArray(collectionIds) && collectionIds.length) {
+      await autoCollectionEngine.reconcileSaveCollections(save._id, [], collectionIds);
+    }
+
     // Background: download video, mux to mp4, transcribe with Whisper, then LLM-analyze.
     const isVideoSource = url && /(?:instagram\.com|tiktok\.com|youtube\.com|youtu\.be|vimeo\.com|facebook\.com|fb\.watch|twitter\.com|x\.com|reddit\.com)/i.test(url);
     if (isVideoSource) {
@@ -155,6 +193,8 @@ router.post('/', async (req, res) => {
     } else {
       save.processingStatus = 'done';
       await save.save();
+      // Non-video saves don't have aiAnalysis yet, so there's nothing to auto-assign by type.
+      // Auto-assignment for videos fires from mediaProcessor once analysis lands.
     }
 
     res.status(201).json({
@@ -238,10 +278,18 @@ router.patch('/:id', async (req, res) => {
     if (title) save.title = title;
     if (userNote !== undefined) save.userNote = userNote;
     if (notes !== undefined && userNote === undefined) save.userNote = notes; // back-compat
-    if (collectionIds) save.collections = collectionIds;
+    let prevCollectionIds = null;
+    if (collectionIds) {
+      prevCollectionIds = (save.collections || []).map((id) => id.toString());
+      save.collections = collectionIds;
+    }
     if (tags) save.tags = tags;
 
     await save.save();
+
+    if (prevCollectionIds !== null) {
+      await autoCollectionEngine.reconcileSaveCollections(save._id, prevCollectionIds, collectionIds);
+    }
 
     logger.info(`Save updated: ${save._id}`);
     res.json({
@@ -310,7 +358,8 @@ router.post('/:id/refresh-thumb', async (req, res) => {
       });
     }
 
-    save.thumbnail = fetched.image;
+    const cached = await thumbnailCache.fetchAndCache(fetched.image, save._id.toString());
+    save.thumbnail = cached?.localUrl || fetched.image;
     await save.save();
     logger.info(`Refreshed thumbnail for save ${save._id}`);
     res.json({ status: 'success', data: save });
@@ -350,6 +399,90 @@ router.delete('/:id', async (req, res) => {
     });
   }
 });
+
+// Multi-screenshot upload. multipart/form-data with `images[]` and optional
+// fields { title, notes, collectionId, category }.
+router.post('/upload-screenshots',
+  (req, res, next) => upload.array('images', 10)(req, res, (err) => {
+    if (!err) return next();
+    if (err.code === 'LIMIT_FILE_SIZE') return res.status(413).json({ status: 'error', error: { code: 'FILE_TOO_LARGE', message: 'each file must be ≤ 10MB' } });
+    if (err.code === 'LIMIT_FILE_COUNT') return res.status(413).json({ status: 'error', error: { code: 'TOO_MANY_FILES', message: 'max 10 files per upload' } });
+    return res.status(400).json({ status: 'error', error: { code: 'INVALID_UPLOAD', message: err.message } });
+  }),
+  async (req, res) => {
+    try {
+      if (!req.files || req.files.length === 0) {
+        return res.status(400).json({ status: 'error', error: { code: 'NO_FILES', message: 'images[] is required' } });
+      }
+      const { title, notes, collectionId, category } = req.body;
+
+      const { screenshots, aiAnalysis, mergedText } = await screenshotPipeline.processFiles(req.files, {
+        userId: req.user.id,
+        title: title || 'Screenshot save',
+        category,
+      });
+
+      const tags = aiAnalysis?.structuredData
+        ? (await audioAnalyzerTagsFromStructured(aiAnalysis)) : [];
+
+      const finalTitle = title
+        || aiAnalysis?.structuredData?.recipe?.title
+        || aiAnalysis?.structuredData?.product?.name
+        || aiAnalysis?.structuredData?.event?.eventName
+        || (mergedText && mergedText.split('\n').find(l => l.trim()))?.trim().slice(0, 80)
+        || 'Screenshot save';
+
+      const save = new Save({
+        userId: req.user.id,
+        title: finalTitle,
+        description: aiAnalysis?.summary || '',
+        userNote: notes || undefined,
+        thumbnail: screenshots[0]?.thumbnailUrl,
+        source: 'screenshot',
+        contentType: 'image',
+        category: category || typeToCategory(aiAnalysis?.structuredData?.type),
+        intentStatus: 'saved',
+        collections: collectionId ? [collectionId] : [],
+        screenshots,
+        aiAnalysis,
+        processingStatus: 'done',
+        tags,
+      });
+
+      await save.save();
+      logger.info(`Screenshot save created: ${save._id} (${screenshots.length} images, OCR ${mergedText.length} chars)`);
+
+      // Sync the manual pick (if any) and auto-assign by analysis type.
+      if (collectionId) {
+        await autoCollectionEngine.reconcileSaveCollections(save._id, [], [collectionId]);
+      }
+      await autoCollectionEngine.assignSave(save);
+
+      res.status(201).json({ status: 'success', data: save });
+    } catch (error) {
+      logger.error(`Screenshot upload error: ${error.message}`);
+      res.status(500).json({ status: 'error', error: { code: 'UPLOAD_ERROR', message: error.message } });
+    }
+  }
+);
+
+// Tiny helper: pull tags off aiAnalysis if the analyzer happened to return any
+// (it does — see audioAnalyzer.normalize returning `audioTags`). The pipeline
+// strips them when building the persisted shape, so we re-derive here.
+async function audioAnalyzerTagsFromStructured(aiAnalysis) {
+  // Recipe/itinerary/product specific tags
+  const sd = aiAnalysis?.structuredData || {};
+  const out = new Set();
+  if (sd.recipe?.isRecipe) {
+    if (sd.recipe.cuisine) out.add(String(sd.recipe.cuisine).toLowerCase().replace(/\s+/g, '-'));
+    out.add('recipe');
+  }
+  if (sd.product?.brand) out.add(String(sd.product.brand).toLowerCase().replace(/\s+/g, '-'));
+  if (sd.itinerary?.destination) out.add(String(sd.itinerary.destination).toLowerCase().split(/,\s*/)[0].replace(/\s+/g, '-'));
+  if (sd.place?.city) out.add(String(sd.place.city).toLowerCase().replace(/\s+/g, '-'));
+  if (sd.event?.eventName) out.add('event');
+  return Array.from(out).slice(0, 8);
+}
 
 router.post('/bulk/import', async (req, res) => {
   try {
@@ -404,6 +537,13 @@ router.post('/bulk/import', async (req, res) => {
         processingStatus: 'done',
       });
       await save.save();
+      if (save.thumbnail && !save.thumbnail.startsWith('/static/')) {
+        const cached = await thumbnailCache.fetchAndCache(save.thumbnail, save._id.toString());
+        if (cached?.localUrl) {
+          save.thumbnail = cached.localUrl;
+          await save.save();
+        }
+      }
       imported.push(save);
     }
 

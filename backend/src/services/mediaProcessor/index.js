@@ -13,6 +13,10 @@ const os = require('os');
 const crypto = require('crypto');
 const Save = require('../../models/Save');
 const audioAnalyzer = require('../audioAnalyzer');
+const autoCollectionEngine = require('../autoCollectionEngine');
+const frameExtractor = require('../frameExtractor');
+const { looksLikeHallucination } = require('../../utils/hallucinationGuard');
+const typeToCategory = require('../../utils/structuredTypeToCategory');
 const logger = require('../../utils/logger');
 
 // __dirname = backend/src/services/mediaProcessor → ../../.. = backend, then 'uploads'
@@ -150,29 +154,60 @@ const processSave = async (saveId) => {
     // Transcription + LLM enrichment (best-effort)
     try {
       await extractWavForWhisper(destMp4, wavPath);
-      const { transcription, translation, language } = await transcribeWithWhisper(wavPath);
+      const raw = await transcribeWithWhisper(wavPath);
 
-      if (transcription) {
-        await Save.findByIdAndUpdate(saveId, {
-          'aiAnalysis.transcription': {
-            text: transcription,
-            source: 'whisper',
-            detectedLanguage: language || null,
-            confidence: null,
-            translation: translation && translation !== transcription ? translation : null,
-          },
-        });
-        logger.info(`[mediaProcessor ${saveId}] transcript: ${transcription.length} chars (lang=${language || 'auto'}, en=${translation.length} chars)`);
+      // P1: discard whisper output that looks like a music hallucination
+      // (e.g. one phrase repeated 10+ times). Done independently per pass —
+      // sometimes the original is fine but --translate goes off the rails.
+      const transcriptionClean = looksLikeHallucination(raw.transcription) ? null : raw.transcription;
+      const translationClean = looksLikeHallucination(raw.translation) ? null : raw.translation;
+      if (raw.transcription && !transcriptionClean) {
+        logger.warn(`[mediaProcessor ${saveId}] transcription discarded as hallucination`);
+      }
+      if (raw.translation && !translationClean) {
+        logger.warn(`[mediaProcessor ${saveId}] translation discarded as hallucination`);
       }
 
-      if (translation || transcription) {
+      if (transcriptionClean) {
+        await Save.findByIdAndUpdate(saveId, {
+          'aiAnalysis.transcription': {
+            text: transcriptionClean,
+            source: 'whisper',
+            detectedLanguage: raw.language || null,
+            confidence: null,
+            translation: translationClean && translationClean !== transcriptionClean ? translationClean : null,
+          },
+        });
+        logger.info(`[mediaProcessor ${saveId}] transcript: ${transcriptionClean.length} chars (lang=${raw.language || 'auto'}, en=${(translationClean || '').length} chars)`);
+      }
+
+      // P2: extract a handful of keyframes from the video and OCR them.
+      // Picks up text overlays (recipe steps, prices, captions) on visual-only reels.
+      let frameOcr = '';
+      try {
+        const fresh = await Save.findById(saveId);
+        const res = await frameExtractor.extractAndOcrFrames(destMp4, {
+          count: 4,
+          durationSeconds: fresh.duration || 30,
+        });
+        frameOcr = res.mergedText || '';
+        if (frameOcr) logger.info(`[mediaProcessor ${saveId}] frame OCR: ${frameOcr.length} chars`);
+      } catch (err) {
+        logger.warn(`[mediaProcessor ${saveId}] frame OCR failed: ${err.message}`);
+      }
+
+      const analysisInput = translationClean || transcriptionClean || '';
+      const hasAnySignal = analysisInput || frameOcr;
+      if (hasAnySignal) {
         const fresh = await Save.findById(saveId);
         const analysis = await audioAnalyzer.extractAnalysis({
-          transcript: translation || transcription,
+          transcript: analysisInput,
+          visualText: frameOcr,
           title: fresh.title,
           description: fresh.description,
           source: fresh.source,
           category: fresh.category,
+          authorHandle: fresh.authorHandle,
         });
 
         const update = {
@@ -180,13 +215,30 @@ const processSave = async (saveId) => {
           'aiAnalysis.structuredData': analysis.structuredData,
           'aiAnalysis.processedAt': new Date(),
         };
+
+        // P3: replace generic "Video by X" title when we have a better signal.
+        const betterTitle = pickBetterTitle(fresh.title, analysis);
+        if (betterTitle) update.title = betterTitle;
+
+        // P4: derive category from structuredData.type when current is unhelpful.
+        if (!fresh.category || fresh.category === 'general' || fresh.category === 'other') {
+          const derived = typeToCategory(analysis.structuredData.type);
+          if (derived && derived !== 'other') update.category = derived;
+        }
+
         // Merge LLM tags into the save's tags (dedupe).
         if (analysis.audioTags.length) {
           const merged = Array.from(new Set([...(fresh.tags || []), ...analysis.audioTags])).slice(0, 16);
           update.tags = merged;
         }
-        await Save.findByIdAndUpdate(saveId, update);
-        logger.info(`[mediaProcessor ${saveId}] analysis done (type=${analysis.structuredData.type}, tags=${analysis.audioTags.length})`);
+        const updated = await Save.findByIdAndUpdate(saveId, update, { new: true });
+        logger.info(`[mediaProcessor ${saveId}] analysis done (type=${analysis.structuredData.type}, tags=${analysis.audioTags.length}, title="${updated.title}")`);
+
+        try {
+          await autoCollectionEngine.assignSave(updated);
+        } catch (e) {
+          logger.warn(`[mediaProcessor ${saveId}] auto-collection assign failed: ${e.message}`);
+        }
       }
     } catch (err) {
       logger.warn(`[mediaProcessor ${saveId}] transcription/analysis failed: ${err.message}`);
@@ -201,6 +253,26 @@ const processSave = async (saveId) => {
   }
 };
 
+// P3 helper: only promote a title if we have a *real entity* (recipe name,
+// product, event, place, destination). The summary makes a poor title — it's
+// a full sentence — so we deliberately do NOT fall back to it. Generic
+// "Video by <handle>" reads better than a 80-char truncated summary.
+const pickBetterTitle = (currentTitle, analysis) => {
+  const isGeneric = !currentTitle || /^video by\s+/i.test(currentTitle) || /^instagram (?:post|reel|igtv)\b/i.test(currentTitle);
+  if (!isGeneric) return null;
+  const sd = analysis?.structuredData || {};
+  const candidate =
+    sd.recipe?.title ||
+    sd.product?.name ||
+    sd.event?.eventName ||
+    sd.itinerary?.destination ||
+    sd.place?.name ||
+    null;
+  if (!candidate) return null;
+  const clean = String(candidate).trim().replace(/\s+/g, ' ').slice(0, 80);
+  return clean && clean.toLowerCase() !== String(currentTitle).toLowerCase() ? clean : null;
+};
+
 // Fire-and-forget wrapper — never throws, never blocks caller.
 const enqueue = (saveId) => {
   setImmediate(() => {
@@ -208,4 +280,4 @@ const enqueue = (saveId) => {
   });
 };
 
-module.exports = { processSave, enqueue };
+module.exports = { processSave, enqueue, __test__: { pickBetterTitle } };

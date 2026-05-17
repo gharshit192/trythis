@@ -84,6 +84,30 @@ export const deleteSave = (id) => api.delete(`/saves/${id}`);
 
 export const refreshThumb = (id) => api.post(`/saves/${id}/refresh-thumb`);
 
+// Multi-screenshot upload. `pickerResults` from expo-image-picker, plus optional fields.
+export const uploadScreenshots = async ({ pickerResults, title, notes, collectionId, category } = {}) => {
+  if (!pickerResults || !pickerResults.length) throw new Error('pickerResults required');
+  const form = new FormData();
+  for (const asset of pickerResults) {
+    const uri = asset.uri || asset;
+    const filename = asset.fileName || (uri.split('/').pop()) || `photo-${Date.now()}.jpg`;
+    const mime = asset.mimeType || (filename.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg');
+    // RN FormData accepts { uri, name, type } objects.
+    form.append('images', { uri, name: filename, type: mime });
+  }
+  if (title) form.append('title', title);
+  if (notes) form.append('notes', notes);
+  if (collectionId) form.append('collectionId', collectionId);
+  if (category) form.append('category', category);
+  // Strip the JSON Content-Type so RN sets the multipart boundary itself.
+  return api.post('/saves/upload-screenshots', form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    transformRequest: (data) => data,
+  });
+};
+
+export const updateIntent = (id, body) => api.patch(`/saves/${id}/intent`, body);
+
 // ============ COLLECTION APIs ============
 export const getCollections = () => api.get('/collections');
 

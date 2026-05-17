@@ -2,6 +2,7 @@ require('dotenv').config();
 const app = require('./app');
 const connectDB = require('./config/database');
 const redisClient = require('./config/redis');
+const purgeScreenshots = require('./jobs/purgeScreenshots');
 
 const PORT = process.env.PORT || 4000;
 
@@ -19,6 +20,8 @@ const startServer = async () => {
       console.log(`🚀 Server running at http://localhost:${PORT}`);
       console.log(`📊 API Health: http://localhost:${PORT}/health`);
     });
+
+    purgeScreenshots.start();
   } catch (error) {
     console.error('❌ Failed to start server:', error.message);
     process.exit(1);

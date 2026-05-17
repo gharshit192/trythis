@@ -55,7 +55,7 @@ const eventSchema = new mongoose.Schema({
 
 const transcriptionSchema = new mongoose.Schema({
   text: String,
-  source: { type: String, enum: ['whisper', 'subtitles'] },
+  source: { type: String, enum: ['whisper', 'subtitles', 'ocr'] },
   detectedLanguage: String,
   confidence: Number,
   translation: String,
@@ -109,6 +109,20 @@ const intentItemSchema = new mongoose.Schema({
   width: Number,
   height: Number,
   videoUrl: String,                  // local /static/<id>.mp4 once muxed
+
+  // Multi-screenshot uploads. Original purged after 2 working days,
+  // thumbnail kept forever for the carousel.
+  screenshots: [{
+    url: String,             // /static/screenshots/full/<filename>; nulled after purge
+    thumbnailUrl: String,    // /static/screenshots/thumb/<filename>; kept forever
+    ocrText: String,
+    order: { type: Number, default: 0 },
+    uploadedAt: { type: Date, default: () => new Date() },
+    purgeAfter: Date,        // computed at upload via addWorkingDays(now, 2)
+    purgedAt: Date,          // null until sweeper runs
+    bytes: Number,           // original file size
+    _id: false,
+  }],
 
   // Classification
   category: {
