@@ -1,0 +1,1235 @@
+{
+  "_meta": {
+    "version": "1.0",
+    "purpose": "Ground truth for the 60+ test URLs in test-urls.txt. Use this to validate your 18 category extractors.",
+    "generatedAt": "2026-05-15",
+    "instructions": [
+      "1. Run each URL in test-urls.txt through your extraction engine.",
+      "2. Compare your extractor's output to the 'expected' object for that URL.",
+      "3. Score by: category correctness (most important), subcategory match, intent match, and field-level recall (places, brands, prices, etc).",
+      "4. Aim for >0.85 category accuracy and >0.70 field recall in Phase 1.",
+      "5. URLs marked 'volatile' may have changed/404'd — skip if unreachable."
+    ],
+    "scoringWeights": {
+      "category": 0.40,
+      "subCategory": 0.15,
+      "intent": 0.15,
+      "entityRecall": 0.20,
+      "confidence": 0.10
+    },
+    "expectedCategoryDistribution": {
+      "cafes": 4, "restaurants": 4, "travel": 5, "hotels": 4,
+      "shopping": 3, "fashion": 4, "homeDecor": 4, "tech": 4,
+      "learning": 4, "startups": 4, "finance": 4,
+      "fitness": 4, "wellness": 4, "productivity": 4, "recipes": 4,
+      "events": 4, "experiences": 4, "entertainment": 4
+    }
+  },
+
+  "groundTruth": [
+
+    {
+      "url": "https://www.zomato.com/bangalore/third-wave-coffee-roasters-3-indiranagar",
+      "whatItIs": "Zomato listing for Third Wave Coffee Roasters, a popular specialty coffee chain location in Indiranagar, Bengaluru.",
+      "expected": {
+        "extractor": "cafes",
+        "category": "Places",
+        "subCategory": "Cafe",
+        "intent": "Visit",
+        "place": "Third Wave Coffee Roasters",
+        "city": "Bengaluru",
+        "neighborhood": "Indiranagar",
+        "vibe": ["WFH-friendly", "specialty coffee", "quiet"],
+        "priceRange": "₹₹",
+        "cuisine": ["coffee", "cafe food"],
+        "tags": ["cafe", "specialty-coffee", "wfh", "bengaluru"],
+        "rating": "expected 4.0-4.5 stars",
+        "expectedConfidence": 0.90
+      }
+    },
+    {
+      "url": "https://www.instagram.com/cafesofbangalore/",
+      "whatItIs": "Instagram profile that curates Bengaluru cafe content. ~3,700 followers, curator account.",
+      "expected": {
+        "extractor": "cafes",
+        "category": "Places",
+        "subCategory": "Cafe discovery",
+        "intent": "Visit",
+        "creator": "@cafesofbangalore",
+        "city": "Bengaluru",
+        "sourceType": "instagram_profile",
+        "tags": ["cafe", "bengaluru", "discovery", "curator"],
+        "expectedConfidence": 0.85
+      }
+    },
+    {
+      "url": "https://lbb.in/bangalore/the-most-instagrammable-insta-worthy-cafes-bangalore/",
+      "whatItIs": "LBB editorial listicle of Instagrammable cafes in Bangalore — Amour, 1Q1, Hard Rock Cafe, Champaca, Enerjuvate.",
+      "expected": {
+        "extractor": "cafes",
+        "category": "Places",
+        "subCategory": "Cafe",
+        "intent": "Visit",
+        "places": ["Amour", "1Q1", "Hard Rock Cafe", "Champaca", "Enerjuvate"],
+        "city": "Bengaluru",
+        "vibe": ["Instagrammable", "aesthetic"],
+        "tags": ["cafe", "instagrammable", "aesthetic", "date"],
+        "sourceType": "article",
+        "expectedConfidence": 0.88
+      }
+    },
+    {
+      "url": "https://champaca.in/",
+      "whatItIs": "Champaca — an independent bookstore + cafe in Bengaluru (Vasanth Nagar & Indiranagar locations). Women-run, literary, quiet.",
+      "expected": {
+        "extractor": "cafes",
+        "category": "Places",
+        "subCategory": "Bookstore Cafe",
+        "intent": "Visit",
+        "place": "Champaca",
+        "city": "Bengaluru",
+        "neighborhood": ["Vasanth Nagar", "Indiranagar"],
+        "vibe": ["literary", "quiet", "indie"],
+        "tags": ["bookstore", "cafe", "indie", "bengaluru"],
+        "expectedConfidence": 0.85,
+        "note": "Hybrid cafe + retail — extractor should handle this gracefully"
+      }
+    },
+
+    {
+      "url": "https://www.zomato.com/bangalore/toit-indiranagar",
+      "whatItIs": "Toit — landmark microbrewery + restaurant in Indiranagar, Bengaluru. House beers, pizzas, large crowds.",
+      "expected": {
+        "extractor": "restaurants",
+        "category": "Places",
+        "subCategory": "Restaurant",
+        "intent": "Visit",
+        "place": "Toit",
+        "city": "Bengaluru",
+        "neighborhood": "Indiranagar",
+        "cuisine": ["European", "Continental", "Microbrewery"],
+        "vibe": ["lively", "crowded", "beer"],
+        "priceRange": "₹₹₹",
+        "tags": ["microbrewery", "beer", "pizza", "indiranagar"],
+        "expectedConfidence": 0.92
+      }
+    },
+    {
+      "url": "https://www.swiggy.com/restaurants/social-koramangala-bangalore-50286",
+      "whatItIs": "SOCIAL Koramangala — all-day cafe+bar chain by Impresario. Cocktails, food, coworking-style vibe.",
+      "expected": {
+        "extractor": "restaurants",
+        "category": "Places",
+        "subCategory": "Restaurant Bar",
+        "intent": "Visit",
+        "place": "SOCIAL Koramangala",
+        "city": "Bengaluru",
+        "neighborhood": "Koramangala",
+        "cuisine": ["Continental", "Indian", "Bar"],
+        "vibe": ["all-day", "coworking", "lively"],
+        "tags": ["bar", "cafe", "coworking", "social"],
+        "expectedConfidence": 0.88,
+        "note": "URL may 404 — Swiggy URLs change. If so, gracefully fall back."
+      }
+    },
+    {
+      "url": "https://www.thehindu.com/life-and-style/food/best-restaurants-bangalore-2026/article65432101.ece",
+      "whatItIs": "VOLATILE: example URL pattern for The Hindu food editorial. May 404.",
+      "expected": {
+        "extractor": "restaurants",
+        "category": "Places",
+        "subCategory": "Restaurant",
+        "intent": "Visit",
+        "city": "Bengaluru",
+        "sourceType": "article",
+        "expectedConfidence": 0.50,
+        "note": "Test URL — may 404. Extractor should handle gracefully."
+      }
+    },
+    {
+      "url": "https://www.zomato.com/mumbai/bastian-bandra-west",
+      "whatItIs": "Bastian — high-end Asian-Mediterranean restaurant in Bandra West, Mumbai. Celebrity-favorite.",
+      "expected": {
+        "extractor": "restaurants",
+        "category": "Places",
+        "subCategory": "Restaurant",
+        "intent": "Visit",
+        "place": "Bastian",
+        "city": "Mumbai",
+        "neighborhood": "Bandra West",
+        "cuisine": ["Asian", "Mediterranean", "Seafood"],
+        "vibe": ["upscale", "celebrity", "date night"],
+        "priceRange": "₹₹₹₹",
+        "tags": ["fine-dining", "mumbai", "bandra", "seafood"],
+        "expectedConfidence": 0.92
+      }
+    },
+
+    {
+      "url": "https://www.tripoto.com/trip/tirthan-valley-himachal-pradesh-travel-guide",
+      "whatItIs": "Travel guide to Tirthan Valley in Himachal Pradesh — offbeat, mountain destination near Great Himalayan National Park.",
+      "expected": {
+        "extractor": "travel",
+        "category": "Places",
+        "subCategory": "Destination guide",
+        "intent": "Trip Planning",
+        "places": ["Tirthan Valley", "Jibhi", "Great Himalayan National Park"],
+        "state": "Himachal Pradesh",
+        "vibe": ["mountain", "offbeat", "nature"],
+        "tags": ["travel", "himachal", "mountains", "offbeat"],
+        "duration": "3-5 days typical",
+        "expectedConfidence": 0.90
+      }
+    },
+    {
+      "url": "https://www.lonelyplanet.com/india/meghalaya",
+      "whatItIs": "Lonely Planet destination guide for Meghalaya — Northeast India state known for living root bridges, waterfalls, Shillong.",
+      "expected": {
+        "extractor": "travel",
+        "category": "Places",
+        "subCategory": "Destination guide",
+        "intent": "Trip Planning",
+        "places": ["Shillong", "Cherrapunji", "Mawlynnong", "Living root bridges"],
+        "state": "Meghalaya",
+        "vibe": ["lush", "monsoon", "offbeat", "tribal culture"],
+        "tags": ["travel", "meghalaya", "northeast", "monsoon"],
+        "expectedConfidence": 0.90,
+        "note": "May 404 — Lonely Planet restructures URLs occasionally"
+      }
+    },
+    {
+      "url": "https://www.youtube.com/@MountainTrekker",
+      "whatItIs": "Mountain Trekker — Hindi-language YouTube travel channel by Manish Solanki. Solo motorcycle & adventure travel, Himalayan focus.",
+      "expected": {
+        "extractor": "travel",
+        "category": "Places",
+        "subCategory": "Creator",
+        "intent": "Trip Planning",
+        "creator": "Mountain Trekker (Manish Solanki)",
+        "vibe": ["solo travel", "adventure", "motorcycle"],
+        "language": "Hindi",
+        "tags": ["travel", "mountains", "himalaya", "motorcycle", "creator"],
+        "sourceType": "youtube_channel",
+        "expectedConfidence": 0.85
+      }
+    },
+    {
+      "url": "https://www.instagram.com/tanyakhanijow/",
+      "whatItIs": "Tanya Khanijow — popular Indian travel creator, focuses on offbeat/eco-friendly destinations, Northeast India especially Arunachal & Spiti.",
+      "expected": {
+        "extractor": "travel",
+        "category": "Places",
+        "subCategory": "Creator",
+        "intent": "Trip Planning",
+        "creator": "@tanyakhanijow",
+        "vibe": ["offbeat", "eco-friendly", "northeast"],
+        "tags": ["travel", "offbeat", "creator", "northeast"],
+        "sourceType": "instagram_profile",
+        "expectedConfidence": 0.85
+      }
+    },
+    {
+      "url": "https://www.makemytrip.com/blog/best-places-visit-spiti-valley",
+      "whatItIs": "MakeMyTrip blog post on Spiti Valley travel — Key Monastery, Chandratal, high-altitude desert.",
+      "expected": {
+        "extractor": "travel",
+        "category": "Places",
+        "subCategory": "Destination guide",
+        "intent": "Trip Planning",
+        "places": ["Spiti Valley", "Key Monastery", "Chandratal Lake", "Kaza"],
+        "state": "Himachal Pradesh",
+        "vibe": ["high-altitude", "Buddhist", "adventure"],
+        "tags": ["spiti", "himachal", "monastery", "adventure"],
+        "expectedConfidence": 0.88
+      }
+    },
+
+    {
+      "url": "https://www.airbnb.co.in/rooms/12345678",
+      "whatItIs": "VOLATILE: example Airbnb room URL — actual room ID likely invalid. Extractor should detect Airbnb pattern even on 404.",
+      "expected": {
+        "extractor": "hotels",
+        "category": "Places",
+        "subCategory": "Stay",
+        "intent": "Book",
+        "platform": "Airbnb",
+        "sourceType": "stay_listing",
+        "expectedConfidence": 0.40,
+        "note": "Will likely 404. Test that source detection still works."
+      }
+    },
+    {
+      "url": "https://www.booking.com/hotel/in/posh-pebbles-goa.html",
+      "whatItIs": "Booking.com listing for Posh Pebbles — boutique stay in Goa.",
+      "expected": {
+        "extractor": "hotels",
+        "category": "Places",
+        "subCategory": "Stay",
+        "intent": "Book",
+        "place": "Posh Pebbles",
+        "city": "Goa",
+        "platform": "Booking.com",
+        "vibe": ["boutique", "beach"],
+        "tags": ["stay", "goa", "boutique"],
+        "expectedConfidence": 0.75
+      }
+    },
+    {
+      "url": "https://www.thepostcardhotel.com/the-postcard-on-the-arabian-sea",
+      "whatItIs": "The Postcard Hotel — luxury boutique chain. 'The Postcard on the Arabian Sea' is their Velha Goa property.",
+      "expected": {
+        "extractor": "hotels",
+        "category": "Places",
+        "subCategory": "Hotel",
+        "intent": "Book",
+        "place": "The Postcard on the Arabian Sea",
+        "city": "Goa",
+        "neighborhood": "Velha Goa",
+        "brand": "The Postcard Hotel",
+        "vibe": ["luxury", "boutique", "beach"],
+        "priceRange": "₹₹₹₹",
+        "tags": ["luxury", "boutique", "goa"],
+        "expectedConfidence": 0.85
+      }
+    },
+    {
+      "url": "https://www.makemytrip.com/hotels/hotel-listing/?checkin=11242026&city=CTGOI",
+      "whatItIs": "MakeMyTrip hotel search results page for Goa (CTGOI = Goa city code).",
+      "expected": {
+        "extractor": "hotels",
+        "category": "Places",
+        "subCategory": "Hotel search",
+        "intent": "Book",
+        "city": "Goa",
+        "platform": "MakeMyTrip",
+        "tags": ["hotels", "goa", "search"],
+        "expectedConfidence": 0.70,
+        "note": "Search URL — limited extractable content"
+      }
+    },
+
+    {
+      "url": "https://www.amazon.in/Sony-WH-1000XM5-Cancelling-Wireless-Headphones/dp/B09Y2MZSZN",
+      "whatItIs": "Sony WH-1000XM5 — premium noise-cancelling wireless headphones on Amazon India. ~₹29,990.",
+      "expected": {
+        "extractor": "tech",
+        "category": "Shopping",
+        "subCategory": "Audio",
+        "intent": "Buy",
+        "brand": "Sony",
+        "productName": "WH-1000XM5",
+        "productType": "Wireless headphones",
+        "estimatedPrice": 29990,
+        "currency": "INR",
+        "platform": "Amazon",
+        "tags": ["headphones", "audio", "sony", "premium", "noise-cancelling"],
+        "expectedConfidence": 0.95,
+        "note": "Could also classify as 'shopping' generic — both acceptable. Tech is more specific."
+      }
+    },
+    {
+      "url": "https://www.flipkart.com/apple-iphone-15-blue-128-gb/p/itme4f0c5e98c1f1",
+      "whatItIs": "iPhone 15 (128GB, Blue) on Flipkart. ~₹65,000-79,900 depending on offers.",
+      "expected": {
+        "extractor": "tech",
+        "category": "Shopping",
+        "subCategory": "Smartphone",
+        "intent": "Buy",
+        "brand": "Apple",
+        "productName": "iPhone 15",
+        "productType": "Smartphone",
+        "estimatedPrice": 79900,
+        "currency": "INR",
+        "platform": "Flipkart",
+        "tags": ["iphone", "apple", "smartphone", "premium"],
+        "expectedConfidence": 0.93,
+        "note": "Flipkart sometimes blocks bots — fetch may fail. Source detection should still work."
+      }
+    },
+    {
+      "url": "https://www.myntra.com/sneakers/adidas/adidas-originals-unisex-samba-og-leather-sneakers/22678500/buy",
+      "whatItIs": "Adidas Samba OG sneakers on Myntra. ~₹9,999. Currently very trending in fashion/streetwear.",
+      "expected": {
+        "extractor": "shopping",
+        "category": "Shopping",
+        "subCategory": "Footwear",
+        "intent": "Buy",
+        "brand": "Adidas",
+        "productName": "Samba OG",
+        "productType": "Sneakers",
+        "estimatedPrice": 9999,
+        "currency": "INR",
+        "platform": "Myntra",
+        "vibe": ["trending", "streetwear"],
+        "tags": ["sneakers", "adidas", "samba", "lifestyle", "streetwear"],
+        "expectedConfidence": 0.93
+      }
+    },
+
+    {
+      "url": "https://www.amazon.in/gp/bestsellers",
+      "whatItIs": "Amazon India bestsellers page — general top products across all categories.",
+      "expected": {
+        "extractor": "shopping",
+        "category": "Shopping",
+        "subCategory": "Marketplace",
+        "intent": "Browse",
+        "platform": "Amazon",
+        "tags": ["amazon", "bestsellers", "shopping", "marketplace"],
+        "expectedConfidence": 0.78,
+        "note": "Generic browse page — extractor should detect platform and intent but won't have specific product"
+      }
+    },
+    {
+      "url": "https://www.flipkart.com/offers-list/top-deals",
+      "whatItIs": "Flipkart top deals / offers landing page. Sale/deals aggregator.",
+      "expected": {
+        "extractor": "shopping",
+        "category": "Shopping",
+        "subCategory": "Deals",
+        "intent": "Browse",
+        "platform": "Flipkart",
+        "vibe": ["deals", "discounts"],
+        "tags": ["flipkart", "deals", "discounts", "sale"],
+        "expectedConfidence": 0.80
+      }
+    },
+    {
+      "url": "https://nykaa.com/the-ordinary-niacinamide-10-zinc-1-30ml/p/305928",
+      "whatItIs": "The Ordinary Niacinamide 10% + Zinc 1% serum on Nykaa. Popular budget skincare. ~₹750.",
+      "expected": {
+        "extractor": "shopping",
+        "category": "Shopping",
+        "subCategory": "Beauty",
+        "intent": "Buy",
+        "brand": "The Ordinary",
+        "productName": "Niacinamide 10% + Zinc 1%",
+        "productType": "Skincare serum",
+        "estimatedPrice": 750,
+        "currency": "INR",
+        "platform": "Nykaa",
+        "tags": ["skincare", "niacinamide", "serum", "the-ordinary", "beauty"],
+        "expectedConfidence": 0.92
+      }
+    },
+    {
+      "url": "https://www.bigbasket.com/cl/fruits-vegetables/",
+      "whatItIs": "BigBasket fruits & vegetables category page. Online grocery in India.",
+      "expected": {
+        "extractor": "shopping",
+        "category": "Shopping",
+        "subCategory": "Grocery",
+        "intent": "Buy",
+        "platform": "BigBasket",
+        "productType": "Fruits and vegetables",
+        "tags": ["grocery", "bigbasket", "fruits", "vegetables"],
+        "expectedConfidence": 0.85
+      }
+    },
+
+    {
+      "url": "https://nicobar.com/collections/women",
+      "whatItIs": "Nicobar women's collection — modern Indian fashion brand. Premium, minimalist aesthetic.",
+      "expected": {
+        "extractor": "fashion",
+        "category": "Shopping",
+        "subCategory": "Women's fashion",
+        "intent": "Buy",
+        "brand": "Nicobar",
+        "vibe": ["modern Indian", "minimalist", "premium"],
+        "tags": ["fashion", "women", "premium", "indian"],
+        "expectedConfidence": 0.90
+      }
+    },
+    {
+      "url": "https://suta.in/products/linen-mid-length-kurta-set",
+      "whatItIs": "Suta linen kurta set — women's ethnic wear, ~₹2,400. Suta is a sustainable handloom brand.",
+      "expected": {
+        "extractor": "fashion",
+        "category": "Shopping",
+        "subCategory": "Women's ethnic",
+        "intent": "Buy",
+        "brand": "Suta",
+        "productName": "Linen mid-length kurta set",
+        "productType": "Kurta set",
+        "estimatedPrice": 2400,
+        "currency": "INR",
+        "vibe": ["handloom", "ethnic", "sustainable"],
+        "tags": ["kurta", "linen", "ethnic", "women", "handloom"],
+        "expectedConfidence": 0.92
+      }
+    },
+    {
+      "url": "https://www.thelabellife.com/collections/dresses",
+      "whatItIs": "The Label Life — co-founded by Sussanne Khan, Malaika Arora, Bipasha Basu. Western women's wear collection page.",
+      "expected": {
+        "extractor": "fashion",
+        "category": "Shopping",
+        "subCategory": "Women's western",
+        "intent": "Buy",
+        "brand": "The Label Life",
+        "productType": "Dresses",
+        "vibe": ["contemporary", "western"],
+        "tags": ["fashion", "women", "dresses", "western"],
+        "expectedConfidence": 0.88
+      }
+    },
+    {
+      "url": "https://www.instagram.com/komalpandeyofficial/",
+      "whatItIs": "Komal Pandey — one of India's most-followed fashion creators. Editorial, statement looks. Brand: HRX, Myntra, etc.",
+      "expected": {
+        "extractor": "fashion",
+        "category": "Shopping",
+        "subCategory": "Creator",
+        "intent": "Inspiration",
+        "creator": "@komalpandeyofficial",
+        "vibe": ["editorial", "statement", "experimental"],
+        "tags": ["fashion", "women", "creator", "indian"],
+        "sourceType": "instagram_profile",
+        "expectedConfidence": 0.88
+      }
+    },
+
+    {
+      "url": "https://urbanladder.com/products/heath-2-seater-sofa-charcoal-grey",
+      "whatItIs": "Urban Ladder Heath 2-seater sofa in charcoal grey. ~₹34,999. Mid-range Indian furniture brand.",
+      "expected": {
+        "extractor": "homeDecor",
+        "category": "Shopping",
+        "subCategory": "Furniture",
+        "intent": "Buy",
+        "brand": "Urban Ladder",
+        "productName": "Heath 2-seater sofa",
+        "productType": "Sofa",
+        "estimatedPrice": 34999,
+        "currency": "INR",
+        "color": "Charcoal grey",
+        "tags": ["sofa", "furniture", "home", "urban-ladder"],
+        "expectedConfidence": 0.92
+      }
+    },
+    {
+      "url": "https://www.pepperfry.com/product/bondi-engineered-wood-bookshelf-walnut-finish-1741234.html",
+      "whatItIs": "Pepperfry bookshelf — engineered wood, walnut finish. Pepperfry is a major Indian online furniture marketplace.",
+      "expected": {
+        "extractor": "homeDecor",
+        "category": "Shopping",
+        "subCategory": "Furniture",
+        "intent": "Buy",
+        "brand": "Pepperfry",
+        "productType": "Bookshelf",
+        "platform": "Pepperfry",
+        "tags": ["bookshelf", "furniture", "wood", "home"],
+        "expectedConfidence": 0.85,
+        "note": "Product URL may 404 — example pattern"
+      }
+    },
+    {
+      "url": "https://www.westelm.com/products/andes-sofa-h2960/",
+      "whatItIs": "West Elm Andes sofa — premium American home furniture brand. ~$1,500-2,500 USD.",
+      "expected": {
+        "extractor": "homeDecor",
+        "category": "Shopping",
+        "subCategory": "Furniture",
+        "intent": "Buy",
+        "brand": "West Elm",
+        "productName": "Andes sofa",
+        "productType": "Sofa",
+        "currency": "USD",
+        "vibe": ["premium", "modern", "minimalist"],
+        "tags": ["sofa", "furniture", "premium", "west-elm"],
+        "expectedConfidence": 0.88
+      }
+    },
+    {
+      "url": "https://nicobar.com/collections/home",
+      "whatItIs": "Nicobar home collection — tableware, textiles, ceramics. Premium minimal Indian home brand.",
+      "expected": {
+        "extractor": "homeDecor",
+        "category": "Shopping",
+        "subCategory": "Home goods",
+        "intent": "Buy",
+        "brand": "Nicobar",
+        "vibe": ["minimalist", "premium", "modern Indian"],
+        "tags": ["home", "decor", "tableware", "premium"],
+        "expectedConfidence": 0.88
+      }
+    },
+
+    {
+      "url": "https://www.amazon.in/Apple-MacBook-Air-13-3-inch-Display/dp/B0CX23V2ZK",
+      "whatItIs": "Apple MacBook Air M3 13-inch on Amazon India. ~₹1,14,900 starting.",
+      "expected": {
+        "extractor": "tech",
+        "category": "Shopping",
+        "subCategory": "Laptop",
+        "intent": "Buy",
+        "brand": "Apple",
+        "productName": "MacBook Air M3 13-inch",
+        "productType": "Laptop",
+        "estimatedPrice": 114900,
+        "currency": "INR",
+        "platform": "Amazon",
+        "tags": ["macbook", "apple", "laptop", "premium", "m3"],
+        "expectedConfidence": 0.95
+      }
+    },
+    {
+      "url": "https://store.dji.com/in/product/osmo-pocket-3",
+      "whatItIs": "DJI Osmo Pocket 3 — compact vlog camera with stabilization. ~₹71,900 in India.",
+      "expected": {
+        "extractor": "tech",
+        "category": "Shopping",
+        "subCategory": "Camera",
+        "intent": "Buy",
+        "brand": "DJI",
+        "productName": "Osmo Pocket 3",
+        "productType": "Vlog camera",
+        "estimatedPrice": 71900,
+        "currency": "INR",
+        "vibe": ["creator-focused", "portable"],
+        "tags": ["camera", "vlog", "dji", "creator"],
+        "expectedConfidence": 0.92
+      }
+    },
+    {
+      "url": "https://www.keychron.com/products/keychron-q1-pro",
+      "whatItIs": "Keychron Q1 Pro — premium wireless mechanical keyboard. Popular WFH/coder favorite. ~₹22,400.",
+      "expected": {
+        "extractor": "tech",
+        "category": "Shopping",
+        "subCategory": "Peripheral",
+        "intent": "Buy",
+        "brand": "Keychron",
+        "productName": "Q1 Pro",
+        "productType": "Mechanical keyboard",
+        "estimatedPrice": 22400,
+        "currency": "INR",
+        "vibe": ["wfh", "premium", "enthusiast"],
+        "tags": ["keyboard", "mechanical", "wireless", "wfh"],
+        "expectedConfidence": 0.90
+      }
+    },
+    {
+      "url": "https://www.youtube.com/@mkbhd",
+      "whatItIs": "MKBHD (Marques Brownlee) — most-followed tech reviewer globally. 19M+ YouTube subscribers, premium tech focus.",
+      "expected": {
+        "extractor": "tech",
+        "category": "Shopping",
+        "subCategory": "Creator",
+        "intent": "Research",
+        "creator": "MKBHD",
+        "vibe": ["premium", "thorough", "tech reviews"],
+        "tags": ["tech", "reviews", "gadgets", "creator", "youtube"],
+        "sourceType": "youtube_channel",
+        "expectedConfidence": 0.92
+      }
+    },
+
+    {
+      "url": "https://www.coursera.org/learn/machine-learning",
+      "whatItIs": "Andrew Ng's foundational Machine Learning course on Coursera. Stanford-affiliated, free to audit, paid certificate.",
+      "expected": {
+        "extractor": "learning",
+        "category": "Growth",
+        "subCategory": "Online course",
+        "intent": "Learn",
+        "platform": "Coursera",
+        "title": "Machine Learning",
+        "instructor": "Andrew Ng",
+        "topic": ["machine learning", "AI", "data science"],
+        "difficulty": "Intermediate",
+        "duration": "11 weeks typical",
+        "tags": ["course", "ml", "ai", "stanford", "coursera"],
+        "expectedConfidence": 0.95
+      }
+    },
+    {
+      "url": "https://www.udemy.com/course/the-complete-javascript-course/",
+      "whatItIs": "Jonas Schmedtmann's 'The Complete JavaScript Course' on Udemy — one of the bestselling JS courses, ~70 hours.",
+      "expected": {
+        "extractor": "learning",
+        "category": "Growth",
+        "subCategory": "Online course",
+        "intent": "Learn",
+        "platform": "Udemy",
+        "title": "The Complete JavaScript Course",
+        "topic": ["javascript", "web development", "programming"],
+        "difficulty": "Beginner to Advanced",
+        "duration": "70+ hours",
+        "tags": ["javascript", "programming", "udemy", "course"],
+        "expectedConfidence": 0.93
+      }
+    },
+    {
+      "url": "https://www.youtube.com/@3blue1brown",
+      "whatItIs": "3Blue1Brown — Grant Sanderson's math/visualization YouTube channel. Linear algebra, calculus, neural networks animated.",
+      "expected": {
+        "extractor": "learning",
+        "category": "Growth",
+        "subCategory": "Educational creator",
+        "intent": "Learn",
+        "creator": "3Blue1Brown (Grant Sanderson)",
+        "topic": ["mathematics", "linear algebra", "calculus", "neural networks"],
+        "vibe": ["animated", "deep", "visual"],
+        "tags": ["math", "education", "youtube", "visualization"],
+        "sourceType": "youtube_channel",
+        "expectedConfidence": 0.90
+      }
+    },
+    {
+      "url": "https://maven.com/p/cohort-courses",
+      "whatItIs": "Maven — platform for cohort-based online courses. Tech/career focused, premium.",
+      "expected": {
+        "extractor": "learning",
+        "category": "Growth",
+        "subCategory": "Course platform",
+        "intent": "Learn",
+        "platform": "Maven",
+        "vibe": ["cohort-based", "premium", "career"],
+        "tags": ["courses", "cohort", "career", "professional"],
+        "expectedConfidence": 0.80
+      }
+    },
+
+    {
+      "url": "https://www.ycombinator.com/library/4A-a-guide-to-seed-fundraising",
+      "whatItIs": "Y Combinator's classic guide to seed fundraising by Geoff Ralston. Essential founder reading.",
+      "expected": {
+        "extractor": "startups",
+        "category": "Growth",
+        "subCategory": "Founder resource",
+        "intent": "Learn",
+        "publisher": "Y Combinator",
+        "title": "A Guide to Seed Fundraising",
+        "author": "Geoff Ralston",
+        "topic": ["fundraising", "seed", "vc", "startups"],
+        "tags": ["yc", "fundraising", "seed", "startups", "guide"],
+        "expectedConfidence": 0.92
+      }
+    },
+    {
+      "url": "https://www.paulgraham.com/ds.html",
+      "whatItIs": "Paul Graham's essay 'Do Things That Don't Scale' — one of the most-cited founder essays.",
+      "expected": {
+        "extractor": "startups",
+        "category": "Growth",
+        "subCategory": "Essay",
+        "intent": "Read",
+        "author": "Paul Graham",
+        "title": "Do Things That Don't Scale",
+        "topic": ["startups", "early-stage", "founder advice"],
+        "tags": ["pg", "essay", "startups", "founder"],
+        "expectedConfidence": 0.90
+      }
+    },
+    {
+      "url": "https://www.firstround.com/review/",
+      "whatItIs": "First Round Review — startup advice publication by First Round Capital. In-depth founder/operator interviews.",
+      "expected": {
+        "extractor": "startups",
+        "category": "Growth",
+        "subCategory": "Publication",
+        "intent": "Read",
+        "publisher": "First Round Capital",
+        "topic": ["startups", "operators", "founders", "growth"],
+        "vibe": ["in-depth", "interview-driven"],
+        "tags": ["startups", "first-round", "operators", "founder"],
+        "expectedConfidence": 0.88
+      }
+    },
+    {
+      "url": "https://news.ycombinator.com/",
+      "whatItIs": "Hacker News — Y Combinator's tech/startup discussion forum. Heavy traffic, link aggregation + comments.",
+      "expected": {
+        "extractor": "startups",
+        "category": "Growth",
+        "subCategory": "Community",
+        "intent": "Read",
+        "platform": "Hacker News",
+        "vibe": ["tech", "discussion", "aggregator"],
+        "tags": ["hn", "tech", "startups", "community"],
+        "expectedConfidence": 0.85
+      }
+    },
+
+    {
+      "url": "https://www.etmoney.com/",
+      "whatItIs": "ET Money — mutual fund investment platform by Times Internet. Free direct mutual fund investing in India.",
+      "expected": {
+        "extractor": "finance",
+        "category": "Money",
+        "subCategory": "Investment platform",
+        "intent": "Use",
+        "platform": "ET Money",
+        "topic": ["mutual funds", "investing", "personal finance"],
+        "tags": ["finance", "mutual-funds", "investing", "india"],
+        "expectedConfidence": 0.90
+      }
+    },
+    {
+      "url": "https://groww.in/mutual-funds/category/best-flexi-cap-mutual-funds",
+      "whatItIs": "Groww's list of best flexi-cap mutual funds. Groww is a major Indian discount broker + MF platform.",
+      "expected": {
+        "extractor": "finance",
+        "category": "Money",
+        "subCategory": "Investment research",
+        "intent": "Research",
+        "platform": "Groww",
+        "topic": ["mutual funds", "flexi-cap", "investing"],
+        "tags": ["finance", "mutual-funds", "groww", "flexi-cap"],
+        "expectedConfidence": 0.90
+      }
+    },
+    {
+      "url": "https://zerodha.com/varsity/",
+      "whatItIs": "Zerodha Varsity — free comprehensive education on stock markets, fundamental & technical analysis. Highly respected.",
+      "expected": {
+        "extractor": "finance",
+        "category": "Money",
+        "subCategory": "Education",
+        "intent": "Learn",
+        "platform": "Zerodha Varsity",
+        "topic": ["stock market", "investing", "technical analysis", "fundamental analysis"],
+        "tags": ["finance", "education", "zerodha", "stocks"],
+        "expectedConfidence": 0.92,
+        "note": "Could also classify as Learning — both valid. Finance is more domain-specific."
+      }
+    },
+    {
+      "url": "https://www.youtube.com/@CARachanaRanade",
+      "whatItIs": "CA Rachana Ranade — popular finance YouTuber, demystifies stock market for Indian retail investors. 4M+ subscribers.",
+      "expected": {
+        "extractor": "finance",
+        "category": "Money",
+        "subCategory": "Creator",
+        "intent": "Learn",
+        "creator": "CA Rachana Ranade",
+        "topic": ["stock market", "personal finance", "investing"],
+        "language": "Hindi/English",
+        "tags": ["finance", "stocks", "creator", "youtube"],
+        "sourceType": "youtube_channel",
+        "expectedConfidence": 0.90
+      }
+    },
+
+    {
+      "url": "https://www.youtube.com/@yogawithadriene",
+      "whatItIs": "Yoga With Adriene — most popular yoga YouTube channel globally. Free guided yoga, all levels. 12M+ subscribers.",
+      "expected": {
+        "extractor": "fitness",
+        "category": "Health",
+        "subCategory": "Yoga",
+        "intent": "Practice",
+        "creator": "Yoga With Adriene",
+        "vibe": ["accessible", "beginner-friendly", "warm"],
+        "difficulty": "All levels",
+        "tags": ["yoga", "fitness", "creator", "free", "youtube"],
+        "sourceType": "youtube_channel",
+        "expectedConfidence": 0.92
+      }
+    },
+    {
+      "url": "https://www.instagram.com/yasminkarachiwala/",
+      "whatItIs": "Yasmin Karachiwala — celebrity Pilates trainer in India. Trains Deepika Padukone, Alia Bhatt, Katrina Kaif.",
+      "expected": {
+        "extractor": "fitness",
+        "category": "Health",
+        "subCategory": "Pilates",
+        "intent": "Practice",
+        "creator": "@yasminkarachiwala",
+        "city": "Mumbai",
+        "vibe": ["celebrity-trainer", "pilates"],
+        "tags": ["pilates", "fitness", "celebrity", "creator"],
+        "expectedConfidence": 0.88
+      }
+    },
+    {
+      "url": "https://www.cult.fit/live/yoga",
+      "whatItIs": "Cult.fit yoga live classes — Indian fitness platform offering live online yoga sessions.",
+      "expected": {
+        "extractor": "fitness",
+        "category": "Health",
+        "subCategory": "Yoga",
+        "intent": "Subscribe",
+        "platform": "Cult.fit",
+        "vibe": ["live classes", "indian"],
+        "tags": ["yoga", "fitness", "cult-fit", "live"],
+        "expectedConfidence": 0.85
+      }
+    },
+    {
+      "url": "https://www.youtube.com/@FlyingBeast320",
+      "whatItIs": "Flying Beast (Gaurav Taneja) — fitness + lifestyle vlogger, ex-pilot, certified nutritionist. 8M+ subscribers.",
+      "expected": {
+        "extractor": "fitness",
+        "category": "Health",
+        "subCategory": "Creator",
+        "intent": "Watch",
+        "creator": "Flying Beast (Gaurav Taneja)",
+        "vibe": ["bodybuilding", "lifestyle", "Indian"],
+        "tags": ["fitness", "bodybuilding", "creator", "youtube"],
+        "sourceType": "youtube_channel",
+        "expectedConfidence": 0.88
+      }
+    },
+
+    {
+      "url": "https://www.headspace.com/meditation/sleep",
+      "whatItIs": "Headspace's sleep meditation collection — guided sleep meditations, sleepcasts, sleep music.",
+      "expected": {
+        "extractor": "wellness",
+        "category": "Health",
+        "subCategory": "Meditation",
+        "intent": "Practice",
+        "platform": "Headspace",
+        "topic": ["sleep", "meditation", "mindfulness"],
+        "vibe": ["guided", "calming"],
+        "tags": ["meditation", "sleep", "wellness", "headspace"],
+        "expectedConfidence": 0.92
+      }
+    },
+    {
+      "url": "https://www.calm.com/",
+      "whatItIs": "Calm — meditation, sleep, and mindfulness app. Major competitor to Headspace.",
+      "expected": {
+        "extractor": "wellness",
+        "category": "Health",
+        "subCategory": "Meditation",
+        "intent": "Subscribe",
+        "platform": "Calm",
+        "topic": ["meditation", "sleep", "mindfulness"],
+        "tags": ["meditation", "wellness", "calm", "app"],
+        "expectedConfidence": 0.90
+      }
+    },
+    {
+      "url": "https://www.instagram.com/natasha.noel/",
+      "whatItIs": "Natasha Noel — yoga instructor, body-positive wellness creator from India.",
+      "expected": {
+        "extractor": "wellness",
+        "category": "Health",
+        "subCategory": "Yoga / wellness",
+        "intent": "Practice",
+        "creator": "@natasha.noel",
+        "vibe": ["body-positive", "mindful", "yoga"],
+        "tags": ["yoga", "wellness", "body-positive", "creator"],
+        "sourceType": "instagram_profile",
+        "expectedConfidence": 0.85,
+        "note": "Borderline between fitness and wellness — wellness emphasizes the mental/holistic angle"
+      }
+    },
+    {
+      "url": "https://www.theartofliving.org/in-en/yoga",
+      "whatItIs": "Art of Living foundation's yoga & breathwork programs — Sri Sri Ravi Shankar's org. Sudarshan Kriya.",
+      "expected": {
+        "extractor": "wellness",
+        "category": "Health",
+        "subCategory": "Yoga / breathwork",
+        "intent": "Learn",
+        "organization": "Art of Living",
+        "topic": ["yoga", "breathwork", "Sudarshan Kriya"],
+        "tags": ["yoga", "breathwork", "spiritual", "art-of-living"],
+        "expectedConfidence": 0.85
+      }
+    },
+
+    {
+      "url": "https://www.notion.so/templates",
+      "whatItIs": "Notion templates gallery — productivity, planning, work templates for the Notion app.",
+      "expected": {
+        "extractor": "productivity",
+        "category": "Health",
+        "subCategory": "Templates / tool",
+        "intent": "Use",
+        "platform": "Notion",
+        "topic": ["templates", "productivity", "planning"],
+        "tags": ["notion", "templates", "productivity"],
+        "expectedConfidence": 0.90,
+        "note": "Productivity is in Health bucket per the 18-extractor map"
+      }
+    },
+    {
+      "url": "https://todoist.com/",
+      "whatItIs": "Todoist — popular task management app, web + mobile.",
+      "expected": {
+        "extractor": "productivity",
+        "category": "Health",
+        "subCategory": "Task management",
+        "intent": "Use",
+        "platform": "Todoist",
+        "tags": ["tasks", "productivity", "todoist", "gtd"],
+        "expectedConfidence": 0.92
+      }
+    },
+    {
+      "url": "https://www.youtube.com/@aliabdaal",
+      "whatItIs": "Ali Abdaal — productivity & studying YouTuber, ex-doctor. Books: 'Feel-Good Productivity'. 5M+ subscribers.",
+      "expected": {
+        "extractor": "productivity",
+        "category": "Health",
+        "subCategory": "Creator",
+        "intent": "Watch",
+        "creator": "Ali Abdaal",
+        "topic": ["productivity", "studying", "learning", "feel-good productivity"],
+        "tags": ["productivity", "youtube", "creator", "ali-abdaal"],
+        "sourceType": "youtube_channel",
+        "expectedConfidence": 0.90
+      }
+    },
+    {
+      "url": "https://www.thomasjfrank.com/",
+      "whatItIs": "Thomas Frank — productivity creator, College Info Geek YouTuber. Notion templates + content.",
+      "expected": {
+        "extractor": "productivity",
+        "category": "Health",
+        "subCategory": "Creator / resources",
+        "intent": "Use",
+        "creator": "Thomas Frank",
+        "topic": ["productivity", "studying", "notion"],
+        "tags": ["productivity", "notion", "templates", "creator"],
+        "expectedConfidence": 0.85
+      }
+    },
+
+    {
+      "url": "https://www.archanaskitchen.com/recipes/dal-makhani-recipe",
+      "whatItIs": "Archana's Kitchen — popular Indian recipe site. Dal Makhani recipe page.",
+      "expected": {
+        "extractor": "recipes",
+        "category": "Health",
+        "subCategory": "Recipe",
+        "intent": "Cook",
+        "platform": "Archana's Kitchen",
+        "dishName": "Dal Makhani",
+        "cuisine": ["Indian", "North Indian", "Punjabi"],
+        "difficulty": "Medium",
+        "duration": "60-90 mins typical",
+        "tags": ["recipe", "indian", "dal", "vegetarian"],
+        "expectedConfidence": 0.92
+      }
+    },
+    {
+      "url": "https://hebbarskitchen.com/paneer-butter-masala-recipe-paneer-makhani/",
+      "whatItIs": "Hebbar's Kitchen — most-followed Indian recipe site/YouTube. Paneer Butter Masala (Paneer Makhani) recipe.",
+      "expected": {
+        "extractor": "recipes",
+        "category": "Health",
+        "subCategory": "Recipe",
+        "intent": "Cook",
+        "platform": "Hebbar's Kitchen",
+        "dishName": "Paneer Butter Masala",
+        "cuisine": ["Indian", "North Indian"],
+        "difficulty": "Easy",
+        "duration": "30-45 mins typical",
+        "tags": ["recipe", "paneer", "indian", "vegetarian"],
+        "expectedConfidence": 0.93
+      }
+    },
+    {
+      "url": "https://www.youtube.com/@yourfoodlab",
+      "whatItIs": "Your Food Lab — Sanjyot Keer's recipe YouTube channel. Modern Indian + global recipes, very polished production.",
+      "expected": {
+        "extractor": "recipes",
+        "category": "Health",
+        "subCategory": "Creator",
+        "intent": "Cook",
+        "creator": "Your Food Lab (Sanjyot Keer)",
+        "cuisine": ["Indian", "Global"],
+        "vibe": ["modern", "cinematic", "approachable"],
+        "tags": ["recipes", "cooking", "creator", "youtube"],
+        "sourceType": "youtube_channel",
+        "expectedConfidence": 0.90
+      }
+    },
+    {
+      "url": "https://www.instagram.com/sanjyotkeer/",
+      "whatItIs": "Sanjyot Keer — chef behind Your Food Lab, Instagram cooking creator.",
+      "expected": {
+        "extractor": "recipes",
+        "category": "Health",
+        "subCategory": "Creator",
+        "intent": "Cook",
+        "creator": "@sanjyotkeer",
+        "tags": ["recipes", "cooking", "creator", "indian"],
+        "sourceType": "instagram_profile",
+        "expectedConfidence": 0.85
+      }
+    },
+
+    {
+      "url": "https://insider.in/events",
+      "whatItIs": "Insider.in — major Indian events platform. Concerts, comedy shows, festivals, workshops.",
+      "expected": {
+        "extractor": "events",
+        "category": "Experiences",
+        "subCategory": "Events listing",
+        "intent": "Book",
+        "platform": "Insider.in",
+        "tags": ["events", "concerts", "shows", "tickets"],
+        "expectedConfidence": 0.90
+      }
+    },
+    {
+      "url": "https://in.bookmyshow.com/explore/home/bengaluru",
+      "whatItIs": "BookMyShow Bengaluru explore page — movies, events, sports, plays in Bengaluru.",
+      "expected": {
+        "extractor": "events",
+        "category": "Experiences",
+        "subCategory": "Events listing",
+        "intent": "Book",
+        "platform": "BookMyShow",
+        "city": "Bengaluru",
+        "tags": ["events", "movies", "tickets", "bengaluru"],
+        "expectedConfidence": 0.92
+      }
+    },
+    {
+      "url": "https://www.songkick.com/metro-areas/30093-india-mumbai",
+      "whatItIs": "Songkick Mumbai — concert listing platform showing upcoming gigs and tours in Mumbai.",
+      "expected": {
+        "extractor": "events",
+        "category": "Experiences",
+        "subCategory": "Concert listing",
+        "intent": "Discover",
+        "platform": "Songkick",
+        "city": "Mumbai",
+        "tags": ["concerts", "music", "live", "mumbai"],
+        "expectedConfidence": 0.85
+      }
+    },
+    {
+      "url": "https://allevents.in/bangalore",
+      "whatItIs": "AllEvents Bangalore — local events aggregator (free + paid events).",
+      "expected": {
+        "extractor": "events",
+        "category": "Experiences",
+        "subCategory": "Events listing",
+        "intent": "Discover",
+        "platform": "AllEvents",
+        "city": "Bengaluru",
+        "tags": ["events", "local", "bengaluru"],
+        "expectedConfidence": 0.85
+      }
+    },
+
+    {
+      "url": "https://www.airbnb.co.in/s/experiences/Bengaluru",
+      "whatItIs": "Airbnb Experiences in Bengaluru — local activities, workshops, food tours hosted by locals.",
+      "expected": {
+        "extractor": "experiences",
+        "category": "Experiences",
+        "subCategory": "Local activity",
+        "intent": "Book",
+        "platform": "Airbnb Experiences",
+        "city": "Bengaluru",
+        "tags": ["experiences", "local", "airbnb", "activities"],
+        "expectedConfidence": 0.90
+      }
+    },
+    {
+      "url": "https://www.thrillophilia.com/cities/bangalore",
+      "whatItIs": "Thrillophilia Bangalore — activities, tours, weekend getaways from Bengaluru.",
+      "expected": {
+        "extractor": "experiences",
+        "category": "Experiences",
+        "subCategory": "Activity",
+        "intent": "Book",
+        "platform": "Thrillophilia",
+        "city": "Bengaluru",
+        "tags": ["activities", "weekend", "bengaluru", "tours"],
+        "expectedConfidence": 0.88
+      }
+    },
+    {
+      "url": "https://www.tripoto.com/experiences/pottery-workshops-bangalore",
+      "whatItIs": "Tripoto article on pottery workshops in Bangalore.",
+      "expected": {
+        "extractor": "experiences",
+        "category": "Experiences",
+        "subCategory": "Workshop",
+        "intent": "Book",
+        "city": "Bengaluru",
+        "activityType": "Pottery",
+        "vibe": ["creative", "hands-on"],
+        "tags": ["pottery", "workshop", "creative", "bengaluru"],
+        "expectedConfidence": 0.88
+      }
+    },
+    {
+      "url": "https://www.skillshare.com/en/browse",
+      "whatItIs": "Skillshare — online learning platform for creative skills (design, illustration, music, etc).",
+      "expected": {
+        "extractor": "experiences",
+        "category": "Experiences",
+        "subCategory": "Online workshop",
+        "intent": "Learn",
+        "platform": "Skillshare",
+        "topic": ["creative skills", "design", "illustration"],
+        "tags": ["skillshare", "creative", "online", "workshop"],
+        "expectedConfidence": 0.80,
+        "note": "Borderline learning vs experience — creative-skill platforms often live in experiences/workshops"
+      }
+    },
+
+    {
+      "url": "https://www.netflix.com/in/title/81002370",
+      "whatItIs": "Netflix India title page — specific show/movie. Title ID 81002370 may map to various content.",
+      "expected": {
+        "extractor": "entertainment",
+        "category": "Experiences",
+        "subCategory": "Streaming content",
+        "intent": "Watch",
+        "platform": "Netflix",
+        "tags": ["streaming", "netflix", "watch"],
+        "expectedConfidence": 0.85,
+        "note": "Exact title varies — extractor should pull from OG. Geo-restrictions may apply."
+      }
+    },
+    {
+      "url": "https://www.primevideo.com/detail/0SP5VBKZJM0PJTKWX3K5T2N99X",
+      "whatItIs": "Amazon Prime Video title detail page.",
+      "expected": {
+        "extractor": "entertainment",
+        "category": "Experiences",
+        "subCategory": "Streaming content",
+        "intent": "Watch",
+        "platform": "Prime Video",
+        "tags": ["streaming", "prime", "watch"],
+        "expectedConfidence": 0.80
+      }
+    },
+    {
+      "url": "https://open.spotify.com/album/4aawyAB9vmqN3uQ7FjRGTy",
+      "whatItIs": "Spotify album page — specific album, ID varies. Will return rich OG with album art + artist.",
+      "expected": {
+        "extractor": "entertainment",
+        "category": "Experiences",
+        "subCategory": "Music",
+        "intent": "Listen",
+        "platform": "Spotify",
+        "contentType": "Album",
+        "tags": ["music", "spotify", "album", "listen"],
+        "expectedConfidence": 0.90
+      }
+    },
+    {
+      "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+      "whatItIs": "YouTube video — this specific ID is the infamous 'Never Gonna Give You Up' by Rick Astley (the rickroll). Good for testing OG extraction.",
+      "expected": {
+        "extractor": "entertainment",
+        "category": "Experiences",
+        "subCategory": "Music video",
+        "intent": "Watch",
+        "platform": "YouTube",
+        "contentType": "Music video",
+        "title": "Never Gonna Give You Up",
+        "creator": "Rick Astley",
+        "tags": ["music", "youtube", "video"],
+        "expectedConfidence": 0.95,
+        "note": "Classic test URL — should extract clean OG metadata"
+      }
+    }
+
+  ]
+}
