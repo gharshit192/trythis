@@ -12,7 +12,7 @@ const path = require('path');
 const crypto = require('crypto');
 const sharp = require('sharp');
 const screenshotHandler = require('../fetchSystem/handlers/screenshotHandler');
-const audioAnalyzer = require('../audioAnalyzer');
+const screenshotAnalyzer = require('../screenshotAnalyzer');
 const { addWorkingDays } = require('../../utils/workingDays');
 const logger = require('../../utils/logger');
 
@@ -120,25 +120,40 @@ const processFiles = async (files = [], { userId, title, source = 'screenshot', 
     throw new Error('all uploads failed to persist');
   }
 
-  // Pull out the merged text for downstream LLM analysis. May be empty if
-  // OCR returned nothing on every image — analyzer handles that gracefully.
-  const aiAnalysis = await audioAnalyzer.extractAnalysis({
-    transcript: mergedText.trim(),
-    title,
-    description: null,
-    source,
-    category,
+  // Hand the merged OCR text to the screenshotAnalyzer. It first classifies
+  // the screenshot type (14 categories: receipt, menu, app_ui, code, …),
+  // then routes to a type-specific LLM prompt. Returns a richer payload than
+  // the generic audioAnalyzer: title + summary + tags + category + intentType
+  // + screenshot-typed structuredData + classification metadata.
+  const analysis = await screenshotAnalyzer.analyze({
+    mergedOcrText: mergedText.trim(),
+    imageCount: screenshots.length,
+    fallbackTitle: title,
   });
 
   return {
     screenshots,
     mergedText: mergedText.trim(),
+    // Returned to the route layer; saves.js maps these onto the Save record.
+    suggestedTitle: analysis.title,
+    suggestedCategory: analysis.category,
+    suggestedTags: analysis.tags,
+    suggestedIntentType: analysis.intentType,
     aiAnalysis: {
       transcription: mergedText.trim()
-        ? { text: mergedText.trim(), source: 'ocr', detectedLanguage: null, confidence: null, translation: null }
+        ? { text: mergedText.trim(), source: 'ocr', detectedLanguage: null }
         : null,
-      summary: aiAnalysis.summary,
-      structuredData: aiAnalysis.structuredData,
+      summary: analysis.summary,
+      // structuredData kept null for screenshots — the analyzer's payload lives
+      // in `screenshotAnalysis` (its shape doesn't fit the video discriminated
+      // union). SaveDetail picks the right field based on contentType.
+      structuredData: null,
+      screenshotAnalysis: {
+        type: analysis.structuredData?.type || analysis._classification?.type || 'unknown',
+        data: analysis.structuredData || {},
+        confidence: analysis._classification?.confidence ?? null,
+        allMatches: analysis._classification?.allMatches || [],
+      },
       processedAt: new Date(),
     },
   };
