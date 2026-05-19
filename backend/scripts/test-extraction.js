@@ -5,11 +5,31 @@ const cheerio = require('cheerio');
 
 const extractionEngine = require('../src/services/extractionEngine');
 const { extractByCategoryWrapper } = require('../src/services/extractionEngine/categories');
+const { classifyByDomain, EXTRACTOR_TO_SAVE_CATEGORY } = require('../src/services/extractionEngine/domainClassifier');
 const llm = require('../src/services/llm');
 const audioAnalyzer = require('../src/services/audioAnalyzer');
 const transcription = require('../src/services/transcription');
 
-const TEST_URLS_FILE = '/home/harshit-gupta/Harshit/TryThis/trythis-extraction-test/extraction-test/test-urls.txt';
+// DOMAIN_RULES and classifyByDomain moved to src/services/extractionEngine/
+// domainClassifier.js and are imported at the top — shared with the live
+// /saves POST handler so both score against identical rules.
+
+// Bounded concurrency runner — used to parallelise the 73 URL fetches.
+// Default 10× faster than the previous sequential loop with 300 ms gaps.
+const runConcurrent = async (items, fn, concurrency = 10) => {
+  const out = new Array(items.length);
+  let idx = 0;
+  await Promise.all(Array.from({ length: concurrency }, async () => {
+    while (true) {
+      const i = idx++;
+      if (i >= items.length) return;
+      out[i] = await fn(items[i], i);
+    }
+  }));
+  return out;
+};
+
+const TEST_URLS_FILE = path.resolve(__dirname, '..', '..', 'trythis-extraction-test', 'extraction-test', 'test-urls.txt');
 
 const parseTestUrls = (filePath) => {
   const content = fs.readFileSync(filePath, 'utf-8');
@@ -24,12 +44,13 @@ const parseTestUrls = (filePath) => {
     // Skip empty lines
     if (!trimmed) continue;
 
-    // Detect category comments
-    if (trimmed.startsWith('# ') && trimmed.includes('EXTRACTORS')) {
-      const match = trimmed.match(/# \d+\.\s+([A-Z\s]+)/);
-      if (match) {
-        currentCategory = match[1].toLowerCase().replace(/\s+/g, '-');
-      }
+    // Detect category headers like "# 14. PRODUCTIVITY" or
+    // "# 5. SHOPPING (general / mixed)". The previous regex required end-of-line
+    // after the category, so headers with a trailing parenthetical leaked to
+    // the next section (shopping URLs got tagged as hotels).
+    const catMatch = trimmed.match(/^#\s+\d+\.\s+([A-Z][A-Z\s\-_]+?)(?:\s+\(.*\))?\s*$/);
+    if (catMatch) {
+      currentCategory = catMatch[1].trim().toLowerCase().replace(/\s+/g, '-');
     }
 
     // Extract URLs
@@ -44,143 +65,134 @@ const parseTestUrls = (filePath) => {
   return urls;
 };
 
+// Realistic Chrome headers — many sites (Zomato/Booking/Amazon) return empty
+// HTML to bare scrapers. Twitter card / OG / JSON-LD fallbacks let us recover
+// metadata from sites that hide their <title> behind JS but expose social cards.
+const FETCH_HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+  'Accept-Language': 'en-US,en;q=0.9',
+  'Accept-Encoding': 'gzip, deflate, br',
+  'Cache-Control': 'no-cache',
+};
+
 const fetchMetadata = async (url) => {
   try {
     const response = await axios.get(url, {
-      timeout: 5000,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-      }
+      timeout: 8000,
+      headers: FETCH_HEADERS,
+      maxRedirects: 5,
+      validateStatus: (s) => s < 500,
     });
 
     const $ = cheerio.load(response.data);
 
-    return {
-      title: $('title').text() || $('meta[property="og:title"]').attr('content') || '',
-      description: $('meta[name="description"]').attr('content') || $('meta[property="og:description"]').attr('content') || '',
-      image: $('meta[property="og:image"]').attr('content') || $('meta[name="image"]').attr('content') || '',
-      url: url
-    };
+    const title =
+      $('meta[property="og:title"]').attr('content') ||
+      $('meta[name="twitter:title"]').attr('content') ||
+      $('title').first().text() ||
+      $('h1').first().text() ||
+      '';
+
+    const description =
+      $('meta[property="og:description"]').attr('content') ||
+      $('meta[name="twitter:description"]').attr('content') ||
+      $('meta[name="description"]').attr('content') ||
+      $('article p').first().text().slice(0, 240) ||
+      '';
+
+    const image =
+      $('meta[property="og:image"]').attr('content') ||
+      $('meta[name="twitter:image"]').attr('content') ||
+      $('meta[name="image"]').attr('content') ||
+      '';
+
+    return { title: title.trim(), description: description.trim(), image, url };
   } catch (error) {
-    return {
-      title: '',
-      description: '',
-      image: '',
-      url: url,
-      error: error.message
-    };
+    return { title: '', description: '', image: '', url, error: error.message };
   }
 };
 
-const classifyAndExtract = async (metadata, llmAvailable) => {
+const classifyAndExtract = async (metadata) => {
   try {
-    // Classify category
-    const category = extractionEngine.classifyCategory(
+    // Tier 1: URL pattern — catches the 30+ commerce/booking/social sites
+    // whose HTML is too JS-heavy/blocked to give us a title.
+    const domainExtractor = classifyByDomain(metadata.url);
+    const domainSaveCat = domainExtractor ? EXTRACTOR_TO_SAVE_CATEGORY[domainExtractor] : null;
+
+    // Tier 2: keyword classifier on title + description (whatever we got)
+    const keywordResult = extractionEngine.classifyCategory(
       (metadata.title || '') + ' ' + (metadata.description || '')
     );
 
-    // Extract with category awareness
-    const extracted = await extractionEngine.extractEntities(
-      metadata,
-      category.category
-    );
+    // Winner: prefer URL pattern if it gives us a non-null answer (high precision);
+    // fall back to keyword classifier otherwise.
+    const finalSaveCategory = domainSaveCat || keywordResult.category;
+    const finalConfidence = domainSaveCat ? 0.95 : keywordResult.confidence;
 
-    // Attempt LLM semantic extraction for richer analysis (skip if LLM unavailable)
-    let llmAnalysis = null;
-    if (llmAvailable) {
-      try {
-        llmAnalysis = await Promise.race([
-          audioAnalyzer.extractAnalysis({
-            transcript: '',
-            title: metadata.title,
-            description: metadata.description,
-            visualText: metadata.image ? 'Image: ' + metadata.image : '',
-            source: metadata.url,
-            category: category.category
-          }),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('LLM timeout')), 5000))
-        ]);
-      } catch (e) {
-        // LLM analysis is best-effort, skip on timeout or error
-      }
+    // Run the matching category-specific extractor (the 18-category system)
+    let categoryExtraction = null;
+    if (domainExtractor) {
+      try { categoryExtraction = extractByCategoryWrapper(domainExtractor, metadata); } catch {}
     }
 
+    const heuristic = await extractionEngine.extractEntities(metadata, finalSaveCategory);
+
     return {
-      classified_category: category.category,
-      category_confidence: category.confidence,
-      extraction: extracted,
-      llm_analysis: llmAnalysis,
-      layer: extracted.layer
+      classified_category: finalSaveCategory,
+      category_confidence: finalConfidence,
+      domain_extractor: domainExtractor,
+      category_extraction: categoryExtraction,
+      extraction: heuristic,
+      layer: domainExtractor ? 'domain-pattern' : heuristic.layer,
     };
   } catch (error) {
-    return {
-      classified_category: null,
-      category_confidence: 0,
-      extraction: null,
-      llm_analysis: null,
-      error: error.message
-    };
+    return { classified_category: null, category_confidence: 0, extraction: null, error: error.message };
   }
 };
 
 const main = async () => {
   console.log('🔍 Reading test URLs...');
   const testUrls = parseTestUrls(TEST_URLS_FILE);
-  console.log(`✓ Found ${testUrls.length} test URLs\n`);
+  console.log(`✓ Found ${testUrls.length} test URLs`);
+  console.log(`⚡ Running 10 in parallel (was sequential with 300ms gaps)\n`);
 
-  const llmAvailable = await llm.isAvailable();
-  console.log(`📊 LLM Analysis: ${llmAvailable ? '✓ Enabled' : '❌ Disabled (Ollama not running)'}\n`);
-
-  const results = [];
   const startTime = Date.now();
+  let completed = 0;
 
-  for (let i = 0; i < testUrls.length; i++) {
-    const { url, category } = testUrls[i];
-
-    process.stdout.write(`[${i + 1}/${testUrls.length}] Testing ${url.substring(0, 60)}... `);
-
+  const results = await runConcurrent(testUrls, async ({ url, category }, i) => {
     try {
-      // Fetch metadata
       const metadata = await fetchMetadata(url);
-
-      // Classify and extract (now includes LLM analysis if available)
-      const analysis = await classifyAndExtract(metadata, llmAvailable);
-
-      const result = {
+      const analysis = await classifyAndExtract(metadata);
+      completed++;
+      process.stdout.write(`\r  ${completed}/${testUrls.length} done`);
+      return {
         index: i + 1,
         url,
         expected_category: category,
         metadata: {
-          title: metadata.title.substring(0, 100),
-          description: metadata.description.substring(0, 100),
-          has_image: !!metadata.image
+          title: (metadata.title || '').substring(0, 100),
+          description: (metadata.description || '').substring(0, 120),
+          has_image: !!metadata.image,
         },
         analysis,
         extraction_layer: analysis.layer,
-        llm_structured_type: analysis.llm_analysis?.structuredData?.type || null,
         accuracy: {
           expected: category,
+          expectedMapped: EXTRACTOR_TO_SAVE_CATEGORY[category] || 'unknown',
           detected: analysis.classified_category,
-          match: category === analysis.classified_category
-        }
+          domainExtractor: analysis.domain_extractor,
+          // Match against the mapped Save.category — cafes maps to food, etc.
+          match: (EXTRACTOR_TO_SAVE_CATEGORY[category] || 'unknown') === analysis.classified_category,
+          extractorMatch: category === analysis.domain_extractor,
+        },
       };
-
-      results.push(result);
-      console.log('✓');
-
     } catch (error) {
-      results.push({
-        index: i + 1,
-        url,
-        expected_category: category,
-        error: error.message
-      });
-      console.log('✗');
+      completed++;
+      return { index: i + 1, url, expected_category: category, error: error.message };
     }
-
-    // Rate limiting - reduced for faster testing with LLM
-    await new Promise(resolve => setTimeout(resolve, 300));
-  }
+  }, 10);
+  console.log('');
 
   const duration = ((Date.now() - startTime) / 1000).toFixed(2);
 
@@ -220,66 +232,75 @@ const calculateAccuracy = (results) => {
 };
 
 const printSummary = (report) => {
+  const ok = report.results.filter((r) => !r.error);
   console.log('\n' + '='.repeat(70));
-  console.log('📊 EXTRACTION TEST SUMMARY (WITH LLM ANALYSIS)');
+  console.log('📊 EXTRACTION TEST SUMMARY');
   console.log('='.repeat(70));
-  console.log(`\nDuration: ${report.duration_seconds}s`);
-  console.log(`Total URLs: ${report.total_urls}`);
-  console.log(`Successful: ${report.successful} ✓`);
-  console.log(`Failed: ${report.failed} ✗`);
+  console.log(`Duration:   ${report.duration_seconds}s  (10× concurrency)`);
+  console.log(`URLs:       ${report.successful}/${report.total_urls} fetched, ${report.failed} errored`);
 
-  // Extract layer usage statistics
-  const layerStats = {};
-  report.results.filter(r => !r.error).forEach(r => {
-    const layer = r.extraction_layer || 'unknown';
-    layerStats[layer] = (layerStats[layer] || 0) + 1;
+  const withTitle = ok.filter((r) => r.metadata?.title).length;
+  console.log(`Metadata:   ${withTitle}/${ok.length} URLs returned a title  (${((withTitle * 100) / ok.length).toFixed(0)}%)`);
+
+  // Tier breakdown
+  const tierStats = { 'domain-pattern': 0, heuristics: 0, embeddings: 0, llm: 0, other: 0 };
+  ok.forEach((r) => { tierStats[r.extraction_layer] = (tierStats[r.extraction_layer] || 0) + 1; });
+  console.log(`\nClassifier tier used:`);
+  Object.entries(tierStats).filter(([, v]) => v).forEach(([k, v]) => console.log(`  ${k.padEnd(18)} ${v}`));
+
+  // Save.category match (mapped accuracy)
+  const acc = report.category_accuracy;
+  console.log(`\nSave.category accuracy (mapped): ${acc.accuracy_percentage}%  (${acc.correct}/${acc.correct + acc.incorrect})`);
+
+  // 18-extractor exact-name accuracy
+  const exactHits = ok.filter((r) => r.accuracy?.extractorMatch).length;
+  console.log(`Extractor-name accuracy (exact): ${((exactHits * 100) / ok.length).toFixed(0)}%  (${exactHits}/${ok.length})`);
+
+  // Per-expected-category breakdown
+  const buckets = {};
+  ok.forEach((r) => {
+    const k = r.expected_category;
+    buckets[k] = buckets[k] || { total: 0, save: 0, exact: 0, meta: 0 };
+    buckets[k].total++;
+    if (r.accuracy?.match) buckets[k].save++;
+    if (r.accuracy?.extractorMatch) buckets[k].exact++;
+    if (r.metadata?.title) buckets[k].meta++;
+  });
+  console.log(`\nPer expected category:`);
+  console.log(`  ${'category'.padEnd(14)} ${'cat-acc'.padStart(8)}  ${'ext-acc'.padStart(8)}  ${'meta'.padStart(6)}`);
+  Object.entries(buckets).sort().forEach(([k, v]) => {
+    const a = ((v.save * 100) / v.total).toFixed(0);
+    const e = ((v.exact * 100) / v.total).toFixed(0);
+    const m = ((v.meta * 100) / v.total).toFixed(0);
+    console.log(`  ${k.padEnd(14)} ${(a + '%').padStart(7)} ${(e + '%').padStart(8)}  ${(m + '%').padStart(5)}  (${v.total} urls)`);
   });
 
-  console.log(`\nExtraction Layers Used:`);
-  Object.entries(layerStats).forEach(([layer, count]) => {
-    console.log(`  ${layer}: ${count}`);
-  });
 
-  // LLM structured data detection
-  const llmResults = report.results.filter(r => !r.error && r.llm_structured_type);
-  const llmStructureTypes = {};
-  llmResults.forEach(r => {
-    const type = r.llm_structured_type;
-    llmStructureTypes[type] = (llmStructureTypes[type] || 0) + 1;
-  });
-
-  if (Object.keys(llmStructureTypes).length > 0) {
-    console.log(`\nLLM Detected Structure Types:`);
-    Object.entries(llmStructureTypes).forEach(([type, count]) => {
-      console.log(`  ${type}: ${count}`);
+  // Category-extractor field-quality: per extractor, how many non-null fields
+  // did the category-specific extractor fill in? Tells us whether the extractor
+  // actually contributed signal (vs just classifying and returning a stub).
+  console.log(`\nCategory-extractor field quality (filled fields per URL):`);
+  console.log(`  ${'extractor'.padEnd(14)}  ${'urls'.padStart(4)}  ${'avg filled'.padStart(10)}  sample fields`);
+  const extractorStats = {};
+  ok.forEach((r) => {
+    const ext = r.accuracy?.domainExtractor;
+    const ce = r.analysis?.category_extraction;
+    if (!ext || !ce) return;
+    extractorStats[ext] = extractorStats[ext] || { count: 0, fieldsFilled: 0, sampleFields: new Set() };
+    extractorStats[ext].count++;
+    Object.entries(ce).forEach(([k, v]) => {
+      const filled = v !== null && v !== undefined && v !== '' &&
+        (!Array.isArray(v) || v.length > 0) && (typeof v !== 'object' || Object.keys(v || {}).length > 0);
+      if (filled && k !== 'primary_category' && k !== 'confidence') {
+        extractorStats[ext].fieldsFilled++;
+        extractorStats[ext].sampleFields.add(k);
+      }
     });
-  }
-
-  if (report.category_accuracy.accuracy_percentage) {
-    console.log(`\nCategory Classification Accuracy: ${report.category_accuracy.accuracy_percentage}%`);
-    console.log(`  Correct: ${report.category_accuracy.correct}`);
-    console.log(`  Incorrect: ${report.category_accuracy.incorrect}`);
-  }
-
-  console.log('\n' + '='.repeat(70));
-  console.log('\n📌 Sample extraction results:');
-
-  report.results.slice(0, 5).forEach(r => {
-    if (!r.error) {
-      console.log(`\n  URL: ${r.url.substring(0, 60)}...`);
-      console.log(`  Expected: ${r.expected_category}`);
-      console.log(`  Detected Category: ${r.analysis.classified_category} (${(r.analysis.category_confidence * 100).toFixed(0)}%)`);
-      console.log(`  Extraction Layer: ${r.extraction_layer || 'unknown'}`);
-      console.log(`  Match: ${r.accuracy.match ? '✓' : '✗'}`);
-
-      if (r.llm_structured_type) {
-        console.log(`  LLM Detected Type: ${r.llm_structured_type}`);
-      }
-
-      if (r.analysis.extraction) {
-        console.log(`  Heuristic Confidence: ${(r.analysis.extraction.confidence || 0).toFixed(2)}`);
-      }
-    }
+  });
+  Object.entries(extractorStats).sort().forEach(([ext, s]) => {
+    const avg = (s.fieldsFilled / s.count).toFixed(1);
+    const sample = [...s.sampleFields].slice(0, 4).join(', ');
+    console.log(`  ${ext.padEnd(14)}  ${String(s.count).padStart(4)}  ${avg.padStart(10)}  ${sample}`);
   });
 
   console.log('\n' + '='.repeat(70));

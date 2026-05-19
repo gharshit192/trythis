@@ -14,6 +14,7 @@ const screenshotPipeline = require('../services/screenshotPipeline');
 const autoCollectionEngine = require('../services/autoCollectionEngine');
 const thumbnailCache = require('../services/thumbnailCache');
 const typeToCategory = require('../utils/structuredTypeToCategory');
+const { classifyByDomainFull } = require('../services/extractionEngine/domainClassifier');
 const logger = require('../utils/logger');
 
 // Multer config: disk storage to OS temp dir (pipeline moves files into uploads/).
@@ -75,15 +76,38 @@ router.post('/', async (req, res) => {
     }
 
     const extracted = await extractionEngine.extractEntities(metadata);
-    const category = extractionEngine.classifyCategory(
+    // Tier 0: URL-pattern classifier (deterministic, ~90% precision on the
+    // 73-URL test set). Catches Zomato/Amazon/Booking/etc. where the keyword
+    // classifier can't get text. Falls through to keyword classifier when no
+    // domain rule matches.
+    const domainCat = classifyByDomainFull(url);
+    const keywordCat = extractionEngine.classifyCategory(
       `${metadata.title || ''} ${metadata.description || ''}`.trim()
     );
+    const category = domainCat.category
+      ? { category: domainCat.category, confidence: domainCat.confidence, extractor: domainCat.extractor }
+      : keywordCat;
 
-    const finalTitle = metadata.title || title;
+    // Derive a readable title from the URL slug when nothing else worked.
+    // Many landing pages (Zomato/Booking/Amazon) block scrapers and return
+    // empty HTML, leaving us with just the URL. The slug is usually the only
+    // signal — e.g. /bangalore/third-wave-coffee-roasters → "Third Wave
+    // Coffee Roasters". Better than refusing the save outright.
+    const titleFromUrlSlug = (() => {
+      if (!url) return null;
+      try {
+        const u = new URL(url);
+        const seg = u.pathname.split('/').filter(Boolean).pop() || u.hostname.replace(/^www\./, '');
+        const cleaned = decodeURIComponent(seg).replace(/\.[a-z0-9]{2,5}$/i, '').replace(/[-_]+/g, ' ').replace(/\d+(?=\b)/g, '').trim();
+        if (!cleaned) return null;
+        return cleaned.split(' ').filter(Boolean).map((w) => w[0].toUpperCase() + w.slice(1)).join(' ').slice(0, 80);
+      } catch { return null; }
+    })();
+    const finalTitle = metadata.title || title || titleFromUrlSlug;
     if (!finalTitle) {
       return res.status(400).json({
         status: 'error',
-        error: { code: 'VALIDATION_ERROR', message: 'title is required (none could be fetched or supplied)' },
+        error: { code: 'VALIDATION_ERROR', message: 'title is required (none could be fetched, supplied, or derived from URL)' },
       });
     }
 
