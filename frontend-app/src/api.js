@@ -14,6 +14,31 @@ const handle = async (response) => {
   return data;
 };
 
+// Wrap fetch so AbortError is swallowed silently — callers using AbortController
+// (StrictMode-safe effects) won't get a noisy console error on cleanup.
+const handleAbortable = async (promise) => {
+  try {
+    const res = await promise;
+    return handle(res);
+  } catch (err) {
+    if (err.name === 'AbortError') return { status: 'aborted' };
+    throw err;
+  }
+};
+
+// In-flight GET dedupe. React.StrictMode mounts effects twice in dev, which
+// fires the same GET back-to-back. Without this dedupe a save detail loads
+// 2× /saves/:id; with it, the second call waits on the first's promise.
+// Promise is removed from the map as soon as it settles, so subsequent loads
+// (after the user navigates away and back) refetch correctly.
+const inFlightGets = new Map();
+const dedupedGet = (url, init = {}) => {
+  if (inFlightGets.has(url)) return inFlightGets.get(url);
+  const p = fetch(url, init).then(handle).finally(() => inFlightGets.delete(url));
+  inFlightGets.set(url, p);
+  return p;
+};
+
 const api = {
   // ---- Auth ----
   async signup(email, password, name) {
@@ -44,6 +69,33 @@ const api = {
     return data;
   },
 
+  async forgotPassword(email) {
+    const res = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    return handle(res);
+  },
+
+  async resetPassword(email, otp, newPassword) {
+    const res = await fetch(`${API_BASE_URL}/auth/reset-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, otp, newPassword }),
+    });
+    return handle(res);
+  },
+
+  async changePassword(currentPassword, newPassword) {
+    const res = await fetch(`${API_BASE_URL}/auth/change-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
+    return handle(res);
+  },
+
   async refresh() {
     const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
       method: 'POST',
@@ -69,14 +121,12 @@ const api = {
     return handle(res);
   },
 
-  async getSaves() {
-    const res = await fetch(`${API_BASE_URL}/saves`, { headers: authHeader() });
-    return handle(res);
+  async getSaves({ signal } = {}) {
+    return handleAbortable(fetch(`${API_BASE_URL}/saves`, { headers: authHeader(), signal }));
   },
 
   async getSaveById(id) {
-    const res = await fetch(`${API_BASE_URL}/saves/${id}`, { headers: authHeader() });
-    return handle(res);
+    return dedupedGet(`${API_BASE_URL}/saves/${id}`, { headers: authHeader() });
   },
 
   async patchSave(id, patch) {
@@ -129,6 +179,14 @@ const api = {
     return handle(res);
   },
 
+  async retrySave(id) {
+    const res = await fetch(`${API_BASE_URL}/saves/${id}/retry`, {
+      method: 'POST',
+      headers: authHeader(),
+    });
+    return handle(res);
+  },
+
   // ---- Collections ----
   async createCollection(name, description = '', icon = '📌', color = '#1B3A2F') {
     const res = await fetch(`${API_BASE_URL}/collections`, {
@@ -139,9 +197,8 @@ const api = {
     return handle(res);
   },
 
-  async getCollections() {
-    const res = await fetch(`${API_BASE_URL}/collections`, { headers: authHeader() });
-    return handle(res);
+  async getCollections({ signal } = {}) {
+    return handleAbortable(fetch(`${API_BASE_URL}/collections`, { headers: authHeader(), signal }));
   },
 
   async getCollectionById(id) {
@@ -175,8 +232,7 @@ const api = {
 
   // ---- Recommendations ----
   async getRecommendations(saveId) {
-    const res = await fetch(`${API_BASE_URL}/recommendations/${saveId}`, { headers: authHeader() });
-    return handle(res);
+    return dedupedGet(`${API_BASE_URL}/recommendations/${saveId}`, { headers: authHeader() });
   },
 
   // ---- Notifications ----

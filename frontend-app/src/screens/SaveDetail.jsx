@@ -2,6 +2,226 @@ import { useEffect, useState } from 'react';
 import api from '../api';
 import SmartImage from '../components/SmartImage';
 
+// ─── Dark theme palette — locked to SaveDetail only ───────────────────────────
+// Matches the design mock 1:1. We intentionally don't reuse the app-wide
+// light theme variables here — SaveDetail is the "detail surface" and the
+// dark chrome makes thumbnails / structured cards pop.
+const T = {
+  bg:           '#0a0a0c',          // outer card
+  bgInner:      '#16161a',          // inner sections (recipe card, KV tables)
+  bgChip:       '#23232a',          // tag pill
+  border:       '#26262c',          // hairline dividers
+  text:         '#f2f2ef',          // primary
+  textMuted:    '#9a9a93',          // secondary
+  textFaint:    '#6a6a64',          // hints / labels
+  amberBg:      'rgba(217,144,40,0.10)',
+  amberBorder:  'rgba(217,144,40,0.35)',
+  amberFg:      '#d99028',
+  redBg:        'rgba(211,51,51,0.10)',
+  redBorder:    'rgba(211,51,51,0.40)',
+  redFg:        '#e36a6a',
+  greenBg:      'rgba(70,176,118,0.16)',
+  greenFg:      '#46b076',
+};
+
+// Category → icon + accent. Drives the header pill and recipe-step bullets.
+const CATEGORY_META = {
+  food:       { icon: '🍴', label: 'Food',       accent: '#46b076' },
+  travel:     { icon: '🛣',  label: 'Travel',     accent: '#5a9cd6' },
+  shopping:   { icon: '🛍',  label: 'Shopping',   accent: '#a374e0' },
+  experience: { icon: '🎫', label: 'Experience', accent: '#d65a8a' },
+  blog:       { icon: '📰', label: 'Blog',       accent: '#9aa5b3' },
+  tech:       { icon: '💻', label: 'Tech',       accent: '#3ec1c9' },
+  fashion:    { icon: '👗', label: 'Fashion',    accent: '#e07ec1' },
+  beauty:     { icon: '💄', label: 'Beauty',     accent: '#f08aae' },
+  other:      { icon: '📌', label: 'Other',      accent: '#9a9a93' },
+  general:    { icon: '📌', label: 'General',    accent: '#9a9a93' },
+};
+const catMeta = (cat) => CATEGORY_META[cat] || CATEGORY_META.other;
+
+// Frontend safety-net hallucination guard (mirrors backend). Catches
+// character-level repetition + word n-gram repetition. Applied to transcript,
+// title, and summary so we never render visibly-broken text.
+const looksHallucinated = (text) => {
+  if (!text || text.length < 30) return false;
+  if (/(.{3,})\1{4,}/.test(text)) return true;
+  const words = String(text).trim().split(/\s+/);
+  if (words.length < 12) return false;
+  const grams = {};
+  for (let i = 0; i < words.length - 2; i++) {
+    const g = `${words[i]} ${words[i + 1]} ${words[i + 2]}`.toLowerCase();
+    grams[g] = (grams[g] || 0) + 1;
+    if (grams[g] >= 5) return true;
+  }
+  return false;
+};
+
+const prettifyTag = (t) => String(t).replace(/[-_]+/g, ' ').trim();
+
+const directionsHref = (place) => {
+  if (!place) return null;
+  const q = [place.name, place.address, place.city, place.country].filter(Boolean).join(', ');
+  return q ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}` : null;
+};
+
+// ─── Atomic UI bits ───────────────────────────────────────────────────────────
+const SectionLabel = ({ children }) => (
+  <p style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em', color: T.textFaint, margin: '14px 0 8px' }}>{children}</p>
+);
+
+const Chip = ({ children, accent }) => (
+  <span style={{
+    display: 'inline-block', fontSize: 11, padding: '5px 11px', borderRadius: 999,
+    background: accent ? `${accent}22` : T.bgChip, color: accent || T.text,
+    border: `1px solid ${accent ? `${accent}44` : 'transparent'}`,
+  }}>{children}</span>
+);
+
+const PillRow = ({ items, accent }) => (
+  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+    {items.map((t, i) => <Chip key={i} accent={accent}>{prettifyTag(t)}</Chip>)}
+  </div>
+);
+
+const KVTable = ({ rows }) => (
+  <div style={{ background: T.bgInner, borderRadius: 8, padding: '4px 0', border: `1px solid ${T.border}` }}>
+    {rows.filter(([, v]) => v).map(([k, v], i, arr) => (
+      <div key={i} style={{
+        display: 'grid', gridTemplateColumns: '90px 1fr', columnGap: 12,
+        padding: '10px 14px',
+        borderBottom: i < arr.length - 1 ? `1px solid ${T.border}` : 'none',
+        fontSize: 13,
+      }}>
+        <div style={{ color: T.textFaint, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{k}</div>
+        <div style={{ color: T.text }}>{v}</div>
+      </div>
+    ))}
+  </div>
+);
+
+const WarningBanner = ({ tone = 'amber', icon, children, action }) => {
+  const p = tone === 'red'
+    ? { bg: T.redBg, border: T.redBorder, fg: T.redFg }
+    : { bg: T.amberBg, border: T.amberBorder, fg: T.amberFg };
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
+      gap: 10, background: p.bg, border: `1px solid ${p.border}`,
+      borderRadius: 8, padding: '8px 12px', fontSize: 12, color: p.fg, marginBottom: 12,
+    }}>
+      <span style={{ flex: 1, display: 'flex', alignItems: 'flex-start', gap: 6 }}>
+        {icon && <span style={{ flexShrink: 0 }}>{icon}</span>}
+        <span>{children}</span>
+      </span>
+      {action}
+    </div>
+  );
+};
+
+// Header pill row: category chip · author handle · status chip
+const CardHeader = ({ save }) => {
+  const meta = catMeta(save?.category);
+  const status = save?.processingStatus;
+  const statusMap = {
+    done:       { label: 'Done',       bg: T.greenBg,      fg: T.greenFg },
+    partial:    { label: 'Partial',    bg: T.amberBg,      fg: T.amberFg },
+    failed:     { label: 'Failed',     bg: T.redBg,        fg: T.redFg },
+    processing: { label: 'Processing', bg: 'rgba(154,154,147,0.16)', fg: T.textMuted },
+  };
+  const sm = statusMap[status] || statusMap.processing;
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+        <span style={{
+          display: 'inline-flex', alignItems: 'center', gap: 5,
+          padding: '4px 10px', borderRadius: 999,
+          background: `${meta.accent}22`, color: meta.accent,
+          fontSize: 11, fontWeight: 600,
+          border: `1px solid ${meta.accent}44`,
+        }}>
+          <span>{meta.icon}</span><span>{meta.label}</span>
+        </span>
+        {(save?.authorHandle || save?.source) && (
+          <span style={{ fontSize: 12, color: T.textMuted }}>
+            {save.authorHandle ? `@${save.authorHandle}` : ''}
+            {save.authorHandle && save.source ? ' · ' : ''}
+            {save.source ? save.source[0].toUpperCase() + save.source.slice(1) : ''}
+          </span>
+        )}
+      </div>
+      <span style={{ padding: '4px 10px', borderRadius: 999, fontSize: 11, fontWeight: 600, background: sm.bg, color: sm.fg }}>
+        {sm.label}
+      </span>
+    </div>
+  );
+};
+
+// ─── Action bar — dynamic per category + structured data ──────────────────────
+const ActionBar = ({ save, onIntent, onOpenSource, onShare }) => {
+  const sd = save?.aiAnalysis?.structuredData || {};
+  const { place, product, event, itinerary } = sd;
+  const cat = save?.category;
+  const intentStatus = save?.intentStatus;
+  const buttons = [];
+
+  // Directions: any save with a place (recipe-spot, store, hill station, etc.)
+  const mapsUrl = directionsHref(place);
+  if (mapsUrl) buttons.push({ key: 'directions', label: 'Directions', icon: '🧭', href: mapsUrl, kind: 'primary' });
+
+  // Buy now: only when a verified buyUrl exists
+  if (product?.buyUrl) buttons.push({ key: 'buy', label: 'Buy now', icon: '🛒', href: product.buyUrl, kind: 'primary' });
+
+  // Get tickets
+  if (event?.ticketUrl) buttons.push({ key: 'tickets', label: 'Get tickets', icon: '🎟', href: event.ticketUrl, kind: 'primary' });
+
+  // Trip planning: travel/experience categories OR an itinerary OR a non-store place
+  const isTripContext = itinerary || (place && ['travel', 'experience'].includes(cat));
+  if (isTripContext) {
+    buttons.push({ key: 'plan',  label: 'Plan trip', icon: '🗓', onClick: () => onIntent('planned'), kind: 'secondary' });
+    buttons.push({ key: 'stays', label: 'Find stays', icon: '🏨', href: `https://www.google.com/travel/hotels?q=${encodeURIComponent(itinerary?.destination || place?.name || cat)}`, kind: 'secondary' });
+  }
+
+  // Share (shopping spotlight wants this prominent)
+  buttons.push({ key: 'share', label: 'Share', icon: '↗', onClick: onShare, kind: 'secondary' });
+
+  // Lifecycle: tried/visited/attended with dynamic label
+  const triedLabel = cat === 'travel'      ? (intentStatus === 'tried' ? '✓ Visited'  : 'Mark visited')
+                   : cat === 'experience'  ? (intentStatus === 'tried' ? '✓ Attended' : 'Mark attended')
+                   :                          (intentStatus === 'tried' ? '✓ Tried'    : 'Mark tried');
+  buttons.push({
+    key: 'tried', label: triedLabel, icon: intentStatus === 'tried' ? '' : '○',
+    onClick: () => onIntent(intentStatus === 'tried' ? 'saved' : 'tried'),
+    kind: intentStatus === 'tried' ? 'primary' : 'secondary',
+  });
+
+  // Open source fallback (only if no other primary)
+  if (save?.url && !buttons.find((b) => b.kind === 'primary')) {
+    buttons.unshift({ key: 'source', label: 'Open source', icon: '↗', onClick: onOpenSource, kind: 'primary' });
+  }
+
+  return (
+    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 14 }}>
+      {buttons.map((b) => {
+        const style = {
+          flex: '1 1 calc(50% - 4px)', minWidth: 120,
+          padding: '11px 14px', borderRadius: 10, fontSize: 13, fontWeight: 500,
+          cursor: 'pointer', textAlign: 'center',
+          display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+          background: b.kind === 'primary' ? T.text : T.bgInner,
+          color:      b.kind === 'primary' ? T.bg   : T.text,
+          border:     b.kind === 'primary' ? 'none' : `1px solid ${T.border}`,
+          textDecoration: 'none',
+        };
+        if (b.href) {
+          return <a key={b.key} href={b.href} target="_blank" rel="noreferrer" style={style}><span>{b.icon}</span><span>{b.label}</span></a>;
+        }
+        return <button key={b.key} onClick={b.onClick} style={style}><span>{b.icon}</span><span>{b.label}</span></button>;
+      })}
+    </div>
+  );
+};
+
+// ─── Main ─────────────────────────────────────────────────────────────────────
 export default function SaveDetail({ onNavigate, payload }) {
   const id = payload?.id;
   const [save, setSave] = useState(null);
@@ -11,6 +231,7 @@ export default function SaveDetail({ onNavigate, payload }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState(null);
+  const [retrying, setRetrying] = useState(false);
 
   useEffect(() => {
     if (!id) { setLoading(false); return; }
@@ -34,247 +255,354 @@ export default function SaveDetail({ onNavigate, payload }) {
 
   const handleDelete = async () => {
     if (!id) return;
-    setDeleteError(null);
-    setDeleting(true);
+    setDeleteError(null); setDeleting(true);
     try {
       const res = await api.deleteSave(id);
-      if (res.status === 'success') {
-        setConfirmDelete(false);
-        onNavigate('home');
-      } else {
-        setDeleteError(res.error?.message || 'Delete failed');
-      }
-    } catch (err) {
-      setDeleteError(err.message || 'Delete failed');
-    } finally {
-      setDeleting(false);
+      if (res.status === 'success') { setConfirmDelete(false); onNavigate('home'); }
+      else setDeleteError(res.error?.message || 'Delete failed');
+    } catch (err) { setDeleteError(err.message || 'Delete failed'); }
+    finally { setDeleting(false); }
+  };
+
+  const handleIntent = async (next) => {
+    if (!id) return;
+    try {
+      const r = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:4000'}/saves/${id}/intent`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('auth_token')}` },
+        body: JSON.stringify({ intentStatus: next }),
+      });
+      const j = await r.json();
+      if (j.status === 'success') setSave(j.data);
+    } catch {}
+  };
+
+  const handleRetry = async () => {
+    setRetrying(true);
+    try {
+      const res = await api.retrySave(id);
+      if (res?.status === 'success') setSave(res.data);
+    } finally { setRetrying(false); }
+  };
+
+  const handleShare = async () => {
+    if (navigator.share && save?.url) {
+      try { await navigator.share({ title: save.title, url: save.url }); return; } catch {}
     }
+    if (navigator.clipboard && save?.url) {
+      try { await navigator.clipboard.writeText(save.url); alert('Link copied'); return; } catch {}
+    }
+    alert('Sharing not supported in this browser');
   };
 
   if (!id) {
     return (
-      <div className="phone-frame">
-        <div style={{ background: 'var(--paper)', flex: 1, padding: 20 }}>
+      <div className="phone-frame" style={{ background: T.bg, color: T.text }}>
+        <div style={{ padding: 24 }}>
           <p>No save selected.</p>
-          <button className="btn-primary" onClick={() => onNavigate('home')}>Back</button>
+          <button style={{ background: T.text, color: T.bg, padding: '10px 18px', border: 0, borderRadius: 10, marginTop: 12 }} onClick={() => onNavigate('home')}>Back</button>
         </div>
       </div>
     );
   }
+  if (loading) return <div className="phone-frame" style={{ background: T.bg, color: T.text }}><div style={{ padding: 32, textAlign: 'center' }}>Loading…</div></div>;
+  if (error) return <div className="phone-frame" style={{ background: T.bg, color: T.text }}><div style={{ padding: 32, color: T.redFg }}>{error}</div></div>;
 
-  if (loading) return <div className="phone-frame"><div style={{ padding: 32, textAlign: 'center' }}>Loading…</div></div>;
-  if (error) return <div className="phone-frame"><div style={{ padding: 32, color: 'var(--error,#d33)' }}>{error}</div></div>;
+  const sd = save?.aiAnalysis?.structuredData || {};
+  const recipe = sd.recipe?.isRecipe ? sd.recipe : null;
+  const itinerary = sd.itinerary;
+  const product = sd.product;
+  const event = sd.event;
+  const place = sd.place;
+  const meta = catMeta(save?.category);
 
-  const meta = save?.metadata || {};
+  const rawTranscript = save?.aiAnalysis?.transcription?.text || '';
+  const transcriptLang = save?.aiAnalysis?.transcription?.detectedLanguage;
+  const transcriptIsBad = rawTranscript && looksHallucinated(rawTranscript);
+  const transcript = transcriptIsBad ? '' : rawTranscript;
+
+  // Apply hallucination guard to title + summary too (UI safety net).
+  const safeTitle = save?.title && !looksHallucinated(save.title) ? save.title : 'Untitled save';
+  const rawSummary = save?.aiAnalysis?.summary || '';
+  const safeSummary = rawSummary && !looksHallucinated(rawSummary) ? rawSummary : '';
+
+  const buyUrlStripped = !!save?.aiAnalysis?.flags?.buyUrlStripped;
+
+  // Show the noisy raw IG description only if we have nothing better
+  const showRawDescription = save?.description && !safeSummary;
 
   return (
-    <div className="phone-frame">
-      <div style={{ background: 'var(--paper)', flex: 1, display: 'flex', flexDirection: 'column', padding: '16px 20px 80px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <i className="ti ti-arrow-left" style={{ fontSize: '20px', cursor: 'pointer' }} onClick={() => onNavigate('home')}></i>
-          <h1 className="display" style={{ fontSize: '18px' }}>Save Details</h1>
-          <i className="ti ti-trash" style={{ fontSize: '20px', cursor: 'pointer', color: 'var(--error,#d33)' }} onClick={() => setConfirmDelete(true)}></i>
-        </div>
-        <div style={{ borderRadius: '12px', marginBottom: '16px', overflow: 'hidden', background: '#000' }}>
-          {save?.videoUrl ? (
-            <video
-              src={save.videoUrl}
-              poster={save.thumbnail || save.image}
-              controls
-              playsInline
-              style={{ width: '100%', maxHeight: 420, display: 'block' }}
-            />
-          ) : (save?.thumbnail || save?.image) ? (
-            <SmartImage saveId={save._id} src={save.thumbnail || save.image} alt={save.title} style={{ width: '100%', height: 180, objectFit: 'cover' }} />
-          ) : (
-            <div style={{ height: 180 }} />
-          )}
+    <div className="phone-frame" style={{ background: T.bg, color: T.text, minHeight: '100vh' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '14px 18px 80px' }}>
+        {/* Top nav */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+          <button onClick={() => onNavigate('home')} style={{ background: 'transparent', border: 0, color: T.text, fontSize: 20, cursor: 'pointer' }}>←</button>
+          <span style={{ fontSize: 14, color: T.textMuted, letterSpacing: '0.04em' }}>SAVE</span>
+          <button onClick={() => setConfirmDelete(true)} style={{ background: 'transparent', border: 0, color: T.redFg, fontSize: 18, cursor: 'pointer' }}>🗑</button>
         </div>
 
-        {save?.processingStatus && save.processingStatus !== 'done' && (
-          <div style={{ fontSize: 12, color: 'var(--slate)', marginBottom: 12 }}>
-            ⏳ Processing: {save.processingStatus}…
+        {/* Hero / static thumbnail */}
+        <div style={{ borderRadius: 14, marginBottom: 12, overflow: 'hidden', background: '#000', aspectRatio: '16 / 11', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {(save?.thumbnail || save?.image)
+            ? <SmartImage saveId={save._id} src={save.thumbnail || save.image} alt={safeTitle} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            : <span style={{ color: T.textFaint, fontSize: 36 }}>▢</span>}
+        </div>
+
+        {/* Partial warning with inline Retry */}
+        {save?.processingStatus === 'partial' && (
+          <WarningBanner
+            tone="amber"
+            action={
+              <button
+                onClick={handleRetry} disabled={retrying}
+                style={{ background: T.amberFg, color: T.bg, border: 0, borderRadius: 6, padding: '5px 12px', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}
+              >{retrying ? '…' : 'Retry'}</button>
+            }
+          >
+            Some details missing{save.processingError ? ` — ${save.processingError}` : ''}. Retry to reprocess.
+          </WarningBanner>
+        )}
+        {save?.processingStatus === 'failed' && (
+          <WarningBanner tone="red">Processing failed{save.processingError ? ` — ${save.processingError}` : ''}.</WarningBanner>
+        )}
+        {save?.processingStatus === 'processing' && (
+          <WarningBanner tone="amber">⏳ Still processing — refresh in a moment.</WarningBanner>
+        )}
+
+        <CardHeader save={save} />
+
+        <h2 style={{ fontSize: 22, fontWeight: 600, lineHeight: 1.25, margin: '0 0 8px', color: T.text }}>{safeTitle}</h2>
+
+        {safeSummary && (
+          <p style={{ fontSize: 14, color: T.textMuted, lineHeight: 1.5, marginBottom: 12 }}>{safeSummary}</p>
+        )}
+        {showRawDescription && (
+          <p style={{ fontSize: 13, color: T.textMuted, lineHeight: 1.5, marginBottom: 12 }}>{save.description}</p>
+        )}
+
+        {/* Buy link removed shield — fires only when backend stripped a URL */}
+        {buyUrlStripped && (
+          <WarningBanner tone="red" icon="🛡">
+            Buy link was removed — could not verify it was in the original content.
+          </WarningBanner>
+        )}
+
+        {/* Key points — concrete bullets distilled from caption/OCR/transcript.
+            Shown especially valuable when transcript is missing/hallucinated. */}
+        {save?.aiAnalysis?.keyPoints?.length > 0 && (
+          <div style={{ background: T.bgInner, border: `1px solid ${T.border}`, borderRadius: 10, padding: '10px 14px', marginBottom: 12 }}>
+            <p style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em', color: T.textFaint, margin: '0 0 8px' }}>Key points</p>
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+              {save.aiAnalysis.keyPoints.map((kp, i) => (
+                <li key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: 6 }}>
+                  <span style={{ flexShrink: 0, width: 4, height: 4, borderRadius: '50%', background: meta.accent, marginTop: 8 }} />
+                  <span style={{ fontSize: 13, lineHeight: 1.5, color: T.text }}>{kp}</span>
+                </li>
+              ))}
+            </ul>
           </div>
         )}
 
+        {/* Tag chips */}
+        {save?.tags?.length > 0 && (
+          <div style={{ marginBottom: 10 }}>
+            <PillRow items={save.tags} />
+          </div>
+        )}
+
+        {/* Screenshot carousel */}
         {save?.screenshots?.length > 0 && (
-          <div style={{ marginBottom: 16 }}>
-            <p style={{ fontSize: 13, fontWeight: 500, marginBottom: 6 }}>📷 Screenshots ({save.screenshots.length})</p>
+          <>
+            <SectionLabel>Screenshots ({save.screenshots.length})</SectionLabel>
             <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4 }}>
-              {save.screenshots
-                .slice()
-                .sort((a, b) => (a.order || 0) - (b.order || 0))
-                .map((sc, i) => (
-                <div key={i} style={{ flexShrink: 0, width: 88 }}>
-                  <a
-                    href={sc.url || sc.thumbnailUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    onClick={(e) => { if (!sc.url) { e.preventDefault(); alert('Original purged after 2 working days — thumbnail and OCR text preserved.'); } }}
-                    style={{ display: 'block', borderRadius: 8, overflow: 'hidden', position: 'relative' }}
-                    title={sc.ocrText ? sc.ocrText.slice(0, 200) : ''}
-                  >
-                    <img src={sc.thumbnailUrl} alt={`Screenshot ${i + 1}`} style={{ width: '100%', height: 88, objectFit: 'cover', display: 'block', opacity: sc.url ? 1 : 0.65 }} />
-                    {!sc.url && (
-                      <span style={{ position: 'absolute', bottom: 2, left: 2, background: 'rgba(0,0,0,0.7)', color: '#fff', fontSize: 9, padding: '1px 4px', borderRadius: 3 }}>purged</span>
-                    )}
-                  </a>
-                </div>
+              {save.screenshots.slice().sort((a, b) => (a.order || 0) - (b.order || 0)).map((sc, i) => (
+                <a key={i} href={sc.url || sc.thumbnailUrl} target="_blank" rel="noreferrer"
+                   onClick={(e) => { if (!sc.url) { e.preventDefault(); alert('Original purged after 2 working days — thumbnail + OCR text kept.'); } }}
+                   style={{ flexShrink: 0, width: 88, display: 'block', borderRadius: 8, overflow: 'hidden', position: 'relative', border: `1px solid ${T.border}` }}
+                   title={sc.ocrText ? sc.ocrText.slice(0, 200) : ''}>
+                  <img src={sc.thumbnailUrl} alt={`Screenshot ${i + 1}`} style={{ width: '100%', height: 88, objectFit: 'cover', display: 'block', opacity: sc.url ? 1 : 0.65 }} />
+                  {!sc.url && <span style={{ position: 'absolute', bottom: 2, left: 2, background: 'rgba(0,0,0,0.7)', color: '#fff', fontSize: 9, padding: '1px 4px', borderRadius: 3 }}>purged</span>}
+                </a>
               ))}
             </div>
-          </div>
+          </>
         )}
 
-        {save?.aiAnalysis?.structuredData?.recipe?.isRecipe && (() => {
-          const r = save.aiAnalysis.structuredData.recipe;
-          return (
-          <div style={{ background: 'var(--linen)', borderRadius: 12, padding: 14, marginBottom: 16 }}>
-            <p className="display" style={{ fontSize: 16, marginBottom: 6 }}>🍳 {r.title || 'Recipe'}</p>
-            {r.cookingTime && <p style={{ fontSize: 12, color: 'var(--slate)' }}>⏱ {r.cookingTime}{r.servings ? ` · 🍽 ${r.servings}` : ''}{r.cuisine ? ` · ${r.cuisine}` : ''}</p>}
-            {r.ingredients?.length > 0 && (
+        {/* Recipe block — wrapped in a contained card with bg */}
+        {recipe && (
+          <div style={{ background: T.bgInner, border: `1px solid ${T.border}`, borderRadius: 12, padding: 14, marginTop: 10 }}>
+            {(recipe.cookingTime || recipe.servings || recipe.cuisine) && (
+              <p style={{ fontSize: 11, color: T.textMuted, marginBottom: 8 }}>
+                {recipe.cookingTime ? `⏱ ${recipe.cookingTime}` : ''}
+                {recipe.servings ? ` · 🍽 ${recipe.servings}` : ''}
+                {recipe.cuisine ? ` · ${recipe.cuisine}` : ''}
+              </p>
+            )}
+            {recipe.ingredients?.length > 0 && (
               <>
-                <p style={{ fontSize: 13, fontWeight: 500, marginTop: 10 }}>Ingredients</p>
-                <ul style={{ paddingLeft: 18, margin: '4px 0', fontSize: 13 }}>
-                  {r.ingredients.map((ing, i) => <li key={i}>{ing}</li>)}
-                </ul>
+                <p style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em', color: T.textFaint, margin: '4px 0 8px' }}>Ingredients</p>
+                <PillRow items={recipe.ingredients} accent={meta.accent} />
               </>
             )}
-            {r.steps?.length > 0 && (
+            {recipe.steps?.length > 0 && (
               <>
-                <p style={{ fontSize: 13, fontWeight: 500, marginTop: 10 }}>Steps</p>
-                <ol style={{ paddingLeft: 18, margin: '4px 0', fontSize: 13 }}>
-                  {r.steps.map((s, i) => <li key={i} style={{ marginBottom: 4 }}>{s}</li>)}
+                <p style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em', color: T.textFaint, margin: '14px 0 8px' }}>Steps</p>
+                <ol style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                  {recipe.steps.map((s, i) => (
+                    <li key={i} style={{ display: 'flex', gap: 12, marginBottom: 10, alignItems: 'flex-start' }}>
+                      <span style={{
+                        flexShrink: 0, width: 24, height: 24, borderRadius: '50%',
+                        background: meta.accent, color: T.bg,
+                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: 12, fontWeight: 700,
+                      }}>{i + 1}</span>
+                      <span style={{ fontSize: 13, lineHeight: 1.55, paddingTop: 3, color: T.text }}>{s}</span>
+                    </li>
+                  ))}
                 </ol>
               </>
             )}
           </div>
-          );
-        })()}
+        )}
 
-        {save?.aiAnalysis?.structuredData?.itinerary && (() => {
-          const it = save.aiAnalysis.structuredData.itinerary;
-          return (
-          <div style={{ background: 'var(--linen)', borderRadius: 12, padding: 14, marginBottom: 16 }}>
-            <p className="display" style={{ fontSize: 16, marginBottom: 6 }}>🗺 {it.destination || 'Trip'}</p>
-            {it.bestSeason && <p style={{ fontSize: 12, color: 'var(--slate)' }}>Best season: {it.bestSeason}</p>}
-            {it.highlights?.length > 0 && (
-              <ul style={{ paddingLeft: 18, marginTop: 8, fontSize: 13 }}>
-                {it.highlights.map((h, i) => <li key={i}>{h}</li>)}
-              </ul>
+        {/* Product card (when no recipe) — name/brand/price */}
+        {product && !recipe && (product.name || product.brand || product.price) && (
+          <>
+            <SectionLabel>Product</SectionLabel>
+            <KVTable
+              rows={[
+                ['Name', product.name],
+                ['Brand', product.brand],
+                ['Price', product.price ? `${product.currency || '₹'} ${product.price}` : null],
+              ]}
+            />
+          </>
+        )}
+
+        {/* Available items (product variants) */}
+        {product?.availableItems?.length > 0 && (
+          <>
+            <SectionLabel>Available {meta.label === 'Shopping' ? 'items' : 'options'}</SectionLabel>
+            <PillRow items={product.availableItems} />
+          </>
+        )}
+
+        {/* Place / Location — label adapts to context */}
+        {place && (
+          <>
+            <SectionLabel>{recipe ? 'Location' : product ? 'Store location' : 'Place'}</SectionLabel>
+            <KVTable
+              rows={[
+                [recipe ? 'Area' : product ? 'Store' : 'Place', place.name],
+                ['Address', place.address],
+                ['City', [place.city, place.country].filter(Boolean).join(', ')],
+                ['Hours', place.hours],
+              ]}
+            />
+          </>
+        )}
+
+        {/* Itinerary */}
+        {itinerary && (
+          <>
+            <SectionLabel>Destination</SectionLabel>
+            <KVTable
+              rows={[
+                ['Place',    itinerary.destination],
+                ['Duration', itinerary.duration],
+                ['Season',   itinerary.bestSeason],
+                ['Cost',     itinerary.estimatedCost],
+              ]}
+            />
+            {itinerary.highlights?.length > 0 && (
+              <>
+                <SectionLabel>Highlights</SectionLabel>
+                <PillRow items={itinerary.highlights} accent={meta.accent} />
+              </>
             )}
-          </div>
-          );
-        })()}
-
-        {save?.aiAnalysis?.structuredData?.product && (() => {
-          const p = save.aiAnalysis.structuredData.product;
-          return (
-          <div style={{ background: 'var(--linen)', borderRadius: 12, padding: 14, marginBottom: 16 }}>
-            <p className="display" style={{ fontSize: 16, marginBottom: 6 }}>🛍 {p.name || 'Product'}</p>
-            {p.brand && <p style={{ fontSize: 12, color: 'var(--slate)' }}>{p.brand}</p>}
-            {p.price && <p style={{ fontSize: 14, fontWeight: 500, marginTop: 4 }}>{p.currency || ''} {p.price}</p>}
-            {p.buyUrl && <a href={p.buyUrl} target="_blank" rel="noreferrer" style={{ color: 'var(--forest)', fontSize: 13 }}>Buy →</a>}
-          </div>
-          );
-        })()}
-
-        {save?.aiAnalysis?.structuredData?.event && (() => {
-          const e = save.aiAnalysis.structuredData.event;
-          return (
-          <div style={{ background: 'var(--linen)', borderRadius: 12, padding: 14, marginBottom: 16 }}>
-            <p className="display" style={{ fontSize: 16, marginBottom: 6 }}>🎫 {e.eventName || 'Event'}</p>
-            {e.venue && <p style={{ fontSize: 12, color: 'var(--slate)' }}>{e.venue}</p>}
-            {e.eventDate && <p style={{ fontSize: 12 }}>{new Date(e.eventDate).toLocaleString()}</p>}
-            {e.price && <p style={{ fontSize: 14, fontWeight: 500 }}>{e.currency || ''} {e.price}</p>}
-          </div>
-          );
-        })()}
-
-        {save?.tags?.length > 0 && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
-            {save.tags.map((t, i) => <span key={i} className="tag tag-neutral">{t}</span>)}
-          </div>
+          </>
         )}
 
-        {save?.aiAnalysis?.summary && (
-          <p style={{ fontSize: 13, color: 'var(--slate)', marginBottom: 12, fontStyle: 'italic' }}>{save.aiAnalysis.summary}</p>
+        {/* Event */}
+        {event && (
+          <>
+            <SectionLabel>Event</SectionLabel>
+            <KVTable rows={[
+              ['Event', event.eventName],
+              ['Venue', event.venue],
+              ['When',  event.eventDate ? new Date(event.eventDate).toLocaleString() : null],
+              ['Price', event.price ? `${event.currency || ''} ${event.price}` : null],
+            ]} />
+          </>
         )}
 
-        {save?.aiAnalysis?.transcription?.translation && (
-          <details style={{ marginBottom: 12, fontSize: 13 }}>
-            <summary style={{ cursor: 'pointer', color: 'var(--slate)' }}>📝 Transcript (English)</summary>
-            <p style={{ padding: 10, background: 'var(--linen)', borderRadius: 8, marginTop: 6, lineHeight: 1.5 }}>{save.aiAnalysis.transcription.translation}</p>
+        {/* Transcript hallucination warning */}
+        {transcriptIsBad && (
+          <WarningBanner tone="amber">
+            Transcript was hallucinated (repeating characters detected) — removed. Summary based on title and description only.
+          </WarningBanner>
+        )}
+        {transcript && (
+          <details style={{ marginTop: 14, fontSize: 13, color: T.text }}>
+            <summary style={{ cursor: 'pointer', color: T.textMuted, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <span>📝 Transcript</span>
+              {transcriptLang && transcriptLang !== 'en' && (
+                <span style={{ fontSize: 10, padding: '1px 7px', borderRadius: 999, background: T.bgChip, color: T.textMuted }}>
+                  translated from {transcriptLang}
+                </span>
+              )}
+            </summary>
+            <p style={{ padding: 12, background: T.bgInner, border: `1px solid ${T.border}`, borderRadius: 8, marginTop: 6, lineHeight: 1.55 }}>{transcript}</p>
           </details>
         )}
-        {save?.aiAnalysis?.transcription?.text && save?.aiAnalysis?.transcription?.detectedLanguage && save.aiAnalysis.transcription.detectedLanguage !== 'en' && (
-          <details style={{ marginBottom: 12, fontSize: 13 }}>
-            <summary style={{ cursor: 'pointer', color: 'var(--slate)' }}>📝 Transcript ({save.aiAnalysis.transcription.detectedLanguage})</summary>
-            <p style={{ padding: 10, background: 'var(--linen)', borderRadius: 8, marginTop: 6, lineHeight: 1.5 }}>{save.aiAnalysis.transcription.text}</p>
-          </details>
-        )}
-        <div style={{ marginBottom: '12px' }}>
-          <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
-            {save?.category && <span className="tag tag-forest">{save.category.toUpperCase()}</span>}
-            {meta.location && <span className="tag tag-neutral">{meta.location.toUpperCase()}</span>}
-          </div>
-          <h2 className="display" style={{ fontSize: '20px', marginBottom: '8px' }}>{save?.title}</h2>
-          {save?.description && (
-            <p style={{ fontSize: '14px', color: 'var(--slate)', lineHeight: '1.5' }}>{save.description}</p>
-          )}
-          {meta.price && <p style={{ marginTop: 8, fontWeight: 500 }}>💰 {meta.price}</p>}
-        </div>
-        <div style={{ background: 'var(--forest-faint)', borderRadius: '12px', padding: '12px 14px', marginBottom: '16px' }}>
-          <p style={{ fontSize: '12px', color: 'var(--forest)', fontWeight: '500' }}>Saved from {save?.source}</p>
-          <p style={{ fontSize: '12px', color: 'var(--slate)', marginTop: '4px' }}>{save?.engagement?.views || 0} views</p>
-        </div>
+
+        {/* Action bar */}
+        <ActionBar
+          save={save}
+          onIntent={handleIntent}
+          onOpenSource={() => window.open(save.url, '_blank')}
+          onShare={handleShare}
+        />
+
+        {/* Similar saves */}
         {recs.length > 0 && (
-          <div style={{ marginBottom: 16 }}>
-            <p style={{ fontSize: '13px', fontWeight: 500, marginBottom: 8 }}>Similar saves</p>
-            {recs.slice(0, 3).map((r) => (
-              <div key={r._id} style={{ padding: '8px 0', borderBottom: '0.5px solid var(--hairline)', cursor: 'pointer' }} onClick={() => onNavigate('save-detail', { id: r._id })}>
-                <p style={{ fontSize: 13 }}>{r.title}</p>
-                <p style={{ fontSize: 11, color: 'var(--slate)' }}>score {(r.score || 0).toFixed(2)}</p>
-              </div>
-            ))}
-          </div>
+          <>
+            <SectionLabel>Similar saves</SectionLabel>
+            <div style={{ background: T.bgInner, borderRadius: 10, border: `1px solid ${T.border}` }}>
+              {recs.slice(0, 3).map((r, i, arr) => {
+                const pct = Math.round((r.score || 0) * 100);
+                return (
+                  <div key={r._id}
+                       style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 14px', borderBottom: i < arr.length - 1 ? `1px solid ${T.border}` : 'none', cursor: 'pointer' }}
+                       onClick={() => onNavigate('save-detail', { id: r._id })}>
+                    <span style={{ fontSize: 13, flex: 1, color: T.text }}>{r.title}</span>
+                    <span style={{ fontSize: 11, padding: '3px 9px', borderRadius: 999, background: T.bgChip, color: T.textMuted, whiteSpace: 'nowrap', marginLeft: 8 }}>{pct}% match</span>
+                  </div>
+                );
+              })}
+            </div>
+          </>
         )}
-        {save?.url && (
-          <button className="btn-secondary" style={{ marginBottom: 8 }} onClick={() => window.open(save.url, '_blank')}>Open source</button>
-        )}
-        <button className="btn-primary" style={{ marginTop: 'auto' }} onClick={() => onNavigate('home')}>Back</button>
       </div>
 
       {confirmDelete && (
-        <div
-          onClick={() => !deleting && setConfirmDelete(false)}
-          style={{ position: 'absolute', inset: 0, background: 'rgba(14,14,12,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: 24 }}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{ background: 'var(--paper)', borderRadius: 16, padding: 20, width: '100%', maxWidth: 320, boxShadow: '0 8px 24px rgba(0,0,0,0.18)' }}
-          >
-            <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'rgba(211,51,51,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
-              <i className="ti ti-trash" style={{ fontSize: 20, color: 'var(--error,#d33)' }}></i>
+        <div onClick={() => !deleting && setConfirmDelete(false)}
+             style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.65)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: 24 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: T.bgInner, color: T.text, borderRadius: 16, padding: 20, width: '100%', maxWidth: 320, border: `1px solid ${T.border}` }}>
+            <div style={{ width: 44, height: 44, borderRadius: '50%', background: T.redBg, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
+              <span style={{ fontSize: 20, color: T.redFg }}>🗑</span>
             </div>
-            <h3 className="display" style={{ fontSize: 17, textAlign: 'center', marginBottom: 6 }}>Delete this save?</h3>
-            <p style={{ fontSize: 13, color: 'var(--slate)', textAlign: 'center', marginBottom: 16 }}>
+            <h3 style={{ fontSize: 17, textAlign: 'center', marginBottom: 6, fontWeight: 600 }}>Delete this save?</h3>
+            <p style={{ fontSize: 13, color: T.textMuted, textAlign: 'center', marginBottom: 16 }}>
               It will be removed from your feed and any collections. This can't be undone.
             </p>
-            {deleteError && <p style={{ color: 'var(--error,#d33)', fontSize: 13, textAlign: 'center', marginBottom: 8 }}>{deleteError}</p>}
-            <button
-              className="btn-primary"
-              style={{ background: 'var(--error,#d33)' }}
-              onClick={handleDelete}
-              disabled={deleting}
-            >
+            {deleteError && <p style={{ color: T.redFg, fontSize: 13, textAlign: 'center', marginBottom: 8 }}>{deleteError}</p>}
+            <button onClick={handleDelete} disabled={deleting}
+                    style={{ width: '100%', padding: '10px 0', background: T.redFg, color: '#fff', border: 0, borderRadius: 10, fontSize: 14, fontWeight: 500, cursor: 'pointer' }}>
               {deleting ? 'Deleting…' : 'Delete'}
             </button>
-            <button
-              className="btn-secondary"
-              style={{ marginTop: 8 }}
-              onClick={() => setConfirmDelete(false)}
-              disabled={deleting}
-            >
+            <button onClick={() => setConfirmDelete(false)} disabled={deleting}
+                    style={{ width: '100%', padding: '10px 0', background: 'transparent', color: T.text, border: `1px solid ${T.border}`, borderRadius: 10, fontSize: 14, marginTop: 8, cursor: 'pointer' }}>
               Cancel
             </button>
           </div>
