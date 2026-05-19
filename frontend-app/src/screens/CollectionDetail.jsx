@@ -3,6 +3,7 @@ import api from '../api';
 
 export default function CollectionDetail({ onNavigate, payload }) {
   const id = payload?.id;
+  const backTo = payload?.from || 'collections';
   const [collection, setCollection] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -36,7 +37,7 @@ export default function CollectionDetail({ onNavigate, payload }) {
       <div className="phone-frame">
         <div style={{ background: 'var(--paper)', flex: 1, padding: 20 }}>
           <p>No collection selected.</p>
-          <button className="btn-primary" onClick={() => onNavigate('collections')}>Back</button>
+          <button className="btn-primary" onClick={() => onNavigate(backTo)}>Back</button>
         </div>
       </div>
     );
@@ -51,7 +52,7 @@ export default function CollectionDetail({ onNavigate, payload }) {
     <div className="phone-frame">
       <div style={{ background: 'var(--paper)', flex: 1, display: 'flex', flexDirection: 'column' }}>
         <div style={{ padding: '16px 20px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <i className="ti ti-arrow-left" style={{ fontSize: '20px', cursor: 'pointer' }} onClick={() => onNavigate('collections')}></i>
+          <i className="ti ti-arrow-left" style={{ fontSize: '20px', cursor: 'pointer' }} onClick={() => onNavigate(backTo)}></i>
           <h1 className="display" style={{ fontSize: '18px' }}>{collection?.name || 'Collection'}</h1>
           <span style={{ width: 20 }} />
         </div>

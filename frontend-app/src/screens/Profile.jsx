@@ -203,7 +203,7 @@ export default function Profile({ onNavigate }) {
                 {stats.recentCollections.map((c) => (
                   <div
                     key={c._id}
-                    onClick={() => onNavigate('collection-detail', { id: c._id })}
+                    onClick={() => onNavigate('collection-detail', { id: c._id, from: 'profile' })}
                     style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 4px', borderBottom: '0.5px solid var(--hairline)', cursor: 'pointer' }}
                   >
                     <span style={{ fontSize: 18 }}>{c.icon || '📁'}</span>
