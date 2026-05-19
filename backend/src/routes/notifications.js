@@ -55,11 +55,13 @@ router.patch('/:id', async (req, res) => {
       });
     }
 
+    // Notification schema was migrated from { read: Boolean } to
+    // { status: 'pending'|'sent'|'opened'|'acted'|'dismissed' }. Map the
+    // legacy `read` body field onto the new status enum so existing clients
+    // (and tests) keep working.
     if (read !== undefined) {
-      notification.read = read;
-      if (read) {
-        notification.readAt = new Date();
-      }
+      notification.status = read ? 'opened' : 'sent';
+      if (read) notification.openedAt = new Date();
     }
 
     await notification.save();

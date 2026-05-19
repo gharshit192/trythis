@@ -107,4 +107,12 @@ notificationSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 // Compound index for user notifications
 notificationSchema.index({ userId: 1, status: 1, createdAt: -1 });
 
+// Back-compat: API consumers used to read `notification.read` directly. Now
+// derived from the `status` enum so the old shape keeps working in JSON.
+notificationSchema.virtual('read').get(function () {
+  return this.status === 'opened' || this.status === 'acted';
+});
+notificationSchema.set('toJSON', { virtuals: true });
+notificationSchema.set('toObject', { virtuals: true });
+
 module.exports = mongoose.model('Notification', notificationSchema);

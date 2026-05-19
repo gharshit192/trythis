@@ -275,7 +275,13 @@ describe('/notifications', () => {
 
   it('mark as read then dismiss', async () => {
     const Notification = require('../../src/models/Notification');
-    const n = await Notification.create({ userId, message: 'Hi', type: 'system' });
+    const n = await Notification.create({
+      userId,
+      type: 'nearby_rediscovery',
+      title: 'Test notification',
+      message: 'Hi',
+      relevanceScore: 0.5,
+    });
 
     const read = await request(app)
       .patch(`/notifications/${n._id}`)
