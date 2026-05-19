@@ -1,7 +1,9 @@
 const logger = require('../../utils/logger');
+const { extractByCategoryWrapper } = require('./categories');
 
 const EXTRACTION_LAYERS = {
   HEURISTICS: 'heuristics',
+  CATEGORY_SPECIFIC: 'category-specific',
   EMBEDDINGS: 'embeddings',
   LLM: 'llm',
 };
@@ -62,24 +64,39 @@ const llm = {
   },
 };
 
-const extractEntities = async (content) => {
+const extractEntities = async (content, detectedCategory = null) => {
   if (!content || typeof content !== 'object') {
     return { price: null, location: null, domain: null, title: '', confidence: 0, layer: null };
   }
 
   try {
+    // Try category-specific extraction first if category is known
+    if (detectedCategory) {
+      const categoryResult = extractByCategoryWrapper(detectedCategory, content);
+      if (categoryResult && categoryResult.confidence > 0.4) {
+        logger.debug(`Extraction via category-specific engine: ${detectedCategory}`);
+        return {
+          ...categoryResult,
+          layer: EXTRACTION_LAYERS.CATEGORY_SPECIFIC,
+        };
+      }
+    }
+
+    // Fall back to heuristics
     const heuristicResult = heuristics.extract(content);
     if (heuristicResult.confidence >= HEURISTIC_CONFIDENCE_THRESHOLD) {
       logger.debug('Extraction via heuristics');
       return { ...heuristicResult, layer: EXTRACTION_LAYERS.HEURISTICS };
     }
 
+    // Try embeddings if heuristics confidence is low
     const embeddingsResult = await embeddings.extract(content);
     if (embeddingsResult.confidence >= HEURISTIC_CONFIDENCE_THRESHOLD) {
       logger.debug('Extraction via embeddings');
       return { ...heuristicResult, ...embeddingsResult, layer: EXTRACTION_LAYERS.EMBEDDINGS };
     }
 
+    // Fall back to LLM
     const llmResult = await llm.extract(content);
     if (llmResult.confidence > 0) {
       logger.debug('Extraction via LLM');
