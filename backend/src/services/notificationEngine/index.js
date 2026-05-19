@@ -1,121 +1,115 @@
 const Notification = require('../../models/Notification');
 const logger = require('../../utils/logger');
 
+// Triggers
 const nearbyRediscovery = require('./triggers/nearbyRediscovery');
-const trendBased = require('./triggers/trendBased');
-const priceDrop = require('./triggers/priceDrop');
+const forgottenIntent = require('./triggers/forgottenIntent');
 const seasonal = require('./triggers/seasonal');
-const memoryBased = require('./triggers/memoryBased');
 const weatherAware = require('./triggers/weatherAware');
 const timeBehavioral = require('./triggers/timeBehavioral');
-const forgottenIntent = require('./triggers/forgottenIntent');
-const goalCompletion = require('./triggers/goalCompletion');
-const smartCollections = require('./triggers/smartCollections');
+const priceDrop = require('./triggers/priceDrop');
 
-const scoringEngine = require('./scoring/priorityScoring');
+// Personalization
 const personaEngine = require('./personalization/userPersona');
+
+// Scoring + feedback
+const { scoreNotification } = require('./scoring/priorityScoring');
+const { getEngagementProfile, shouldSuppressTrigger } = require('./scoring/engagementFeedback');
+
+// Cooldown
+const { applyCooldown } = require('./cooldown/applyCooldown');
 
 const NOTIFICATION_TYPES = {
   NEARBY_REDISCOVERY: 'nearby_rediscovery',
-  TREND_BASED: 'trend_based',
-  PRICE_DROP: 'price_drop',
+  FORGOTTEN_INTENT: 'forgotten_intent',
   SEASONAL: 'seasonal',
-  MEMORY_BASED: 'memory_based',
-  GOAL_COMPLETION: 'goal_completion',
   WEATHER_AWARE: 'weather_aware',
   TIME_BEHAVIORAL: 'time_behavioral',
-  FORGOTTEN_INTENT: 'forgotten_intent',
-  SMART_COLLECTION: 'smart_collection',
+  PRICE_DROP: 'price_drop',
 };
 
-const RELEVANCE_THRESHOLD = 0.6;
+const RELEVANCE_THRESHOLD = 0.65;
 
+/**
+ * Main evaluation pipeline.
+ *
+ * Flow:
+ *   1. Load persona + engagement profile (parallel)
+ *   2. Determine which triggers to even run (suppression filter)
+ *   3. Gather candidates from each trigger (parallel)
+ *   4. Score each with engagement-aware priority scoring
+ *   5. Filter by threshold
+ *   6. Apply cooldown + quiet hours
+ *   7. Sort by score, slice to budget
+ */
 async function evaluateNotifications(userId, context = {}) {
   try {
-    const userPersona = await personaEngine.analyzeUserPersona(userId);
+    // Parallel: persona + engagement
+    const [userPersona, engagementProfile] = await Promise.all([
+      personaEngine.analyzeUserPersona(userId),
+      getEngagementProfile(userId),
+    ]);
+
     const notificationBudget = personaEngine.getNotificationBudget(userPersona);
 
-    const candidates = [];
+    // Build list of active triggers, filtering out any the user has rejected
+    const triggers = [
+      { name: 'nearby_rediscovery', module: nearbyRediscovery },
+      { name: 'forgotten_intent', module: forgottenIntent },
+      { name: 'seasonal', module: seasonal },
+      { name: 'weather_aware', module: weatherAware },
+      { name: 'time_behavioral', module: timeBehavioral },
+      { name: 'price_drop', module: priceDrop },
+    ].filter((t) => !shouldSuppressTrigger(engagementProfile, t.name));
 
-    // Evaluate all notification triggers
-    candidates.push(
-      ...(await nearbyRediscovery.evaluate(userId, context, userPersona))
-    );
-    candidates.push(
-      ...(await trendBased.evaluate(userId, context, userPersona))
-    );
-    candidates.push(
-      ...(await priceDrop.evaluate(userId, context, userPersona))
-    );
-    candidates.push(
-      ...(await seasonal.evaluate(userId, context, userPersona))
-    );
-    candidates.push(
-      ...(await memoryBased.evaluate(userId, context, userPersona))
-    );
-    candidates.push(
-      ...(await weatherAware.evaluate(userId, context, userPersona))
-    );
-    candidates.push(
-      ...(await timeBehavioral.evaluate(userId, context, userPersona))
-    );
-    candidates.push(
-      ...(await forgottenIntent.evaluate(userId, context, userPersona))
-    );
-    candidates.push(
-      ...(await goalCompletion.evaluate(userId, context, userPersona))
-    );
-    candidates.push(
-      ...(await smartCollections.evaluate(userId, context, userPersona))
+    // Gather candidates in parallel
+    const candidateGroups = await Promise.all(
+      triggers.map((t) =>
+        t.module
+          .evaluate(userId, context, userPersona)
+          .catch((err) => {
+            logger.error(`Trigger ${t.name} failed: ${err.message}`);
+            return [];
+          })
+      )
     );
 
-    // Score and rank candidates
-    const scored = candidates.map((candidate) =>
-      scoringEngine.scoreNotification(candidate, userPersona)
+    const candidates = candidateGroups.flat();
+
+    if (!candidates.length) {
+      logger.debug(`No candidates for user ${userId}`);
+      return [];
+    }
+
+    // Score with engagement-aware logic
+    const scored = candidates.map((c) =>
+      scoreNotification(c, userPersona, engagementProfile)
     );
 
-    // Filter by threshold
-    const qualified = scored.filter(
-      (n) => n.relevanceScore >= RELEVANCE_THRESHOLD
+    // Filter by quality threshold
+    const qualified = scored.filter((n) => n.relevanceScore >= RELEVANCE_THRESHOLD);
+
+    // Sort by score (highest first) BEFORE cooldown so the best candidate
+    // for any given category/type wins the cooldown slot.
+    qualified.sort((a, b) => b.relevanceScore - a.relevanceScore);
+
+    // Apply cooldown + quiet hours
+    const afterCooldown = await applyCooldown(userId, qualified, {
+      userTimezoneOffsetMinutes: context.userTimezoneOffsetMinutes,
+      quietHoursEnabled: context.quietHoursEnabled !== false,
+    });
+
+    // Slice to user's daily budget
+    const selected = afterCooldown.slice(0, notificationBudget);
+
+    logger.debug(
+      `User ${userId}: ${candidates.length} candidates → ${qualified.length} qualified → ${afterCooldown.length} post-cooldown → ${selected.length} sent (budget: ${notificationBudget})`
     );
 
-    // Apply cooldown logic
-    const afterCooldown = await applyCooldownLogic(userId, qualified);
-
-    // Select top candidates within budget
-    const selected = afterCooldown
-      .sort((a, b) => b.relevanceScore - a.relevanceScore)
-      .slice(0, notificationBudget);
-
-    logger.debug(`Evaluated ${candidates.length} candidates, selected ${selected.length}`);
     return selected;
   } catch (error) {
     logger.error(`Notification evaluation failed: ${error.message}`);
     throw error;
-  }
-}
-
-async function applyCooldownLogic(userId, candidates) {
-  try {
-    // Get recent sent notifications
-    const recentNotifications = await Notification.find({
-      userId,
-      sentAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
-    });
-
-    const recentSaveIds = new Set(
-      recentNotifications
-        .map((n) => n.relatedSaveId?.toString())
-        .filter(Boolean)
-    );
-
-    // Filter out duplicates
-    return candidates.filter(
-      (candidate) => !recentSaveIds.has(candidate.relatedSaveId?.toString())
-    );
-  } catch (error) {
-    logger.error(`Cooldown logic failed: ${error.message}`);
-    return candidates;
   }
 }
 
