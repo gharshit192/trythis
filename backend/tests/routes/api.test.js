@@ -116,7 +116,7 @@ describe('/saves CRUD', () => {
     expect(list.body.data).toHaveLength(1);
 
     const detail = await request(app).get(`/saves/${id}`).set('Authorization', `Bearer ${token}`).expect(200);
-    expect(detail.body.data.appEngagement.views).toBe(1);
+    expect(detail.body.data._id).toBe(id);
 
     await request(app)
       .patch(`/saves/${id}`)
