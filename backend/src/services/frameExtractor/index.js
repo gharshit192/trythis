@@ -14,6 +14,32 @@ const logger = require('../../utils/logger');
 const FFMPEG_TIMEOUT = 30 * 1000;
 const TESSERACT_TIMEOUT = 15 * 1000;
 
+// Cache of `tesseract --list-langs` to avoid re-running per frame.
+// Populated lazily on first OCR call.
+let installedLangsCache = null;
+const getInstalledLangs = async () => {
+  if (installedLangsCache) return installedLangsCache;
+  try {
+    const { stdout } = await runCmd('tesseract', ['--list-langs'], 5000);
+    installedLangsCache = new Set(
+      stdout.split('\n').map((s) => s.trim()).filter((s) => s && !s.startsWith('List of') && !s.includes('tessdata'))
+    );
+  } catch {
+    installedLangsCache = new Set(['eng']);
+  }
+  return installedLangsCache;
+};
+
+// Filter requested `eng+hin+tam` down to packs that are actually installed.
+// Always keeps `eng` as the last-resort fallback.
+const resolveLangs = async (requested) => {
+  const installed = await getInstalledLangs();
+  const parts = (requested || 'eng').split('+').filter(Boolean);
+  const usable = parts.filter((p) => installed.has(p));
+  if (usable.length === 0) return 'eng';
+  return usable.join('+');
+};
+
 const runCmd = (cmd, args, timeoutMs) => new Promise((resolve, reject) => {
   const proc = spawn(cmd, args, { stdio: ['ignore', 'pipe', 'pipe'] });
   let stdout = ''; let stderr = '';
@@ -43,9 +69,9 @@ const extractFrames = async (mp4Path, count, durationSeconds, outDir) => {
   return fs.readdirSync(outDir).filter((f) => f.startsWith('frame-') && f.endsWith('.jpg')).sort().map((f) => path.join(outDir, f));
 };
 
-const ocrFrame = async (framePath) => {
+const ocrFrame = async (framePath, langs) => {
   try {
-    const { stdout } = await runCmd('tesseract', [framePath, 'stdout', '-l', 'eng', '--psm', '6'], TESSERACT_TIMEOUT);
+    const { stdout } = await runCmd('tesseract', [framePath, 'stdout', '-l', langs, '--psm', '6'], TESSERACT_TIMEOUT);
     return (stdout || '').trim();
   } catch (err) {
     logger.warn(`frameExtractor: tesseract failed for ${framePath}: ${err.message}`);
@@ -53,18 +79,22 @@ const ocrFrame = async (framePath) => {
   }
 };
 
-const extractAndOcrFrames = async (mp4Path, { count = 4, durationSeconds } = {}) => {
+const extractAndOcrFrames = async (mp4Path, { count = 4, durationSeconds, langs = 'eng' } = {}) => {
   if (!mp4Path || !fs.existsSync(mp4Path)) {
     throw new Error('mp4Path missing or not on disk');
   }
   const work = fs.mkdtempSync(path.join(os.tmpdir(), 'trythis-frames-'));
+  const effectiveLangs = await resolveLangs(langs);
+  if (effectiveLangs !== langs) {
+    logger.debug(`frameExtractor: requested langs="${langs}" not all installed, using "${effectiveLangs}"`);
+  }
   try {
     const frames = await extractFrames(mp4Path, count, durationSeconds || 30, work);
     if (frames.length === 0) return { mergedText: '', perFrame: [] };
 
     const perFrame = [];
     for (let i = 0; i < frames.length; i++) {
-      const text = await ocrFrame(frames[i]);
+      const text = await ocrFrame(frames[i], effectiveLangs);
       perFrame.push({ index: i, text });
     }
     // Merge with separators; dedupe identical adjacent OCR (still photos in a video).
@@ -83,4 +113,4 @@ const extractAndOcrFrames = async (mp4Path, { count = 4, durationSeconds } = {})
   }
 };
 
-module.exports = { extractAndOcrFrames };
+module.exports = { extractAndOcrFrames, __test__: { resolveLangs, getInstalledLangs } };

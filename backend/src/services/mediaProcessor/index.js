@@ -17,15 +17,19 @@ const autoCollectionEngine = require('../autoCollectionEngine');
 const frameExtractor = require('../frameExtractor');
 const { looksLikeHallucination } = require('../../utils/hallucinationGuard');
 const typeToCategory = require('../../utils/structuredTypeToCategory');
+const { resolveCategory } = typeToCategory;
 const logger = require('../../utils/logger');
 
 // __dirname = backend/src/services/mediaProcessor → ../../.. = backend, then 'uploads'
 const UPLOADS_DIR = process.env.UPLOADS_DIR || path.join(__dirname, '..', '..', '..', 'uploads');
 const PUBLIC_BASE_URL = process.env.PUBLIC_BASE_URL || 'http://localhost:4000';
 const WHISPER_MODEL = process.env.WHISPER_MODEL || '';
+// Optional larger model for harder cases (long videos, recipe category).
+// Falls back silently to WHISPER_MODEL when the file isn't present on disk.
+const WHISPER_MODEL_SMALL = process.env.WHISPER_MODEL_SMALL || '';
 const ENABLED = (process.env.ENABLE_MEDIA_PROCESSING || 'true') !== 'false';
 
-const YTDLP_TIMEOUT = 90 * 1000;
+const YTDLP_TIMEOUT = 120 * 1000;
 const FFMPEG_TIMEOUT = 60 * 1000;
 const WHISPER_TIMEOUT = 5 * 60 * 1000;
 
@@ -54,14 +58,19 @@ const runCmd = (cmd, args, timeoutMs) => new Promise((resolve, reject) => {
 // ---- pipeline steps ----
 const downloadMergedMp4 = async (sourceUrl, outPath) => {
   // Best video+audio under 1080p, merge to mp4. yt-dlp picks formats that ffmpeg can mux.
+  // Gap 1: yt-dlp retry tuning. Was --retries 1 (one shot) — IG rate-limits would
+  // park saves in 'failed' until manual re-trigger. 5 retries with linear backoff
+  // 2..5s catches transient 429s and CDN flaps without blocking too long.
   await runCmd('yt-dlp', [
     '-f', 'bv*[height<=1080]+ba/best[height<=1080]/best',
     '--merge-output-format', 'mp4',
     '-o', outPath,
     '--no-playlist',
     '--no-warnings',
-    '--socket-timeout', '15',
-    '--retries', '1',
+    '--socket-timeout', '30',
+    '--retries', '5',
+    '--retry-sleep', 'linear=2:5',
+    '--fragment-retries', '3',
     sourceUrl,
   ], YTDLP_TIMEOUT);
 };
@@ -71,17 +80,42 @@ const extractWavForWhisper = async (mp4Path, wavPath) => {
   await runCmd('ffmpeg', ['-y', '-i', mp4Path, '-ac', '1', '-ar', '16000', '-vn', '-acodec', 'pcm_s16le', wavPath], FFMPEG_TIMEOUT);
 };
 
-const runWhisperOnce = async (wavPath, args) => {
-  if (!WHISPER_MODEL || !fs.existsSync(WHISPER_MODEL)) {
+// Probe duration from the local mp4 (replaces save.duration which was removed
+// from the schema). Returns 30 as a safe default if ffprobe fails.
+const probeDurationSeconds = async (mp4Path) => {
+  try {
+    const { stdout } = await runCmd('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', mp4Path], 10 * 1000);
+    const n = parseFloat((stdout || '').trim());
+    return Number.isFinite(n) && n > 0 ? n : 30;
+  } catch {
+    return 30;
+  }
+};
+
+// Gap 3: model tiering. Recipes and longer videos benefit from the better
+// acoustic model; short reels stick with base for latency. Falls back to base
+// when the small model file isn't on disk (graceful degradation).
+const pickWhisperModel = ({ durationSeconds, category } = {}) => {
+  const wantSmall = (category === 'food' || (durationSeconds || 0) > 120);
+  if (wantSmall && WHISPER_MODEL_SMALL && fs.existsSync(WHISPER_MODEL_SMALL)) {
+    return WHISPER_MODEL_SMALL;
+  }
+  return WHISPER_MODEL;
+};
+
+const runWhisperOnce = async (wavPath, args, modelPath) => {
+  const model = modelPath || WHISPER_MODEL;
+  if (!model || !fs.existsSync(model)) {
     throw new Error('WHISPER_MODEL not configured or file missing');
   }
   const ofBase = `${wavPath}.${crypto.randomBytes(3).toString('hex')}`;
+  // Do NOT pass --no-prints — it suppresses the "auto-detected language: hi"
+  // stderr line we parse below for the language-locked second pass.
   const { stderr } = await runCmd('whisper-cli', [
-    '-m', WHISPER_MODEL,
+    '-m', model,
     '-f', wavPath,
     '-otxt',
     '-of', ofBase,
-    '--no-prints',
     ...args,
   ], WHISPER_TIMEOUT);
   const txtPath = `${ofBase}.txt`;
@@ -94,21 +128,41 @@ const runWhisperOnce = async (wavPath, args) => {
   return { text, language: langMatch ? langMatch[1] : null };
 };
 
-const transcribeWithWhisper = async (wavPath) => {
-  // Pass 1: original language transcript
-  const original = await runWhisperOnce(wavPath, ['-l', 'auto']);
-  // Pass 2: English translation. --translate is a no-op for English audio,
-  // so it's safe to always run.
-  let english = original;
+// Two-pass strategy:
+//   Pass 1: -l auto → transcribe in original language, capture detectedLang
+//   Pass 2: -l <detectedLang> --translate → force English output, locked language
+//           (skipped entirely when original is already English — pass 2 would be a no-op)
+// The detectedLang lock on pass 2 is a meaningful improvement over the previous
+// `-l auto --translate` — auto-detection can disagree between passes and produce
+// inconsistent transcripts. Locking gives whisper the right phoneme priors.
+const transcribeWithWhisper = async (wavPath, { durationSeconds, category } = {}) => {
+  const model = pickWhisperModel({ durationSeconds, category });
+  const original = await runWhisperOnce(wavPath, ['-l', 'auto'], model);
+  const detectedLang = original.language;
+
+  // Skip pass 2 only when we're CERTAIN the audio is English. When detection
+  // failed (null), still run translate as auto — losing the English signal is
+  // worse than spending the extra 20s. Locking lang on pass 2 when known gives
+  // whisper better phoneme priors than re-detecting from scratch.
+  if (detectedLang === 'en') {
+    return { transcription: original.text, translation: original.text, language: 'en' };
+  }
+
+  const pass2Args = detectedLang
+    ? ['-l', detectedLang, '--translate']
+    : ['-l', 'auto', '--translate'];
+
+  let englishText = '';
   try {
-    english = await runWhisperOnce(wavPath, ['-l', 'auto', '--translate']);
+    const pass2 = await runWhisperOnce(wavPath, pass2Args, model);
+    englishText = pass2.text;
   } catch (err) {
-    logger.warn(`Whisper translate pass failed: ${err.message}`);
+    logger.warn(`Whisper translate pass failed (lang=${detectedLang || 'auto'}): ${err.message}`);
   }
   return {
     transcription: original.text,
-    translation: english.text || original.text,
-    language: original.language || english.language,
+    translation: englishText || original.text,
+    language: detectedLang,
   };
 };
 
@@ -133,11 +187,14 @@ const processSave = async (saveId) => {
   const work = tmpWork();
   const mp4Path = path.join(work, 'merged.mp4');
   const wavPath = path.join(work, 'audio.wav');
-  const destMp4 = path.join(UPLOADS_DIR, `${saveId}.mp4`);
 
   const setStatus = async (status, extra = {}) => {
     await Save.findByIdAndUpdate(saveId, { processingStatus: status, ...extra });
   };
+
+  // Collected during the run; any entry → final status becomes `partial` so the
+  // user can hit /retry on just the broken stage instead of running everything.
+  const partialReasons = [];
 
   try {
     await setStatus('processing');
@@ -146,49 +203,65 @@ const processSave = async (saveId) => {
 
     if (!fs.existsSync(mp4Path)) throw new Error('mp4 not produced by yt-dlp');
 
-    fs.renameSync(mp4Path, destMp4);
-    const videoUrl = `${PUBLIC_BASE_URL}/static/${saveId}.mp4`;
-    await Save.findByIdAndUpdate(saveId, { videoUrl });
-    logger.info(`[mediaProcessor ${saveId}] mp4 ready → ${videoUrl}`);
+    // We used to mux the mp4 into /static for an in-app player. Removed —
+    // the UI now just links out to the source, so we keep the mp4 only as
+    // long as we need to pull frames + audio from it, then drop the file
+    // in the `finally` cleanup. Disk stays clean.
+    logger.info(`[mediaProcessor ${saveId}] mp4 ready (tmp, will be discarded)`);
 
     // Transcription + LLM enrichment (best-effort)
     try {
-      await extractWavForWhisper(destMp4, wavPath);
-      const raw = await transcribeWithWhisper(wavPath);
+      await extractWavForWhisper(mp4Path, wavPath);
+      const raw = await transcribeWithWhisper(wavPath, {
+        category: save.category,
+      });
 
-      // P1: discard whisper output that looks like a music hallucination
-      // (e.g. one phrase repeated 10+ times). Done independently per pass —
-      // sometimes the original is fine but --translate goes off the rails.
-      const transcriptionClean = looksLikeHallucination(raw.transcription) ? null : raw.transcription;
-      const translationClean = looksLikeHallucination(raw.translation) ? null : raw.translation;
-      if (raw.transcription && !transcriptionClean) {
-        logger.warn(`[mediaProcessor ${saveId}] transcription discarded as hallucination`);
+      // P0-#3: Store only the English transcript. Whisper.cpp emits Hindustani
+      // in Urdu Arabic script which is unreadable for our users — so we keep
+      // the translation-pass output and never expose the original.
+      // Critical edge case: short Hindi clips often translate to empty. In
+      // that case we DO NOT fall back to the original (would leak Urdu script
+      // to the UI) — instead we store null + flag the save as `partial` so
+      // the user sees a "retry" option.
+      const isNonEnglishScript = ['hi', 'ur', 'ta', 'te', 'bn', 'pa', 'kn', 'ml', 'gu', 'mr'].includes(raw.language);
+      const englishCandidate = raw.translation && raw.translation.trim().length >= 20
+        ? raw.translation
+        : (isNonEnglishScript ? null : raw.transcription);
+      const englishClean = englishCandidate && !looksLikeHallucination(englishCandidate) ? englishCandidate : null;
+
+      if (englishCandidate && !englishClean) {
+        logger.warn(`[mediaProcessor ${saveId}] transcript discarded as hallucination`);
       }
-      if (raw.translation && !translationClean) {
-        logger.warn(`[mediaProcessor ${saveId}] translation discarded as hallucination`);
+      if (isNonEnglishScript && !englishClean) {
+        // Mark for retry — audio downloaded, but no usable English text.
+        partialReasons.push(`empty english translation (lang=${raw.language})`);
+        logger.warn(`[mediaProcessor ${saveId}] partial: ${raw.language} audio had empty translation pass`);
       }
 
-      if (transcriptionClean) {
+      if (englishClean) {
         await Save.findByIdAndUpdate(saveId, {
           'aiAnalysis.transcription': {
-            text: transcriptionClean,
+            text: englishClean,
             source: 'whisper',
             detectedLanguage: raw.language || null,
-            confidence: null,
-            translation: translationClean && translationClean !== transcriptionClean ? translationClean : null,
           },
         });
-        logger.info(`[mediaProcessor ${saveId}] transcript: ${transcriptionClean.length} chars (lang=${raw.language || 'auto'}, en=${(translationClean || '').length} chars)`);
+        logger.info(`[mediaProcessor ${saveId}] transcript: ${englishClean.length} chars (lang=${raw.language || 'auto'})`);
       }
 
       // P2: extract a handful of keyframes from the video and OCR them.
       // Picks up text overlays (recipe steps, prices, captions) on visual-only reels.
+      // Gap 5: dynamic frame count by duration (was fixed at 4).
+      // Gap 2: tesseract langs derived from whisper's detected audio language —
+      // a Hindi voiceover usually means Hindi text overlays too.
+      // We probe duration from the mp4 directly (no save.duration field anymore).
       let frameOcr = '';
       try {
-        const fresh = await Save.findById(saveId);
-        const res = await frameExtractor.extractAndOcrFrames(destMp4, {
-          count: 4,
-          durationSeconds: fresh.duration || 30,
+        const dur = await probeDurationSeconds(mp4Path);
+        const res = await frameExtractor.extractAndOcrFrames(mp4Path, {
+          count: pickFrameCount(dur),
+          durationSeconds: dur,
+          langs: pickOcrLangs(raw.language),
         });
         frameOcr = res.mergedText || '';
         if (frameOcr) logger.info(`[mediaProcessor ${saveId}] frame OCR: ${frameOcr.length} chars`);
@@ -196,7 +269,7 @@ const processSave = async (saveId) => {
         logger.warn(`[mediaProcessor ${saveId}] frame OCR failed: ${err.message}`);
       }
 
-      const analysisInput = translationClean || transcriptionClean || '';
+      const analysisInput = englishClean || '';
       const hasAnySignal = analysisInput || frameOcr;
       if (hasAnySignal) {
         const fresh = await Save.findById(saveId);
@@ -212,19 +285,24 @@ const processSave = async (saveId) => {
 
         const update = {
           'aiAnalysis.summary': analysis.summary,
+          'aiAnalysis.keyPoints': Array.isArray(analysis.keyPoints) ? analysis.keyPoints : [],
           'aiAnalysis.structuredData': analysis.structuredData,
           'aiAnalysis.processedAt': new Date(),
+          // Pass-through of analyzer flags (e.g. buyUrlStripped → UI shield
+          // warning). Set even when empty so we can detect the absence.
+          'aiAnalysis.flags': analysis._flags || {},
         };
 
         // P3: replace generic "Video by X" title when we have a better signal.
         const betterTitle = pickBetterTitle(fresh.title, analysis);
         if (betterTitle) update.title = betterTitle;
 
-        // P4: derive category from structuredData.type when current is unhelpful.
-        if (!fresh.category || fresh.category === 'general' || fresh.category === 'other') {
-          const derived = typeToCategory(analysis.structuredData.type);
-          if (derived && derived !== 'other') update.category = derived;
-        }
+        // P4/P1-#4: derive category from structuredData.type. Strong types
+        // (recipe, itinerary, event, place) ALWAYS override the keyword
+        // classifier — fixes "Rajasthani Thali → shopping" cases where the
+        // hashtag dump fooled the keyword classifier.
+        const resolved = resolveCategory(fresh.category, analysis.structuredData.type);
+        if (resolved && resolved !== fresh.category) update.category = resolved;
 
         // Merge LLM tags into the save's tags (dedupe).
         if (analysis.audioTags.length) {
@@ -244,7 +322,11 @@ const processSave = async (saveId) => {
       logger.warn(`[mediaProcessor ${saveId}] transcription/analysis failed: ${err.message}`);
     }
 
-    await setStatus('done', { processingError: null });
+    if (partialReasons.length) {
+      await setStatus('partial', { processingError: partialReasons.join('; ') });
+    } else {
+      await setStatus('done', { processingError: null });
+    }
   } catch (err) {
     logger.error(`[mediaProcessor ${saveId}] failed: ${err.message}`);
     await setStatus('failed', { processingError: err.message });
@@ -273,6 +355,38 @@ const pickBetterTitle = (currentTitle, analysis) => {
   return clean && clean.toLowerCase() !== String(currentTitle).toLowerCase() ? clean : null;
 };
 
+// Gap 5: pick frame count by duration. Was a fixed 4 — short reels were
+// over-sampling adjacent stills, long videos were missing text changes.
+const pickFrameCount = (durationSeconds) => {
+  const d = durationSeconds || 30;
+  if (d <= 15) return 3;
+  if (d <= 30) return 4;
+  if (d <= 60) return 6;
+  if (d <= 120) return 9;
+  return 12;
+};
+
+// Gap 2: map whisper's detected audio language → tesseract language packs.
+// frameExtractor falls back to 'eng' when a pack isn't installed on the system.
+// 'eng+X' (not just X) because Hindi videos still have English brand names,
+// prices, and hashtags on screen.
+const pickOcrLangs = (detectedLang) => {
+  const map = {
+    hi: 'eng+hin',
+    ta: 'eng+tam',
+    te: 'eng+tel',
+    bn: 'eng+ben',
+    mr: 'eng+mar',
+    gu: 'eng+guj',
+    pa: 'eng+pan',
+    kn: 'eng+kan',
+    ml: 'eng+mal',
+    ur: 'eng+urd',
+    en: 'eng',
+  };
+  return map[detectedLang] || 'eng';
+};
+
 // Fire-and-forget wrapper — never throws, never blocks caller.
 const enqueue = (saveId) => {
   setImmediate(() => {
@@ -280,4 +394,4 @@ const enqueue = (saveId) => {
   });
 };
 
-module.exports = { processSave, enqueue, __test__: { pickBetterTitle } };
+module.exports = { processSave, enqueue, __test__: { pickBetterTitle, pickFrameCount, pickOcrLangs, pickWhisperModel } };
