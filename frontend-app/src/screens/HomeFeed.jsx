@@ -2,10 +2,23 @@ import { useState, useEffect } from 'react';
 import api from '../api';
 import SmartImage from '../components/SmartImage';
 
+// Top-row pill label → Save.category enum value. "All" = null = no filter.
+const PILL_CATEGORY = {
+  All: null,
+  Travel: 'travel',
+  Food: 'food',
+  Cafes: 'food',
+  Experiences: 'experience',
+  Shopping: 'shopping',
+};
+const PILLS = ['All', 'Travel', 'Food', 'Experiences', 'Shopping'];
+
 export default function HomeFeed({ onNavigate }) {
   const [saves, setSaves] = useState([]);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [activePill, setActivePill] = useState('All');
+  const [showAll, setShowAll] = useState(false);
 
   useEffect(() => {
     const userData = JSON.parse(localStorage.getItem('user') || '{}');
@@ -44,11 +57,16 @@ export default function HomeFeed({ onNavigate }) {
         </div>
 
         <div style={{ display: 'flex', gap: '8px', padding: '0 20px 18px', overflowX: 'auto', scrollbarWidth: 'none' }} className="hscroll">
-          <div className="pill active">All</div>
-          <div className="pill">Travel</div>
-          <div className="pill">Cafes</div>
-          <div className="pill">Experiences</div>
-          <div className="pill">Shopping</div>
+          {PILLS.map((label) => (
+            <div
+              key={label}
+              className={`pill${activePill === label ? ' active' : ''}`}
+              style={{ cursor: 'pointer' }}
+              onClick={() => { setActivePill(label); setShowAll(false); }}
+            >
+              {label}
+            </div>
+          ))}
         </div>
 
         <div style={{ margin: '0 20px 16px', background: 'linear-gradient(135deg, var(--forest) 0%, #0a2118 100%)', borderRadius: '16px', padding: '16px', color: 'var(--linen)', display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -83,15 +101,27 @@ export default function HomeFeed({ onNavigate }) {
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '4px 20px 12px' }}>
-          <p style={{ fontSize: '14px', fontWeight: '500' }}>Recently saved</p>
-          <span style={{ fontSize: '12px', color: 'var(--forest)', fontWeight: '500', cursor: 'pointer' }}>See all</span>
+          <p style={{ fontSize: '14px', fontWeight: '500' }}>
+            {activePill === 'All' ? 'Recently saved' : activePill}
+          </p>
+          <span
+            style={{ fontSize: '12px', color: 'var(--forest)', fontWeight: '500', cursor: 'pointer' }}
+            onClick={() => setShowAll((v) => !v)}
+          >
+            {showAll ? 'Show less' : 'See all'}
+          </span>
         </div>
 
+        {(() => {
+          const cat = PILL_CATEGORY[activePill];
+          const filtered = cat ? saves.filter((s) => s.category === cat) : saves;
+          const visible = showAll ? filtered : filtered.slice(0, 4);
+          return (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', padding: '0 20px 80px' }}>
           {loading ? (
             <p style={{ fontSize: '13px', color: 'var(--slate)', gridColumn: '1 / -1', textAlign: 'center' }}>Loading saves...</p>
-          ) : saves.length > 0 ? (
-            saves.slice(0, 4).map(save => (
+          ) : visible.length > 0 ? (
+            visible.map(save => (
               <div key={save._id} className="card" style={{ cursor: 'pointer' }} onClick={() => onNavigate('save-detail', { id: save._id })}>
                 <div style={{ height: '90px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--dune)', overflow: 'hidden' }}>
                   {save.image ? (
@@ -107,9 +137,13 @@ export default function HomeFeed({ onNavigate }) {
               </div>
             ))
           ) : (
-            <p style={{ fontSize: '13px', color: 'var(--slate)', gridColumn: '1 / -1', textAlign: 'center' }}>No saves yet</p>
+            <p style={{ fontSize: '13px', color: 'var(--slate)', gridColumn: '1 / -1', textAlign: 'center' }}>
+              {activePill === 'All' ? 'No saves yet' : `No ${activePill.toLowerCase()} saves yet`}
+            </p>
           )}
         </div>
+          );
+        })()}
 
         <div className="tab-bar">
           <div className="tab active" onClick={() => onNavigate('home')}>

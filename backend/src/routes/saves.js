@@ -138,17 +138,10 @@ router.post('/', async (req, res) => {
       authorId: extra.authorId || undefined,
       publishedAt,
       contentType,
-      duration: extra.duration || undefined,
-      width: extra.width || undefined,
-      height: extra.height || undefined,
       category: category.category,
       tags: Array.isArray(extra.tags) ? extra.tags.slice(0, 12) : [],
       collections: collectionIds || [],
       intentStatus: 'saved',
-      likeCount: extra.likeCount || undefined,
-      commentCount: extra.commentCount || undefined,
-      viewCount: extra.viewCount || undefined,
-      comments: Array.isArray(extra.comments) ? extra.comments : undefined,
       // Seed aiAnalysis with transcription if already obtained (e.g. YouTube auto-subs)
       aiAnalysis: transcript
         ? {
@@ -156,8 +149,6 @@ router.post('/', async (req, res) => {
               text: transcript.text,
               source: transcript.source,
               detectedLanguage: null,
-              confidence: null,
-              translation: null,
             },
             processedAt: transcript.generatedAt,
           }
@@ -240,15 +231,14 @@ router.get('/:id', async (req, res) => {
       });
     }
 
-    // Track view
+    // Log the view in UserBehavior (used by the recommendation engine) but no
+    // longer increment a counter on the save itself — engagement counters were
+    // removed from the Save schema since they weren't surfaced anywhere useful.
     await UserBehavior.create({
       userId: req.user.id,
       saveId: save._id,
       type: 'view',
     });
-
-    save.appEngagement.views = (save.appEngagement.views || 0) + 1;
-    await save.save();
 
     res.json({
       status: 'success',
@@ -372,6 +362,30 @@ router.post('/:id/refresh-thumb', async (req, res) => {
   }
 });
 
+// Manual re-trigger for the media-processing pipeline. Useful when a save
+// landed in processingStatus='failed' (yt-dlp timeout, IG rate limit, etc.)
+// and the user wants to try again without re-creating the save.
+router.post('/:id/retry', async (req, res) => {
+  try {
+    const save = await Save.findById(req.params.id);
+    if (!save || save.userId.toString() !== req.user.id) {
+      return res.status(404).json({ status: 'error', error: { code: 'NOT_FOUND', message: 'Save not found' } });
+    }
+    if (!save.url) {
+      return res.status(400).json({ status: 'error', error: { code: 'NO_URL', message: 'Save has no URL to retry' } });
+    }
+    save.processingStatus = 'processing';
+    save.processingError = null;
+    await save.save();
+    mediaProcessor.enqueue(save._id.toString());
+    logger.info(`Save ${save._id} retry enqueued`);
+    res.json({ status: 'success', data: save });
+  } catch (error) {
+    logger.error(`Retry error: ${error.message}`);
+    res.status(500).json({ status: 'error', error: { code: 'RETRY_ERROR', message: error.message } });
+  }
+});
+
 router.delete('/:id', async (req, res) => {
   try {
     const save = await Save.findById(req.params.id);
@@ -416,20 +430,21 @@ router.post('/upload-screenshots',
       }
       const { title, notes, collectionId, category } = req.body;
 
-      const { screenshots, aiAnalysis, mergedText } = await screenshotPipeline.processFiles(req.files, {
+      const pipelineResult = await screenshotPipeline.processFiles(req.files, {
         userId: req.user.id,
         title: title || 'Screenshot save',
         category,
       });
+      const {
+        screenshots, aiAnalysis, mergedText,
+        suggestedTitle, suggestedCategory, suggestedTags, suggestedIntentType,
+      } = pipelineResult;
 
-      const tags = aiAnalysis?.structuredData
-        ? (await audioAnalyzerTagsFromStructured(aiAnalysis)) : [];
-
+      // User-supplied title wins; otherwise use the analyzer's suggestion;
+      // otherwise fall back to first non-empty line of OCR.
       const finalTitle = title
-        || aiAnalysis?.structuredData?.recipe?.title
-        || aiAnalysis?.structuredData?.product?.name
-        || aiAnalysis?.structuredData?.event?.eventName
-        || (mergedText && mergedText.split('\n').find(l => l.trim()))?.trim().slice(0, 80)
+        || suggestedTitle
+        || (mergedText && mergedText.split('\n').find((l) => l.trim()))?.trim().slice(0, 80)
         || 'Screenshot save';
 
       const save = new Save({
@@ -440,13 +455,14 @@ router.post('/upload-screenshots',
         thumbnail: screenshots[0]?.thumbnailUrl,
         source: 'screenshot',
         contentType: 'image',
-        category: category || typeToCategory(aiAnalysis?.structuredData?.type),
+        category: category || suggestedCategory || 'other',
         intentStatus: 'saved',
+        intentType: suggestedIntentType || null,
         collections: collectionId ? [collectionId] : [],
         screenshots,
         aiAnalysis,
         processingStatus: 'done',
-        tags,
+        tags: Array.isArray(suggestedTags) ? suggestedTags : [],
       });
 
       await save.save();
@@ -465,24 +481,6 @@ router.post('/upload-screenshots',
     }
   }
 );
-
-// Tiny helper: pull tags off aiAnalysis if the analyzer happened to return any
-// (it does — see audioAnalyzer.normalize returning `audioTags`). The pipeline
-// strips them when building the persisted shape, so we re-derive here.
-async function audioAnalyzerTagsFromStructured(aiAnalysis) {
-  // Recipe/itinerary/product specific tags
-  const sd = aiAnalysis?.structuredData || {};
-  const out = new Set();
-  if (sd.recipe?.isRecipe) {
-    if (sd.recipe.cuisine) out.add(String(sd.recipe.cuisine).toLowerCase().replace(/\s+/g, '-'));
-    out.add('recipe');
-  }
-  if (sd.product?.brand) out.add(String(sd.product.brand).toLowerCase().replace(/\s+/g, '-'));
-  if (sd.itinerary?.destination) out.add(String(sd.itinerary.destination).toLowerCase().split(/,\s*/)[0].replace(/\s+/g, '-'));
-  if (sd.place?.city) out.add(String(sd.place.city).toLowerCase().replace(/\s+/g, '-'));
-  if (sd.event?.eventName) out.add('event');
-  return Array.from(out).slice(0, 8);
-}
 
 router.post('/bulk/import', async (req, res) => {
   try {

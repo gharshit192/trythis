@@ -18,6 +18,13 @@ const placeSchema = new mongoose.Schema({
 const recipeSchema = new mongoose.Schema({
   isRecipe: { type: Boolean, default: false },
   title: String,
+  // E4: food content split. Lets the UI render "Eat at" vs "Cook this" vs
+  // "Try this street food" differently, even though all land in category=food.
+  //   recipe       — home cooking tutorial with ingredients + steps
+  //   restaurant   — review/showcase of a dine-in place
+  //   street_food  — outdoor vendor / market stall
+  //   cafe         — coffee/dessert spot
+  foodType: { type: String, enum: ['recipe', 'restaurant', 'street_food', 'cafe', null], default: null },
   ingredients: [String],
   steps: [String],
   cookingTime: String,
@@ -30,6 +37,10 @@ const productSchema = new mongoose.Schema({
   brand: String,
   price: Number,
   currency: String,
+  // Variants / list of items offered. Drives the "Available <X>" pill row
+  // on SaveDetail for shops that carry multiple SKUs (e.g. a fabric store
+  // listing "Cutwork / Laser Cut / Lakhnavi / Digital Print").
+  availableItems: [String],
   priceTracked: { type: Boolean, default: false },
   lastPrice: Number,
   priceDropAt: Date,
@@ -53,17 +64,23 @@ const eventSchema = new mongoose.Schema({
   currency: String,
 }, { _id: false });
 
+// Transcript is always English (translation when source language differs).
+// We intentionally do NOT store the original-language transcript — whisper.cpp
+// emits Hindustani in Urdu Arabic script, which is unreadable for our users,
+// and the English translation is the useful signal for downstream LLM + UI.
 const transcriptionSchema = new mongoose.Schema({
   text: String,
   source: { type: String, enum: ['whisper', 'subtitles', 'ocr'] },
   detectedLanguage: String,
-  confidence: Number,
-  translation: String,
 }, { _id: false });
 
 const aiAnalysisSchema = new mongoose.Schema({
   transcription: transcriptionSchema,
   summary: String,
+  // 3–6 short bullet points distilled from transcript + caption + visible
+  // text. Specifically useful when the transcript is missing or hallucinated
+  // — gives the user concrete takeaways even without speech audio.
+  keyPoints: [String],
   structuredData: {
     type: {
       type: String,
@@ -75,6 +92,16 @@ const aiAnalysisSchema = new mongoose.Schema({
     event: eventSchema,
     place: placeSchema,
   },
+  // Screenshot pipeline only. The screenshotAnalyzer emits 14 distinct content
+  // types (app_ui, receipt, menu, chat, code, finance, …), each with a
+  // different shape. We store the analyzer's output as-is here instead of
+  // forcing it into the video-shaped `structuredData` discriminated union.
+  // Consumed by SaveDetail when contentType === 'image'.
+  screenshotAnalysis: mongoose.Schema.Types.Mixed,
+  // Free-form provenance/quality flags surfaced to the UI:
+  //   { buyUrlStripped: true } → render the red "buy link removed" shield
+  //   (extensible — add more flags as we tighten guards)
+  flags: mongoose.Schema.Types.Mixed,
   processedAt: Date,
 }, { _id: false });
 
@@ -105,10 +132,6 @@ const intentItemSchema = new mongoose.Schema({
     enum: ['video', 'image', 'article', 'product', 'manual'],
     default: 'article',
   },
-  duration: Number,
-  width: Number,
-  height: Number,
-  videoUrl: String,                  // local /static/<id>.mp4 once muxed
 
   // Multi-screenshot uploads. Original purged after 2 working days,
   // thumbnail kept forever for the carousel.
@@ -139,35 +162,28 @@ const intentItemSchema = new mongoose.Schema({
     enum: ['saved', 'planned', 'tried', 'dismissed'],
     default: 'saved',
   },
+  // What the user *wanted* to do with this save (separate from lifecycle).
+  // Drives UI affordances — e.g. `buy` → show "Buy now" CTA, `read_later`
+  // → show in Read Later digest, `share` → surface share button. Filled by
+  // the screenshot analyzer (one of 5 classes) or left null for video saves.
+  intentType: {
+    type: String,
+    enum: ['buy', 'read_later', 'reference', 'inspiration', 'share', null],
+    default: null,
+  },
   plannedFor: Date,
   triedAt: Date,
-
-  // Source-side stats (from yt-dlp)
-  likeCount: Number,
-  commentCount: Number,
-  viewCount: Number,
-  comments: [{
-    text: String,
-    author: String,
-    likeCount: Number,
-    timestamp: Number,
-    _id: false,
-  }],
 
   // AI enrichment
   aiAnalysis: aiAnalysisSchema,
 
-  // App-side usage
-  appEngagement: {
-    views: { type: Number, default: 0 },
-    clicks: { type: Number, default: 0 },
-    shared: { type: Number, default: 0 },
-  },
-
   // Pipeline
   processingStatus: {
     type: String,
-    enum: ['pending', 'processing', 'done', 'failed'],
+    // `partial` = audio downloaded + some signal captured, but a non-fatal
+    // stage failed (e.g. Hindi audio with empty English translation pass).
+    // User-visible signal: "AI may have missed details, tap to retry".
+    enum: ['pending', 'processing', 'done', 'partial', 'failed'],
     default: 'pending',
   },
   processingError: String,
@@ -180,7 +196,6 @@ const intentItemSchema = new mongoose.Schema({
   },
 }, { timestamps: true });
 
-intentItemSchema.virtual('engagement').get(function () { return this.appEngagement; });
 intentItemSchema.virtual('notes').get(function () { return this.userNote; });
 intentItemSchema.virtual('image').get(function () { return this.thumbnail; });
 

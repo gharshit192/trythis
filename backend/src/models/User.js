@@ -38,6 +38,8 @@ const userSchema = new mongoose.Schema(
       deviceType: String,
       location: String,
     },
+    passwordResetOtp: { type: String, default: null },
+    passwordResetExpires: { type: Date, default: null },
   },
   { timestamps: true }
 );

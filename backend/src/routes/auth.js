@@ -2,8 +2,15 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
+const crypto = require('crypto');
 const User = require('../models/User');
+const authMiddleware = require('../middleware/auth');
 const logger = require('../utils/logger');
+
+const OTP_TTL_MS = 15 * 60 * 1000;
+const generateOtp = () => crypto.randomInt(100000, 1000000).toString(); // 6-digit
+const isProd = () => process.env.NODE_ENV === 'production';
+const DEV_BYPASS_OTP = '000001'; // accepted in non-prod only — convenience for testing without checking logs
 
 router.post('/signup', async (req, res) => {
   try {
@@ -49,7 +56,7 @@ router.post('/signup', async (req, res) => {
     res.status(201).json({
       status: 'success',
       data: {
-        user: { id: user._id, email: user.email, name: user.name },
+        user: { id: user._id, email: user.email, name: user.name, createdAt: user.createdAt },
         token,
       },
     });
@@ -107,7 +114,7 @@ router.post('/login', async (req, res) => {
     res.json({
       status: 'success',
       data: {
-        user: { id: user._id, email: user.email, name: user.name },
+        user: { id: user._id, email: user.email, name: user.name, createdAt: user.createdAt },
         token,
       },
     });
@@ -148,6 +155,146 @@ router.post('/refresh', (req, res) => {
       status: 'error',
       error: { code: 'INVALID_TOKEN', message: 'Invalid or expired token' },
     });
+  }
+});
+
+// ── Forgot password: generate OTP, store hash + expiry. Doesn't reveal whether
+// the email exists (returns success either way). In non-prod, returns the OTP
+// in the response so the UI can show it for testing until email is wired up.
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body || {};
+    if (!email) {
+      return res.status(400).json({
+        status: 'error',
+        error: { code: 'VALIDATION_ERROR', message: 'Email required' },
+      });
+    }
+    const user = await User.findOne({ email: email.toLowerCase() });
+
+    const response = { status: 'success', message: 'If that email is registered, a reset code has been sent.' };
+
+    if (user) {
+      const otp = generateOtp();
+      const hash = await bcrypt.hash(otp, 10);
+      user.passwordResetOtp = hash;
+      user.passwordResetExpires = new Date(Date.now() + OTP_TTL_MS);
+      await user.save();
+      logger.info(`🔑 Password reset OTP for ${email}: ${otp} (expires in 15 min)`);
+      if (!isProd()) response.devOtp = otp; // exposed only outside production
+    } else {
+      logger.warn(`Password reset requested for unknown email: ${email}`);
+    }
+
+    res.json(response);
+  } catch (error) {
+    logger.error(`❌ Forgot password error: ${error.message}`);
+    res.status(500).json({ status: 'error', error: { code: 'SERVER_ERROR', message: 'Failed to start reset' } });
+  }
+});
+
+// ── Reset password: verify OTP + expiry, set new password, clear reset fields.
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { email, otp, newPassword } = req.body || {};
+    if (!email || !otp || !newPassword) {
+      return res.status(400).json({
+        status: 'error',
+        error: { code: 'VALIDATION_ERROR', message: 'Email, OTP, and new password are required' },
+      });
+    }
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        status: 'error',
+        error: { code: 'WEAK_PASSWORD', message: 'New password must be at least 6 characters' },
+      });
+    }
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!user) {
+      return res.status(400).json({
+        status: 'error',
+        error: { code: 'INVALID_OTP', message: 'Invalid or expired code' },
+      });
+    }
+
+    // Dev bypass: outside production, OTP "000001" always passes (no log lookup needed for testing).
+    const usingDevBypass = !isProd() && otp === DEV_BYPASS_OTP;
+
+    if (!usingDevBypass) {
+      if (!user.passwordResetOtp || !user.passwordResetExpires) {
+        return res.status(400).json({
+          status: 'error',
+          error: { code: 'INVALID_OTP', message: 'Invalid or expired code' },
+        });
+      }
+      if (user.passwordResetExpires.getTime() < Date.now()) {
+        return res.status(400).json({
+          status: 'error',
+          error: { code: 'EXPIRED_OTP', message: 'Reset code has expired. Please request a new one.' },
+        });
+      }
+      const ok = await bcrypt.compare(otp, user.passwordResetOtp);
+      if (!ok) {
+        return res.status(400).json({
+          status: 'error',
+          error: { code: 'INVALID_OTP', message: 'Invalid or expired code' },
+        });
+      }
+    } else {
+      logger.warn(`🧪 Dev OTP bypass used for ${email}`);
+    }
+    user.password = await bcrypt.hash(newPassword, 10);
+    user.passwordResetOtp = null;
+    user.passwordResetExpires = null;
+    await user.save();
+    logger.info(`🔑 Password reset for ${email}`);
+    res.json({ status: 'success', message: 'Password updated. Please sign in.' });
+  } catch (error) {
+    logger.error(`❌ Reset password error: ${error.message}`);
+    res.status(500).json({ status: 'error', error: { code: 'SERVER_ERROR', message: 'Failed to reset password' } });
+  }
+});
+
+// ── Change password (logged-in user). Verifies current password before updating.
+router.post('/change-password', authMiddleware, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body || {};
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({
+        status: 'error',
+        error: { code: 'VALIDATION_ERROR', message: 'Current and new password required' },
+      });
+    }
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        status: 'error',
+        error: { code: 'WEAK_PASSWORD', message: 'New password must be at least 6 characters' },
+      });
+    }
+    if (currentPassword === newPassword) {
+      return res.status(400).json({
+        status: 'error',
+        error: { code: 'SAME_PASSWORD', message: 'New password must differ from the current one' },
+      });
+    }
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ status: 'error', error: { code: 'NOT_FOUND', message: 'User not found' } });
+    }
+    const ok = await bcrypt.compare(currentPassword, user.password);
+    if (!ok) {
+      return res.status(401).json({
+        status: 'error',
+        error: { code: 'WRONG_PASSWORD', message: 'Current password is incorrect' },
+      });
+    }
+    user.password = await bcrypt.hash(newPassword, 10);
+    await user.save();
+    logger.info(`🔑 Password changed for ${user.email}`);
+    res.json({ status: 'success', message: 'Password updated.' });
+  } catch (error) {
+    logger.error(`❌ Change password error: ${error.message}`);
+    res.status(500).json({ status: 'error', error: { code: 'SERVER_ERROR', message: 'Failed to change password' } });
   }
 });
 
