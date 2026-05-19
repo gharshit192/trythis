@@ -1,0 +1,2278 @@
+{
+  "timestamp": "2026-05-19T07:00:25.113Z",
+  "duration_seconds": "69.84",
+  "total_urls": 73,
+  "successful": 73,
+  "failed": 0,
+  "category_accuracy": {
+    "total_tested": 73,
+    "correct": 0,
+    "incorrect": 73,
+    "accuracy_percentage": "0.00"
+  },
+  "results": [
+    {
+      "index": 1,
+      "url": "https://www.zomato.com/bangalore/third-wave-coffee-roasters-3-indiranagar",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "",
+        "description": "",
+        "has_image": false
+      },
+      "analysis": {
+        "classified_category": "general",
+        "category_confidence": 0,
+        "extraction": {
+          "price": null,
+          "location": null,
+          "domain": "www.zomato.com",
+          "title": "",
+          "confidence": 0.25,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "general",
+        "match": false
+      }
+    },
+    {
+      "index": 2,
+      "url": "https://www.instagram.com/cafesofbangalore/",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "Cafes of Bangalore (@cafesofbangalore) • Instagram photos and videos",
+        "description": "3,774 Followers, 97 Following, 45 Posts - Cafes of Bangalore (@cafesofbangalore) on Instagram: \"☕️ F",
+        "has_image": true
+      },
+      "analysis": {
+        "classified_category": "general",
+        "category_confidence": 0,
+        "extraction": {
+          "price": null,
+          "location": null,
+          "domain": "www.instagram.com",
+          "title": "Cafes of Bangalore (@cafesofbangalore) • Instagram photos and videos",
+          "confidence": 0.5,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "general",
+        "match": false
+      }
+    },
+    {
+      "index": 3,
+      "url": "https://lbb.in/bangalore/the-most-instagrammable-insta-worthy-cafes-bangalore/",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "The Most Instagrammable Cafes In Bangalore | LBB, Bangalore",
+        "description": "Since we are all about keeping up with all Instagram goals out there, we’ve rounded up our favourite",
+        "has_image": true
+      },
+      "analysis": {
+        "classified_category": "general",
+        "category_confidence": 0,
+        "extraction": {
+          "price": null,
+          "location": "Bangalore",
+          "domain": "lbb.in",
+          "title": "The Most Instagrammable Cafes In Bangalore | LBB, Bangalore",
+          "confidence": 0.75,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "general",
+        "match": false
+      }
+    },
+    {
+      "index": 4,
+      "url": "https://champaca.in/",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "\n  Champaca Bookstore\n",
+        "description": "Champaca is an independent bookstore, based in Bangalore. A women-owned and run space, we carefully ",
+        "has_image": false
+      },
+      "analysis": {
+        "classified_category": "shopping",
+        "category_confidence": 0.3333333333333333,
+        "extraction": {
+          "price": null,
+          "location": "Bangalore",
+          "domain": "champaca.in",
+          "title": "\n  Champaca Bookstore\n",
+          "confidence": 0.75,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "shopping",
+        "match": false
+      }
+    },
+    {
+      "index": 5,
+      "url": "https://www.zomato.com/bangalore/toit-indiranagar",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "Toit, Indiranagar, Bangalore | Zomato location-filldown-trianglecurrent-locationSearchstar-fillstar-",
+        "description": "Toit Bangalore, Indiranagar; View reviews, menu, contact, location, and more for Toit Restaurant.",
+        "has_image": true
+      },
+      "analysis": {
+        "classified_category": "food",
+        "category_confidence": 0.6666666666666666,
+        "extraction": {
+          "price": null,
+          "location": null,
+          "domain": "www.zomato.com",
+          "title": "Toit, Indiranagar, Bangalore | Zomato location-filldown-trianglecurrent-locationSearchstar-fillstar-fillinfo-linecalldirection-lineshareright-triangleright-triangleright-triangleright-triangleright-triangleright-trianglecopydirectionright-trianglechevron-downlanguage-globechevron-downtwitter-circle",
+          "confidence": 0.5,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "food",
+        "match": false
+      }
+    },
+    {
+      "index": 6,
+      "url": "https://www.swiggy.com/restaurants/social-koramangala-bangalore-50286",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "Order Food Online from India's Best Food Delivery Service | Swiggy",
+        "description": "Order food online from restaurants and get it delivered. Serving in Bangalore, Hyderabad, Delhi and ",
+        "has_image": true
+      },
+      "analysis": {
+        "classified_category": "food",
+        "category_confidence": 0.6666666666666666,
+        "extraction": {
+          "price": null,
+          "location": "Bangalore",
+          "domain": "www.swiggy.com",
+          "title": "Order Food Online from India's Best Food Delivery Service | Swiggy",
+          "confidence": 0.75,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "food",
+        "match": false
+      }
+    },
+    {
+      "index": 7,
+      "url": "https://www.thehindu.com/life-and-style/food/best-restaurants-bangalore-2026/article65432101.ece",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "",
+        "description": "",
+        "has_image": false
+      },
+      "analysis": {
+        "classified_category": "general",
+        "category_confidence": 0,
+        "extraction": {
+          "price": null,
+          "location": null,
+          "domain": "www.thehindu.com",
+          "title": "",
+          "confidence": 0.25,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "general",
+        "match": false
+      }
+    },
+    {
+      "index": 8,
+      "url": "https://www.zomato.com/mumbai/bastian-bandra-west",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "",
+        "description": "",
+        "has_image": false
+      },
+      "analysis": {
+        "classified_category": "general",
+        "category_confidence": 0,
+        "extraction": {
+          "price": null,
+          "location": null,
+          "domain": "www.zomato.com",
+          "title": "",
+          "confidence": 0.25,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "general",
+        "match": false
+      }
+    },
+    {
+      "index": 9,
+      "url": "https://www.tripoto.com/trip/tirthan-valley-himachal-pradesh-travel-guide",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "",
+        "description": "",
+        "has_image": false
+      },
+      "analysis": {
+        "classified_category": "general",
+        "category_confidence": 0,
+        "extraction": {
+          "price": null,
+          "location": null,
+          "domain": "www.tripoto.com",
+          "title": "",
+          "confidence": 0.25,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "general",
+        "match": false
+      }
+    },
+    {
+      "index": 10,
+      "url": "https://www.lonelyplanet.com/india/meghalaya",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "",
+        "description": "",
+        "has_image": false
+      },
+      "analysis": {
+        "classified_category": "general",
+        "category_confidence": 0,
+        "extraction": {
+          "price": null,
+          "location": null,
+          "domain": "www.lonelyplanet.com",
+          "title": "",
+          "confidence": 0.25,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "general",
+        "match": false
+      }
+    },
+    {
+      "index": 11,
+      "url": "https://www.youtube.com/@MountainTrekker",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "MOUNTAIN TREKKER - YouTube",
+        "description": "I'm Varun, and I'm currently a full-time traveler pursuing my dreams. I love solo traveling & meetin",
+        "has_image": true
+      },
+      "analysis": {
+        "classified_category": "general",
+        "category_confidence": 0,
+        "extraction": {
+          "price": null,
+          "location": "Incredible India",
+          "domain": "www.youtube.com",
+          "title": "MOUNTAIN TREKKER - YouTube",
+          "confidence": 0.75,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "general",
+        "match": false
+      }
+    },
+    {
+      "index": 12,
+      "url": "https://www.instagram.com/tanyakhanijow/",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "Tanya Khanijow (@tanyakhanijow) • Instagram photos and videos",
+        "description": "1M Followers, 1,308 Following, 1,953 Posts - Tanya Khanijow (@tanyakhanijow) on Instagram: \"🌏 My mi",
+        "has_image": true
+      },
+      "analysis": {
+        "classified_category": "general",
+        "category_confidence": 0,
+        "extraction": {
+          "price": null,
+          "location": null,
+          "domain": "www.instagram.com",
+          "title": "Tanya Khanijow (@tanyakhanijow) • Instagram photos and videos",
+          "confidence": 0.5,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "general",
+        "match": false
+      }
+    },
+    {
+      "index": 13,
+      "url": "https://www.makemytrip.com/blog/best-places-visit-spiti-valley",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "",
+        "description": "",
+        "has_image": false
+      },
+      "analysis": {
+        "classified_category": "general",
+        "category_confidence": 0,
+        "extraction": {
+          "price": null,
+          "location": null,
+          "domain": "www.makemytrip.com",
+          "title": "",
+          "confidence": 0.25,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "general",
+        "match": false
+      }
+    },
+    {
+      "index": 14,
+      "url": "https://www.airbnb.co.in/rooms/12345678",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "404 Page Not Found - Airbnb",
+        "description": "",
+        "has_image": false
+      },
+      "analysis": {
+        "classified_category": "general",
+        "category_confidence": 0,
+        "extraction": {
+          "price": null,
+          "location": null,
+          "domain": "www.airbnb.co.in",
+          "title": "404 Page Not Found - Airbnb",
+          "confidence": 0.5,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "general",
+        "match": false
+      }
+    },
+    {
+      "index": 15,
+      "url": "https://www.booking.com/hotel/in/posh-pebbles-goa.html",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "",
+        "description": "",
+        "has_image": false
+      },
+      "analysis": {
+        "classified_category": "general",
+        "category_confidence": 0,
+        "extraction": {
+          "price": null,
+          "location": null,
+          "domain": "www.booking.com",
+          "title": "",
+          "confidence": 0.25,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "general",
+        "match": false
+      }
+    },
+    {
+      "index": 16,
+      "url": "https://www.thepostcardhotel.com/the-postcard-on-the-arabian-sea",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "",
+        "description": "",
+        "has_image": false
+      },
+      "analysis": {
+        "classified_category": "general",
+        "category_confidence": 0,
+        "extraction": {
+          "price": null,
+          "location": null,
+          "domain": "www.thepostcardhotel.com",
+          "title": "",
+          "confidence": 0.25,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "general",
+        "match": false
+      }
+    },
+    {
+      "index": 17,
+      "url": "https://www.makemytrip.com/hotels/hotel-listing/?checkin=11242026&city=CTGOI",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "",
+        "description": "",
+        "has_image": false
+      },
+      "analysis": {
+        "classified_category": "general",
+        "category_confidence": 0,
+        "extraction": {
+          "price": null,
+          "location": null,
+          "domain": "www.makemytrip.com",
+          "title": "",
+          "confidence": 0.25,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "general",
+        "match": false
+      }
+    },
+    {
+      "index": 18,
+      "url": "https://www.amazon.in/gp/bestsellers",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "Amazon.in Bestsellers: The most popular items on Amazon",
+        "description": "Amazon.in Bestsellers: The most popular items on Amazon",
+        "has_image": false
+      },
+      "analysis": {
+        "classified_category": "general",
+        "category_confidence": 0,
+        "extraction": {
+          "price": null,
+          "location": "Bestsellers",
+          "domain": "www.amazon.in",
+          "title": "Amazon.in Bestsellers: The most popular items on Amazon",
+          "confidence": 0.75,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "general",
+        "match": false
+      }
+    },
+    {
+      "index": 19,
+      "url": "https://www.flipkart.com/offers-list/top-deals",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "Online Shopping India | Buy Mobiles, Electronics, Appliances, Clothing and More Online at Flipkart.c",
+        "description": "",
+        "has_image": false
+      },
+      "analysis": {
+        "classified_category": "shopping",
+        "category_confidence": 0.3333333333333333,
+        "extraction": {
+          "price": null,
+          "location": null,
+          "domain": "www.flipkart.com",
+          "title": "Online Shopping India | Buy Mobiles, Electronics, Appliances, Clothing and More Online at Flipkart.com",
+          "confidence": 0.5,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "shopping",
+        "match": false
+      }
+    },
+    {
+      "index": 20,
+      "url": "https://nykaa.com/the-ordinary-niacinamide-10-zinc-1-30ml/p/305928",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "",
+        "description": "",
+        "has_image": false
+      },
+      "analysis": {
+        "classified_category": "general",
+        "category_confidence": 0,
+        "extraction": {
+          "price": null,
+          "location": null,
+          "domain": "nykaa.com",
+          "title": "",
+          "confidence": 0.25,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "general",
+        "match": false
+      }
+    },
+    {
+      "index": 21,
+      "url": "https://www.bigbasket.com/cl/fruits-vegetables/",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "Fruits And Vegetables: Buy Fruits And Vegetables Online at Our Online Vegetable Store at great price",
+        "description": "Buy farm fresh fruits and vegetables online at the best prices. Order your favourite fruits and vege",
+        "has_image": false
+      },
+      "analysis": {
+        "classified_category": "shopping",
+        "category_confidence": 1,
+        "extraction": {
+          "price": null,
+          "location": null,
+          "domain": "www.bigbasket.com",
+          "title": "Fruits And Vegetables: Buy Fruits And Vegetables Online at Our Online Vegetable Store at great price  - bigbasket",
+          "confidence": 0.5,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "shopping",
+        "match": false
+      }
+    },
+    {
+      "index": 22,
+      "url": "https://nicobar.com/collections/women",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "\n      Womenswear\n      \n      \n        – Nicobar\n    ",
+        "description": "Explore timeless, India-inspired silhouettes crafted in nature-friendly fabrics.",
+        "has_image": true
+      },
+      "analysis": {
+        "classified_category": "general",
+        "category_confidence": 0,
+        "extraction": {
+          "price": null,
+          "location": null,
+          "domain": "nicobar.com",
+          "title": "\n      Womenswear\n      \n      \n        – Nicobar\n    ",
+          "confidence": 0.5,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "general",
+        "match": false
+      }
+    },
+    {
+      "index": 23,
+      "url": "https://suta.in/products/linen-mid-length-kurta-set",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "",
+        "description": "",
+        "has_image": false
+      },
+      "analysis": {
+        "classified_category": "general",
+        "category_confidence": 0,
+        "extraction": {
+          "price": null,
+          "location": null,
+          "domain": "suta.in",
+          "title": "",
+          "confidence": 0.25,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "general",
+        "match": false
+      }
+    },
+    {
+      "index": 24,
+      "url": "https://www.thelabellife.com/collections/dresses",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "",
+        "description": "",
+        "has_image": false
+      },
+      "analysis": {
+        "classified_category": "general",
+        "category_confidence": 0,
+        "extraction": {
+          "price": null,
+          "location": null,
+          "domain": "www.thelabellife.com",
+          "title": "",
+          "confidence": 0.25,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "general",
+        "match": false
+      }
+    },
+    {
+      "index": 25,
+      "url": "https://www.instagram.com/komalpandeyofficial/",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "Komal Pandey (@komalpandeyofficial) • Instagram photos and videos",
+        "description": "2M Followers, 2,584 Following, 3,349 Posts - Komal Pandey (@komalpandeyofficial) on Instagram: \"acch",
+        "has_image": true
+      },
+      "analysis": {
+        "classified_category": "general",
+        "category_confidence": 0,
+        "extraction": {
+          "price": null,
+          "location": null,
+          "domain": "www.instagram.com",
+          "title": "Komal Pandey (@komalpandeyofficial) • Instagram photos and videos",
+          "confidence": 0.5,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "general",
+        "match": false
+      }
+    },
+    {
+      "index": 26,
+      "url": "https://urbanladder.com/products/heath-2-seater-sofa-charcoal-grey",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "Buy Furniture Online: Upto 70% off in this Festive Season",
+        "description": "Buy Wooden Furniture Online at India's biggest Online Furniture Store. Shop from 100000+ Home & Offi",
+        "has_image": false
+      },
+      "analysis": {
+        "classified_category": "shopping",
+        "category_confidence": 0.3333333333333333,
+        "extraction": {
+          "price": null,
+          "location": "India",
+          "domain": "urbanladder.com",
+          "title": "Buy Furniture Online: Upto 70% off in this Festive Season",
+          "confidence": 0.75,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "shopping",
+        "match": false
+      }
+    },
+    {
+      "index": 27,
+      "url": "https://www.pepperfry.com/product/bondi-engineered-wood-bookshelf-walnut-finish-1741234.html",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "",
+        "description": "",
+        "has_image": false
+      },
+      "analysis": {
+        "classified_category": "general",
+        "category_confidence": 0,
+        "extraction": {
+          "price": null,
+          "location": null,
+          "domain": "www.pepperfry.com",
+          "title": "",
+          "confidence": 0.25,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "general",
+        "match": false
+      }
+    },
+    {
+      "index": 28,
+      "url": "https://www.westelm.com/products/andes-sofa-h2960/",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "West Elm: Modern Furniture, Home Decor, Lighting & More Track Your OrderDropdownTrack Your Orderwe-i",
+        "description": "West Elm offers modern furniture and home decor featuring inspiring designs and colors. Create a sty",
+        "has_image": false
+      },
+      "analysis": {
+        "classified_category": "shopping",
+        "category_confidence": 0.3333333333333333,
+        "extraction": {
+          "price": null,
+          "location": "West Elm",
+          "domain": "www.westelm.com",
+          "title": "West Elm: Modern Furniture, Home Decor, Lighting & More Track Your OrderDropdownTrack Your Orderwe-icon__store-locator-outlineDropdownFavoritesCartWest ElmsearchNavigationWest ElmIconography/cartsearchDropdownDropdownDropdownDropdownDropdownDropdownDropdownDropdownDropdownDropdownDropdownDropdownDropdownDropdownDropdownDropdownArrow LeftArrow RightCustomer FeedbackCustomer FeedbackInstagramtiktokFacebookPinterestyouTube",
+          "confidence": 0.75,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "shopping",
+        "match": false
+      }
+    },
+    {
+      "index": 29,
+      "url": "https://nicobar.com/collections/home",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "\n      Home\n      \n      \n        – Nicobar\n    ",
+        "description": "",
+        "has_image": true
+      },
+      "analysis": {
+        "classified_category": "general",
+        "category_confidence": 0,
+        "extraction": {
+          "price": null,
+          "location": null,
+          "domain": "nicobar.com",
+          "title": "\n      Home\n      \n      \n        – Nicobar\n    ",
+          "confidence": 0.5,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "general",
+        "match": false
+      }
+    },
+    {
+      "index": 30,
+      "url": "https://www.amazon.in/Apple-MacBook-Air-13-3-inch-Display/dp/B0CX23V2ZK",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "",
+        "description": "",
+        "has_image": false
+      },
+      "analysis": {
+        "classified_category": "general",
+        "category_confidence": 0,
+        "extraction": {
+          "price": null,
+          "location": null,
+          "domain": "www.amazon.in",
+          "title": "",
+          "confidence": 0.25,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "general",
+        "match": false
+      }
+    },
+    {
+      "index": 31,
+      "url": "https://store.dji.com/in/product/osmo-pocket-3",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "",
+        "description": "",
+        "has_image": false
+      },
+      "analysis": {
+        "classified_category": "general",
+        "category_confidence": 0,
+        "extraction": {
+          "price": null,
+          "location": null,
+          "domain": "store.dji.com",
+          "title": "",
+          "confidence": 0.25,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "general",
+        "match": false
+      }
+    },
+    {
+      "index": 32,
+      "url": "https://www.keychron.com/products/keychron-q1-pro",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "Keychron | Custom Mechanical Keyboards for Mac, Windows and PhonesKeychron | Custom Mechanical Keybo",
+        "description": "Keychron specializes in designing and building high-quality keyboards and mice. CNN, The New York Ti",
+        "has_image": false
+      },
+      "analysis": {
+        "classified_category": "general",
+        "category_confidence": 0,
+        "extraction": {
+          "price": null,
+          "location": null,
+          "domain": "www.keychron.com",
+          "title": "Keychron | Custom Mechanical Keyboards for Mac, Windows and PhonesKeychron | Custom Mechanical Keyboards for Mac, Windows and PhonesAmazonAmerican ExpressApple PayDiners ClubDiscoverGoogle PayMastercardPayPalShop PayVisa",
+          "confidence": 0.5,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "general",
+        "match": false
+      }
+    },
+    {
+      "index": 33,
+      "url": "https://www.youtube.com/@mkbhd",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "Marques Brownlee - YouTube",
+        "description": "MKBHD: Quality Tech Videos | YouTuber | Geek | Consumer Electronics | Tech Head | Internet Personali",
+        "has_image": true
+      },
+      "analysis": {
+        "classified_category": "general",
+        "category_confidence": 0,
+        "extraction": {
+          "price": null,
+          "location": null,
+          "domain": "www.youtube.com",
+          "title": "Marques Brownlee - YouTube",
+          "confidence": 0.5,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "general",
+        "match": false
+      }
+    },
+    {
+      "index": 34,
+      "url": "https://www.coursera.org/learn/machine-learning",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "Supervised Machine Learning: Regression and Classification  | Coursera",
+        "description": "In the first course of the Machine Learning Specialization, you will: • Build machine learning model",
+        "has_image": true
+      },
+      "analysis": {
+        "classified_category": "general",
+        "category_confidence": 0,
+        "extraction": {
+          "price": null,
+          "location": "Python",
+          "domain": "www.coursera.org",
+          "title": "Supervised Machine Learning: Regression and Classification  | Coursera",
+          "confidence": 0.75,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "general",
+        "match": false
+      }
+    },
+    {
+      "index": 35,
+      "url": "https://www.udemy.com/course/the-complete-javascript-course/",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "",
+        "description": "",
+        "has_image": false
+      },
+      "analysis": {
+        "classified_category": "general",
+        "category_confidence": 0,
+        "extraction": {
+          "price": null,
+          "location": null,
+          "domain": "www.udemy.com",
+          "title": "",
+          "confidence": 0.25,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "general",
+        "match": false
+      }
+    },
+    {
+      "index": 36,
+      "url": "https://www.youtube.com/@3blue1brown",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "3Blue1Brown - YouTube",
+        "description": "My name is Grant Sanderson. Videos here cover a variety of topics in math, or adjacent fields like p",
+        "has_image": true
+      },
+      "analysis": {
+        "classified_category": "general",
+        "category_confidence": 0,
+        "extraction": {
+          "price": null,
+          "location": null,
+          "domain": "www.youtube.com",
+          "title": "3Blue1Brown - YouTube",
+          "confidence": 0.5,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "general",
+        "match": false
+      }
+    },
+    {
+      "index": 37,
+      "url": "https://maven.com/p/cohort-courses",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "",
+        "description": "",
+        "has_image": false
+      },
+      "analysis": {
+        "classified_category": "general",
+        "category_confidence": 0,
+        "extraction": {
+          "price": null,
+          "location": null,
+          "domain": "maven.com",
+          "title": "",
+          "confidence": 0.25,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "general",
+        "match": false
+      }
+    },
+    {
+      "index": 38,
+      "url": "https://www.ycombinator.com/library/4A-a-guide-to-seed-fundraising",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "A guide to seed fundraising  : YC Startup Library | Y Combinator",
+        "description": "Early Stage Advice: The most comprehensive guide on why, when, and how to raise money for your start",
+        "has_image": true
+      },
+      "analysis": {
+        "classified_category": "general",
+        "category_confidence": 0,
+        "extraction": {
+          "price": null,
+          "location": null,
+          "domain": "www.ycombinator.com",
+          "title": "A guide to seed fundraising  : YC Startup Library | Y Combinator",
+          "confidence": 0.5,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "general",
+        "match": false
+      }
+    },
+    {
+      "index": 39,
+      "url": "https://www.paulgraham.com/ds.html",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "Do Things that Don't Scale",
+        "description": "",
+        "has_image": false
+      },
+      "analysis": {
+        "classified_category": "general",
+        "category_confidence": 0,
+        "extraction": {
+          "price": null,
+          "location": null,
+          "domain": "www.paulgraham.com",
+          "title": "Do Things that Don't Scale",
+          "confidence": 0.5,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "general",
+        "match": false
+      }
+    },
+    {
+      "index": 40,
+      "url": "https://www.firstround.com/review/",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "First Round Review",
+        "description": "Tactical advice for founders and startup leaders — from interview questions and tips for new manager",
+        "has_image": true
+      },
+      "analysis": {
+        "classified_category": "shopping",
+        "category_confidence": 0.3333333333333333,
+        "extraction": {
+          "price": null,
+          "location": null,
+          "domain": "www.firstround.com",
+          "title": "First Round Review",
+          "confidence": 0.5,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "shopping",
+        "match": false
+      }
+    },
+    {
+      "index": 41,
+      "url": "https://news.ycombinator.com/",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "",
+        "description": "",
+        "has_image": false
+      },
+      "analysis": {
+        "classified_category": "general",
+        "category_confidence": 0,
+        "extraction": {
+          "price": null,
+          "location": null,
+          "domain": "news.ycombinator.com",
+          "title": "",
+          "confidence": 0.25,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "general",
+        "match": false
+      }
+    },
+    {
+      "index": 42,
+      "url": "https://www.etmoney.com/",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "ET Money: Mutual Funds, Stocks & Long-Term Investment App",
+        "description": "ET Money is India's Best Mutual Fund Investment App. Invest in mutual Funds, stocks & diversified mu",
+        "has_image": true
+      },
+      "analysis": {
+        "classified_category": "general",
+        "category_confidence": 0,
+        "extraction": {
+          "price": null,
+          "location": null,
+          "domain": "www.etmoney.com",
+          "title": "ET Money: Mutual Funds, Stocks & Long-Term Investment App",
+          "confidence": 0.5,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "general",
+        "match": false
+      }
+    },
+    {
+      "index": 43,
+      "url": "https://groww.in/mutual-funds/category/best-flexi-cap-mutual-funds",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "Best Flexi Cap Mutual Funds to invest in India 2026",
+        "description": "Get the list of best Flexi Cap mutual funds based on returns,\n  and fund performance and start inves",
+        "has_image": true
+      },
+      "analysis": {
+        "classified_category": "general",
+        "category_confidence": 0,
+        "extraction": {
+          "price": null,
+          "location": null,
+          "domain": "groww.in",
+          "title": "Best Flexi Cap Mutual Funds to invest in India 2026",
+          "confidence": 0.5,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "general",
+        "match": false
+      }
+    },
+    {
+      "index": 44,
+      "url": "https://zerodha.com/varsity/",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "Zerodha Varsity: Free Stock Market & Trading Courses Online",
+        "description": "Learn stock market trading and investing online for free with Zerodha Varsity. In-depth lessons for ",
+        "has_image": true
+      },
+      "analysis": {
+        "classified_category": "general",
+        "category_confidence": 0,
+        "extraction": {
+          "price": null,
+          "location": null,
+          "domain": "zerodha.com",
+          "title": "Zerodha Varsity: Free Stock Market & Trading Courses Online",
+          "confidence": 0.5,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "general",
+        "match": false
+      }
+    },
+    {
+      "index": 45,
+      "url": "https://www.youtube.com/@CARachanaRanade",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "CA Rachana Phadke Ranade - YouTube",
+        "description": "To Learn Stock Market in simplified language checkout our courses:Beginner Level: 1. Mastering Money",
+        "has_image": true
+      },
+      "analysis": {
+        "classified_category": "general",
+        "category_confidence": 0,
+        "extraction": {
+          "price": null,
+          "location": null,
+          "domain": "www.youtube.com",
+          "title": "CA Rachana Phadke Ranade - YouTube",
+          "confidence": 0.5,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "general",
+        "match": false
+      }
+    },
+    {
+      "index": 46,
+      "url": "https://www.youtube.com/@yogawithadriene",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "Yoga With Adriene - YouTube",
+        "description": "WELCOME to Yoga With Adriene! Our mission is to connect as many people as possible through high-qual",
+        "has_image": true
+      },
+      "analysis": {
+        "classified_category": "general",
+        "category_confidence": 0,
+        "extraction": {
+          "price": null,
+          "location": null,
+          "domain": "www.youtube.com",
+          "title": "Yoga With Adriene - YouTube",
+          "confidence": 0.5,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "general",
+        "match": false
+      }
+    },
+    {
+      "index": 47,
+      "url": "https://www.instagram.com/yasminkarachiwala/",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "Yasmin Karachiwala | Celebrity Fitness Instructor (@yasminkarachiwala) • Instagram photos and videos",
+        "description": "1M Followers, 524 Following, 3,684 Posts - Yasmin Karachiwala | Celebrity Fitness Instructor (@yasmi",
+        "has_image": true
+      },
+      "analysis": {
+        "classified_category": "general",
+        "category_confidence": 0,
+        "extraction": {
+          "price": null,
+          "location": "Karachiwala",
+          "domain": "www.instagram.com",
+          "title": "Yasmin Karachiwala | Celebrity Fitness Instructor (@yasminkarachiwala) • Instagram photos and videos",
+          "confidence": 0.75,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "general",
+        "match": false
+      }
+    },
+    {
+      "index": 48,
+      "url": "https://www.cult.fit/live/yoga",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "",
+        "description": "",
+        "has_image": false
+      },
+      "analysis": {
+        "classified_category": "general",
+        "category_confidence": 0,
+        "extraction": {
+          "price": null,
+          "location": null,
+          "domain": "www.cult.fit",
+          "title": "",
+          "confidence": 0.25,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "general",
+        "match": false
+      }
+    },
+    {
+      "index": 49,
+      "url": "https://www.youtube.com/@FlyingBeast320",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "Flying Beast - YouTube",
+        "description": "Hi,I live in New Delhi. I love to share my stories with you guys. This is my Vlog channel. Please go",
+        "has_image": true
+      },
+      "analysis": {
+        "classified_category": "general",
+        "category_confidence": 0,
+        "extraction": {
+          "price": null,
+          "location": "New Delhi",
+          "domain": "www.youtube.com",
+          "title": "Flying Beast - YouTube",
+          "confidence": 0.75,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "general",
+        "match": false
+      }
+    },
+    {
+      "index": 50,
+      "url": "https://www.headspace.com/meditation/sleep",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "Meditation For Sleep: Guided Meditation at Bedtime - Headspace",
+        "description": "You deserve to have a truly restful night — and sleep meditation can help. Learn how to put your min",
+        "has_image": true
+      },
+      "analysis": {
+        "classified_category": "general",
+        "category_confidence": 0,
+        "extraction": {
+          "price": null,
+          "location": null,
+          "domain": "www.headspace.com",
+          "title": "Meditation For Sleep: Guided Meditation at Bedtime - Headspace",
+          "confidence": 0.5,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "general",
+        "match": false
+      }
+    },
+    {
+      "index": 51,
+      "url": "https://www.calm.com/",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "Calm - The #1 App for Meditation and SleepLoading spinner",
+        "description": "Calm is the #1 app for sleep and meditation. Join the millions experiencing better sleep, lower stre",
+        "has_image": true
+      },
+      "analysis": {
+        "classified_category": "general",
+        "category_confidence": 0,
+        "extraction": {
+          "price": null,
+          "location": null,
+          "domain": "www.calm.com",
+          "title": "Calm - The #1 App for Meditation and SleepLoading spinner",
+          "confidence": 0.5,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "general",
+        "match": false
+      }
+    },
+    {
+      "index": 52,
+      "url": "https://www.instagram.com/natasha.noel/",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": " (@natasha.noel) • Instagram photos and videos",
+        "description": "21 Followers, 84 Following, 0 Posts - @natasha.noel on Instagram: \"\"",
+        "has_image": true
+      },
+      "analysis": {
+        "classified_category": "general",
+        "category_confidence": 0,
+        "extraction": {
+          "price": null,
+          "location": null,
+          "domain": "www.instagram.com",
+          "title": " (@natasha.noel) • Instagram photos and videos",
+          "confidence": 0.5,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "general",
+        "match": false
+      }
+    },
+    {
+      "index": 53,
+      "url": "https://www.theartofliving.org/in-en/yoga",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "",
+        "description": "",
+        "has_image": false
+      },
+      "analysis": {
+        "classified_category": "general",
+        "category_confidence": 0,
+        "extraction": {
+          "price": null,
+          "location": null,
+          "domain": "www.theartofliving.org",
+          "title": "",
+          "confidence": 0.25,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "general",
+        "match": false
+      }
+    },
+    {
+      "index": 54,
+      "url": "https://www.notion.so/templates",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "Choose from 30,000+ Notion templates | Notion Marketplace",
+        "description": "Browse 30,000+ free and customizable templates for every part of your work and life in our Marketpla",
+        "has_image": true
+      },
+      "analysis": {
+        "classified_category": "general",
+        "category_confidence": 0,
+        "extraction": {
+          "price": null,
+          "location": null,
+          "domain": "www.notion.so",
+          "title": "Choose from 30,000+ Notion templates | Notion Marketplace",
+          "confidence": 0.5,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "general",
+        "match": false
+      }
+    },
+    {
+      "index": 55,
+      "url": "https://todoist.com/",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "Todoist | A To-Do List to Organize Your Work & Life",
+        "description": "Trusted by 30 million people and teams. Todoist is the world's favorite task manager and to-do list ",
+        "has_image": true
+      },
+      "analysis": {
+        "classified_category": "general",
+        "category_confidence": 0,
+        "extraction": {
+          "price": null,
+          "location": null,
+          "domain": "todoist.com",
+          "title": "Todoist | A To-Do List to Organize Your Work & Life",
+          "confidence": 0.5,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "general",
+        "match": false
+      }
+    },
+    {
+      "index": 56,
+      "url": "https://www.youtube.com/@aliabdaal",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "Ali Abdaal - YouTube",
+        "description": "Hey, I'm Ali, a doctor turned entrepreneur, and the world’s most-followed productivity expert 😜 On ",
+        "has_image": true
+      },
+      "analysis": {
+        "classified_category": "shopping",
+        "category_confidence": 0.3333333333333333,
+        "extraction": {
+          "price": null,
+          "location": null,
+          "domain": "www.youtube.com",
+          "title": "Ali Abdaal - YouTube",
+          "confidence": 0.5,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "shopping",
+        "match": false
+      }
+    },
+    {
+      "index": 57,
+      "url": "https://www.thomasjfrank.com/",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "Thomas Frank – YouTuber, Notion Nerd, Entrepreneur",
+        "description": "Hi, I'm Thomas Frank. I'm a YouTuber, author, and entrepreneur focused on helping people become more",
+        "has_image": true
+      },
+      "analysis": {
+        "classified_category": "shopping",
+        "category_confidence": 0.3333333333333333,
+        "extraction": {
+          "price": null,
+          "location": null,
+          "domain": "www.thomasjfrank.com",
+          "title": "Thomas Frank – YouTuber, Notion Nerd, Entrepreneur",
+          "confidence": 0.5,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "shopping",
+        "match": false
+      }
+    },
+    {
+      "index": 58,
+      "url": "https://www.archanaskitchen.com/recipes/dal-makhani-recipe",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "",
+        "description": "",
+        "has_image": false
+      },
+      "analysis": {
+        "classified_category": "general",
+        "category_confidence": 0,
+        "extraction": {
+          "price": null,
+          "location": null,
+          "domain": "www.archanaskitchen.com",
+          "title": "",
+          "confidence": 0.25,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "general",
+        "match": false
+      }
+    },
+    {
+      "index": 59,
+      "url": "https://hebbarskitchen.com/paneer-butter-masala-recipe-paneer-makhani/",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "",
+        "description": "",
+        "has_image": false
+      },
+      "analysis": {
+        "classified_category": "general",
+        "category_confidence": 0,
+        "extraction": {
+          "price": null,
+          "location": null,
+          "domain": "hebbarskitchen.com",
+          "title": "",
+          "confidence": 0.25,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "general",
+        "match": false
+      }
+    },
+    {
+      "index": 60,
+      "url": "https://www.youtube.com/@yourfoodlab",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "Your Food Lab - YouTube",
+        "description": "Hi, I am Sanjyot Keer and I create detailed yet simplified delicious food videos. I am here to show ",
+        "has_image": true
+      },
+      "analysis": {
+        "classified_category": "food",
+        "category_confidence": 0.6666666666666666,
+        "extraction": {
+          "price": null,
+          "location": null,
+          "domain": "www.youtube.com",
+          "title": "Your Food Lab - YouTube",
+          "confidence": 0.5,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "food",
+        "match": false
+      }
+    },
+    {
+      "index": 61,
+      "url": "https://www.instagram.com/sanjyotkeer/",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "Sanjyot Keer (@sanjyotkeer) • Instagram photos and videos",
+        "description": "622K Followers, 1,022 Following, 566 Posts - Sanjyot Keer (@sanjyotkeer) on Instagram: \"Founder @you",
+        "has_image": true
+      },
+      "analysis": {
+        "classified_category": "food",
+        "category_confidence": 0.6666666666666666,
+        "extraction": {
+          "price": null,
+          "location": null,
+          "domain": "www.instagram.com",
+          "title": "Sanjyot Keer (@sanjyotkeer) • Instagram photos and videos",
+          "confidence": 0.5,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "food",
+        "match": false
+      }
+    },
+    {
+      "index": 62,
+      "url": "https://insider.in/events",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "",
+        "description": "",
+        "has_image": false
+      },
+      "analysis": {
+        "classified_category": "general",
+        "category_confidence": 0,
+        "extraction": {
+          "price": null,
+          "location": null,
+          "domain": "insider.in",
+          "title": "",
+          "confidence": 0.25,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "general",
+        "match": false
+      }
+    },
+    {
+      "index": 63,
+      "url": "https://in.bookmyshow.com/explore/home/bengaluru",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "",
+        "description": "",
+        "has_image": false
+      },
+      "analysis": {
+        "classified_category": "general",
+        "category_confidence": 0,
+        "extraction": {
+          "price": null,
+          "location": null,
+          "domain": "in.bookmyshow.com",
+          "title": "",
+          "confidence": 0.25,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "general",
+        "match": false
+      }
+    },
+    {
+      "index": 64,
+      "url": "https://www.songkick.com/metro-areas/30093-india-mumbai",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "",
+        "description": "",
+        "has_image": false
+      },
+      "analysis": {
+        "classified_category": "general",
+        "category_confidence": 0,
+        "extraction": {
+          "price": null,
+          "location": null,
+          "domain": "www.songkick.com",
+          "title": "",
+          "confidence": 0.25,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "general",
+        "match": false
+      }
+    },
+    {
+      "index": 65,
+      "url": "https://allevents.in/bangalore",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "Explore Upcoming Events & Things To Do In Bangalore, KA, India | AllEvents",
+        "description": "Discover the best things to do & events in Bangalore. explore concerts, meetups, open mics, art show",
+        "has_image": true
+      },
+      "analysis": {
+        "classified_category": "experience",
+        "category_confidence": 0.6666666666666666,
+        "extraction": {
+          "price": null,
+          "location": "Bangalore",
+          "domain": "allevents.in",
+          "title": "Explore Upcoming Events & Things To Do In Bangalore, KA, India | AllEvents",
+          "confidence": 0.75,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "experience",
+        "match": false
+      }
+    },
+    {
+      "index": 66,
+      "url": "https://www.airbnb.co.in/s/experiences/Bengaluru",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "",
+        "description": "",
+        "has_image": false
+      },
+      "analysis": {
+        "classified_category": "general",
+        "category_confidence": 0,
+        "extraction": {
+          "price": null,
+          "location": null,
+          "domain": "www.airbnb.co.in",
+          "title": "",
+          "confidence": 0.25,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "general",
+        "match": false
+      }
+    },
+    {
+      "index": 67,
+      "url": "https://www.thrillophilia.com/cities/bangalore",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "Bangalore Tourism & Travel Guide | Thrillophilia",
+        "description": "Plan a Bangalore getaway with expert insights on routes, seasons, costs, and itineraries. See how Th",
+        "has_image": true
+      },
+      "analysis": {
+        "classified_category": "experience",
+        "category_confidence": 0.3333333333333333,
+        "extraction": {
+          "price": null,
+          "location": null,
+          "domain": "www.thrillophilia.com",
+          "title": "Bangalore Tourism & Travel Guide | Thrillophilia",
+          "confidence": 0.5,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "experience",
+        "match": false
+      }
+    },
+    {
+      "index": 68,
+      "url": "https://www.tripoto.com/experiences/pottery-workshops-bangalore",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "",
+        "description": "",
+        "has_image": false
+      },
+      "analysis": {
+        "classified_category": "general",
+        "category_confidence": 0,
+        "extraction": {
+          "price": null,
+          "location": null,
+          "domain": "www.tripoto.com",
+          "title": "",
+          "confidence": 0.25,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "general",
+        "match": false
+      }
+    },
+    {
+      "index": 69,
+      "url": "https://www.skillshare.com/en/browse",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "",
+        "description": "",
+        "has_image": false
+      },
+      "analysis": {
+        "classified_category": "general",
+        "category_confidence": 0,
+        "extraction": {
+          "price": null,
+          "location": null,
+          "domain": "www.skillshare.com",
+          "title": "",
+          "confidence": 0.25,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "general",
+        "match": false
+      }
+    },
+    {
+      "index": 70,
+      "url": "https://www.netflix.com/in/title/81002370",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "",
+        "description": "",
+        "has_image": false
+      },
+      "analysis": {
+        "classified_category": "general",
+        "category_confidence": 0,
+        "extraction": {
+          "price": null,
+          "location": null,
+          "domain": "www.netflix.com",
+          "title": "",
+          "confidence": 0.25,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "general",
+        "match": false
+      }
+    },
+    {
+      "index": 71,
+      "url": "https://www.primevideo.com/detail/0SP5VBKZJM0PJTKWX3K5T2N99X",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "",
+        "description": "",
+        "has_image": false
+      },
+      "analysis": {
+        "classified_category": "general",
+        "category_confidence": 0,
+        "extraction": {
+          "price": null,
+          "location": null,
+          "domain": "www.primevideo.com",
+          "title": "",
+          "confidence": 0.25,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "general",
+        "match": false
+      }
+    },
+    {
+      "index": 72,
+      "url": "https://open.spotify.com/album/4aawyAB9vmqN3uQ7FjRGTy",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "Global Warming - Album by Pitbull | Spotify",
+        "description": "Listen to Global Warming on Spotify · album · Pitbull · 2012 · 18 songs",
+        "has_image": true
+      },
+      "analysis": {
+        "classified_category": "general",
+        "category_confidence": 0,
+        "extraction": {
+          "price": null,
+          "location": null,
+          "domain": "open.spotify.com",
+          "title": "Global Warming - Album by Pitbull | Spotify",
+          "confidence": 0.5,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "general",
+        "match": false
+      }
+    },
+    {
+      "index": 73,
+      "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+      "expected_category": "unknown",
+      "metadata": {
+        "title": "Rick Astley - Never Gonna Give You Up (Official Video) (4K Remaster) - YouTube",
+        "description": "The official video for “Never Gonna Give You Up” by Rick Astley. Never: The Autobiography 📚 OUT NOW",
+        "has_image": true
+      },
+      "analysis": {
+        "classified_category": "general",
+        "category_confidence": 0,
+        "extraction": {
+          "price": null,
+          "location": null,
+          "domain": "www.youtube.com",
+          "title": "Rick Astley - Never Gonna Give You Up (Official Video) (4K Remaster) - YouTube",
+          "confidence": 0.5,
+          "layer": "heuristics"
+        },
+        "llm_analysis": null,
+        "layer": "heuristics"
+      },
+      "extraction_layer": "heuristics",
+      "llm_structured_type": null,
+      "accuracy": {
+        "expected": "unknown",
+        "detected": "general",
+        "match": false
+      }
+    }
+  ]
+}
