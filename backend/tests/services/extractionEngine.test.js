@@ -80,7 +80,7 @@ describe('extractionEngine.extractEntities (layer waterfall)', () => {
 describe('extractionEngine.classifyCategory', () => {
   it.each([
     ['travel', 'I want to book a hotel in Bali for vacation'],
-    ['food', 'best restaurant menu for italian cuisine'],
+    ['restaurants', 'best restaurant menu for italian cuisine'],
     ['shopping', 'great deal price on this product, buy now'],
     ['general', 'random sentence with nothing relevant'],
   ])('classifies as %s', (expected, text) => {
@@ -90,10 +90,16 @@ describe('extractionEngine.classifyCategory', () => {
   it('accepts {title, description} object too', () => {
     expect(
       classifyCategory({ title: 'Recipe', description: 'best dish in this restaurant' }).category
-    ).toBe('food');
+    ).toBe('recipes');
   });
 
   it('handles undefined input safely', () => {
     expect(classifyCategory(undefined).category).toBe('general');
+  });
+
+  it('returns higher confidence for stronger keyword matches', () => {
+    const weak = classifyCategory('some random text about cooking');
+    const strong = classifyCategory('recipe tutorial for italian pasta cooking cuisine');
+    expect(strong.confidence).toBeGreaterThan(weak.confidence);
   });
 });
