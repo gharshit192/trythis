@@ -26,9 +26,11 @@ app.get('/health', (req, res) => {
 });
 
 app.get('/status', (req, res) => {
+  const dbUrl = process.env.DATABASE_URL || 'NOT SET';
   res.json({
     env: process.env.NODE_ENV,
-    dbUrl: process.env.DATABASE_URL ? 'SET' : 'NOT SET',
+    dbUrl: dbUrl.substring(0, 50) + '...',
+    dbUrlFull: dbUrl,
     redisUrl: process.env.REDIS_URL ? 'SET' : 'NOT SET',
     jwtSecret: process.env.JWT_SECRET ? 'SET' : 'NOT SET',
     frontendUrl: process.env.FRONTEND_URL || 'NOT SET',
