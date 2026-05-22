@@ -1,10 +1,9 @@
 {
   "build": {
-    "builder": "nixpacks",
-    "buildCommand": "npm install && npm run build --workspace=backend"
+    "builder": "nixpacks"
   },
   "deploy": {
-    "startCommand": "node backend/src/server.js",
+    "startCommand": "cd backend && npm install && node src/server.js",
     "restartPolicyType": "on_failure",
     "restartPolicyMaxRetries": 5
   }
