@@ -25,6 +25,16 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'TryThis API is running' });
 });
 
+app.get('/status', (req, res) => {
+  res.json({
+    env: process.env.NODE_ENV,
+    dbUrl: process.env.DATABASE_URL ? 'SET' : 'NOT SET',
+    redisUrl: process.env.REDIS_URL ? 'SET' : 'NOT SET',
+    jwtSecret: process.env.JWT_SECRET ? 'SET' : 'NOT SET',
+    frontendUrl: process.env.FRONTEND_URL || 'NOT SET',
+  });
+});
+
 app.use('/auth', authRoutes);
 app.use('/saves', savesRoutes);
 app.use('/collections', collectionsRoutes);
