@@ -9,6 +9,11 @@ const PORT = process.env.PORT || 4000;
 let dbConnected = false;
 let initPromise = null;
 
+console.log('[STARTUP] ENV CHECK:', {
+  DATABASE_URL: process.env.DATABASE_URL ? 'SET ✅' : 'NOT SET ❌',
+  JWT_SECRET: process.env.JWT_SECRET ? 'SET ✅' : 'NOT SET ❌',
+  NODE_ENV: process.env.NODE_ENV || 'NOT SET ❌'
+});
 const initializeServer = async () => {
   if (dbConnected) {
     console.log('[DEBUG] Database already connected, skipping initialization');
