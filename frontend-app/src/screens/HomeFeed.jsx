@@ -69,36 +69,27 @@ export default function HomeFeed({ onNavigate }) {
           ))}
         </div>
 
-        <div style={{ margin: '0 20px 16px', background: 'linear-gradient(135deg, var(--forest) 0%, #0a2118 100%)', borderRadius: '16px', padding: '16px', color: 'var(--linen)', display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ width: '40px', height: '40px', background: 'rgba(247,246,242,0.15)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <i className="ti ti-calendar-event" style={{ fontSize: '20px', color: 'var(--linen)' }}></i>
-          </div>
-          <div style={{ flex: 1 }}>
-            <p style={{ fontSize: '13px', fontWeight: '500' }}>Long weekend in 12 days</p>
-            <p style={{ fontSize: '11px', opacity: 0.75, marginTop: '3px' }}>3 Goa trips · 1 Himachal stay you saved</p>
-          </div>
-          <i className="ti ti-arrow-right" style={{ fontSize: '16px' }}></i>
-        </div>
-
-        <div style={{ margin: '0 20px 16px', borderRadius: '16px', background: 'var(--linen)', overflow: 'hidden' }}>
-          <div className="thumb-1" style={{ height: '140px', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div className="source-pill" style={{ position: 'absolute', top: '12px', left: '12px' }}>
-              <i className="ti ti-brand-instagram" style={{ fontSize: '12px' }}></i>
-              <span>Instagram</span>
+        {saves.length > 0 && (
+          <div style={{ margin: '0 20px 16px', borderRadius: '16px', background: 'var(--linen)', overflow: 'hidden' }} onClick={() => onNavigate('SaveDetail', saves[0]._id)}>
+            <div className="thumb-1" style={{ height: '140px', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {saves[0].image && <img src={saves[0].image} alt={saves[0].title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+              <div className="source-pill" style={{ position: 'absolute', top: '12px', left: '12px' }}>
+                <i className={`ti ti-${saves[0].source === 'instagram' ? 'brand-instagram' : 'link'}`} style={{ fontSize: '12px' }}></i>
+                <span>{saves[0].source || 'Web'}</span>
+              </div>
+              <div style={{ position: 'absolute', top: '12px', right: '12px', width: '32px', height: '32px', background: 'rgba(255,255,255,0.95)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <i className="ti ti-bookmark" style={{ fontSize: '14px', color: 'var(--forest)' }}></i>
+              </div>
             </div>
-            <div style={{ position: 'absolute', top: '12px', right: '12px', width: '32px', height: '32px', background: 'rgba(255,255,255,0.95)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <i className="ti ti-bookmark" style={{ fontSize: '14px', color: 'var(--forest)' }}></i>
+            <div style={{ padding: '12px 14px 14px' }}>
+              <div style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
+                <span className={`tag tag-${saves[0].category || 'neutral'}`}>{(saves[0].category || 'general').toUpperCase()}</span>
+              </div>
+              <p className="display" style={{ fontSize: '16px', fontWeight: '500' }}>{saves[0].title || 'Untitled'}</p>
+              <p style={{ fontSize: '12px', color: 'var(--slate)', marginTop: '4px', lineHeight: '1.4' }}>{saves[0].description || 'Recently saved'}</p>
             </div>
           </div>
-          <div style={{ padding: '12px 14px 14px' }}>
-            <div style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
-              <span className="tag tag-forest">CAFE</span>
-              <span className="tag tag-neutral">BENGALURU</span>
-            </div>
-            <p className="display" style={{ fontSize: '16px', fontWeight: '500' }}>Third Wave Coffee, Indiranagar</p>
-            <p style={{ fontSize: '12px', color: 'var(--slate)', marginTop: '4px', lineHeight: '1.4' }}>Quiet mornings, oat flat white, plant-filled windows.</p>
-          </div>
-        </div>
+        )}
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '4px 20px 12px' }}>
           <p style={{ fontSize: '14px', fontWeight: '500' }}>

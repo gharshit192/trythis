@@ -5,6 +5,7 @@ const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const User = require('../models/User');
 const authMiddleware = require('../middleware/auth');
+const { loginLimiter, signupLimiter, forgotPasswordLimiter } = require('../middleware/rateLimiter');
 const logger = require('../utils/logger');
 
 const OTP_TTL_MS = 15 * 60 * 1000;
@@ -12,7 +13,7 @@ const generateOtp = () => crypto.randomInt(100000, 1000000).toString(); // 6-dig
 const isProd = () => process.env.NODE_ENV === 'production';
 const DEV_BYPASS_OTP = '000001'; // accepted in non-prod only — convenience for testing without checking logs
 
-router.post('/signup', async (req, res) => {
+router.post('/signup', signupLimiter, async (req, res) => {
   try {
     const { email, password, name } = req.body;
 
@@ -21,6 +22,35 @@ router.post('/signup', async (req, res) => {
       return res.status(400).json({
         status: 'error',
         error: { code: 'VALIDATION_ERROR', message: 'Email and password required' },
+      });
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        status: 'error',
+        error: { code: 'VALIDATION_ERROR', message: 'Invalid email format' },
+      });
+    }
+
+    // Validate password strength
+    if (password.length < 8) {
+      return res.status(400).json({
+        status: 'error',
+        error: { code: 'VALIDATION_ERROR', message: 'Password must be at least 8 characters' },
+      });
+    }
+    if (!/[A-Z]/.test(password)) {
+      return res.status(400).json({
+        status: 'error',
+        error: { code: 'VALIDATION_ERROR', message: 'Password must contain at least one uppercase letter' },
+      });
+    }
+    if (!/[0-9]/.test(password)) {
+      return res.status(400).json({
+        status: 'error',
+        error: { code: 'VALIDATION_ERROR', message: 'Password must contain at least one number' },
       });
     }
 
@@ -69,7 +99,7 @@ router.post('/signup', async (req, res) => {
   }
 });
 
-router.post('/login', async (req, res) => {
+router.post('/login', loginLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -161,7 +191,7 @@ router.post('/refresh', (req, res) => {
 // ── Forgot password: generate OTP, store hash + expiry. Doesn't reveal whether
 // the email exists (returns success either way). In non-prod, returns the OTP
 // in the response so the UI can show it for testing until email is wired up.
-router.post('/forgot-password', async (req, res) => {
+router.post('/forgot-password', forgotPasswordLimiter, async (req, res) => {
   try {
     const { email } = req.body || {};
     if (!email) {
@@ -181,7 +211,6 @@ router.post('/forgot-password', async (req, res) => {
       user.passwordResetExpires = new Date(Date.now() + OTP_TTL_MS);
       await user.save();
       logger.info(`🔑 Password reset OTP for ${email}: ${otp} (expires in 15 min)`);
-      if (!isProd()) response.devOtp = otp; // exposed only outside production
     } else {
       logger.warn(`Password reset requested for unknown email: ${email}`);
     }
@@ -295,6 +324,31 @@ router.post('/change-password', authMiddleware, async (req, res) => {
   } catch (error) {
     logger.error(`❌ Change password error: ${error.message}`);
     res.status(500).json({ status: 'error', error: { code: 'SERVER_ERROR', message: 'Failed to change password' } });
+  }
+});
+
+// ── Get current user profile
+router.get('/me', authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select('-password -passwordResetOtp -passwordResetExpires');
+
+    if (!user) {
+      return res.status(404).json({
+        status: 'error',
+        error: { code: 'NOT_FOUND', message: 'User not found' },
+      });
+    }
+
+    res.json({
+      status: 'success',
+      data: user,
+    });
+  } catch (error) {
+    logger.error(`❌ Get user error: ${error.message}`);
+    res.status(500).json({
+      status: 'error',
+      error: { code: 'SERVER_ERROR', message: 'Failed to fetch user' },
+    });
   }
 });
 

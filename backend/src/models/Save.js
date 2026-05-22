@@ -150,8 +150,8 @@ const intentItemSchema = new mongoose.Schema({
   // Classification
   category: {
     type: String,
-    enum: ['food', 'travel', 'shopping', 'experience', 'blog', 'fashion', 'beauty', 'tech', 'other', 'general'],
-    default: 'other',
+    enum: ['food', 'travel', 'shopping', 'experience', 'tech', 'other', 'general', 'events', 'startups', 'entertainment', 'wellness'],
+    default: 'general',
   },
   tags: [String],
   collections: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Collection' }],

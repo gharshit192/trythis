@@ -82,10 +82,18 @@ const notificationSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ['pending', 'sent', 'opened', 'acted', 'dismissed'],
+      enum: ['pending', 'sent', 'opened', 'acted', 'dismissed', 'failed'],
       default: 'pending',
       index: true,
     },
+
+    deliveryMethod: {
+      type: String,
+      enum: ['email', 'push', 'in_app'],
+      default: 'email',
+    },
+
+    failureReason: String,
 
     sentAt: Date,
     openedAt: Date,

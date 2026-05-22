@@ -6,6 +6,8 @@ const router = express.Router();
 const Save = require('../models/Save');
 const UserBehavior = require('../models/UserBehavior');
 const authMiddleware = require('../middleware/auth');
+const validateObjectId = require('../middleware/validateObjectId');
+const { validateSaveInput } = require('../middleware/inputValidation');
 const fetchSystem = require('../services/fetchSystem');
 const extractionEngine = require('../services/extractionEngine');
 const transcription = require('../services/transcription');
@@ -34,7 +36,7 @@ const upload = multer({
 
 router.use(authMiddleware);
 
-router.post('/', async (req, res) => {
+router.post('/', validateSaveInput, async (req, res) => {
   try {
     const { title, url, sourceType, notes, collectionIds, description, image, transcribe } = req.body;
     const type = sourceType || (url ? 'url' : 'screenshot');
@@ -244,7 +246,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.get('/:id', async (req, res) => {
+router.get('/:id', validateObjectId('id'), async (req, res) => {
   try {
     const save = await Save.findById(req.params.id);
 
@@ -277,7 +279,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-router.patch('/:id', async (req, res) => {
+router.patch('/:id', validateObjectId('id'), async (req, res) => {
   try {
     const save = await Save.findById(req.params.id);
 
@@ -322,7 +324,7 @@ router.patch('/:id', async (req, res) => {
 // Re-fetch the save's source URL and update Save.image. Used by the UI when
 // a previously-cached CDN thumbnail expires (Instagram URLs live ~4 days).
 // Intent lifecycle: change intentStatus and (optionally) plannedFor / triedAt.
-router.patch('/:id/intent', async (req, res) => {
+router.patch('/:id/intent', validateObjectId('id'), async (req, res) => {
   try {
     const { intentStatus, plannedFor, triedAt } = req.body;
     const save = await Save.findById(req.params.id);
@@ -348,7 +350,7 @@ router.patch('/:id/intent', async (req, res) => {
   }
 });
 
-router.post('/:id/refresh-thumb', async (req, res) => {
+router.post('/:id/refresh-thumb', validateObjectId('id'), async (req, res) => {
   try {
     const save = await Save.findById(req.params.id);
     if (!save || save.userId.toString() !== req.user.id) {
@@ -389,7 +391,7 @@ router.post('/:id/refresh-thumb', async (req, res) => {
 // Manual re-trigger for the media-processing pipeline. Useful when a save
 // landed in processingStatus='failed' (yt-dlp timeout, IG rate limit, etc.)
 // and the user wants to try again without re-creating the save.
-router.post('/:id/retry', async (req, res) => {
+router.post('/:id/retry', validateObjectId('id'), async (req, res) => {
   try {
     const save = await Save.findById(req.params.id);
     if (!save || save.userId.toString() !== req.user.id) {
@@ -410,7 +412,7 @@ router.post('/:id/retry', async (req, res) => {
   }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', validateObjectId('id'), async (req, res) => {
   try {
     const save = await Save.findById(req.params.id);
 

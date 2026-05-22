@@ -3,6 +3,7 @@ const app = require('./app');
 const connectDB = require('./config/database');
 const redisClient = require('./config/redis');
 const purgeScreenshots = require('./jobs/purgeScreenshots');
+const notificationScheduler = require('./jobs/notificationScheduler');
 
 const PORT = process.env.PORT || 4000;
 
@@ -22,6 +23,7 @@ const startServer = async () => {
     });
 
     purgeScreenshots.start();
+    notificationScheduler.start();
   } catch (error) {
     console.error('❌ Failed to start server:', error.message);
     process.exit(1);
