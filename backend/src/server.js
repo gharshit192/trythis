@@ -7,39 +7,74 @@ const notificationScheduler = require('./jobs/notificationScheduler');
 
 const PORT = process.env.PORT || 4000;
 let dbConnected = false;
+let initPromise = null;
 
 const initializeServer = async () => {
   if (dbConnected) return;
+  if (initPromise) return initPromise; // Prevent duplicate initialization calls
 
-  try {
-    console.log(`[Init] NODE_ENV: ${process.env.NODE_ENV}`);
-    console.log(`[Init] DATABASE_URL: ${process.env.DATABASE_URL ? 'SET' : 'NOT SET'}`);
-    console.log(`[Init] JWT_SECRET: ${process.env.JWT_SECRET ? 'SET' : 'NOT SET'}`);
-
-    await connectDB();
-    dbConnected = true;
-
+  initPromise = (async () => {
     try {
-      await redisClient.connect();
-    } catch (err) {
-      console.warn(`⚠️  Redis not available, continuing without it: ${err.message}`);
-    }
+      console.log(`[Init] NODE_ENV: ${process.env.NODE_ENV}`);
+      console.log(`[Init] DATABASE_URL: ${process.env.DATABASE_URL ? 'SET' : 'NOT SET'}`);
+      console.log(`[Init] JWT_SECRET: ${process.env.JWT_SECRET ? 'SET' : 'NOT SET'}`);
 
-    if (process.env.NODE_ENV !== 'production') {
-      purgeScreenshots.start();
-      notificationScheduler.start();
+      await connectDB();
+      dbConnected = true;
+      console.log('✅ Database connected');
+
+      try {
+        await redisClient.connect();
+        console.log('✅ Redis connected');
+      } catch (err) {
+        console.warn(`⚠️  Redis not available, continuing without it: ${err.message}`);
+      }
+
+      if (process.env.NODE_ENV !== 'production') {
+        purgeScreenshots.start();
+        notificationScheduler.start();
+      }
+    } catch (error) {
+      console.error('❌ Failed to initialize server:', error.message);
+      console.error('❌ Error details:', error);
+      if (process.env.NODE_ENV !== 'production') {
+        process.exit(1);
+      }
+      throw error;
     }
+  })();
+
+  return initPromise;
+};
+
+// Middleware to ensure database is initialized before handling requests
+const ensureInitialized = async (req, res, next) => {
+  try {
+    await initializeServer();
+    next();
   } catch (error) {
-    console.error('❌ Failed to initialize server:', error.message);
-    console.error('❌ Error details:', error);
-    if (process.env.NODE_ENV !== 'production') {
-      process.exit(1);
-    }
+    console.error('❌ Initialization failed:', error.message);
+    res.status(503).json({
+      status: 'error',
+      error: {
+        code: 'SERVICE_UNAVAILABLE',
+        message: 'Server initializing, please retry in a moment'
+      }
+    });
   }
 };
 
-// Initialize on module load for serverless
-initializeServer().catch(err => console.error('Init error:', err));
+// Add initialization middleware to all routes (except health check)
+app.use((req, res, next) => {
+  if (req.path === '/health' || req.path === '/status') {
+    next(); // Skip initialization for health checks
+  } else {
+    ensureInitialized(req, res, next);
+  }
+});
+
+// Initialize on module load (non-blocking for serverless)
+initializeServer().catch(err => console.error('[Init] Non-blocking error:', err.message));
 
 // Export app for serverless (Vercel)
 module.exports = app;

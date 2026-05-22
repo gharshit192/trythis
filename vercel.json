@@ -1,0 +1,29 @@
+{
+  "version": 2,
+  "buildCommand": "npm install --prefix backend",
+  "installCommand": "npm install --prefix backend",
+  "env": {
+    "DATABASE_URL": "@database_url",
+    "REDIS_URL": "@redis_url",
+    "JWT_SECRET": "@jwt_secret",
+    "NODE_ENV": "production",
+    "SMTP_HOST": "@smtp_host",
+    "SMTP_PORT": "@smtp_port",
+    "SMTP_USER": "@smtp_user",
+    "SMTP_PASS": "@smtp_pass",
+    "EMAIL_FROM": "@email_from",
+    "PUBLIC_BASE_URL": "@public_base_url"
+  },
+  "functions": {
+    "backend/src/server.js": {
+      "memory": 1024,
+      "maxDuration": 30
+    }
+  },
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "backend/src/server.js"
+    }
+  ]
+}
