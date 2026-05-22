@@ -10,33 +10,60 @@ let dbConnected = false;
 let initPromise = null;
 
 const initializeServer = async () => {
-  if (dbConnected) return;
-  if (initPromise) return initPromise; // Prevent duplicate initialization calls
+  if (dbConnected) {
+    console.log('[DEBUG] Database already connected, skipping initialization');
+    return;
+  }
+  if (initPromise) {
+    console.log('[DEBUG] Initialization in progress, waiting for existing promise...');
+    return initPromise; // Prevent duplicate initialization calls
+  }
+
+  console.log('[DEBUG] Starting server initialization...');
 
   initPromise = (async () => {
     try {
-      console.log(`[Init] NODE_ENV: ${process.env.NODE_ENV}`);
-      console.log(`[Init] DATABASE_URL: ${process.env.DATABASE_URL ? 'SET' : 'NOT SET'}`);
-      console.log(`[Init] JWT_SECRET: ${process.env.JWT_SECRET ? 'SET' : 'NOT SET'}`);
+      console.log(`[DEBUG] NODE_ENV: ${process.env.NODE_ENV}`);
+      console.log(`[DEBUG] DATABASE_URL: ${process.env.DATABASE_URL ? process.env.DATABASE_URL.substring(0, 30) + '...' : 'NOT SET'}`);
+      console.log(`[DEBUG] JWT_SECRET: ${process.env.JWT_SECRET ? 'SET (length: ' + process.env.JWT_SECRET.length + ')' : 'NOT SET'}`);
+      console.log(`[DEBUG] REDIS_URL: ${process.env.REDIS_URL ? 'SET' : 'NOT SET'}`);
+      console.log(`[DEBUG] SMTP_HOST: ${process.env.SMTP_HOST ? 'SET' : 'NOT SET'}`);
 
+      console.log('[DEBUG] Connecting to MongoDB...');
+      const startDbTime = Date.now();
       await connectDB();
+      const dbConnectTime = Date.now() - startDbTime;
       dbConnected = true;
-      console.log('✅ Database connected');
+      console.log(`✅ Database connected (${dbConnectTime}ms)`);
 
       try {
+        console.log('[DEBUG] Connecting to Redis...');
+        const startRedisTime = Date.now();
         await redisClient.connect();
-        console.log('✅ Redis connected');
+        const redisConnectTime = Date.now() - startRedisTime;
+        console.log(`✅ Redis connected (${redisConnectTime}ms)`);
       } catch (err) {
         console.warn(`⚠️  Redis not available, continuing without it: ${err.message}`);
       }
 
       if (process.env.NODE_ENV !== 'production') {
+        console.log('[DEBUG] Starting background jobs (non-production mode)...');
         purgeScreenshots.start();
         notificationScheduler.start();
+        console.log('✅ Background jobs started');
+      } else {
+        console.log('[DEBUG] Skipping background jobs in production mode');
       }
+
+      console.log('[DEBUG] Server initialization complete');
     } catch (error) {
       console.error('❌ Failed to initialize server:', error.message);
-      console.error('❌ Error details:', error);
+      console.error('❌ Error stack:', error.stack);
+      console.error('[DEBUG] Full error object:', JSON.stringify({
+        name: error.name,
+        message: error.message,
+        code: error.code,
+      }, null, 2));
       if (process.env.NODE_ENV !== 'production') {
         process.exit(1);
       }
@@ -50,15 +77,29 @@ const initializeServer = async () => {
 // Middleware to ensure database is initialized before handling requests
 const ensureInitialized = async (req, res, next) => {
   try {
-    await initializeServer();
+    console.log(`[DEBUG] Request received: ${req.method} ${req.path}`);
+    console.log(`[DEBUG] Database connected: ${dbConnected}`);
+
+    if (!dbConnected) {
+      console.log('[DEBUG] Initializing database before handling request...');
+      const startTime = Date.now();
+      await initializeServer();
+      const initTime = Date.now() - startTime;
+      console.log(`[DEBUG] Initialization complete (${initTime}ms)`);
+    } else {
+      console.log('[DEBUG] Using existing database connection');
+    }
+
     next();
   } catch (error) {
     console.error('❌ Initialization failed:', error.message);
+    console.error('[DEBUG] Request failed:', `${req.method} ${req.path}`);
     res.status(503).json({
       status: 'error',
       error: {
         code: 'SERVICE_UNAVAILABLE',
-        message: 'Server initializing, please retry in a moment'
+        message: 'Server initializing, please retry in a moment',
+        details: process.env.NODE_ENV === 'production' ? undefined : error.message
       }
     });
   }
@@ -67,6 +108,7 @@ const ensureInitialized = async (req, res, next) => {
 // Add initialization middleware to all routes (except health check)
 app.use((req, res, next) => {
   if (req.path === '/health' || req.path === '/status') {
+    console.log(`[DEBUG] Skipping initialization for health check: ${req.path}`);
     next(); // Skip initialization for health checks
   } else {
     ensureInitialized(req, res, next);
@@ -74,25 +116,36 @@ app.use((req, res, next) => {
 });
 
 // Initialize on module load (non-blocking for serverless)
-initializeServer().catch(err => console.error('[Init] Non-blocking error:', err.message));
+console.log('[DEBUG] Module loaded, starting non-blocking initialization...');
+initializeServer().catch(err => {
+  console.error('[DEBUG] Non-blocking initialization error:', err.message);
+  console.error('[DEBUG] Error stack:', err.stack);
+});
 
 // Export app for serverless (Vercel)
+console.log('[DEBUG] Exporting app for serverless');
 module.exports = app;
 
 // For local development, start the server
 if (process.env.NODE_ENV !== 'production') {
+  console.log('[DEBUG] Development mode detected, starting HTTP server...');
   const startServer = async () => {
     try {
+      console.log('[DEBUG] Calling initializeServer in startServer...');
       await initializeServer();
+      console.log('[DEBUG] Database initialized, starting HTTP listener...');
       app.listen(PORT, () => {
         console.log(`🚀 Server running at http://localhost:${PORT}`);
         console.log(`📊 API Health: http://localhost:${PORT}/health`);
       });
     } catch (error) {
       console.error('❌ Failed to start server:', error.message);
+      console.error('[DEBUG] Error stack:', error.stack);
       process.exit(1);
     }
   };
 
   startServer();
+} else {
+  console.log('[DEBUG] Production mode detected, serverless export only');
 }
