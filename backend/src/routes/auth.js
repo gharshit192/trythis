@@ -352,4 +352,27 @@ router.get('/me', authMiddleware, async (req, res) => {
   }
 });
 
+// ── Analytics: track app opens for D7 retention measurement
+// Call this on every app load to track unprompted return
+router.post('/ping', authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      {
+        lastActiveAt: new Date(),
+        $inc: { sessionCount: 1 },
+      },
+      { new: true }
+    );
+
+    res.json({ status: 'success', data: { ok: true } });
+  } catch (error) {
+    logger.error(`❌ Ping error: ${error.message}`);
+    res.status(500).json({
+      status: 'error',
+      error: { code: 'SERVER_ERROR', message: 'Failed to record session' },
+    });
+  }
+});
+
 module.exports = router;

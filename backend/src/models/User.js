@@ -40,6 +40,10 @@ const userSchema = new mongoose.Schema(
     },
     passwordResetOtp: { type: String, default: null },
     passwordResetExpires: { type: Date, default: null },
+
+    // Analytics: track unprompted return (D7 retention)
+    lastActiveAt: { type: Date, default: null },
+    sessionCount: { type: Number, default: 0 },
   },
   { timestamps: true }
 );

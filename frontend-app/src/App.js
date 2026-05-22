@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import './theme.css';
+import api from './api';
 
 import Login from './screens/Login';
 import Signup from './screens/Signup';
@@ -27,6 +28,8 @@ function App() {
     const token = localStorage.getItem('auth_token');
     if (token) {
       setCurrentScreen('home');
+      // Record app session for D7 retention analytics
+      api.post('/auth/ping').catch(() => {});
     }
   }, []);
 
