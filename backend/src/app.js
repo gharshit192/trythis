@@ -13,6 +13,7 @@ const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
 
+// Trigger redeploy with env vars
 app.use(cors());
 app.use(express.json({ limit: '5mb' }));
 
