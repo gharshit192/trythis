@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "buildCommand": "npm install --legacy-peer-deps",
+  "env": {
+    "NODE_ENV": "production"
+  },
+  "routes": [
+    {
+      "src": "/.*",
+      "dest": "src/server.js"
+    }
+  ]
+}
