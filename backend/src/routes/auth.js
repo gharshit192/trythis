@@ -92,9 +92,14 @@ router.post('/signup', signupLimiter, async (req, res) => {
     });
   } catch (error) {
     logger.error(`❌ Signup error: ${error.message}`);
+    logger.error(`Error stack: ${error.stack}`);
     res.status(500).json({
       status: 'error',
-      error: { code: 'SERVER_ERROR', message: 'Signup failed' },
+      error: {
+        code: 'SERVER_ERROR',
+        message: 'Signup failed',
+        details: process.env.NODE_ENV === 'production' ? undefined : error.message
+      },
     });
   }
 });
