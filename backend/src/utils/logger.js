@@ -3,9 +3,13 @@ const path = require('path');
 
 const logsDir = path.join(__dirname, '../../logs');
 
-// Create logs directory if it doesn't exist
-if (!fs.existsSync(logsDir)) {
-  fs.mkdirSync(logsDir, { recursive: true });
+// Create logs directory if it doesn't exist (skip in serverless environments)
+try {
+  if (!fs.existsSync(logsDir)) {
+    fs.mkdirSync(logsDir, { recursive: true });
+  }
+} catch (err) {
+  // Ignore errors in serverless environments where filesystem is read-only
 }
 
 const logger = {
