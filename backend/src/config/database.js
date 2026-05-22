@@ -6,6 +6,7 @@ const connectDB = async (uri) => {
     await mongoose.connect(target, {
       serverSelectionTimeoutMS: 30000,
       socketTimeoutMS: 60000,
+      bufferTimeoutMS: 45000,
       family: 4,
       maxPoolSize: 5,
       minPoolSize: 2,
