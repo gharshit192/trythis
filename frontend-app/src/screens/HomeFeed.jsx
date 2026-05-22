@@ -48,10 +48,16 @@ export default function HomeFeed({ onNavigate }) {
             <p style={{ fontSize: '13px', color: 'var(--slate)' }}>Hello, {user?.name?.split(' ')[0] || 'there'}</p>
             <h1 className="display" style={{ fontSize: '22px', marginTop: '2px' }}>Your saves</h1>
           </div>
-          <div className="avatar">{user?.name?.substring(0, 2).toUpperCase() || 'HG'}</div>
+          <div className="avatar" style={{ cursor: 'pointer' }} onClick={() => onNavigate('profile')}>{user?.name?.substring(0, 2).toUpperCase() || 'HG'}</div>
         </div>
 
-        <div style={{ height: '44px', background: 'var(--linen)', borderRadius: '12px', display: 'flex', alignItems: 'center', padding: '0 14px', gap: '10px', margin: '0 20px 16px' }}>
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => onNavigate('search')}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onNavigate('search'); }}
+          style={{ height: '44px', background: 'var(--linen)', borderRadius: '12px', display: 'flex', alignItems: 'center', padding: '0 14px', gap: '10px', margin: '0 20px 16px', cursor: 'pointer' }}
+        >
           <i className="ti ti-search" style={{ fontSize: '16px', color: 'var(--slate)' }}></i>
           <span style={{ fontSize: '14px', color: 'var(--slate)', flex: 1 }}>Search saves, places, vibes…</span>
         </div>
@@ -69,27 +75,65 @@ export default function HomeFeed({ onNavigate }) {
           ))}
         </div>
 
-        {saves.length > 0 && (
-          <div style={{ margin: '0 20px 16px', borderRadius: '16px', background: 'var(--linen)', overflow: 'hidden' }} onClick={() => onNavigate('SaveDetail', saves[0]._id)}>
-            <div className="thumb-1" style={{ height: '140px', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              {saves[0].image && <img src={saves[0].image} alt={saves[0].title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
-              <div className="source-pill" style={{ position: 'absolute', top: '12px', left: '12px' }}>
-                <i className={`ti ti-${saves[0].source === 'instagram' ? 'brand-instagram' : 'link'}`} style={{ fontSize: '12px' }}></i>
-                <span>{saves[0].source || 'Web'}</span>
-              </div>
-              <div style={{ position: 'absolute', top: '12px', right: '12px', width: '32px', height: '32px', background: 'rgba(255,255,255,0.95)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <i className="ti ti-bookmark" style={{ fontSize: '14px', color: 'var(--forest)' }}></i>
-              </div>
-            </div>
-            <div style={{ padding: '12px 14px 14px' }}>
-              <div style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
-                <span className={`tag tag-${saves[0].category || 'neutral'}`}>{(saves[0].category || 'general').toUpperCase()}</span>
-              </div>
-              <p className="display" style={{ fontSize: '16px', fontWeight: '500' }}>{saves[0].title || 'Untitled'}</p>
-              <p style={{ fontSize: '12px', color: 'var(--slate)', marginTop: '4px', lineHeight: '1.4' }}>{saves[0].description || 'Recently saved'}</p>
-            </div>
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => { setActivePill('Travel'); setShowAll(false); }}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { setActivePill('Travel'); setShowAll(false); } }}
+          style={{ margin: '0 20px 16px', background: 'linear-gradient(135deg, var(--forest) 0%, #0a2118 100%)', borderRadius: '16px', padding: '16px', color: 'var(--linen)', display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}
+        >
+          <div style={{ width: '40px', height: '40px', background: 'rgba(247,246,242,0.15)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <i className="ti ti-calendar-event" style={{ fontSize: '20px', color: 'var(--linen)' }}></i>
           </div>
-        )}
+          <div style={{ flex: 1 }}>
+            <p style={{ fontSize: '13px', fontWeight: '500' }}>Long weekend in 12 days</p>
+            <p style={{ fontSize: '11px', opacity: 0.75, marginTop: '3px' }}>3 Goa trips · 1 Himachal stay you saved</p>
+          </div>
+          <i className="ti ti-arrow-right" style={{ fontSize: '16px' }}></i>
+        </div>
+
+        {(() => {
+          const featured = saves[0];
+          if (!featured) return null;
+          const catLabel = (featured.category || 'save').toUpperCase();
+          const city = featured.aiAnalysis?.structuredData?.place?.city;
+          const source = featured.source;
+          const summary = featured.aiAnalysis?.summary || featured.description;
+          return (
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={() => onNavigate('save-detail', { id: featured._id })}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onNavigate('save-detail', { id: featured._id }); }}
+              style={{ margin: '0 20px 16px', borderRadius: '16px', background: 'var(--linen)', overflow: 'hidden', cursor: 'pointer' }}
+            >
+              <div className="thumb-1" style={{ height: '140px', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--dune)', overflow: 'hidden' }}>
+                {featured.image ? (
+                  <SmartImage saveId={featured._id} src={featured.image} alt={featured.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  <i className="ti ti-bookmark" style={{ fontSize: '28px', color: 'var(--forest)' }}></i>
+                )}
+                {source && (
+                  <div className="source-pill" style={{ position: 'absolute', top: '12px', left: '12px' }}>
+                    <i className={`ti ti-brand-${source === 'instagram' ? 'instagram' : 'safari'}`} style={{ fontSize: '12px' }}></i>
+                    <span>{source[0].toUpperCase() + source.slice(1)}</span>
+                  </div>
+                )}
+                <div style={{ position: 'absolute', top: '12px', right: '12px', width: '32px', height: '32px', background: 'rgba(255,255,255,0.95)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <i className="ti ti-bookmark" style={{ fontSize: '14px', color: 'var(--forest)' }}></i>
+                </div>
+              </div>
+              <div style={{ padding: '12px 14px 14px' }}>
+                <div style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
+                  <span className="tag tag-forest">{catLabel}</span>
+                  {city && <span className="tag tag-neutral">{city.toUpperCase()}</span>}
+                </div>
+                <p className="display" style={{ fontSize: '16px', fontWeight: '500' }}>{featured.title}</p>
+                {summary && <p style={{ fontSize: '12px', color: 'var(--slate)', marginTop: '4px', lineHeight: '1.4', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{summary}</p>}
+              </div>
+            </div>
+          );
+        })()}
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '4px 20px 12px' }}>
           <p style={{ fontSize: '14px', fontWeight: '500' }}>

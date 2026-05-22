@@ -232,6 +232,12 @@ export default function SaveDetail({ onNavigate, payload }) {
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState(null);
   const [retrying, setRetrying] = useState(false);
+  const [toast, setToast] = useState(null);
+
+  const showToast = (msg) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 2200);
+  };
 
   useEffect(() => {
     if (!id) { setLoading(false); return; }
@@ -286,13 +292,16 @@ export default function SaveDetail({ onNavigate, payload }) {
   };
 
   const handleShare = async () => {
-    if (navigator.share && save?.url) {
-      try { await navigator.share({ title: save.title, url: save.url }); return; } catch {}
+    if (!save?.url) { showToast('Nothing to share'); return; }
+    if (navigator.share) {
+      try { await navigator.share({ title: save.title, url: save.url }); return; } catch (err) {
+        if (err?.name === 'AbortError') return;
+      }
     }
-    if (navigator.clipboard && save?.url) {
-      try { await navigator.clipboard.writeText(save.url); alert('Link copied'); return; } catch {}
+    if (navigator.clipboard) {
+      try { await navigator.clipboard.writeText(save.url); showToast('Link copied'); return; } catch {}
     }
-    alert('Sharing not supported in this browser');
+    showToast('Sharing not supported');
   };
 
   if (!id) {
@@ -543,7 +552,7 @@ export default function SaveDetail({ onNavigate, payload }) {
           </WarningBanner>
         )}
         {transcript && (
-          <details style={{ marginTop: 14, fontSize: 13, color: T.text }}>
+          <details open style={{ marginTop: 14, fontSize: 13, color: T.text }}>
             <summary style={{ cursor: 'pointer', color: T.textMuted, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
               <span>📝 Transcript</span>
               {transcriptLang && transcriptLang !== 'en' && (
@@ -584,6 +593,14 @@ export default function SaveDetail({ onNavigate, payload }) {
           </>
         )}
       </div>
+
+      {toast && (
+        <div style={{
+          position: 'fixed', bottom: 96, left: '50%', transform: 'translateX(-50%)',
+          background: T.text, color: T.bg, padding: '10px 18px', borderRadius: 999,
+          fontSize: 13, fontWeight: 500, boxShadow: '0 6px 20px rgba(0,0,0,0.4)', zIndex: 60,
+        }}>{toast}</div>
+      )}
 
       {confirmDelete && (
         <div onClick={() => !deleting && setConfirmDelete(false)}
