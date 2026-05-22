@@ -24,16 +24,6 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'TryThis API is running' });
 });
 
-app.get('/debug/env', (req, res) => {
-  res.json({
-    NODE_ENV: process.env.NODE_ENV,
-    DATABASE_URL: process.env.DATABASE_URL ? '***SET***' : 'MISSING',
-    REDIS_URL: process.env.REDIS_URL ? '***SET***' : 'MISSING',
-    JWT_SECRET: process.env.JWT_SECRET ? '***SET***' : 'MISSING',
-    FRONTEND_URL: process.env.FRONTEND_URL || 'MISSING',
-  });
-});
-
 app.use('/auth', authRoutes);
 app.use('/saves', savesRoutes);
 app.use('/collections', collectionsRoutes);

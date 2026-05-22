@@ -12,6 +12,10 @@ const initializeServer = async () => {
   if (dbConnected) return;
 
   try {
+    console.log(`[Init] NODE_ENV: ${process.env.NODE_ENV}`);
+    console.log(`[Init] DATABASE_URL: ${process.env.DATABASE_URL ? 'SET' : 'NOT SET'}`);
+    console.log(`[Init] JWT_SECRET: ${process.env.JWT_SECRET ? 'SET' : 'NOT SET'}`);
+
     await connectDB();
     dbConnected = true;
 
@@ -27,6 +31,7 @@ const initializeServer = async () => {
     }
   } catch (error) {
     console.error('❌ Failed to initialize server:', error.message);
+    console.error('❌ Error details:', error);
     if (process.env.NODE_ENV !== 'production') {
       process.exit(1);
     }
