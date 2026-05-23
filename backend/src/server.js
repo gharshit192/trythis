@@ -134,12 +134,28 @@ module.exports = app;
 // Start an HTTP listener unless we're on a true serverless platform (Vercel).
 // Render, Railway, Fly, Docker, and local dev all run as long-lived processes
 // and need app.listen() bound to a port for the platform to route traffic.
+//
+// We await initializeServer() before binding the port. Mongoose is configured
+// with bufferCommands=false, so any query that hits a route before the
+// connection completes throws "Cannot call X before initial connection".
+// The ensureInitialized middleware in this file can't catch that because
+// app.js already registered all routes by the time we get here — middleware
+// added after routes only runs as a fall-through. Easiest fix: don't accept
+// traffic until init is done. Render's port-scan timeout is ~90s; Mongo
+// connects in 3–5s, so plenty of headroom.
 if (!process.env.VERCEL) {
-  console.log('[DEBUG] Long-running container detected, starting HTTP server...');
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 Server running at http://0.0.0.0:${PORT}`);
-    console.log(`📊 API Health: http://0.0.0.0:${PORT}/health`);
-  });
+  console.log('[DEBUG] Long-running container detected, awaiting init before listen...');
+  initializeServer()
+    .then(() => {
+      app.listen(PORT, '0.0.0.0', () => {
+        console.log(`🚀 Server running at http://0.0.0.0:${PORT}`);
+        console.log(`📊 API Health: http://0.0.0.0:${PORT}/health`);
+      });
+    })
+    .catch((err) => {
+      console.error('❌ Init failed, refusing to start listener:', err.message);
+      process.exit(1);
+    });
 } else {
   console.log('[DEBUG] Vercel serverless detected, exporting app only');
 }

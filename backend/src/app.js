@@ -13,7 +13,11 @@ const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
 
-// Trigger redeploy with env vars
+// Render (and most PaaS) front the container with a single reverse proxy.
+// Trusting the first hop lets req.ip resolve to the real client and
+// silences express-rate-limit's X-Forwarded-For validator.
+app.set('trust proxy', 1);
+
 app.use(cors());
 app.use(express.json({ limit: '5mb' }));
 
