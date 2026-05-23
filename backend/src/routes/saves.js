@@ -366,7 +366,8 @@ router.post('/:id/refresh-thumb', validateObjectId('id'), async (req, res) => {
       });
     }
 
-    const fetched = await fetchSystem.fetchContent({ type: save.source || 'url', url: save.url });
+    const fetchType = fetchSystem.fetchHandlers[save.source] ? save.source : 'url';
+    const fetched = await fetchSystem.fetchContent({ type: fetchType, url: save.url });
     if (!fetched.image) {
       return res.status(502).json({
         status: 'error',
