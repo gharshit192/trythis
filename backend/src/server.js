@@ -131,26 +131,15 @@ initializeServer().catch(err => {
 console.log('[DEBUG] Exporting app for serverless');
 module.exports = app;
 
-// For local development, start the server
-if (process.env.NODE_ENV !== 'production') {
-  console.log('[DEBUG] Development mode detected, starting HTTP server...');
-  const startServer = async () => {
-    try {
-      console.log('[DEBUG] Calling initializeServer in startServer...');
-      await initializeServer();
-      console.log('[DEBUG] Database initialized, starting HTTP listener...');
-      app.listen(PORT, () => {
-        console.log(`🚀 Server running at http://localhost:${PORT}`);
-        console.log(`📊 API Health: http://localhost:${PORT}/health`);
-      });
-    } catch (error) {
-      console.error('❌ Failed to start server:', error.message);
-      console.error('[DEBUG] Error stack:', error.stack);
-      process.exit(1);
-    }
-  };
-
-  startServer();
+// Start an HTTP listener unless we're on a true serverless platform (Vercel).
+// Render, Railway, Fly, Docker, and local dev all run as long-lived processes
+// and need app.listen() bound to a port for the platform to route traffic.
+if (!process.env.VERCEL) {
+  console.log('[DEBUG] Long-running container detected, starting HTTP server...');
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Server running at http://0.0.0.0:${PORT}`);
+    console.log(`📊 API Health: http://0.0.0.0:${PORT}/health`);
+  });
 } else {
-  console.log('[DEBUG] Production mode detected, serverless export only');
+  console.log('[DEBUG] Vercel serverless detected, exporting app only');
 }
