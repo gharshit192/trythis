@@ -106,6 +106,14 @@ const api = {
     return data;
   },
 
+  async ping() {
+    const res = await fetch(`${API_BASE_URL}/auth/ping`, {
+      method: 'POST',
+      headers: authHeader(),
+    });
+    return handle(res);
+  },
+
   logout() {
     localStorage.removeItem('auth_token');
     localStorage.removeItem('user');

@@ -29,7 +29,7 @@ function App() {
     if (token) {
       setCurrentScreen('home');
       // Record app session for D7 retention analytics
-      api.post('/auth/ping').catch(() => {});
+      api.ping().catch(() => {});
     }
   }, []);
 
