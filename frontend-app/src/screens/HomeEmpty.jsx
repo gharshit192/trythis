@@ -1,13 +1,16 @@
 export default function HomeEmpty({ onNavigate }) {
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const firstName = user?.name?.split(' ')[0] || 'there';
+  const initials = user?.name?.substring(0, 2).toUpperCase() || '?';
   return (
     <div className="phone-frame">
       <div style={{ background: 'var(--paper)', flex: 1, display: 'flex', flexDirection: 'column' }}>
         <div style={{ padding: '12px 20px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
-            <p style={{ fontSize: '13px', color: 'var(--slate)' }}>Hello, Harshit</p>
+            <p style={{ fontSize: '13px', color: 'var(--slate)' }}>Hello, {firstName}</p>
             <h1 className="display" style={{ fontSize: '22px', marginTop: '2px' }}>Your saves</h1>
           </div>
-          <div className="avatar">HG</div>
+          <div className="avatar">{initials}</div>
         </div>
 
         <div style={{ height: '44px', background: 'var(--linen)', borderRadius: '12px', display: 'flex', alignItems: 'center', padding: '0 14px', gap: '10px', margin: '0 20px 16px' }}>

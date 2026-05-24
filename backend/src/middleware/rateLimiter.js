@@ -1,6 +1,9 @@
 // Rate limiter — memory-based for Vercel (no Redis needed)
 const rateLimit = require('express-rate-limit');
 
+const isTest = process.env.NODE_ENV === 'test';
+const noopLimiter = (req, res, next) => next();
+
 const loginLimiter = rateLimit({
   windowMs: 5 * 60 * 1000,  // 5 minutes
   max: 5,
@@ -43,4 +46,8 @@ const forgotPasswordLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-module.exports = { loginLimiter, signupLimiter, forgotPasswordLimiter };
+module.exports = {
+  loginLimiter: isTest ? noopLimiter : loginLimiter,
+  signupLimiter: isTest ? noopLimiter : signupLimiter,
+  forgotPasswordLimiter: isTest ? noopLimiter : forgotPasswordLimiter,
+};

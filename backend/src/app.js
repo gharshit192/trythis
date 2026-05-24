@@ -18,7 +18,10 @@ const app = express();
 // silences express-rate-limit's X-Forwarded-For validator.
 app.set('trust proxy', 1);
 
-app.use(cors());
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  credentials: true,
+}));
 app.use(express.json({ limit: '5mb' }));
 
 // Locally muxed media (videos / audio) served at /static/<filename>
@@ -30,14 +33,12 @@ app.get('/health', (req, res) => {
 });
 
 app.get('/status', (req, res) => {
-  const dbUrl = process.env.DATABASE_URL || 'NOT SET';
   res.json({
     env: process.env.NODE_ENV,
-    dbUrl: dbUrl.substring(0, 50) + '...',
-    dbUrlFull: dbUrl,
-    redisUrl: process.env.REDIS_URL ? 'SET' : 'NOT SET',
-    jwtSecret: process.env.JWT_SECRET ? 'SET' : 'NOT SET',
-    frontendUrl: process.env.FRONTEND_URL || 'NOT SET',
+    db: process.env.DATABASE_URL ? 'SET' : 'NOT SET',
+    redis: process.env.REDIS_URL ? 'SET' : 'NOT SET',
+    jwt: process.env.JWT_SECRET ? 'SET' : 'NOT SET',
+    frontend: process.env.FRONTEND_URL || 'NOT SET',
   });
 });
 

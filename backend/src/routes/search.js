@@ -16,13 +16,14 @@ router.get('/', async (req, res) => {
     };
 
     if (q) {
+      const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       query.$or = [
-        { title: { $regex: q, $options: 'i' } },
-        { description: { $regex: q, $options: 'i' } },
-        { tags: { $regex: q, $options: 'i' } },
-        { 'aiAnalysis.summary': { $regex: q, $options: 'i' } },
-        { 'aiAnalysis.structuredData.place.city': { $regex: q, $options: 'i' } },
-        { 'aiAnalysis.structuredData.recipe.title': { $regex: q, $options: 'i' } },
+        { title: { $regex: escaped, $options: 'i' } },
+        { description: { $regex: escaped, $options: 'i' } },
+        { tags: { $regex: escaped, $options: 'i' } },
+        { 'aiAnalysis.summary': { $regex: escaped, $options: 'i' } },
+        { 'aiAnalysis.structuredData.place.city': { $regex: escaped, $options: 'i' } },
+        { 'aiAnalysis.structuredData.recipe.title': { $regex: escaped, $options: 'i' } },
       ];
     }
 

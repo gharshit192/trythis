@@ -134,6 +134,10 @@ function PhotosFlow({ collections, onBack, onDone }) {
   const inputRef = useRef(null);
   const [dragging, setDragging] = useState(false);
 
+  useEffect(() => {
+    return () => { files.forEach((f) => URL.revokeObjectURL(f.previewUrl)); };
+  }, []);
+
   const addFiles = (incoming) => {
     setError(null);
     const next = [];

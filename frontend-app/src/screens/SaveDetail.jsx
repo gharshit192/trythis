@@ -248,14 +248,16 @@ export default function SaveDetail({ onNavigate, payload }) {
         if (!active) return;
         if (detail.status !== 'success') throw new Error(detail.error?.message || 'Not found');
         setSave(detail.data);
-        const r = await api.getRecommendations(id);
-        if (active && r.status === 'success') setRecs(r.data || []);
       } catch (err) {
         if (active) setError(err.message);
       } finally {
         if (active) setLoading(false);
       }
     })();
+    // Load recommendations separately so a failure doesn't block the detail view
+    api.getRecommendations(id)
+      .then((r) => { if (active && r?.status === 'success') setRecs(r.data || []); })
+      .catch(() => {});
     return () => { active = false; };
   }, [id]);
 
@@ -273,13 +275,8 @@ export default function SaveDetail({ onNavigate, payload }) {
   const handleIntent = async (next) => {
     if (!id) return;
     try {
-      const r = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:4000'}/saves/${id}/intent`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('auth_token')}` },
-        body: JSON.stringify({ intentStatus: next }),
-      });
-      const j = await r.json();
-      if (j.status === 'success') setSave(j.data);
+      const r = await api.updateIntent(id, { intentStatus: next });
+      if (r.status === 'success') setSave(r.data);
     } catch {}
   };
 

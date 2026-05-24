@@ -10,6 +10,7 @@ const handle = async (response) => {
   if (!response.ok && response.status === 401) {
     localStorage.removeItem('auth_token');
     localStorage.removeItem('user');
+    window.location.reload();
   }
   return data;
 };
@@ -34,7 +35,13 @@ const handleAbortable = async (promise) => {
 const inFlightGets = new Map();
 const dedupedGet = (url, init = {}) => {
   if (inFlightGets.has(url)) return inFlightGets.get(url);
-  const p = fetch(url, init).then(handle).finally(() => inFlightGets.delete(url));
+  const p = fetch(url, init)
+    .then(handle)
+    .catch((err) => {
+      if (err.name === 'AbortError') return { status: 'aborted' };
+      return { status: 'error', error: { message: err.message } };
+    })
+    .finally(() => inFlightGets.delete(url));
   inFlightGets.set(url, p);
   return p;
 };

@@ -71,13 +71,22 @@ export default function Signup({ onNavigate }) {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
-        <div style={{ display: 'flex', gap: '4px', marginBottom: '6px' }}>
-          <div style={{ flex: 1, height: '3px', borderRadius: '2px', background: 'var(--forest)' }}></div>
-          <div style={{ flex: 1, height: '3px', borderRadius: '2px', background: 'var(--forest)' }}></div>
-          <div style={{ flex: 1, height: '3px', borderRadius: '2px', background: 'var(--forest)' }}></div>
-          <div style={{ flex: 1, height: '3px', borderRadius: '2px', background: 'var(--hairline)' }}></div>
-        </div>
-        <p style={{ fontSize: '12px', color: 'var(--slate)', marginBottom: '22px' }}>Strong — nice.</p>
+        {(() => {
+          const checks = [password.length >= 8, /[A-Z]/.test(password), /[0-9]/.test(password), /[^A-Za-z0-9]/.test(password)];
+          const score = checks.filter(Boolean).length;
+          const colors = ['var(--error,#d33)', 'var(--error,#d33)', '#e6a700', 'var(--forest)', 'var(--forest)'];
+          const labels = ['Too short', 'Weak', 'Fair', 'Good', 'Strong'];
+          return password.length > 0 ? (
+            <>
+              <div style={{ display: 'flex', gap: '4px', marginBottom: '6px' }}>
+                {[0,1,2,3].map((i) => (
+                  <div key={i} style={{ flex: 1, height: '3px', borderRadius: '2px', background: i < score ? colors[score] : 'var(--hairline)' }}></div>
+                ))}
+              </div>
+              <p style={{ fontSize: '12px', color: 'var(--slate)', marginBottom: '22px' }}>{labels[score]}{score < 3 ? ' — need 8+ chars, uppercase, number' : ''}</p>
+            </>
+          ) : <div style={{ marginBottom: '22px' }} />;
+        })()}
 
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginBottom: '22px' }}>
           <div style={{ width: '18px', height: '18px', background: 'var(--forest)', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '2px' }}>
@@ -93,21 +102,6 @@ export default function Signup({ onNavigate }) {
         <button className="btn-primary" onClick={handleSignup} disabled={loading}>
           {loading ? 'Creating account...' : 'Create account'}
           <i className="ti ti-arrow-right" style={{ fontSize: '16px' }}></i>
-        </button>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', margin: '22px 0' }}>
-          <div style={{ flex: 1, height: '0.5px', background: 'var(--hairline)' }}></div>
-          <span style={{ fontSize: '11px', color: 'var(--mute)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>or</span>
-          <div style={{ flex: 1, height: '0.5px', background: 'var(--hairline)' }}></div>
-        </div>
-
-        <button className="btn-secondary" style={{ marginBottom: '10px' }}>
-          <i className="ti ti-brand-apple" style={{ fontSize: '18px' }}></i>
-          Sign up with Apple
-        </button>
-        <button className="btn-secondary">
-          <i className="ti ti-brand-google" style={{ fontSize: '18px' }}></i>
-          Sign up with Google
         </button>
 
         <p style={{ textAlign: 'center', marginTop: 'auto', paddingTop: '24px', fontSize: '14px', color: 'var(--slate)' }}>

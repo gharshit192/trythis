@@ -57,7 +57,9 @@ export default function Login({ onNavigate }) {
     e.preventDefault();
     setError(''); setInfo('');
     if (!otp.trim()) return setError('Enter the 6-digit code.');
-    if (newPassword.length < 6) return setError('New password must be at least 6 characters.');
+    if (newPassword.length < 8) return setError('Password must be at least 8 characters.');
+    if (!/[A-Z]/.test(newPassword)) return setError('Password must contain at least one uppercase letter.');
+    if (!/[0-9]/.test(newPassword)) return setError('Password must contain at least one number.');
     if (newPassword !== confirmPassword) return setError('Passwords do not match.');
     setLoading(true);
     try {
@@ -123,21 +125,6 @@ export default function Login({ onNavigate }) {
               {loading ? 'Signing in…' : 'Sign in'}
             </button>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', margin: '22px 0' }}>
-              <div style={{ flex: 1, height: '0.5px', background: 'var(--hairline)' }}></div>
-              <span style={{ fontSize: '11px', color: 'var(--mute)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>or</span>
-              <div style={{ flex: 1, height: '0.5px', background: 'var(--hairline)' }}></div>
-            </div>
-
-            <button className="btn-secondary" style={{ marginBottom: '10px' }}>
-              <i className="ti ti-brand-apple" style={{ fontSize: '18px' }}></i>
-              Continue with Apple
-            </button>
-            <button className="btn-secondary">
-              <i className="ti ti-brand-google" style={{ fontSize: '18px' }}></i>
-              Continue with Google
-            </button>
-
             <p style={{ textAlign: 'center', marginTop: 'auto', paddingTop: '32px', fontSize: '14px', color: 'var(--slate)' }}>
               New here? <span style={{ color: 'var(--ink)', fontWeight: '500', cursor: 'pointer' }} onClick={() => onNavigate('signup')}>Create an account</span>
             </p>
@@ -174,12 +161,9 @@ export default function Login({ onNavigate }) {
               </p>
             </div>
 
-            {devOtp && (
+            {devOtp && process.env.NODE_ENV !== 'production' && (
               <div style={{ background: 'var(--linen)', borderRadius: 8, padding: '8px 10px', marginBottom: 14, fontSize: 12, color: 'var(--slate)' }}>
                 <strong>Dev mode:</strong> code is <code style={{ fontFamily: 'monospace', color: 'var(--forest)' }}>{devOtp}</code>
-                <span style={{ display: 'block', marginTop: 4, fontSize: 11 }}>
-                  Or use <code style={{ fontFamily: 'monospace', color: 'var(--forest)' }}>000001</code> as a default bypass.
-                </span>
               </div>
             )}
 
@@ -187,7 +171,7 @@ export default function Login({ onNavigate }) {
             <input type="text" inputMode="numeric" maxLength={6} className="input" style={{ marginBottom: 14, letterSpacing: 4, fontVariantNumeric: 'tabular-nums' }} placeholder="123456" value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))} disabled={loading} />
 
             <p className="label">New password</p>
-            <input type="password" className="input" style={{ marginBottom: 14 }} placeholder="At least 6 characters" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} disabled={loading} />
+            <input type="password" className="input" style={{ marginBottom: 14 }} placeholder="Min 8 chars, uppercase + number" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} disabled={loading} />
 
             <p className="label">Confirm password</p>
             <input type="password" className="input" style={{ marginBottom: 16 }} placeholder="Re-enter new password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} disabled={loading} />

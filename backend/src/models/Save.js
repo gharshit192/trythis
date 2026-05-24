@@ -208,6 +208,11 @@ const intentItemSchema = new mongoose.Schema({
 intentItemSchema.virtual('notes').get(function () { return this.userNote; });
 intentItemSchema.virtual('image').get(function () { return this.thumbnail; });
 
+intentItemSchema.index({ userId: 1, status: 1, createdAt: -1 });
+intentItemSchema.index({ userId: 1, category: 1 });
+intentItemSchema.index({ userId: 1, source: 1 });
+intentItemSchema.index({ url: 1, userId: 1 });
+
 intentItemSchema.set('toJSON', { virtuals: true });
 intentItemSchema.set('toObject', { virtuals: true });
 

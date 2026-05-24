@@ -3,20 +3,28 @@ import api from '../api';
 import SmartImage from '../components/SmartImage';
 
 // Top-row pill label → Save.category enum value. "All" = null = no filter.
-const PILL_CATEGORY = {
+const PILL_CATEGORIES = {
   All: null,
-  Travel: 'travel',
-  Food: 'food',
-  Cafes: 'food',
-  Experiences: 'experience',
-  Shopping: 'shopping',
+  Travel: ['travel', 'hotels'],
+  Food: ['food', 'recipes', 'restaurants', 'cafes'],
+  Experiences: ['experience', 'experiences', 'entertainment', 'events'],
+  Shopping: ['shopping', 'fashion'],
 };
+const PILL_CATEGORY = Object.fromEntries(
+  Object.entries(PILL_CATEGORIES).map(([k, v]) => [k, v])
+);
 const PILLS = ['All', 'Travel', 'Food', 'Experiences', 'Shopping'];
+const matchesPill = (category, pill) => {
+  const allowed = PILL_CATEGORIES[pill];
+  if (!allowed) return true;
+  return allowed.includes(category);
+};
 
 export default function HomeFeed({ onNavigate }) {
   const [saves, setSaves] = useState([]);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(null);
   const [activePill, setActivePill] = useState('All');
   const [showAll, setShowAll] = useState(false);
 
@@ -29,9 +37,11 @@ export default function HomeFeed({ onNavigate }) {
         const result = await api.getSaves();
         if (result.status === 'success') {
           setSaves(result.data);
+        } else {
+          setFetchError(result.error?.message || 'Failed to load saves');
         }
       } catch (err) {
-        console.error('Failed to fetch saves:', err);
+        setFetchError('Connection error. Pull down to retry.');
       } finally {
         setLoading(false);
       }
@@ -93,7 +103,8 @@ export default function HomeFeed({ onNavigate }) {
         </div>
 
         {(() => {
-          const featured = saves[0];
+          const pool = activePill === 'All' ? saves : saves.filter((s) => matchesPill(s.category, activePill));
+          const featured = pool[0];
           if (!featured) return null;
           const catLabel = (featured.category || 'save').toUpperCase();
           const city = featured.aiAnalysis?.structuredData?.place?.city;
@@ -148,12 +159,13 @@ export default function HomeFeed({ onNavigate }) {
         </div>
 
         {(() => {
-          const cat = PILL_CATEGORY[activePill];
-          const filtered = cat ? saves.filter((s) => s.category === cat) : saves;
+          const filtered = activePill === 'All' ? saves : saves.filter((s) => matchesPill(s.category, activePill));
           const visible = showAll ? filtered : filtered.slice(0, 4);
           return (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', padding: '0 20px 80px' }}>
-          {loading ? (
+          {fetchError ? (
+            <p style={{ fontSize: '13px', color: 'var(--error,#d33)', gridColumn: '1 / -1', textAlign: 'center' }}>{fetchError}</p>
+          ) : loading ? (
             <p style={{ fontSize: '13px', color: 'var(--slate)', gridColumn: '1 / -1', textAlign: 'center' }}>Loading saves...</p>
           ) : visible.length > 0 ? (
             visible.map(save => (

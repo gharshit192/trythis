@@ -38,8 +38,23 @@ router.use(authMiddleware);
 
 router.post('/', validateSaveInput, async (req, res) => {
   try {
-    const { title, url, sourceType, notes, collectionIds, description, image, transcribe } = req.body;
+    const { sourceType, collectionIds, image, transcribe } = req.body;
+    const title = (req.body.title || '').trim() || undefined;
+    const url = (req.body.url || '').trim() || undefined;
+    const notes = (req.body.notes || '').trim() || undefined;
+    const description = (req.body.description || '').trim() || undefined;
     const type = sourceType || (url ? 'url' : 'screenshot');
+
+    if (url) {
+      const existing = await Save.findOne({ userId: req.user.id, url, status: 'active' });
+      if (existing) {
+        return res.status(409).json({
+          status: 'error',
+          error: { code: 'DUPLICATE_URL', message: 'You already saved this URL' },
+          data: existing,
+        });
+      }
+    }
 
     const submitted = {
       title: title || '',
@@ -97,6 +112,8 @@ router.post('/', validateSaveInput, async (req, res) => {
     // Coffee Roasters". Better than refusing the save outright.
     const titleFromUrlSlug = (() => {
       if (!url) return null;
+      // YouTube slugs ("watch", "shorts") are never useful titles — skip.
+      if (/(?:youtube\.com|youtu\.be)/i.test(url)) return null;
       try {
         const u = new URL(url);
         const seg = u.pathname.split('/').filter(Boolean).pop() || u.hostname.replace(/^www\./, '');

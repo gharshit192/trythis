@@ -27,7 +27,7 @@ afterEach(() => clearDb());
 const signupAndLogin = async () => {
   const res = await request(app)
     .post('/auth/signup')
-    .send({ email: 'a@b.com', password: 'pw12345', name: 'A' })
+    .send({ email: 'a@b.com', password: 'Password1', name: 'A' })
     .expect(201);
   return { token: res.body.data.token, userId: res.body.data.user.id };
 };
@@ -48,20 +48,20 @@ describe('/auth', () => {
   it('signup → returns token + user', async () => {
     const r = await request(app)
       .post('/auth/signup')
-      .send({ email: 'x@y.com', password: 'pw12345', name: 'X' })
+      .send({ email: 'x@y.com', password: 'Password1', name: 'X' })
       .expect(201);
     expect(r.body.data.token).toBeDefined();
     expect(r.body.data.user.email).toBe('x@y.com');
   });
 
   it('signup rejects duplicate email', async () => {
-    await request(app).post('/auth/signup').send({ email: 'x@y.com', password: 'pw12345' }).expect(201);
-    const r = await request(app).post('/auth/signup').send({ email: 'x@y.com', password: 'pw12345' }).expect(400);
+    await request(app).post('/auth/signup').send({ email: 'x@y.com', password: 'Password1' }).expect(201);
+    const r = await request(app).post('/auth/signup').send({ email: 'x@y.com', password: 'Password1' }).expect(400);
     expect(r.body.error.code).toBe('USER_EXISTS');
   });
 
   it('login with wrong password → 401', async () => {
-    await request(app).post('/auth/signup').send({ email: 'x@y.com', password: 'pw12345' }).expect(201);
+    await request(app).post('/auth/signup').send({ email: 'x@y.com', password: 'Password1' }).expect(201);
     const r = await request(app).post('/auth/login').send({ email: 'x@y.com', password: 'wrong' }).expect(401);
     expect(r.body.error.code).toBe('INVALID_CREDENTIALS');
   });
