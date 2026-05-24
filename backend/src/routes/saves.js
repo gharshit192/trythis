@@ -210,8 +210,12 @@ router.post('/', validateSaveInput, async (req, res) => {
     } else {
       save.processingStatus = 'done';
       await save.save();
-      // Non-video saves don't have aiAnalysis yet, so there's nothing to auto-assign by type.
-      // Auto-assignment for videos fires from mediaProcessor once analysis lands.
+    }
+
+    // Auto-assign by category immediately so saves land in collections even
+    // when media processing hasn't run yet (or fails later).
+    try { await autoCollectionEngine.assignSave(save); } catch (e) {
+      logger.warn(`Auto-collection assign on create failed: ${e.message}`);
     }
 
     res.status(201).json({
@@ -368,6 +372,13 @@ router.post('/:id/refresh-thumb', validateObjectId('id'), async (req, res) => {
 
     const fetchType = fetchSystem.fetchHandlers[save.source] ? save.source : 'url';
     const fetched = await fetchSystem.fetchContent({ type: fetchType, url: save.url });
+
+    // Direct YouTube thumbnail fallback when the fetch chain (yt-dlp + oEmbed) returns nothing.
+    if (!fetched.image && /(?:youtube\.com|youtu\.be)/i.test(save.url)) {
+      const ytMatch = save.url.match(/(?:youtu\.be\/|(?:youtube\.com\/(?:watch\?.*v=|shorts\/|embed\/)))([A-Za-z0-9_-]{11})/);
+      if (ytMatch) fetched.image = `https://i.ytimg.com/vi/${ytMatch[1]}/hqdefault.jpg`;
+    }
+
     if (!fetched.image) {
       return res.status(502).json({
         status: 'error',

@@ -147,10 +147,19 @@ const intentItemSchema = new mongoose.Schema({
     _id: false,
   }],
 
-  // Classification
+  // Classification — must match the 18-category extractor output in
+  // services/extractionEngine/categories/* plus a few legacy/coarse buckets
+  // (food, experience, other, general) kept for back-compat.
   category: {
     type: String,
-    enum: ['food', 'travel', 'shopping', 'experience', 'tech', 'other', 'general', 'events', 'startups', 'entertainment', 'wellness'],
+    enum: [
+      // Legacy / coarse user-facing pills
+      'food', 'travel', 'shopping', 'experience', 'tech', 'other', 'general',
+      // 18-category classifier outputs
+      'cafes', 'entertainment', 'events', 'experiences', 'fashion', 'finance',
+      'fitness', 'home-decor', 'hotels', 'learning', 'productivity', 'recipes',
+      'restaurants', 'startups', 'wellness',
+    ],
     default: 'general',
   },
   tags: [String],

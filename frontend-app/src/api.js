@@ -214,6 +214,23 @@ const api = {
     return handle(res);
   },
 
+  async updateCollection(id, patch) {
+    const res = await fetch(`${API_BASE_URL}/collections/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
+      body: JSON.stringify(patch),
+    });
+    return handle(res);
+  },
+
+  async deleteCollection(id) {
+    const res = await fetch(`${API_BASE_URL}/collections/${id}`, {
+      method: 'DELETE',
+      headers: authHeader(),
+    });
+    return handle(res);
+  },
+
   async addSaveToCollection(collectionId, saveId) {
     const res = await fetch(`${API_BASE_URL}/collections/${collectionId}/saves/${saveId}`, {
       method: 'POST',

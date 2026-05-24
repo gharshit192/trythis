@@ -7,6 +7,12 @@ export default function CollectionDetail({ onNavigate, payload }) {
   const [collection, setCollection] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showEdit, setShowEdit] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editIcon, setEditIcon] = useState('');
+  const [editDesc, setEditDesc] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [editError, setEditError] = useState(null);
 
   useEffect(() => {
     if (!id) { setLoading(false); return; }
@@ -32,6 +38,40 @@ export default function CollectionDetail({ onNavigate, payload }) {
     if (res.status === 'success') setCollection(res.data);
   };
 
+  const openEdit = () => {
+    setEditName(collection?.name || '');
+    setEditIcon(collection?.icon || '📌');
+    setEditDesc(collection?.description || '');
+    setEditError(null);
+    setShowEdit(true);
+  };
+
+  const handleSaveEdit = async () => {
+    const name = editName.trim();
+    if (!name) { setEditError('Name is required.'); return; }
+    setSaving(true);
+    setEditError(null);
+    try {
+      const res = await api.updateCollection(id, { name, icon: editIcon, description: editDesc.trim() });
+      if (res.status === 'success') {
+        setCollection(res.data);
+        setShowEdit(false);
+      } else {
+        setEditError(res.error?.message || 'Update failed');
+      }
+    } catch (err) {
+      setEditError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!window.confirm('Delete this collection? Saves inside won\'t be deleted.')) return;
+    const res = await api.deleteCollection(id);
+    if (res.status === 'success') onNavigate('collections');
+  };
+
   if (!id) {
     return (
       <div className="phone-frame">
@@ -54,7 +94,10 @@ export default function CollectionDetail({ onNavigate, payload }) {
         <div style={{ padding: '16px 20px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <i className="ti ti-arrow-left" style={{ fontSize: '20px', cursor: 'pointer' }} onClick={() => onNavigate(backTo)}></i>
           <h1 className="display" style={{ fontSize: '18px' }}>{collection?.name || 'Collection'}</h1>
-          <span style={{ width: 20 }} />
+          {!collection?.isAuto && (
+            <i className="ti ti-pencil" style={{ fontSize: '18px', cursor: 'pointer', color: 'var(--forest)' }} onClick={openEdit}></i>
+          )}
+          {collection?.isAuto && <span style={{ width: 20 }} />}
         </div>
         <div style={{ background: 'linear-gradient(135deg, var(--forest-soft) 0%, var(--forest) 100%)', borderRadius: '12px', height: '120px', margin: '12px 20px 16px', display: 'flex', alignItems: 'flex-end', padding: '16px' }}>
           <div>
@@ -82,6 +125,74 @@ export default function CollectionDetail({ onNavigate, payload }) {
             </div>
           )}
         </div>
+
+        {showEdit && (
+          <div
+            onClick={() => !saving && setShowEdit(false)}
+            style={{ position: 'absolute', inset: 0, background: 'rgba(14,14,12,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: 24 }}
+          >
+            <div onClick={(e) => e.stopPropagation()} style={{ background: 'var(--paper)', borderRadius: 16, padding: 20, width: '100%', maxWidth: 320, boxShadow: '0 8px 24px rgba(0,0,0,0.18)' }}>
+              <h3 className="display" style={{ fontSize: 18, marginBottom: 6 }}>Edit collection</h3>
+              <p style={{ fontSize: 12, color: 'var(--slate)', marginBottom: 14 }}>Update name, icon, or description.</p>
+
+              <p className="label">Icon</p>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
+                {['📌','📁','🍳','🛍️','✈️','🎟️','📰','📋','📍','💡','🏠','🎨'].map((ic) => (
+                  <button
+                    key={ic}
+                    type="button"
+                    onClick={() => setEditIcon(ic)}
+                    disabled={saving}
+                    style={{
+                      width: 34, height: 34, borderRadius: 8,
+                      background: editIcon === ic ? 'var(--forest-faint)' : 'var(--linen)',
+                      border: editIcon === ic ? '1px solid var(--forest)' : '0.5px solid var(--hairline)',
+                      fontSize: 18, cursor: 'pointer',
+                    }}
+                  >
+                    {ic}
+                  </button>
+                ))}
+              </div>
+
+              <p className="label">Name</p>
+              <input
+                type="text"
+                className="input"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                disabled={saving}
+                autoFocus
+                style={{ marginBottom: 12 }}
+              />
+
+              <p className="label">Description</p>
+              <input
+                type="text"
+                className="input"
+                placeholder="Optional description"
+                value={editDesc}
+                onChange={(e) => setEditDesc(e.target.value)}
+                disabled={saving}
+                style={{ marginBottom: 12 }}
+              />
+
+              {editError && <p style={{ color: 'var(--error,#d33)', fontSize: 13, marginBottom: 8 }}>{editError}</p>}
+
+              <button className="btn-primary" disabled={saving} onClick={handleSaveEdit}>
+                {saving ? 'Saving…' : 'Save'}
+              </button>
+              <button className="btn-secondary" style={{ marginTop: 8 }} onClick={() => setShowEdit(false)} disabled={saving}>Cancel</button>
+              <button
+                onClick={handleDelete}
+                disabled={saving}
+                style={{ width: '100%', marginTop: 16, padding: '10px', background: 'transparent', border: '1px solid var(--error,#d33)', borderRadius: 10, color: 'var(--error,#d33)', fontSize: 13, cursor: 'pointer' }}
+              >
+                Delete collection
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

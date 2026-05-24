@@ -20,6 +20,7 @@ const runYtdlp = (url) => new Promise((resolve, reject) => {
     '--socket-timeout', '8',
     '--retries', '1',
     '--no-call-home',
+    '--extractor-args', 'youtube:player_client=ios,web',
     url,
   ];
   let stdout = '';

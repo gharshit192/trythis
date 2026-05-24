@@ -62,7 +62,7 @@ const downloadMergedMp4 = async (sourceUrl, outPath) => {
   // park saves in 'failed' until manual re-trigger. 5 retries with linear backoff
   // 2..5s catches transient 429s and CDN flaps without blocking too long.
   await runCmd('yt-dlp', [
-    '-f', 'bv*[height<=1080]+ba/best[height<=1080]/best',
+    '-f', 'bv*[height<=480]+ba/best[height<=480]/best',
     '--merge-output-format', 'mp4',
     '-o', outPath,
     '--no-playlist',
@@ -71,6 +71,7 @@ const downloadMergedMp4 = async (sourceUrl, outPath) => {
     '--retries', '5',
     '--retry-sleep', 'linear=2:5',
     '--fragment-retries', '3',
+    '--extractor-args', 'youtube:player_client=ios,web',
     sourceUrl,
   ], YTDLP_TIMEOUT);
 };

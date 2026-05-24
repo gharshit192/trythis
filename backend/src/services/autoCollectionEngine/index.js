@@ -18,12 +18,22 @@ const CATEGORY_PRESETS = {
   other:     { name: 'Inbox',      icon: '📥', color: '#94a3b8' },
 };
 
+const CATEGORY_TO_AUTO = {
+  food: 'recipe', recipes: 'recipe', restaurants: 'recipe', cafes: 'recipe',
+  travel: 'itinerary', hotels: 'itinerary',
+  shopping: 'product', fashion: 'product',
+  events: 'event', entertainment: 'event',
+  experiences: 'place',
+};
+
 const pickCategoryFromSave = (save) => {
   const sd = save?.aiAnalysis?.structuredData;
-  if (!sd) return null;
-  if (sd.recipe?.isRecipe) return 'recipe';
-  if (sd.type && CATEGORY_PRESETS[sd.type]) return sd.type;
-  if (sd.place?.name || sd.place?.city) return 'place';
+  if (sd) {
+    if (sd.recipe?.isRecipe) return 'recipe';
+    if (sd.type && CATEGORY_PRESETS[sd.type]) return sd.type;
+    if (sd.place?.name || sd.place?.city) return 'place';
+  }
+  if (save?.category && CATEGORY_TO_AUTO[save.category]) return CATEGORY_TO_AUTO[save.category];
   return null;
 };
 
