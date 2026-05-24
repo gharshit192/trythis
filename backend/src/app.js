@@ -19,7 +19,9 @@ const app = express();
 app.set('trust proxy', 1);
 
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: process.env.CORS_ORIGINS
+    ? process.env.CORS_ORIGINS.split(',').map((s) => s.trim())
+    : [process.env.FRONTEND_URL || 'http://localhost:3000', 'https://trythis-frontend.vercel.app'],
   credentials: true,
 }));
 app.use(express.json({ limit: '5mb' }));
