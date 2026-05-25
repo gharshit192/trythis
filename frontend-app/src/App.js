@@ -6,6 +6,7 @@ import Login from './screens/Login';
 import Signup from './screens/Signup';
 import HomeEmpty from './screens/HomeEmpty';
 import HomeFeed from './screens/HomeFeed';
+import SavedList from './screens/SavedList';
 import AddSave from './screens/AddSave';
 import Collections from './screens/Collections';
 import SaveDetail from './screens/SaveDetail';
@@ -19,17 +20,27 @@ import TripCollection from './screens/TripCollection';
 import ShoppingWishlist from './screens/ShoppingWishlist';
 import FoodNearby from './screens/FoodNearby';
 import CollectionDetail from './screens/CollectionDetail';
+import DemoSaves from './screens/DemoSaves';
+import FirstSaveSuccess from './screens/FirstSaveSuccess';
 
 function App() {
-  const [currentScreen, setCurrentScreen] = useState('login');
+  const [currentScreen, setCurrentScreen] = useState('onboarding');
   const [payload, setPayload] = useState(null);
+  const [saves, setSaves] = useState([]);
 
   useEffect(() => {
     const token = localStorage.getItem('auth_token');
     if (token) {
-      setCurrentScreen('home');
       // Record app session for D7 retention analytics
       api.ping().catch(() => {});
+      // Load saves for SavedList
+      api.getSaves().then(result => {
+        if (result.status === 'success') {
+          setSaves(result.data);
+          // Go to home if user has saves, otherwise show home-empty
+          setCurrentScreen(result.data.length > 0 ? 'home' : 'home-empty');
+        }
+      }).catch(() => {});
     }
   }, []);
 
@@ -44,12 +55,13 @@ function App() {
   const screenMap = {
     'login': <Login {...props} />,
     'signup': <Signup {...props} />,
-    'onboarding-1': <Onboarding step={1} {...props} />,
-    'onboarding-2': <Onboarding step={2} {...props} />,
-    'onboarding-3': <Onboarding step={3} {...props} />,
+    'onboarding': <Onboarding {...props} />,
+    'demoSaves': <DemoSaves {...props} />,
+    'firstSaveSuccess': <FirstSaveSuccess {...props} />,
     'notification-permission': <NotificationPermission {...props} />,
     'home-empty': <HomeEmpty {...props} />,
     'home': <HomeFeed {...props} />,
+    'savedList': <SavedList {...props} saves={saves} filter={payload?.filter} title={payload?.title} />,
     'add-save': <AddSave {...props} />,
     'save-detail': <SaveDetail {...props} />,
     'screenshot-summary': <ScreenshotSummary {...props} />,
