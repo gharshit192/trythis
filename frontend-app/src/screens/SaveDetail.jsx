@@ -2,18 +2,17 @@ import { useEffect, useState } from 'react';
 import api from '../api';
 import SmartImage from '../components/SmartImage';
 
-// ─── Dark theme palette — locked to SaveDetail only ───────────────────────────
-// Matches the design mock 1:1. We intentionally don't reuse the app-wide
-// light theme variables here — SaveDetail is the "detail surface" and the
-// dark chrome makes thumbnails / structured cards pop.
+// ─── Theme palette using design system CSS variables ─────────────────────────
+// Uses app-wide CSS variables for surfaces, text, and semantic colors.
+// SaveDetail applies a card-like style with proper contrast via CSS variables.
 const T = {
-  bg:           '#0a0a0c',          // outer card
-  bgInner:      '#16161a',          // inner sections (recipe card, KV tables)
-  bgChip:       '#23232a',          // tag pill
-  border:       '#26262c',          // hairline dividers
-  text:         '#f2f2ef',          // primary
-  textMuted:    '#9a9a93',          // secondary
-  textFaint:    '#6a6a64',          // hints / labels
+  bg:           'var(--colors-surface-surface)',    // outer card (white/light)
+  bgInner:      'var(--colors-surface-0)',          // inner sections (light grey)
+  bgChip:       'var(--colors-surface-1)',          // tag pill (medium grey)
+  border:       'var(--colors-stroke-primary)',     // hairline dividers
+  text:         'var(--colors-type-primary)',       // primary text (black)
+  textMuted:    'var(--colors-type-secondary)',     // secondary text (muted)
+  textFaint:    'var(--colors-type-tertiary)',      // hints / labels (faint)
   amberBg:      'rgba(217,144,40,0.10)',
   amberBorder:  'rgba(217,144,40,0.35)',
   amberFg:      '#d99028',
