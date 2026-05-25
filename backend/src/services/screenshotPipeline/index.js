@@ -89,10 +89,13 @@ const processFiles = async (files = [], { userId, title, source = 'screenshot', 
     const f = files[i];
     let fullPath, filename, basename, thumbResult;
     try {
+      logger.info(`Processing file ${i}: ${f.originalname} (${f.mimetype}, ${f.size} bytes)`);
       ({ destPath: fullPath, filename, basename } = persistFull(f, userId));
+      logger.info(`File ${i} persisted to ${fullPath}`);
       thumbResult = await makeThumbnail(fullPath, basename);
+      logger.info(`Thumbnail created for file ${i}`);
     } catch (err) {
-      logger.error(`screenshotPipeline: failed to persist file ${i}: ${err.message}`);
+      logger.error(`screenshotPipeline: failed on file ${i} (${f.originalname}): ${err.message}`, { stack: err.stack });
       continue;
     }
 
@@ -114,6 +117,7 @@ const processFiles = async (files = [], { userId, title, source = 'screenshot', 
     });
 
     if (ocrText) mergedText += mergedSeparator(i) + ocrText;
+    logger.info(`File ${i} processed: ${ocrText.length} chars OCR text`);
   }
 
   if (screenshots.length === 0) {
