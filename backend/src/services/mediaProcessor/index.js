@@ -31,8 +31,32 @@ const WHISPER_MODEL_SMALL = process.env.WHISPER_MODEL_SMALL || '';
 const ENABLED = (process.env.ENABLE_MEDIA_PROCESSING || 'true') !== 'false';
 
 const YTDLP_TIMEOUT = 120 * 1000;
+const YTDLP_GRACEFUL_TIMEOUT = 30 * 1000;
 const FFMPEG_TIMEOUT = 60 * 1000;
 const WHISPER_TIMEOUT = 5 * 60 * 1000;
+
+// Map stderr patterns to user-friendly messages
+const mapYtdlpError = (stderr) => {
+  const lines = (stderr || '').split('\n');
+  const firstErr = lines.find(l => l) || '';
+
+  if (/sign in|login|authentication|bot check/i.test(firstErr)) {
+    return 'This video requires authentication. Try extracting the page instead.';
+  }
+  if (/not available|private|removed|deleted|blocked/i.test(firstErr)) {
+    return 'This video is not accessible (private, removed, or geo-blocked).';
+  }
+  if (/timeout|timed out|connection.*timeout|socket timeout/i.test(firstErr)) {
+    return 'Connection timeout. The video host is not responding. Please try again later.';
+  }
+  if (/rate.?limit|429|too many requests/i.test(firstErr)) {
+    return 'Rate limited by the video host. Please try again in a few minutes.';
+  }
+  if (/403|forbidden/i.test(firstErr)) {
+    return 'Access denied by the video host.';
+  }
+  return 'Video extraction unavailable for this URL.';
+};
 
 // ---- helpers ----
 const ensureDir = (p) => { if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true }); };
@@ -53,6 +77,50 @@ const runCmd = (cmd, args, timeoutMs) => new Promise((resolve, reject) => {
     clearTimeout(t);
     if (code !== 0) return reject(new Error(`${cmd} exit ${code}: ${stderr.split('\n').slice(-3).join(' | ').slice(0, 300)}`));
     resolve({ stdout, stderr });
+  });
+});
+
+// Graceful yt-dlp wrapper for downloading video. Always resolves (returns null on error).
+const downloadMergedMp4Graceful = async (sourceUrl, outPath) => new Promise((resolve) => {
+  const args = [
+    '-f', 'bv*[height<=480]+ba/best[height<=480]/best',
+    '--merge-output-format', 'mp4',
+    '-o', outPath,
+    '--no-playlist',
+    '--no-warnings',
+    '--socket-timeout', '30',
+    '--retries', '5',
+    '--retry-sleep', 'linear=2:5',
+    '--fragment-retries', '3',
+    '--extractor-args', 'youtube:player_client=ios,web',
+    sourceUrl,
+  ];
+
+  let stderr = '';
+  const proc = spawn('yt-dlp', args, { stdio: ['ignore', 'pipe', 'pipe'] });
+
+  const killTimer = setTimeout(() => {
+    proc.kill('SIGKILL');
+    logger.warn(`[yt-dlp] timeout after 30s for ${sourceUrl.split('?')[0]}`);
+    resolve(null);
+  }, YTDLP_GRACEFUL_TIMEOUT);
+
+  proc.stderr.on('data', (d) => { stderr += d; });
+
+  proc.on('error', () => {
+    clearTimeout(killTimer);
+    resolve(null);
+  });
+
+  proc.on('close', (code) => {
+    clearTimeout(killTimer);
+    if (code === 0) {
+      resolve({ success: true });
+    } else {
+      const userMessage = mapYtdlpError(stderr);
+      logger.warn(`[yt-dlp] graceful exit ${code} for ${sourceUrl.split('?')[0]}: ${userMessage}`);
+      resolve(null);
+    }
   });
 });
 
@@ -240,55 +308,71 @@ const processSave = async (saveId) => {
   try {
     await setStatus('processing');
     logger.info(`[mediaProcessor ${saveId}] downloading ${save.url}`);
-    await downloadMergedMp4(save.url, mp4Path);
+    const downloadResult = await downloadMergedMp4Graceful(save.url, mp4Path);
 
-    if (!fs.existsSync(mp4Path)) throw new Error('mp4 not produced by yt-dlp');
-
-    // We used to mux the mp4 into /static for an in-app player. Removed —
-    // the UI now just links out to the source, so we keep the mp4 only as
-    // long as we need to pull frames + audio from it, then drop the file
-    // in the `finally` cleanup. Disk stays clean.
-    logger.info(`[mediaProcessor ${saveId}] mp4 ready (tmp, will be discarded)`);
+    const mp4Ready = fs.existsSync(mp4Path);
+    if (!downloadResult && !mp4Ready) {
+      logger.warn(`[mediaProcessor ${saveId}] yt-dlp download failed gracefully (no video, continuing with transcript analysis)`);
+      partialReasons.push('video download failed');
+    } else if (mp4Ready) {
+      logger.info(`[mediaProcessor ${saveId}] mp4 ready (tmp, will be discarded)`);
+    }
 
     // Transcription + LLM enrichment (best-effort)
     try {
-      await extractWavForWhisper(mp4Path, wavPath);
-      const raw = await transcribeWithWhisperOrClaude(wavPath, {
-        category: save.category,
-      });
+      let raw = null;
 
-      // P0-#3: Store only the English transcript. Whisper.cpp emits Hindustani
-      // in Urdu Arabic script which is unreadable for our users — so we keep
-      // the translation-pass output and never expose the original.
-      // Critical edge case: short Hindi clips often translate to empty. In
-      // that case we DO NOT fall back to the original (would leak Urdu script
-      // to the UI) — instead we store null + flag the save as `partial` so
-      // the user sees a "retry" option.
-      const isNonEnglishScript = ['hi', 'ur', 'ta', 'te', 'bn', 'pa', 'kn', 'ml', 'gu', 'mr'].includes(raw.language);
-      const englishCandidate = raw.translation && raw.translation.trim().length >= 20
-        ? raw.translation
-        : (isNonEnglishScript ? null : raw.transcription);
-      const englishClean = englishCandidate && !looksLikeHallucination(englishCandidate) ? englishCandidate : null;
-
-      if (englishCandidate && !englishClean) {
-        logger.warn(`[mediaProcessor ${saveId}] transcript discarded as hallucination`);
-      }
-      if (isNonEnglishScript && !englishClean) {
-        // Mark for retry — audio downloaded, but no usable English text.
-        partialReasons.push(`empty english translation (lang=${raw.language})`);
-        logger.warn(`[mediaProcessor ${saveId}] partial: ${raw.language} audio had empty translation pass`);
+      // Only attempt transcription if MP4 exists
+      if (mp4Ready) {
+        try {
+          await extractWavForWhisper(mp4Path, wavPath);
+          raw = await transcribeWithWhisperOrClaude(wavPath, {
+            category: save.category,
+          });
+        } catch (err) {
+          logger.warn(`[mediaProcessor ${saveId}] transcription extraction failed: ${err.message}`);
+          raw = null;
+        }
       }
 
-      if (englishClean) {
-        const transcriptionSource = raw._source || 'whisper';
-        await Save.findByIdAndUpdate(saveId, {
-          'aiAnalysis.transcription': {
-            text: englishClean,
-            source: transcriptionSource,
-            detectedLanguage: raw.language || null,
-          },
-        });
-        logger.info(`[mediaProcessor ${saveId}] transcript: ${englishClean.length} chars (lang=${raw.language || 'auto'})`);
+      // If we got a transcript, process it; otherwise skip to analysis with just metadata
+      if (!raw) raw = { transcription: null, translation: null, language: null, _source: 'none' };
+
+      let englishClean = null;
+      if (raw.translation || raw.transcription) {
+        // P0-#3: Store only the English transcript. Whisper.cpp emits Hindustani
+        // in Urdu Arabic script which is unreadable for our users — so we keep
+        // the translation-pass output and never expose the original.
+        // Critical edge case: short Hindi clips often translate to empty. In
+        // that case we DO NOT fall back to the original (would leak Urdu script
+        // to the UI) — instead we store null + flag the save as `partial` so
+        // the user sees a "retry" option.
+        const isNonEnglishScript = ['hi', 'ur', 'ta', 'te', 'bn', 'pa', 'kn', 'ml', 'gu', 'mr'].includes(raw.language);
+        const englishCandidate = raw.translation && raw.translation.trim().length >= 20
+          ? raw.translation
+          : (isNonEnglishScript ? null : raw.transcription);
+        englishClean = englishCandidate && !looksLikeHallucination(englishCandidate) ? englishCandidate : null;
+
+        if (englishCandidate && !englishClean) {
+          logger.warn(`[mediaProcessor ${saveId}] transcript discarded as hallucination`);
+        }
+        if (isNonEnglishScript && !englishClean) {
+          // Mark for retry — audio downloaded, but no usable English text.
+          partialReasons.push(`empty english translation (lang=${raw.language})`);
+          logger.warn(`[mediaProcessor ${saveId}] partial: ${raw.language} audio had empty translation pass`);
+        }
+
+        if (englishClean) {
+          const transcriptionSource = raw._source || 'whisper';
+          await Save.findByIdAndUpdate(saveId, {
+            'aiAnalysis.transcription': {
+              text: englishClean,
+              source: transcriptionSource,
+              detectedLanguage: raw.language || null,
+            },
+          });
+          logger.info(`[mediaProcessor ${saveId}] transcript: ${englishClean.length} chars (lang=${raw.language || 'auto'})`);
+        }
       }
 
       // P2: extract a handful of keyframes from the video and OCR them.
@@ -298,23 +382,27 @@ const processSave = async (saveId) => {
       // a Hindi voiceover usually means Hindi text overlays too.
       // We probe duration from the mp4 directly (no save.duration field anymore).
       let frameOcr = '';
-      try {
-        const dur = await probeDurationSeconds(mp4Path);
-        const res = await frameExtractor.extractAndOcrFrames(mp4Path, {
-          count: pickFrameCount(dur),
-          durationSeconds: dur,
-          langs: pickOcrLangs(raw.language),
-        });
-        frameOcr = res.mergedText || '';
-        if (frameOcr) logger.info(`[mediaProcessor ${saveId}] frame OCR: ${frameOcr.length} chars`);
-      } catch (err) {
-        logger.warn(`[mediaProcessor ${saveId}] frame OCR failed: ${err.message}`);
+      if (mp4Ready) {
+        try {
+          const dur = await probeDurationSeconds(mp4Path);
+          const res = await frameExtractor.extractAndOcrFrames(mp4Path, {
+            count: pickFrameCount(dur),
+            durationSeconds: dur,
+            langs: pickOcrLangs(raw.language),
+          });
+          frameOcr = res.mergedText || '';
+          if (frameOcr) logger.info(`[mediaProcessor ${saveId}] frame OCR: ${frameOcr.length} chars`);
+        } catch (err) {
+          logger.warn(`[mediaProcessor ${saveId}] frame OCR failed: ${err.message}`);
+        }
       }
 
+      // Always run analysis if we have title/description (for tags generation)
       const analysisInput = englishClean || '';
-      const hasAnySignal = analysisInput || frameOcr;
-      if (hasAnySignal) {
-        const fresh = await Save.findById(saveId);
+      const fresh = await Save.findById(saveId);
+      const hasContent = analysisInput || frameOcr || fresh.title || fresh.description;
+
+      if (hasContent) {
         const analysis = await audioAnalyzer.extractAnalysis({
           transcript: analysisInput,
           visualText: frameOcr,
