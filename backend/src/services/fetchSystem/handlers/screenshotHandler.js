@@ -1,4 +1,5 @@
 // Screenshot handler: runs Tesseract OCR on uploaded images.
+// Falls back to Claude Vision when Tesseract unavailable.
 // Accepts source = { base64: <dataUri or raw base64>, mime?, imagePath?, imageUrl?, title? }
 
 const { spawn } = require('child_process');
@@ -6,6 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const crypto = require('crypto');
+const claudeService = require('../../claudeService');
 const logger = require('../../../utils/logger');
 
 const TESSERACT_TIMEOUT = 15000;
@@ -26,6 +28,43 @@ const runTesseract = (imagePath) => new Promise((resolve, reject) => {
     resolve(stdout.trim());
   });
 });
+
+// Fallback to Claude Vision when Tesseract fails or is unavailable
+const runTesseractOrClaude = async (imagePath) => {
+  try {
+    const text = await runTesseract(imagePath);
+    if (text && text.length > 0) {
+      logger.info('[screenshotHandler] OCR via Tesseract');
+      return { text, _source: 'tesseract' };
+    }
+  } catch (err) {
+    const isNotFound = err.message && (err.message.includes('ENOENT') || err.message.includes('not found'));
+    const isTimeout = err.message && err.message.includes('timeout');
+    const isEmptyResult = err.code === 127;
+
+    if (isNotFound || isTimeout || isEmptyResult) {
+      logger.warn(`[screenshotHandler] Tesseract failed (${isNotFound ? 'not-found' : isTimeout ? 'timeout' : 'unavailable'}), falling back to Claude Vision: ${err.message}`);
+    } else {
+      logger.warn(`[screenshotHandler] Tesseract failed: ${err.message}`);
+      throw err;
+    }
+  }
+
+  try {
+    logger.info('[screenshotHandler] OCR via Claude Vision (Tesseract fallback)');
+    const result = await claudeService.analyzeScreenshot(imagePath);
+    if (result && result.extractedText) {
+      return {
+        text: result.extractedText,
+        _source: 'claude',
+      };
+    }
+    throw new Error('Claude Vision returned empty text');
+  } catch (err) {
+    logger.error(`[screenshotHandler] Claude fallback failed: ${err.message}`);
+    throw new Error(`OCR failed (Tesseract + Claude): ${err.message}`);
+  }
+};
 
 const decodeBase64 = (input) => {
   // Accepts data URIs ("data:image/png;base64,...") or raw base64.
@@ -75,11 +114,14 @@ const fetch_ = async (source) => {
     }
 
     let ocrText = '';
+    let ocrSource = 'tesseract';
     try {
-      ocrText = await runTesseract(imagePath);
-      logger.info(`Tesseract OCR extracted ${ocrText.length} chars from ${imagePath}`);
+      const result = await runTesseractOrClaude(imagePath);
+      ocrText = result.text;
+      ocrSource = result._source || 'tesseract';
+      logger.info(`OCR extracted ${ocrText.length} chars from ${imagePath} via ${ocrSource}`);
     } catch (err) {
-      logger.warn(`Tesseract failed: ${err.message}`);
+      logger.warn(`OCR (Tesseract + Claude) failed: ${err.message}`);
     }
 
     const firstLine = ocrText.split('\n').find((l) => l.trim()) || '';
@@ -91,7 +133,7 @@ const fetch_ = async (source) => {
       image: source.imageUrl || null,
       url: source.url || null,
       source: 'screenshot',
-      provider: 'screenshot-tesseract',
+      provider: `screenshot-${ocrSource}`,
       extra: {
         ocrLength: ocrText.length,
         uploadedAt: new Date(),

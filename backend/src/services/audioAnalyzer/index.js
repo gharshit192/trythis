@@ -1,8 +1,8 @@
 // Turns a (transcribed) text into structured intent: typed structuredData + summary + tags.
-// Uses a local Ollama LLM. Falls back gracefully when LLM is unreachable.
+// Uses Anthropic Claude API for reliable extraction. Falls back gracefully on API errors.
 // Output shape matches the IntentItem.aiAnalysis spec in /docs/TryThisProductSTrategy.md.
 
-const llm = require('../llm');
+const claudeService = require('../claudeService');
 const logger = require('../../utils/logger');
 
 const SYSTEM = `You are a metadata extraction engine for a "save it / try it" app.
@@ -74,44 +74,34 @@ const extractAnalysis = async ({ transcript, title, description, source, categor
     return emptyResult(title);
   }
 
-  if (!(await llm.isAvailable())) {
-    logger.warn('audioAnalyzer: Ollama not available');
-    return { ...emptyResult(title), _provider: 'unavailable' };
-  }
-
-  const prompt = [
-    `Video/article title: ${truncate(title, 200)}`,
-    description ? `Caption/description: ${truncate(description, 500)}` : null,
-    authorHandle ? `Author handle: @${authorHandle}` : null,
-    source ? `Source: ${source}` : null,
-    category ? `Category hint: ${category}` : null,
-    visible ? `Text visible on-screen (OCR from video frames):\n"""${truncate(visible, 2000)}"""` : null,
-    text ? `Audio transcript:\n"""${truncate(text, 4000)}"""` : null,
-    !text && !visible ? 'NOTE: no transcript or visible text available — base your answer on the title + caption alone, and prefer type="other".' : null,
-    '',
-    'Return JSON only.',
-  ].filter(Boolean).join('\n');
+  logger.info('[audioAnalyzer] using Claude API');
 
   try {
-    let json = await llm.generateJson({ system: SYSTEM, prompt, temperature: 0.1 });
-    // Gap 4: semantic verification — one retry with explicit corrections if the
-    // LLM contradicts itself (e.g. type="recipe" with no ingredients OR steps).
+    let json = await claudeService.analyzeTranscript({
+      transcript: text || null,
+      title: truncate(title, 200),
+      description: truncate(description, 500),
+      author: authorHandle,
+      source,
+      category,
+      visualText: visible ? truncate(visible, 2000) : null,
+    });
+
+    if (!json) {
+      logger.warn('audioAnalyzer: claudeService returned null');
+      return { ...emptyResult(title), _provider: 'error' };
+    }
+
+    // Gap 4: semantic verification — log issues if found, but don't retry
+    // (Claude's retry logic in claudeService.withRetry is more reliable)
     const issues = validateSemantics(json);
     if (issues.length) {
-      logger.warn(`audioAnalyzer: semantic issues, retrying: ${issues.join('; ')}`);
-      const fixPrompt = `Your previous response had issues: ${issues.join('; ')}.
-Fix ONLY those fields. Keep everything else identical. Return the same JSON shape.
-Previous response:
-${JSON.stringify(json)}`;
-      try {
-        json = await llm.generateJson({ system: SYSTEM, prompt: fixPrompt, temperature: 0.1 });
-      } catch (e) {
-        logger.warn(`audioAnalyzer retry failed: ${e.message}`);
-      }
+      logger.warn(`audioAnalyzer: semantic issues detected: ${issues.join('; ')}`);
     }
+
     return normalize(json, { authorHandle, contextText: [transcript, description, visible].filter(Boolean).join(' ') });
   } catch (err) {
-    logger.warn(`audioAnalyzer LLM failed: ${err.message}`);
+    logger.warn(`audioAnalyzer Claude failed: ${err.message}`);
     return { ...emptyResult(title), _provider: 'error', _error: err.message };
   }
 };
@@ -217,7 +207,7 @@ const normalize = (json, { authorHandle, contextText = '' } = {}) => {
       event: null,
       place: null,
     },
-    _provider: 'ollama',
+    _provider: 'claude',
   };
 
   // Filter author handle out of tags (P7)

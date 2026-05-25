@@ -19,6 +19,7 @@
   "author": "TryThis Team",
   "license": "MIT",
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.98.0",
     "axios": "^1.6.0",
     "bcrypt": "^5.1.0",
     "bull": "^4.11.0",

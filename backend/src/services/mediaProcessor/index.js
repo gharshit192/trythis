@@ -15,6 +15,7 @@ const Save = require('../../models/Save');
 const audioAnalyzer = require('../audioAnalyzer');
 const autoCollectionEngine = require('../autoCollectionEngine');
 const frameExtractor = require('../frameExtractor');
+const claudeService = require('../claudeService');
 const { looksLikeHallucination } = require('../../utils/hallucinationGuard');
 const typeToCategory = require('../../utils/structuredTypeToCategory');
 const { resolveCategory } = typeToCategory;
@@ -167,6 +168,45 @@ const transcribeWithWhisper = async (wavPath, { durationSeconds, category } = {}
   };
 };
 
+// Fallback to Claude when Whisper fails or is unavailable
+const transcribeWithWhisperOrClaude = async (wavPath, { durationSeconds, category } = {}) => {
+  try {
+    const result = await transcribeWithWhisper(wavPath, { durationSeconds, category });
+    if (result && result.translation) {
+      logger.info('[mediaProcessor] transcription via Whisper');
+      return { ...result, _source: 'whisper' };
+    }
+  } catch (err) {
+    const isNotFound = err.message && (err.message.includes('ENOENT') || err.message.includes('not configured') || err.message.includes('file missing'));
+    const isTimeout = err.message && err.message.includes('timeout');
+    const isEmptyResult = err.message && err.message.includes('not produced');
+
+    if (isNotFound || isTimeout || isEmptyResult) {
+      logger.warn(`[mediaProcessor] Whisper failed (${isNotFound ? 'not-found' : isTimeout ? 'timeout' : 'empty'}), falling back to Claude: ${err.message}`);
+    } else {
+      logger.warn(`[mediaProcessor] Whisper failed: ${err.message}`);
+      throw err;
+    }
+  }
+
+  try {
+    logger.info('[mediaProcessor] transcription via Claude API (Whisper fallback)');
+    const claudeResult = await claudeService.transcribeAudio(wavPath);
+    if (claudeResult && claudeResult.transcription) {
+      return {
+        transcription: claudeResult.transcription,
+        translation: claudeResult.translation,
+        language: claudeResult.language,
+        _source: 'claude',
+      };
+    }
+    throw new Error('Claude transcription returned empty');
+  } catch (err) {
+    logger.error(`[mediaProcessor] Claude fallback failed: ${err.message}`);
+    throw new Error(`Transcription failed (Whisper + Claude): ${err.message}`);
+  }
+};
+
 // ---- main entry ----
 const processSave = async (saveId) => {
   if (!ENABLED) {
@@ -213,7 +253,7 @@ const processSave = async (saveId) => {
     // Transcription + LLM enrichment (best-effort)
     try {
       await extractWavForWhisper(mp4Path, wavPath);
-      const raw = await transcribeWithWhisper(wavPath, {
+      const raw = await transcribeWithWhisperOrClaude(wavPath, {
         category: save.category,
       });
 
@@ -240,10 +280,11 @@ const processSave = async (saveId) => {
       }
 
       if (englishClean) {
+        const transcriptionSource = raw._source || 'whisper';
         await Save.findByIdAndUpdate(saveId, {
           'aiAnalysis.transcription': {
             text: englishClean,
-            source: 'whisper',
+            source: transcriptionSource,
             detectedLanguage: raw.language || null,
           },
         });
