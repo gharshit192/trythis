@@ -310,11 +310,12 @@ const processSave = async (saveId) => {
     logger.info(`[mediaProcessor ${saveId}] downloading ${save.url}`);
     const downloadResult = await downloadMergedMp4Graceful(save.url, mp4Path);
 
-    const mp4Ready = fs.existsSync(mp4Path);
-    if (!downloadResult && !mp4Ready) {
-      logger.warn(`[mediaProcessor ${saveId}] yt-dlp download failed gracefully (no video, continuing with transcript analysis)`);
+    // GUARD: do not attempt transcription/analysis if MP4 download failed
+    const mp4Ready = downloadResult && fs.existsSync(mp4Path);
+    if (!mp4Ready) {
+      logger.warn(`[mediaProcessor ${saveId}] MP4 download returned null or file does not exist — skipping transcription`);
       partialReasons.push('video download failed');
-    } else if (mp4Ready) {
+    } else {
       logger.info(`[mediaProcessor ${saveId}] mp4 ready (tmp, will be discarded)`);
     }
 
