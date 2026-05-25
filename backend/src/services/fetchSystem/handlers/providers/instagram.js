@@ -1,5 +1,7 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
+const claudeService = require('../../claudeService');
+const logger = require('../../../../utils/logger');
 
 const match = (u) => /instagram\.com/i.test(u);
 
@@ -63,15 +65,53 @@ const tryHtmlOg = async (url) => {
   }
 };
 
+// Strategy 3: Use Claude to extract title from transcript when available
+const tryClaudeTitle = async (transcript, kind, postId) => {
+  if (!transcript || typeof transcript !== 'string' || transcript.trim().length < 10) {
+    return null;
+  }
+  try {
+    const analysis = await claudeService.analyzeTranscript({
+      transcript: transcript.slice(0, 2000),
+      category: 'general',
+      title: `Instagram ${kind}`,
+    });
+    if (analysis && analysis.summary && analysis.summary.trim().length > 5) {
+      return {
+        title: analysis.summary,
+        description: `Extracted from ${kind.toLowerCase()} caption`,
+        provider: 'instagram-claude-transcript',
+      };
+    }
+  } catch (err) {
+    // Distinguish error types to provide proper feedback
+    if (err.message?.includes('API key') || err.status === 401 || err.code === 'ERR_AUTH') {
+      logger.error(`[instagram] Claude API authentication failed — check ANTHROPIC_API_KEY: ${err.message}`);
+      // Re-throw auth errors — these need attention, not silent swallowing
+      throw err;
+    }
+    if (err.status === 429 || err.message?.includes('rate limit')) {
+      logger.warn(`[instagram] Claude API rate limited — title extraction skipped for ${postId}`);
+      return null; // Rate limit: okay to skip silently and let fallback handle
+    }
+    // Network errors and timeouts: log but don't throw
+    logger.warn(`[instagram] tryClaudeTitle failed (network/timeout): ${err.message}`);
+    return null;
+  }
+  return null;
+};
+
 const fetch = async (source) => {
   const url = typeof source === 'string' ? source : source.url;
   const postId = extractPostId(url);
   const kind = extractKind(url);
+  const transcript = typeof source === 'object' ? source.transcript : null;
 
+  // Layer 1: oEmbed
   const oembed = await tryOembed(url);
-  if (oembed) {
+  if (oembed && oembed.title) {
     return {
-      title: oembed.title || `Instagram ${kind}${postId ? ' ' + postId : ''}`,
+      title: oembed.title,
       description: oembed.description || `Instagram ${kind.toLowerCase()}`,
       image: oembed.image || null,
       url,
@@ -83,10 +123,11 @@ const fetch = async (source) => {
     };
   }
 
+  // Layer 2: HTML OG tags
   const og = await tryHtmlOg(url);
-  if (og) {
+  if (og && og.title) {
     return {
-      title: og.title || `Instagram ${kind}${postId ? ' ' + postId : ''}`,
+      title: og.title,
       description: og.description || `Instagram ${kind.toLowerCase()}`,
       image: og.image || null,
       url,
@@ -97,11 +138,28 @@ const fetch = async (source) => {
     };
   }
 
-  // Final fallback: URL-only
+  // Layer 3: Claude transcript analysis
+  if (transcript) {
+    const claudeResult = await tryClaudeTitle(transcript, kind, postId);
+    if (claudeResult && claudeResult.title) {
+      return {
+        title: claudeResult.title,
+        description: claudeResult.description,
+        image: (oembed?.image || og?.image) || null,
+        url,
+        source: 'instagram',
+        provider: claudeResult.provider,
+        postId,
+        kind,
+      };
+    }
+  }
+
+  // Layer 4: Fallback
   return {
     title: `Instagram ${kind}${postId ? ' ' + postId : ''}`,
     description: `Instagram ${kind.toLowerCase()}`,
-    image: null,
+    image: (oembed?.image || og?.image) || null,
     url,
     source: 'instagram',
     provider: 'instagram-fallback',

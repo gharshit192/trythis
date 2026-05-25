@@ -25,8 +25,8 @@ export default function AddSave({ onNavigate }) {
           <div style={{ width: '36px', height: '4px', background: 'var(--hairline)', borderRadius: '2px', margin: '0 auto 18px' }}></div>
 
           {mode === null && <ModePicker onPick={setMode} onCancel={() => onNavigate('home')} />}
-          {mode === 'link' && <LinkFlow collections={collections} onBack={() => setMode(null)} onDone={() => onNavigate('home')} />}
-          {mode === 'photos' && <PhotosFlow collections={collections} onBack={() => setMode(null)} onDone={() => onNavigate('home')} />}
+          {mode === 'link' && <LinkFlow collections={collections} onBack={() => setMode(null)} onNavigate={onNavigate} />}
+          {mode === 'photos' && <PhotosFlow collections={collections} onBack={() => setMode(null)} onNavigate={onNavigate} />}
         </div>
       </div>
     </div>
@@ -68,7 +68,7 @@ function ModePicker({ onPick, onCancel }) {
 }
 
 // ── Link flow (was the old AddSave) ───────────────────────────────────────────
-function LinkFlow({ collections, onBack, onDone }) {
+function LinkFlow({ collections, onBack, onNavigate }) {
   const [url, setUrl] = useState('');
   const [title, setTitle] = useState('');
   const [notes, setNotes] = useState('');
@@ -91,8 +91,12 @@ function LinkFlow({ collections, onBack, onDone }) {
         sourceType: detectType(url.trim()),
         collectionIds: selectedCollectionIds.length ? selectedCollectionIds : undefined,
       });
-      if (res.status === 'success') onDone();
-      else setError(res.error?.message || 'Save failed');
+      if (res.status === 'success') {
+        // Navigate through processing screen, then to home
+        onNavigate('firstSaveSuccess', { nextScreen: 'home' });
+      } else {
+        setError(res.error?.message || 'Save failed');
+      }
     } catch (err) {
       setError(err.message || 'Save failed');
     } finally {
@@ -124,12 +128,13 @@ function LinkFlow({ collections, onBack, onDone }) {
 }
 
 // ── Photos flow ───────────────────────────────────────────────────────────────
-function PhotosFlow({ collections, onBack, onDone }) {
+function PhotosFlow({ collections, onBack, onNavigate }) {
   const [files, setFiles] = useState([]); // [{ file, previewUrl }]
   const [title, setTitle] = useState('');
   const [notes, setNotes] = useState('');
   const [selectedCollectionId, setSelectedCollectionId] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [bundleLoading, setBundleLoading] = useState(false);
   const [error, setError] = useState(null);
   const inputRef = useRef(null);
   const [dragging, setDragging] = useState(false);
@@ -146,7 +151,7 @@ function PhotosFlow({ collections, onBack, onDone }) {
       if (f.size > 10 * 1024 * 1024) { setError(`${f.name}: too large (max 10MB)`); continue; }
       next.push({ file: f, previewUrl: URL.createObjectURL(f) });
     }
-    setFiles((prev) => [...prev, ...next].slice(0, 10));
+    setFiles((prev) => [...prev, ...next].slice(0, 20));
   };
 
   const removeAt = (i) => setFiles((prev) => {
@@ -171,7 +176,8 @@ function PhotosFlow({ collections, onBack, onDone }) {
       });
       if (res.status === 'success') {
         files.forEach((x) => URL.revokeObjectURL(x.previewUrl));
-        onDone();
+        // Navigate through processing screen, then to home
+        onNavigate('firstSaveSuccess', { nextScreen: 'home' });
       } else {
         setError(res.error?.message || 'Upload failed');
       }
@@ -179,6 +185,28 @@ function PhotosFlow({ collections, onBack, onDone }) {
       setError(err.message || 'Upload failed');
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleAnalyzeBundle = async () => {
+    if (!files.length) return setError('Pick at least one image.');
+    setError(null);
+    setBundleLoading(true);
+    try {
+      const fd = new FormData();
+      files.forEach((f) => fd.append('files', f.file));
+      if (title.trim()) fd.append('title', title.trim());
+      const res = await api.analyzeScreenshotBundle(fd);
+      if (res.status === 'success') {
+        files.forEach((x) => URL.revokeObjectURL(x.previewUrl));
+        onNavigate('screenshot-summary', { sessionId: res.sessionId, summary: res.summary, thumbnails: res.thumbnails });
+      } else {
+        setError(res.error?.message || 'Analysis failed');
+      }
+    } catch (err) {
+      setError(err.message || 'Analysis failed');
+    } finally {
+      setBundleLoading(false);
     }
   };
 
@@ -206,17 +234,17 @@ function PhotosFlow({ collections, onBack, onDone }) {
       </div>
 
       {files.length > 0 && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6, marginBottom: 12 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8, marginBottom: 12 }}>
           {files.map((f, i) => (
             <div key={f.previewUrl} style={{ position: 'relative', aspectRatio: '1 / 1', borderRadius: 8, overflow: 'hidden' }}>
               <img src={f.previewUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); removeAt(i); }}
-                disabled={uploading}
-                style={{ position: 'absolute', top: 2, right: 2, width: 18, height: 18, borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,0.6)', color: '#fff', fontSize: 11, cursor: 'pointer' }}
+                disabled={uploading || bundleLoading}
+                style={{ position: 'absolute', top: 4, right: 4, width: 24, height: 24, borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,0.7)', color: '#fff', fontSize: 14, cursor: 'pointer', fontWeight: 'bold' }}
               >×</button>
-              <span style={{ position: 'absolute', bottom: 2, left: 2, background: 'rgba(0,0,0,0.6)', color: '#fff', fontSize: 9, padding: '1px 4px', borderRadius: 3 }}>{i + 1}</span>
+              <span style={{ position: 'absolute', bottom: 4, left: 4, background: 'rgba(0,0,0,0.7)', color: '#fff', fontSize: 10, padding: '2px 6px', borderRadius: 3, fontWeight: 500 }}>{i + 1}</span>
             </div>
           ))}
         </div>
@@ -250,7 +278,12 @@ function PhotosFlow({ collections, onBack, onDone }) {
       <p style={{ fontSize: 11, color: 'var(--slate)', marginBottom: 8 }}>📅 Original images auto-purge after 2 working days. Thumbnails kept forever.</p>
 
       {error && <p style={{ color: 'var(--error,#d33)', fontSize: 13, marginBottom: 8 }}>{error}</p>}
-      <button className="btn-primary" disabled={uploading || files.length === 0} onClick={handleUpload}>
+      {files.length >= 2 && (
+        <button className="btn-primary" disabled={bundleLoading || uploading} onClick={handleAnalyzeBundle} style={{ marginBottom: 8 }}>
+          {bundleLoading ? 'AI is reading your screenshots…' : `Analyse Screenshots (${files.length})`}
+        </button>
+      )}
+      <button className="btn-primary" disabled={uploading || bundleLoading || files.length === 0} onClick={handleUpload} style={{ opacity: bundleLoading ? 0.6 : 1 }}>
         {uploading ? `Uploading ${files.length} image${files.length === 1 ? '' : 's'}…` : `Extract & save${files.length ? ` (${files.length})` : ''}`}
       </button>
     </>

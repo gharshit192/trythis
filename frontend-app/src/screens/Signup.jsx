@@ -16,7 +16,7 @@ export default function Signup({ onNavigate }) {
     try {
       const result = await api.signup(email, password, name);
       if (result.status === 'success') {
-        onNavigate('onboarding-1');
+        onNavigate('demoSaves');
       } else {
         setError(result.error?.message || 'Signup failed');
       }
@@ -66,36 +66,11 @@ export default function Signup({ onNavigate }) {
         <input
           type="password"
           className="input focused"
-          style={{ marginBottom: '8px' }}
+          style={{ marginBottom: '22px' }}
           placeholder="••••••••"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
-        {(() => {
-          const checks = [password.length >= 8, /[A-Z]/.test(password), /[0-9]/.test(password), /[^A-Za-z0-9]/.test(password)];
-          const score = checks.filter(Boolean).length;
-          const colors = ['var(--error,#d33)', 'var(--error,#d33)', '#e6a700', 'var(--forest)', 'var(--forest)'];
-          const labels = ['Too short', 'Weak', 'Fair', 'Good', 'Strong'];
-          return password.length > 0 ? (
-            <>
-              <div style={{ display: 'flex', gap: '4px', marginBottom: '6px' }}>
-                {[0,1,2,3].map((i) => (
-                  <div key={i} style={{ flex: 1, height: '3px', borderRadius: '2px', background: i < score ? colors[score] : 'var(--hairline)' }}></div>
-                ))}
-              </div>
-              <p style={{ fontSize: '12px', color: 'var(--slate)', marginBottom: '22px' }}>{labels[score]}{score < 3 ? ' — need 8+ chars, uppercase, number' : ''}</p>
-            </>
-          ) : <div style={{ marginBottom: '22px' }} />;
-        })()}
-
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginBottom: '22px' }}>
-          <div style={{ width: '18px', height: '18px', background: 'var(--forest)', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '2px' }}>
-            <i className="ti ti-check" style={{ fontSize: '12px', color: 'var(--linen)' }}></i>
-          </div>
-          <p style={{ fontSize: '13px', color: 'var(--slate)', lineHeight: '1.5' }}>
-            I agree to the <span style={{ color: 'var(--ink)', fontWeight: '500', borderBottom: '1px solid var(--hairline)' }}>Terms</span> and <span style={{ color: 'var(--ink)', fontWeight: '500', borderBottom: '1px solid var(--hairline)' }}>Privacy Policy</span>.
-          </p>
-        </div>
 
         {error && <div style={{ color: 'var(--error)', marginBottom: '12px', fontSize: '13px' }}>{error}</div>}
 

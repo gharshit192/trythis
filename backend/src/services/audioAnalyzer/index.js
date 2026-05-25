@@ -1,8 +1,8 @@
 // Turns a (transcribed) text into structured intent: typed structuredData + summary + tags.
-// Uses a local Ollama LLM. Falls back gracefully when LLM is unreachable.
+// Uses Anthropic Claude API for reliable extraction. Falls back gracefully on API errors.
 // Output shape matches the IntentItem.aiAnalysis spec in /docs/TryThisProductSTrategy.md.
 
-const llm = require('../llm');
+const claudeService = require('../claudeService');
 const logger = require('../../utils/logger');
 
 const SYSTEM = `You are a metadata extraction engine for a "save it / try it" app.
@@ -74,44 +74,98 @@ const extractAnalysis = async ({ transcript, title, description, source, categor
     return emptyResult(title);
   }
 
-  if (!(await llm.isAvailable())) {
-    logger.warn('audioAnalyzer: Ollama not available');
-    return { ...emptyResult(title), _provider: 'unavailable' };
+  // Check API key exists before attempting
+  if (!process.env.ANTHROPIC_API_KEY) {
+    logger.error('[audioAnalyzer] ANTHROPIC_API_KEY not set — skipping AI analysis');
+    return {
+      ...emptyResult(title),
+      _error: 'API_KEY_MISSING',
+      _errorMessage: 'Anthropic API key not configured',
+    };
   }
 
-  const prompt = [
-    `Video/article title: ${truncate(title, 200)}`,
-    description ? `Caption/description: ${truncate(description, 500)}` : null,
-    authorHandle ? `Author handle: @${authorHandle}` : null,
-    source ? `Source: ${source}` : null,
-    category ? `Category hint: ${category}` : null,
-    visible ? `Text visible on-screen (OCR from video frames):\n"""${truncate(visible, 2000)}"""` : null,
-    text ? `Audio transcript:\n"""${truncate(text, 4000)}"""` : null,
-    !text && !visible ? 'NOTE: no transcript or visible text available — base your answer on the title + caption alone, and prefer type="other".' : null,
-    '',
-    'Return JSON only.',
-  ].filter(Boolean).join('\n');
+  logger.info('[audioAnalyzer] using Claude API');
 
   try {
-    let json = await llm.generateJson({ system: SYSTEM, prompt, temperature: 0.1 });
-    // Gap 4: semantic verification — one retry with explicit corrections if the
-    // LLM contradicts itself (e.g. type="recipe" with no ingredients OR steps).
+    let json = await claudeService.analyzeTranscript({
+      transcript: text || null,
+      title: truncate(title, 200),
+      description: truncate(description, 500),
+      author: authorHandle,
+      source,
+      category,
+      visualText: visible ? truncate(visible, 2000) : null,
+    });
+
+    if (!json) {
+      logger.warn('audioAnalyzer: claudeService returned null');
+      return {
+        ...emptyResult(title),
+        _provider: 'error',
+        _error: 'API_RETURNED_NULL',
+        _errorMessage: 'Claude API returned no parseable result',
+      };
+    }
+
+    // Semantic verification — retry if critical issues found
     const issues = validateSemantics(json);
-    if (issues.length) {
-      logger.warn(`audioAnalyzer: semantic issues, retrying: ${issues.join('; ')}`);
-      const fixPrompt = `Your previous response had issues: ${issues.join('; ')}.
-Fix ONLY those fields. Keep everything else identical. Return the same JSON shape.
-Previous response:
-${JSON.stringify(json)}`;
-      try {
-        json = await llm.generateJson({ system: SYSTEM, prompt: fixPrompt, temperature: 0.1 });
-      } catch (e) {
-        logger.warn(`audioAnalyzer retry failed: ${e.message}`);
+    if (issues.length > 0) {
+      logger.warn(`audioAnalyzer: semantic issues detected: ${issues.join('; ')}`);
+
+      // Retry once if critical issues (missing required fields for claimed type)
+      if (issues.some(i => i.includes('type=') && i.includes('but'))) {
+        logger.info('[audioAnalyzer] retrying with correction prompt due to semantic issues');
+        try {
+          const Anthropic = require('@anthropic-ai/sdk');
+          const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+          const correctionPrompt = `${SYSTEM}
+
+Issues found in previous response: ${issues.join('; ')}
+
+Please correct the structuredData to fix these issues. Return ONLY valid JSON, no preamble.`;
+
+          const retryResponse = await client.messages.create({
+            model: 'claude-haiku-4-5-20251001',
+            max_tokens: 1024,
+            temperature: 0,
+            system: correctionPrompt,
+            messages: [
+              {
+                role: 'user',
+                content: [
+                  `Title: ${title || '(no title)'}`,
+                  description ? `Description: ${description}` : null,
+                  authorHandle ? `Author: @${authorHandle}` : null,
+                  source ? `Source: ${source}` : null,
+                  category ? `Category hint: ${category}` : null,
+                  visible ? `Text visible on-screen (OCR):\n${visible.slice(0, 2000)}` : null,
+                  text ? `Transcript:\n${text.slice(0, 4000)}` : null,
+                ].filter(Boolean).join('\n\n'),
+              },
+            ],
+          });
+
+          const retryText = retryResponse.content[0]?.type === 'text' ? retryResponse.content[0].text : '';
+          const retryJson = claudeService.parseJsonSafely(retryText);
+
+          if (retryJson) {
+            const retryIssues = validateSemantics(retryJson);
+            if (retryIssues.length < issues.length) {
+              logger.info(`[audioAnalyzer] retry improved semantic issues: ${issues.length} → ${retryIssues.length}`);
+              json = retryJson;
+            } else {
+              logger.warn(`[audioAnalyzer] retry did not improve (${retryIssues.length} issues remain), using original`);
+            }
+          }
+        } catch (retryErr) {
+          logger.warn(`[audioAnalyzer] correction retry failed: ${retryErr.message} — using original response`);
+        }
       }
     }
+
     return normalize(json, { authorHandle, contextText: [transcript, description, visible].filter(Boolean).join(' ') });
   } catch (err) {
-    logger.warn(`audioAnalyzer LLM failed: ${err.message}`);
+    logger.warn(`audioAnalyzer Claude failed: ${err.message}`);
     return { ...emptyResult(title), _provider: 'error', _error: err.message };
   }
 };
@@ -148,6 +202,7 @@ const emptyResult = (title) => ({
   audioTags: [],
   structuredData: { type: 'other', recipe: null, product: null, itinerary: null, event: null, place: null },
   _provider: 'empty',
+  _error: undefined,
 });
 
 // Strip tags that are essentially the author's username (P7 fix).
@@ -217,7 +272,7 @@ const normalize = (json, { authorHandle, contextText = '' } = {}) => {
       event: null,
       place: null,
     },
-    _provider: 'ollama',
+    _provider: 'claude',
   };
 
   // Filter author handle out of tags (P7)

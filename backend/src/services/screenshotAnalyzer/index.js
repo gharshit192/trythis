@@ -5,11 +5,16 @@
 // on all of them. This module first classifies the OCR text by counting matches
 // against ~12 patterns per type, then picks the highest-scoring type and routes
 // to a tailored prompt that knows what fields to extract for that content type.
+// Uses Claude API for reliable content analysis.
 //
 // Output is consumed by screenshotPipeline (which persists it onto the Save).
 
-const llm = require('../llm');
+const Anthropic = require('@anthropic-ai/sdk');
 const logger = require('../../utils/logger');
+
+const client = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
+});
 
 // ─── STEP 1: Pre-clean OCR text ───────────────────────────────────────────────
 // Strip image separators, status-bar artifacts, lone nav icons, dev tokens.
@@ -433,28 +438,57 @@ const analyze = async ({ mergedOcrText, imageCount = 1, fallbackTitle = '' } = {
   const classification = classifyScreenshot(cleaned);
   logger.info(`[screenshotAnalyzer] type=${classification.type} confidence=${classification.confidence} (top3: ${JSON.stringify(classification.allMatches)})`);
 
-  if (!(await llm.isAvailable())) {
-    logger.warn('[screenshotAnalyzer] LLM unavailable — returning classifier-only result');
-    return emptyResult(fallbackTitle, classification);
-  }
-
   const prompt = buildScreenshotPrompt(classification, cleaned, imageCount);
 
   let raw;
   try {
-    raw = await llm.generateJson({ system: '', prompt, temperature: 0.1 });
+    logger.info('[screenshotAnalyzer] using Claude API');
+    const response = await client.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 1024,
+      temperature: 0,
+      messages: [
+        {
+          role: 'user',
+          content: prompt,
+        },
+      ],
+    });
+
+    const text = response.content[0]?.type === 'text' ? response.content[0].text : '';
+
+    // Parse JSON from response, handling markdown code blocks
+    let parsed = null;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      const cleaned = text.replace(/```(?:json)?\n?/g, '').replace(/```/g, '');
+      try {
+        parsed = JSON.parse(cleaned);
+      } catch {
+        const match = cleaned.match(/(\{[\s\S]*\}|\[[\s\S]*\])/);
+        if (match) {
+          try {
+            parsed = JSON.parse(match[1]);
+          } catch {
+            // Fallback to classifier-only result
+          }
+        }
+      }
+    }
+
+    raw = parsed;
   } catch (err) {
-    logger.warn(`[screenshotAnalyzer] LLM failed: ${err.message}`);
-    return emptyResult(fallbackTitle, classification);
+    logger.warn(`[screenshotAnalyzer] Claude failed: ${err.message}`);
   }
 
   // Normalize + sanitize LLM output. Trust the classifier when LLM omits fields.
   const out = {
-    title: typeof raw?.title === 'string' ? raw.title.slice(0, 80) : fallbackTitle,
-    summary: typeof raw?.summary === 'string' ? raw.summary : '',
-    category: VALID_CATEGORIES.includes(raw?.category) ? raw.category : classification.category,
-    intentType: VALID_INTENTS.includes(raw?.intentType) ? raw.intentType : classification.intentType,
-    tags: Array.isArray(raw?.tags)
+    title: (raw && typeof raw.title === 'string') ? raw.title.slice(0, 80) : fallbackTitle,
+    summary: (raw && typeof raw.summary === 'string') ? raw.summary : '',
+    category: (raw && VALID_CATEGORIES.includes(raw.category)) ? raw.category : classification.category,
+    intentType: (raw && VALID_INTENTS.includes(raw.intentType)) ? raw.intentType : classification.intentType,
+    tags: (raw && Array.isArray(raw.tags))
       ? raw.tags.filter(Boolean).map((t) => String(t).toLowerCase().trim().replace(/\s+/g, '-')).slice(0, 12)
       : [],
     structuredData: (raw && typeof raw.structuredData === 'object') ? raw.structuredData : { type: classification.type },

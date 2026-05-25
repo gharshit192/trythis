@@ -43,7 +43,19 @@ const runYtdlp = (url) => new Promise((resolve, reject) => {
 
   proc.on('close', (code) => {
     clearTimeout(killTimer);
-    if (code !== 0) return reject(new Error(`yt-dlp exited ${code}: ${stderr.split('\n')[0]}`));
+    if (code !== 0) {
+      const errorMsg = stderr.split('\n')[0] || '';
+      let userMessage = 'Video extraction unavailable for this URL';
+      if (errorMsg.includes('Sign in') || errorMsg.includes('bot') || errorMsg.includes('login')) {
+        userMessage = 'This video requires authentication. Try extracting the page instead.';
+      } else if (errorMsg.includes('Not available') || errorMsg.includes('Private')) {
+        userMessage = 'This video is not accessible.';
+      } else if (errorMsg.includes('Timeout') || errorMsg.includes('Connection')) {
+        userMessage = 'Connection timeout. Please try again.';
+      }
+      logger.warn(`[yt-dlp] ${code} for ${url.split('?')[0]}: ${errorMsg}`);
+      return reject(new Error(userMessage));
+    }
     try {
       resolve(JSON.parse(stdout));
     } catch (err) {
@@ -115,7 +127,7 @@ const fetch = async (source) => {
       _ytdlpInfo: info,
     };
   } catch (err) {
-    logger.warn(`yt-dlp failed for ${url}: ${err.message}`);
+    logger.warn(`yt-dlp gracefully failed for ${url}: ${err.message}`);
     return null; // let cascade continue
   }
 };

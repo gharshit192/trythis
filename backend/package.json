@@ -19,6 +19,7 @@
   "author": "TryThis Team",
   "license": "MIT",
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.98.0",
     "axios": "^1.6.0",
     "bcrypt": "^5.1.0",
     "bull": "^4.11.0",
@@ -34,8 +35,10 @@
     "node-cron": "^4.2.1",
     "nodemailer": "^8.0.7",
     "open-graph-scraper": "^6.0.0",
+    "pdfkit": "^0.18.0",
     "redis": "^4.6.0",
-    "sharp": "^0.34.5"
+    "sharp": "^0.34.5",
+    "uuid": "^14.0.0"
   },
   "devDependencies": {
     "eslint": "^8.51.0",

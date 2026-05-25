@@ -4,6 +4,7 @@ const connectDB = require('./config/database');
 const redisClient = require('./config/redis');
 const purgeScreenshots = require('./jobs/purgeScreenshots');
 const notificationScheduler = require('./jobs/notificationScheduler');
+const { cleanupBundles } = require('./jobs/cleanupBundles');
 
 const PORT = process.env.PORT || 4000;
 let dbConnected = false;
@@ -55,6 +56,7 @@ const initializeServer = async () => {
         console.log('[DEBUG] Starting background jobs (non-production mode)...');
         purgeScreenshots.start();
         notificationScheduler.start();
+        setInterval(cleanupBundles, 60 * 60 * 1000);
         console.log('✅ Background jobs started');
       } else {
         console.log('[DEBUG] Skipping background jobs in production mode');

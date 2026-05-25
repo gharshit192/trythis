@@ -42,7 +42,10 @@ export default function Notifications({ onNavigate }) {
   return (
     <div className="phone-frame">
       <div style={{ background: 'var(--paper)', flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
-        <div style={{ padding: '16px 20px 14px' }}><h1 className="display" style={{ fontSize: '22px' }}>Notifications</h1></div>
+        <div style={{ padding: '12px 16px 14px', display: 'flex', alignItems: 'center', gap: 12, borderBottom: '0.5px solid #eee' }}>
+          <button onClick={() => onNavigate('home')} style={{ background: '#f5f5f5', border: 'none', cursor: 'pointer', width: 32, height: 32, borderRadius: 8, fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>←</button>
+          <h1 className="display" style={{ fontSize: '18px', margin: 0 }}>Notifications</h1>
+        </div>
         <div style={{ padding: '0 20px 80px', flex: 1 }}>
           {loading ? (
             <p style={{ fontSize: 13, color: 'var(--slate)', textAlign: 'center', padding: 24 }}>Loading…</p>
