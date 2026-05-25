@@ -11,10 +11,10 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const sharp = require('sharp');
-const screenshotHandler = require('../fetchSystem/handlers/screenshotHandler');
-const screenshotAnalyzer = require('../screenshotAnalyzer');
-const { addWorkingDays } = require('../../utils/workingDays');
-const logger = require('../../utils/logger');
+const screenshotHandler = require('./fetchSystem/handlers/screenshotHandler');
+const screenshotAnalyzer = require('./screenshotAnalyzer');
+const { addWorkingDays } = require('../utils/workingDays');
+const logger = require('../utils/logger');
 
 const UPLOADS_DIR = process.env.UPLOADS_DIR || path.join(__dirname, '..', '..', '..', 'uploads');
 const PUBLIC_BASE_URL = process.env.PUBLIC_BASE_URL || 'http://localhost:4000';
