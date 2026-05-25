@@ -23,6 +23,8 @@ app.use(cors({
     ? process.env.CORS_ORIGINS.split(',').map((s) => s.trim())
     : [process.env.FRONTEND_URL || 'http://localhost:3000', 'https://trythis-frontend.vercel.app'],
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 app.use(express.json({ limit: '5mb' }));
 

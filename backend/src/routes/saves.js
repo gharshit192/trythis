@@ -571,8 +571,7 @@ router.post('/screenshot-bundle',
 
       const filePaths = pipelineResult.screenshots.map(s => {
         const filename = path.basename(s.url);
-        const uploadsDir = process.env.UPLOADS_DIR || path.join(__dirname, '..', '..', '..', 'uploads');
-        return path.join(uploadsDir, 'screenshots', 'full', filename);
+        return path.join(screenshotPipeline.FULL_DIR, filename);
       });
 
       const sessionId = uuidv4();
@@ -681,8 +680,8 @@ router.post('/screenshot-bundle/:sessionId/save',
         userId: req.user.id,
         title: useSummary.autoTitle || 'Screenshot bundle',
         category: useSummary.detectedTheme || 'other',
-        source: 'screenshot_bundle',
-        contentType: 'screenshot',
+        source: 'screenshot',
+        contentType: 'image',
         processingStatus: 'done',
         tags: useSummary.categories?.flatMap(c => c.items?.flatMap(i => i.tags || []) || []).slice(0, 12) || [],
         aiAnalysis: {
