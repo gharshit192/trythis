@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 const os = require('os');
 const multer = require('multer');
+const { v4: uuidv4 } = require('uuid');
 const router = express.Router();
 const Save = require('../models/Save');
 const UserBehavior = require('../models/UserBehavior');
@@ -13,6 +14,7 @@ const extractionEngine = require('../services/extractionEngine');
 const transcription = require('../services/transcription');
 const mediaProcessor = require('../services/mediaProcessor');
 const screenshotPipeline = require('../services/screenshotPipeline');
+const screenshotBundle = require('../services/screenshotBundle');
 const autoCollectionEngine = require('../services/autoCollectionEngine');
 const thumbnailCache = require('../services/thumbnailCache');
 const typeToCategory = require('../utils/structuredTypeToCategory');
@@ -537,6 +539,201 @@ router.post('/upload-screenshots',
     } catch (error) {
       logger.error(`Screenshot upload error: ${error.message}`);
       res.status(500).json({ status: 'error', error: { code: 'UPLOAD_ERROR', message: error.message } });
+    }
+  }
+);
+
+// ─── Multi-screenshot bundle endpoints (Vision + refine + export) ────────────
+
+router.post('/screenshot-bundle',
+  (req, res, next) => upload.array('files', 20)(req, res, (err) => {
+    if (!err) return next();
+    if (err.code === 'LIMIT_FILE_SIZE') return res.status(413).json({ status: 'error', error: { code: 'FILE_TOO_LARGE', message: 'each file must be ≤ 10MB' } });
+    if (err.code === 'LIMIT_FILE_COUNT') return res.status(413).json({ status: 'error', error: { code: 'TOO_MANY_FILES', message: 'max 20 files per upload' } });
+    return res.status(400).json({ status: 'error', error: { code: 'INVALID_UPLOAD', message: err.message } });
+  }),
+  authMiddleware,
+  async (req, res) => {
+    try {
+      const files = req.files;
+      if (!files || files.length === 0) {
+        return res.status(400).json({ status: 'error', error: { code: 'NO_FILES', message: 'Upload at least one screenshot' } });
+      }
+
+      logger.info(`[screenshot-bundle] Processing ${files.length} files for user ${req.user.id}`);
+
+      const pipelineResult = await screenshotPipeline.processFiles(files, {
+        userId: req.user.id,
+        title: req.body.title || '',
+        source: 'screenshot_bundle',
+        category: 'other'
+      });
+
+      const filePaths = pipelineResult.screenshots.map(s => {
+        const filename = path.basename(s.url);
+        const uploadsDir = process.env.UPLOADS_DIR || path.join(__dirname, '..', '..', '..', 'uploads');
+        return path.join(uploadsDir, 'screenshots', 'full', filename);
+      });
+
+      const sessionId = uuidv4();
+      const start = Date.now();
+      const summary = await screenshotBundle.analyzeBundle(filePaths, sessionId);
+      const processingTimeMs = Date.now() - start;
+
+      if (!summary) {
+        return res.status(500).json({ status: 'error', error: { code: 'ANALYSIS_FAILED', message: 'AI processing failed, please retry' } });
+      }
+
+      screenshotBundle.saveSession(sessionId, filePaths, summary);
+      logger.info(`[screenshot-bundle] Completed in ${processingTimeMs}ms: "${summary.autoTitle}"`);
+
+      res.json({
+        status: 'success',
+        sessionId,
+        summary,
+        imageCount: files.length,
+        thumbnails: pipelineResult.screenshots.map(s => s.thumbnailUrl),
+        processingTimeMs
+      });
+    } catch (err) {
+      logger.error(`screenshot-bundle failed: ${err.message}`, { stack: err.stack });
+      res.status(500).json({ status: 'error', error: { code: 'INTERNAL', message: err.message } });
+    }
+  }
+);
+
+router.post('/screenshot-bundle/:sessionId/refine',
+  authMiddleware,
+  async (req, res) => {
+    try {
+      const { sessionId } = req.params;
+      const { instruction } = req.body;
+
+      if (!instruction || !instruction.trim()) {
+        return res.status(400).json({ status: 'error', error: { code: 'NO_INSTRUCTION', message: 'Provide refinement instruction' } });
+      }
+
+      const session = screenshotBundle.loadSession(sessionId);
+      if (!session) {
+        return res.status(404).json({ status: 'error', error: { code: 'SESSION_NOT_FOUND', message: 'Session expired or not found' } });
+      }
+
+      logger.info(`[screenshot-bundle refine] Refining ${session.filePaths.length} images with instruction: ${instruction.slice(0, 50)}...`);
+
+      const Anthropic = require('@anthropic-ai/sdk');
+      const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+      const imageContents = session.filePaths
+        .filter(fp => require('fs').existsSync(fp))
+        .map(fp => {
+          const ext = path.extname(fp).toLowerCase().replace('.', '');
+          const mediaType = ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg';
+          const data = require('fs').readFileSync(fp).toString('base64');
+          return { type: 'image', source: { type: 'base64', media_type: mediaType, data } };
+        });
+
+      const response = await client.messages.create({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 2048,
+        temperature: 0,
+        messages: [{
+          role: 'user',
+          content: [
+            ...imageContents,
+            { type: 'text', text: screenshotBundle.buildBundlePrompt(imageContents.length, instruction) }
+          ]
+        }]
+      });
+
+      const text = response.content[0]?.type === 'text' ? response.content[0].text : '';
+      const summary = screenshotBundle.parseJsonSafely(text);
+
+      if (!summary) {
+        return res.status(500).json({ status: 'error', error: { code: 'REFINE_FAILED', message: 'Refinement failed, please retry' } });
+      }
+
+      screenshotBundle.saveSession(sessionId, session.filePaths, summary);
+      logger.info(`[screenshot-bundle refine] Completed: "${summary.autoTitle}"`);
+
+      res.json({ status: 'success', sessionId, summary });
+    } catch (err) {
+      logger.error(`screenshot-bundle refine failed: ${err.message}`, { stack: err.stack });
+      res.status(500).json({ status: 'error', error: { code: 'INTERNAL', message: err.message } });
+    }
+  }
+);
+
+router.post('/screenshot-bundle/:sessionId/save',
+  authMiddleware,
+  async (req, res) => {
+    try {
+      const { sessionId } = req.params;
+      const { summary: bodySummary } = req.body;
+
+      const session = screenshotBundle.loadSession(sessionId);
+      if (!session) {
+        return res.status(404).json({ status: 'error', error: { code: 'SESSION_NOT_FOUND', message: 'Session expired' } });
+      }
+
+      const useSummary = bodySummary || session.summary;
+
+      const save = new Save({
+        userId: req.user.id,
+        title: useSummary.autoTitle || 'Screenshot bundle',
+        category: useSummary.detectedTheme || 'other',
+        source: 'screenshot_bundle',
+        contentType: 'screenshot',
+        processingStatus: 'done',
+        tags: useSummary.categories?.flatMap(c => c.items?.flatMap(i => i.tags || []) || []).slice(0, 12) || [],
+        aiAnalysis: {
+          summary: useSummary.masterSummary?.oneLiner || '',
+          keyPoints: useSummary.masterSummary?.bullets || [],
+          structuredData: null,
+          screenshotAnalysis: {
+            type: 'bundle',
+            data: useSummary,
+            confidence: useSummary.confidence || 0.8,
+            allMatches: []
+          },
+          processedAt: new Date()
+        },
+        status: 'active'
+      });
+
+      await save.save();
+      logger.info(`[screenshot-bundle save] Created save ${save._id}: "${save.title}"`);
+
+      res.json({ status: 'success', save });
+    } catch (err) {
+      logger.error(`screenshot-bundle save failed: ${err.message}`, { stack: err.stack });
+      res.status(500).json({ status: 'error', error: { code: 'INTERNAL', message: err.message } });
+    }
+  }
+);
+
+router.get('/screenshot-bundle/:sessionId/export-pdf',
+  authMiddleware,
+  async (req, res) => {
+    try {
+      const { sessionId } = req.params;
+      const session = screenshotBundle.loadSession(sessionId);
+
+      if (!session || !session.summary) {
+        return res.status(404).json({ status: 'error', error: { code: 'SESSION_NOT_FOUND', message: 'Session not found' } });
+      }
+
+      const pdfBuffer = await screenshotBundle.generatePdf(session.summary);
+      const filename = `${(session.summary.autoTitle || 'trythis-summary').toLowerCase().replace(/[^a-z0-9]+/g, '-')}.pdf`;
+
+      res.set({
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="${filename}"`,
+        'Content-Length': pdfBuffer.length
+      });
+      res.send(pdfBuffer);
+    } catch (err) {
+      logger.error(`screenshot-bundle export failed: ${err.message}`, { stack: err.stack });
+      res.status(500).json({ status: 'error', error: { code: 'INTERNAL', message: err.message } });
     }
   }
 );

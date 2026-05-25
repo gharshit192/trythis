@@ -20,12 +20,17 @@ const UPLOADS_DIR = process.env.UPLOADS_DIR || path.join(__dirname, '..', '..', 
 const PUBLIC_BASE_URL = process.env.PUBLIC_BASE_URL || 'http://localhost:4000';
 const FULL_DIR = path.join(UPLOADS_DIR, 'screenshots', 'full');
 const THUMB_DIR = path.join(UPLOADS_DIR, 'screenshots', 'thumb');
+const BUNDLE_DIR = path.join(UPLOADS_DIR, 'screenshot-bundles');
 const PURGE_AFTER_DAYS = parseInt(process.env.SCREENSHOT_PURGE_AFTER_DAYS || '2', 10);
 
 const ensureDirs = () => {
-  for (const d of [FULL_DIR, THUMB_DIR]) {
+  for (const d of [FULL_DIR, THUMB_DIR, BUNDLE_DIR]) {
     if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
   }
+};
+
+const ensureBundleDir = () => {
+  if (!fs.existsSync(BUNDLE_DIR)) fs.mkdirSync(BUNDLE_DIR, { recursive: true });
 };
 
 const safeExt = (mime) => {
@@ -180,4 +185,4 @@ const processFiles = async (files = [], { userId, title, source = 'screenshot', 
   };
 };
 
-module.exports = { processFiles, __dirs: { FULL_DIR, THUMB_DIR } };
+module.exports = { processFiles, ensureBundleDir, __dirs: { FULL_DIR, THUMB_DIR, BUNDLE_DIR } };
