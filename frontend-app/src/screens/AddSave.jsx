@@ -25,8 +25,8 @@ export default function AddSave({ onNavigate }) {
           <div style={{ width: '36px', height: '4px', background: 'var(--hairline)', borderRadius: '2px', margin: '0 auto 18px' }}></div>
 
           {mode === null && <ModePicker onPick={setMode} onCancel={() => onNavigate('home')} />}
-          {mode === 'link' && <LinkFlow collections={collections} onBack={() => setMode(null)} onDone={() => onNavigate('home')} />}
-          {mode === 'photos' && <PhotosFlow collections={collections} onBack={() => setMode(null)} onDone={() => onNavigate('home')} />}
+          {mode === 'link' && <LinkFlow collections={collections} onBack={() => setMode(null)} onNavigate={onNavigate} />}
+          {mode === 'photos' && <PhotosFlow collections={collections} onBack={() => setMode(null)} onNavigate={onNavigate} />}
         </div>
       </div>
     </div>
@@ -68,7 +68,7 @@ function ModePicker({ onPick, onCancel }) {
 }
 
 // ── Link flow (was the old AddSave) ───────────────────────────────────────────
-function LinkFlow({ collections, onBack, onDone }) {
+function LinkFlow({ collections, onBack, onNavigate }) {
   const [url, setUrl] = useState('');
   const [title, setTitle] = useState('');
   const [notes, setNotes] = useState('');
@@ -91,8 +91,12 @@ function LinkFlow({ collections, onBack, onDone }) {
         sourceType: detectType(url.trim()),
         collectionIds: selectedCollectionIds.length ? selectedCollectionIds : undefined,
       });
-      if (res.status === 'success') onDone();
-      else setError(res.error?.message || 'Save failed');
+      if (res.status === 'success') {
+        // Navigate through processing screen, then to home
+        onNavigate('firstSaveSuccess', { nextScreen: 'home' });
+      } else {
+        setError(res.error?.message || 'Save failed');
+      }
     } catch (err) {
       setError(err.message || 'Save failed');
     } finally {
@@ -124,7 +128,7 @@ function LinkFlow({ collections, onBack, onDone }) {
 }
 
 // ── Photos flow ───────────────────────────────────────────────────────────────
-function PhotosFlow({ collections, onBack, onDone }) {
+function PhotosFlow({ collections, onBack, onNavigate }) {
   const [files, setFiles] = useState([]); // [{ file, previewUrl }]
   const [title, setTitle] = useState('');
   const [notes, setNotes] = useState('');
@@ -172,7 +176,8 @@ function PhotosFlow({ collections, onBack, onDone }) {
       });
       if (res.status === 'success') {
         files.forEach((x) => URL.revokeObjectURL(x.previewUrl));
-        onDone();
+        // Navigate through processing screen, then to home
+        onNavigate('firstSaveSuccess', { nextScreen: 'home' });
       } else {
         setError(res.error?.message || 'Upload failed');
       }
