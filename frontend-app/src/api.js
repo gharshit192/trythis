@@ -177,6 +177,44 @@ const api = {
     return handle(res);
   },
 
+  async analyzeScreenshotBundle(formData) {
+    const res = await fetch(`${API_BASE_URL}/saves/screenshot-bundle`, {
+      method: 'POST',
+      headers: authHeader(),
+      body: formData,
+    });
+    return handle(res);
+  },
+
+  async refineScreenshotBundle(sessionId, instruction) {
+    const res = await fetch(`${API_BASE_URL}/saves/screenshot-bundle/${sessionId}/refine`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
+      body: JSON.stringify({ instruction }),
+    });
+    return handle(res);
+  },
+
+  async saveScreenshotBundle(sessionId, summary) {
+    const res = await fetch(`${API_BASE_URL}/saves/screenshot-bundle/${sessionId}/save`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
+      body: JSON.stringify({ summary }),
+    });
+    return handle(res);
+  },
+
+  async exportBundlePdf(sessionId) {
+    const token = localStorage.getItem('auth_token');
+    const url = new URL(`${API_BASE_URL}/saves/screenshot-bundle/${sessionId}/export-pdf`);
+    const a = document.createElement('a');
+    a.href = url.toString();
+    a.setAttribute('download', `trythis-summary-${Date.now()}.pdf`);
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  },
+
   async updateIntent(id, { intentStatus, plannedFor, triedAt } = {}) {
     const res = await fetch(`${API_BASE_URL}/saves/${id}/intent`, {
       method: 'PATCH',
