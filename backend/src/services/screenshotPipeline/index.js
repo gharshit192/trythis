@@ -124,16 +124,33 @@ const processFiles = async (files = [], { userId, title, source = 'screenshot', 
     throw new Error('all uploads failed to persist');
   }
 
+  logger.info(`screenshotPipeline: ${screenshots.length} files processed, ${mergedText.trim().length} chars merged OCR`);
+
   // Hand the merged OCR text to the screenshotAnalyzer. It first classifies
   // the screenshot type (14 categories: receipt, menu, app_ui, code, …),
   // then routes to a type-specific LLM prompt. Returns a richer payload than
   // the generic audioAnalyzer: title + summary + tags + category + intentType
   // + screenshot-typed structuredData + classification metadata.
-  const analysis = await screenshotAnalyzer.analyze({
-    mergedOcrText: mergedText.trim(),
-    imageCount: screenshots.length,
-    fallbackTitle: title,
-  });
+  let analysis;
+  try {
+    analysis = await screenshotAnalyzer.analyze({
+      mergedOcrText: mergedText.trim(),
+      imageCount: screenshots.length,
+      fallbackTitle: title,
+    });
+    logger.info(`screenshotAnalyzer completed: title="${analysis.title}", category="${analysis.category}"`);
+  } catch (err) {
+    logger.error(`screenshotAnalyzer failed: ${err.message}`, { stack: err.stack });
+    analysis = {
+      title: title || 'Screenshot save',
+      category: 'other',
+      tags: [],
+      intentType: null,
+      summary: '',
+      structuredData: {},
+      _classification: { type: 'unknown', confidence: null, allMatches: [] },
+    };
+  }
 
   return {
     screenshots,
