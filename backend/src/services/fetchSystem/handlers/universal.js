@@ -9,11 +9,12 @@ const vimeo = require('./providers/vimeo');
 const twitter = require('./providers/twitter');
 const reddit = require('./providers/reddit');
 const instagram = require('./providers/instagram');
+const amazon = require('./providers/amazon');
 const og = require('./providers/og');
 
 // Order matters: yt-dlp first (richest data for video sites), then per-site
-// oEmbed (fast), Instagram special handling, then generic OG scrape.
-const PROVIDERS = [ytdlp, youtube, tiktok, vimeo, twitter, reddit, instagram, og];
+// oEmbed (fast), Instagram/Amazon special handling, then generic OG scrape.
+const PROVIDERS = [ytdlp, youtube, tiktok, vimeo, twitter, reddit, instagram, amazon, og];
 
 const safeHostname = (u) => {
   try { return new URL(u).hostname; } catch { return null; }
