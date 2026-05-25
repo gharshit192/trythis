@@ -74,6 +74,16 @@ const extractAnalysis = async ({ transcript, title, description, source, categor
     return emptyResult(title);
   }
 
+  // Check API key exists before attempting
+  if (!process.env.ANTHROPIC_API_KEY) {
+    logger.error('[audioAnalyzer] ANTHROPIC_API_KEY not set — skipping AI analysis');
+    return {
+      ...emptyResult(title),
+      _error: 'API_KEY_MISSING',
+      _errorMessage: 'Anthropic API key not configured',
+    };
+  }
+
   logger.info('[audioAnalyzer] using Claude API');
 
   try {
@@ -89,14 +99,68 @@ const extractAnalysis = async ({ transcript, title, description, source, categor
 
     if (!json) {
       logger.warn('audioAnalyzer: claudeService returned null');
-      return { ...emptyResult(title), _provider: 'error' };
+      return {
+        ...emptyResult(title),
+        _provider: 'error',
+        _error: 'API_RETURNED_NULL',
+        _errorMessage: 'Claude API returned no parseable result',
+      };
     }
 
-    // Gap 4: semantic verification — log issues if found, but don't retry
-    // (Claude's retry logic in claudeService.withRetry is more reliable)
+    // Semantic verification — retry if critical issues found
     const issues = validateSemantics(json);
-    if (issues.length) {
+    if (issues.length > 0) {
       logger.warn(`audioAnalyzer: semantic issues detected: ${issues.join('; ')}`);
+
+      // Retry once if critical issues (missing required fields for claimed type)
+      if (issues.some(i => i.includes('type=') && i.includes('but'))) {
+        logger.info('[audioAnalyzer] retrying with correction prompt due to semantic issues');
+        try {
+          const Anthropic = require('@anthropic-ai/sdk');
+          const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+          const correctionPrompt = `${SYSTEM}
+
+Issues found in previous response: ${issues.join('; ')}
+
+Please correct the structuredData to fix these issues. Return ONLY valid JSON, no preamble.`;
+
+          const retryResponse = await client.messages.create({
+            model: 'claude-haiku-4-5-20251001',
+            max_tokens: 1024,
+            temperature: 0,
+            system: correctionPrompt,
+            messages: [
+              {
+                role: 'user',
+                content: [
+                  `Title: ${title || '(no title)'}`,
+                  description ? `Description: ${description}` : null,
+                  authorHandle ? `Author: @${authorHandle}` : null,
+                  source ? `Source: ${source}` : null,
+                  category ? `Category hint: ${category}` : null,
+                  visible ? `Text visible on-screen (OCR):\n${visible.slice(0, 2000)}` : null,
+                  text ? `Transcript:\n${text.slice(0, 4000)}` : null,
+                ].filter(Boolean).join('\n\n'),
+              },
+            ],
+          });
+
+          const retryText = retryResponse.content[0]?.type === 'text' ? retryResponse.content[0].text : '';
+          const retryJson = claudeService.parseJsonSafely(retryText);
+
+          if (retryJson) {
+            const retryIssues = validateSemantics(retryJson);
+            if (retryIssues.length < issues.length) {
+              logger.info(`[audioAnalyzer] retry improved semantic issues: ${issues.length} → ${retryIssues.length}`);
+              json = retryJson;
+            } else {
+              logger.warn(`[audioAnalyzer] retry did not improve (${retryIssues.length} issues remain), using original`);
+            }
+          }
+        } catch (retryErr) {
+          logger.warn(`[audioAnalyzer] correction retry failed: ${retryErr.message} — using original response`);
+        }
+      }
     }
 
     return normalize(json, { authorHandle, contextText: [transcript, description, visible].filter(Boolean).join(' ') });
@@ -138,6 +202,7 @@ const emptyResult = (title) => ({
   audioTags: [],
   structuredData: { type: 'other', recipe: null, product: null, itinerary: null, event: null, place: null },
   _provider: 'empty',
+  _error: undefined,
 });
 
 // Strip tags that are essentially the author's username (P7 fix).
