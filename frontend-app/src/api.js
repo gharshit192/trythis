@@ -205,7 +205,6 @@ const api = {
   },
 
   async exportBundlePdf(sessionId) {
-    const token = localStorage.getItem('auth_token');
     const url = new URL(`${API_BASE_URL}/saves/screenshot-bundle/${sessionId}/export-pdf`);
     const a = document.createElement('a');
     a.href = url.toString();

@@ -82,14 +82,11 @@ const getFilteredSaves = (allSaves, filter) => {
 
 export default function HomeFeed({ onNavigate }) {
   const [saves, setSaves] = useState([]);
-  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [fetchError, setFetchError] = useState(null);
   const [activeFilter, setActiveFilter] = useState('all');
 
   useEffect(() => {
     const userData = JSON.parse(localStorage.getItem('user') || '{}');
-    setUser(userData);
 
     const fetchData = async () => {
       try {

@@ -1,6 +1,6 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
-const claudeService = require('../../claudeService');
+const claudeService = require('../../../claudeService');
 const logger = require('../../../../utils/logger');
 
 const match = (u) => /instagram\.com/i.test(u);

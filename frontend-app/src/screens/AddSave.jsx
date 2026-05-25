@@ -141,7 +141,7 @@ function PhotosFlow({ collections, onBack, onNavigate }) {
 
   useEffect(() => {
     return () => { files.forEach((f) => URL.revokeObjectURL(f.previewUrl)); };
-  }, []);
+  }, [files]);
 
   const addFiles = (incoming) => {
     setError(null);
