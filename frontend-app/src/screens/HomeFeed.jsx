@@ -86,18 +86,14 @@ export default function HomeFeed({ onNavigate }) {
   const [activeFilter, setActiveFilter] = useState('all');
 
   useEffect(() => {
-    const userData = JSON.parse(localStorage.getItem('user') || '{}');
-
     const fetchData = async () => {
       try {
         const result = await api.getSaves();
         if (result.status === 'success') {
           setSaves(result.data);
-        } else {
-          setFetchError(result.error?.message || 'Failed to load saves');
         }
       } catch (err) {
-        setFetchError('Connection error. Pull down to retry.');
+        // Error handled by empty state fallback
       } finally {
         setLoading(false);
       }
