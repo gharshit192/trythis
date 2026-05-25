@@ -84,7 +84,19 @@ const tryClaudeTitle = async (transcript, kind, postId) => {
       };
     }
   } catch (err) {
-    logger.warn(`Claude transcript title extraction failed: ${err.message}`);
+    // Distinguish error types to provide proper feedback
+    if (err.message?.includes('API key') || err.status === 401 || err.code === 'ERR_AUTH') {
+      logger.error(`[instagram] Claude API authentication failed — check ANTHROPIC_API_KEY: ${err.message}`);
+      // Re-throw auth errors — these need attention, not silent swallowing
+      throw err;
+    }
+    if (err.status === 429 || err.message?.includes('rate limit')) {
+      logger.warn(`[instagram] Claude API rate limited — title extraction skipped for ${postId}`);
+      return null; // Rate limit: okay to skip silently and let fallback handle
+    }
+    // Network errors and timeouts: log but don't throw
+    logger.warn(`[instagram] tryClaudeTitle failed (network/timeout): ${err.message}`);
+    return null;
   }
   return null;
 };
