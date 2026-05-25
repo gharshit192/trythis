@@ -1,13 +1,39 @@
 import { useState } from 'react';
 import api from '../api';
 
-const CATEGORY_COLORS = {
-  travel: { bg: '#EBF4FF', text: '#185FA5', emoji: '✈️' },
-  food: { bg: '#EAF3DE', text: '#3B6D11', emoji: '🍽️' },
-  shopping: { bg: '#FAEEDA', text: '#854F0B', emoji: '🛍️' },
-  hotel: { bg: '#F5F3FF', text: '#534AB7', emoji: '🏨' },
-  mixed: { bg: '#F1F0EC', text: '#5F5E5A', emoji: '📌' },
-  default: { bg: '#F1EFE8', text: '#5F5E5A', emoji: '📌' }
+const CATEGORY_ICONS = {
+  'cafe': '☕',
+  'cafes': '☕',
+  'coffee': '☕',
+  'food': '🍽️',
+  'restaurant': '🍽️',
+  'restaurants': '🍽️',
+  'hotel': '🏨',
+  'stay': '🏨',
+  'stays': '🏨',
+  'accommodation': '🏨',
+  'activity': '🗺️',
+  'activities': '🗺️',
+  'place': '📍',
+  'places': '📍',
+  'shopping': '🛍️',
+  'shop': '🛍️',
+  'tech': '⚙️',
+  'technical': '⚙️',
+  'error': '⚙️',
+  'gaming': '🎮',
+  'console': '🎮',
+  'social': '📱',
+  'default': '📌'
+};
+
+const getCategoryIcon = (categoryName) => {
+  if (!categoryName) return CATEGORY_ICONS.default;
+  const lower = categoryName.toLowerCase();
+  for (const [key, icon] of Object.entries(CATEGORY_ICONS)) {
+    if (lower.includes(key)) return icon;
+  }
+  return CATEGORY_ICONS.default;
 };
 
 export default function ScreenshotSummary({ sessionId, summary: initialSummary, thumbnails = [], onNavigate }) {
@@ -18,7 +44,6 @@ export default function ScreenshotSummary({ sessionId, summary: initialSummary, 
   const [loadingAction, setLoadingAction] = useState('');
   const [error, setError] = useState(null);
   const [saved, setSaved] = useState(false);
-  const [expandedCategory, setExpandedCategory] = useState(null);
 
   if (!summary) {
     return (
@@ -86,141 +111,182 @@ export default function ScreenshotSummary({ sessionId, summary: initialSummary, 
     }
   };
 
-  const colorForCategory = (catName) => {
-    return CATEGORY_COLORS[catName?.toLowerCase()] || CATEGORY_COLORS.default;
+  const handleShareImage = () => {
+    if (navigator.share) {
+      navigator.share({
+        title: summary.autoTitle,
+        text: summary.masterSummary?.oneLiner,
+      });
+    }
   };
 
   return (
-    <div style={{ maxWidth: 480, margin: '0 auto', paddingBottom: 140 }}>
-      {/* Header */}
-      <div style={{ padding: '16px 20px 8px', borderBottom: '0.5px solid #eee' }}>
-        <button onClick={() => onNavigate('home')} style={{ background: 'none', border: 'none', fontSize: 14, color: '#666', cursor: 'pointer', marginBottom: 12, padding: 0 }}>
-          ← Back
+    <div style={{ background: 'var(--colors-surface-surface-0, white)', minHeight: '100vh', paddingBottom: 20 }}>
+      {/* Header with back & screenshot count */}
+      <div style={{ padding: '12px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '0.5px solid var(--colors-stroke-tertiary, #eee)' }}>
+        <button
+          onClick={() => onNavigate('home')}
+          style={{ width: 32, height: 32, background: 'var(--colors-surface-surface-1, #f5f5f5)', borderRadius: '50%', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 14 }}>
+          ←
         </button>
-        <h1 style={{ fontSize: 20, fontWeight: 500, margin: '0 0 8px' }}>{summary.autoTitle}</h1>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
-          {summary.categories?.map(cat => {
-            const color = colorForCategory(cat.name);
-            return (
-              <span key={cat.name} style={{ background: color.bg, color: color.text, fontSize: 12, fontWeight: 500, padding: '3px 10px', borderRadius: 999 }}>
-                {color.emoji} {cat.count} {cat.name}
-              </span>
-            );
-          })}
-        </div>
-        <p style={{ fontSize: 12, color: '#888', margin: 0 }}>{summary.totalScreenshots} screenshots analysed</p>
+        <span style={{ fontSize: 12, color: 'var(--colors-type-tertiary, #888)' }}>
+          {summary.totalScreenshots || 0} screenshots
+        </span>
+        <button
+          onClick={handleShareImage}
+          style={{ width: 32, height: 32, background: 'var(--colors-surface-surface-1, #f5f5f5)', borderRadius: '50%', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 14 }}>
+          ⤴
+        </button>
       </div>
 
-      {/* Thumbnail strip */}
-      {thumbnails.length > 0 && (
-        <div style={{ display: 'flex', gap: 6, padding: '12px 20px', overflowX: 'auto', borderBottom: '0.5px solid #eee' }}>
-          {thumbnails.map((t, i) => (
-            <img key={i} src={t} alt="" style={{ height: 64, width: 64, objectFit: 'cover', borderRadius: 8, flexShrink: 0 }} />
+      {/* Intro section */}
+      <div style={{ padding: '16px 20px 12px' }}>
+        <h1 style={{ fontSize: 22, fontWeight: 600, margin: '0 0 4px', lineHeight: 1.3 }}>
+          Your screenshot dump,<br/>made sense of
+        </h1>
+        <p style={{ fontSize: 12, color: 'var(--colors-type-tertiary, #888)', margin: 0 }}>
+          Sorted into {summary.categories?.length || 0} groups by TryThis · just now
+        </p>
+      </div>
+
+      {/* AI Detection strip */}
+      <div style={{ background: 'linear-gradient(135deg, rgba(46, 107, 82, 0.08) 0%, var(--colors-surface-surface-1, #f5f5f5) 100%)', borderLeft: '2px solid var(--colors-brands-primary-main, #1B3A2F)', borderRadius: '0 12px 12px 0', padding: '10px 12px', margin: '8px 20px 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
+        <span style={{ fontSize: 14 }}>✨</span>
+        <p style={{ fontSize: 11, color: 'var(--colors-brands-primary-main, #1B3A2F)', lineHeight: 1.4, margin: 0 }}>
+          {summary.masterSummary?.oneLiner || 'AI analysis complete'}
+        </p>
+      </div>
+
+      {/* Action buttons - visible and accessible */}
+      <div style={{ display: 'flex', gap: 6, padding: '8px 20px 12px', flexWrap: 'wrap' }}>
+        <button
+          onClick={handleRegenerate}
+          disabled={loading}
+          style={{ flex: '0 0 auto', padding: '8px 12px', fontSize: 11, borderRadius: 8, cursor: 'pointer', background: 'var(--colors-surface-surface-1, #f5f5f5)', border: '0.5px solid var(--colors-stroke-tertiary, #ddd)', opacity: loading ? 0.6 : 1 }}>
+          ↺ Regenerate
+        </button>
+        <button
+          onClick={() => setShowRefine(!showRefine)}
+          disabled={loading}
+          style={{ flex: '0 0 auto', padding: '8px 12px', fontSize: 11, borderRadius: 8, cursor: 'pointer', background: 'var(--colors-surface-surface-1, #f5f5f5)', border: '0.5px solid var(--colors-stroke-tertiary, #ddd)', opacity: loading ? 0.6 : 1 }}>
+          ✎ Refine
+        </button>
+        <button
+          onClick={handleExportPdf}
+          disabled={loading}
+          style={{ flex: '0 0 auto', padding: '8px 12px', fontSize: 11, borderRadius: 8, cursor: 'pointer', background: 'var(--colors-surface-surface-1, #f5f5f5)', border: '0.5px solid var(--colors-stroke-tertiary, #ddd)', opacity: loading ? 0.6 : 1 }}>
+          📄 Export PDF
+        </button>
+        <button
+          onClick={handleShareImage}
+          style={{ flex: '0 0 auto', padding: '8px 12px', fontSize: 11, borderRadius: 8, cursor: 'pointer', background: 'var(--colors-surface-surface-1, #f5f5f5)', border: '0.5px solid var(--colors-stroke-tertiary, #ddd)' }}>
+          📤 Share image
+        </button>
+      </div>
+
+      {/* Master summary bullets */}
+      {summary.masterSummary?.bullets && summary.masterSummary.bullets.length > 0 && (
+        <div style={{ background: 'var(--colors-surface-surface, white)', border: '0.5px solid var(--colors-stroke-tertiary, #eee)', borderRadius: 14, padding: '12px 16px', margin: '0 20px 12px' }}>
+          <p style={{ fontSize: 11, fontWeight: 600, margin: '0 0 8px', color: 'var(--colors-type-primary, #1a1a1a)' }}>KEY POINTS</p>
+          {summary.masterSummary.bullets.map((bullet, idx) => (
+            <div key={idx} style={{ display: 'flex', gap: 8, marginBottom: 6, fontSize: 11 }}>
+              <span style={{ color: 'var(--colors-brands-primary-main, #1B3A2F)', fontWeight: 600, flexShrink: 0 }}>•</span>
+              <span style={{ color: 'var(--colors-type-primary, #1a1a1a)', lineHeight: 1.4 }}>{bullet}</span>
+            </div>
           ))}
         </div>
       )}
 
-      {/* Master summary card */}
-      <div style={{ margin: '12px 20px', background: '#F8F9FA', borderRadius: 12, padding: 16, border: '0.5px solid #eee' }}>
-        <h2 style={{ fontSize: 14, fontWeight: 500, margin: '0 0 10px', color: '#1a1a1a' }}>AI Summary</h2>
-        {summary.masterSummary?.oneLiner && (
-          <p style={{ fontSize: 13, color: '#444', margin: '0 0 12px', lineHeight: 1.5 }}>{summary.masterSummary.oneLiner}</p>
-        )}
-        {summary.masterSummary?.bullets?.map((b, i) => (
-          <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 6 }}>
-            <span style={{ color: '#2E6B52', fontWeight: 500, flexShrink: 0 }}>•</span>
-            <span style={{ fontSize: 13, color: '#333', lineHeight: 1.5 }}>{b}</span>
+      {/* Category groups with bifurcations */}
+      <div style={{ paddingBottom: 20 }}>
+        {summary.categories?.map((cat, idx) => (
+          <div
+            key={idx}
+            style={{ background: 'var(--colors-surface-surface, white)', border: '0.5px solid var(--colors-stroke-tertiary, #eee)', borderRadius: 14, padding: '12px 16px', margin: '0 20px 10px' }}>
+            {/* Category header */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+              <div style={{ width: 32, height: 32, background: 'rgba(46, 107, 82, 0.1)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>
+                {getCategoryIcon(cat.name)}
+              </div>
+              <div style={{ flex: 1 }}>
+                <p style={{ fontSize: 13, fontWeight: 600, margin: 0, color: 'var(--colors-type-primary, #1a1a1a)' }}>
+                  {cat.name}
+                </p>
+                <p style={{ fontSize: 10, color: 'var(--colors-type-tertiary, #888)', margin: 0 }}>
+                  {cat.count} items
+                </p>
+              </div>
+            </div>
+
+            {/* Category summary */}
+            {cat.summary && (
+              <p style={{ fontSize: 11, color: 'var(--colors-type-primary, #1a1a1a)', lineHeight: 1.4, fontStyle: 'italic', margin: '8px 0' }}>
+                "{cat.summary}"
+              </p>
+            )}
+
+            {/* Items list with bifurcations */}
+            {cat.items && cat.items.length > 0 && (
+              <div style={{ marginTop: 8 }}>
+                {cat.items.map((item, ii) => (
+                  <div key={ii} style={{ marginBottom: 6 }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '6px 0', fontSize: 11, color: 'var(--colors-type-primary, #1a1a1a)' }}>
+                      <div style={{ width: 5, height: 5, background: 'var(--colors-brands-primary-main, #1B3A2F)', borderRadius: '50%', flexShrink: 0, marginTop: 3 }} />
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 500 }}>{item.name}</div>
+                        {item.details && (
+                          <div style={{ fontSize: 10, color: 'var(--colors-type-tertiary, #888)', marginTop: 2 }}>
+                            {item.details}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         ))}
-        {summary.masterSummary?.budgetRange && (
-          <div style={{ marginTop: 10, fontSize: 12, color: '#666' }}>
-            <strong>Budget:</strong> {summary.masterSummary.budgetRange}
-          </div>
-        )}
-        {summary.masterSummary?.bestPick && (
-          <div style={{ fontSize: 12, color: '#666', marginTop: 4 }}>
-            <strong>Top pick:</strong> {summary.masterSummary.bestPick}
-          </div>
-        )}
       </div>
-
-      {/* Category sections */}
-      {summary.categories?.map((cat, ci) => {
-        const color = colorForCategory(cat.name);
-        return (
-          <div key={ci} style={{ margin: '0 20px 8px', border: '0.5px solid #eee', borderRadius: 12, overflow: 'hidden' }}>
-            <button
-              onClick={() => setExpandedCategory(expandedCategory === ci ? null : ci)}
-              style={{ width: '100%', background: 'white', border: 'none', padding: '14px 16px', display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
-              <span style={{ fontSize: 18, marginRight: 10 }}>{color.emoji}</span>
-              <span style={{ flex: 1, textAlign: 'left', fontWeight: 500, fontSize: 14, color: '#1a1a1a' }}>{cat.name}</span>
-              <span style={{ fontSize: 12, color: '#888', marginRight: 8 }}>{cat.count}</span>
-              <span style={{ fontSize: 12, color: '#888' }}>{expandedCategory === ci ? '▲' : '▼'}</span>
-            </button>
-            {expandedCategory === ci && cat.items?.map((item, ii) => (
-              <div key={ii} style={{ padding: '10px 16px', borderTop: '0.5px solid #f0f0f0', background: '#FAFAFA' }}>
-                {item.name && <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 3, color: '#1a1a1a' }}>{item.name}</div>}
-                {item.details && <div style={{ fontSize: 12, color: '#666', lineHeight: 1.5, marginBottom: 4 }}>{item.details}</div>}
-                {item.tags?.length > 0 && (
-                  <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                    {item.tags.map((t, ti) => (
-                      <span key={ti} style={{ fontSize: 10, background: '#F0F0F0', color: '#666', padding: '2px 8px', borderRadius: 999 }}>{t}</span>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        );
-      })}
 
       {/* Error message */}
       {error && (
-        <div style={{ margin: '8px 20px', padding: 12, background: '#FEF2F2', borderRadius: 8, fontSize: 13, color: '#A32D2D' }}>
+        <div style={{ margin: '0 20px 12px', padding: 10, background: 'var(--colors-background-danger, #FEF2F2)', borderRadius: 8, fontSize: 11, color: 'var(--colors-type-danger, #A32D2D)' }}>
           {error}
         </div>
       )}
 
-      {/* Refine sheet */}
+      {/* Refine input - inline */}
       {showRefine && (
-        <div style={{ margin: '8px 20px', background: '#F8F9FA', borderRadius: 12, padding: 16 }}>
-          <p style={{ fontSize: 13, fontWeight: 500, margin: '0 0 8px', color: '#1a1a1a' }}>Refine summary</p>
+        <div style={{ margin: '0 20px 12px', background: 'var(--colors-surface-surface-1, #f5f5f5)', borderRadius: 12, padding: 12, border: '0.5px solid var(--colors-stroke-tertiary, #eee)' }}>
+          <p style={{ fontSize: 10, fontWeight: 600, margin: '0 0 8px', color: 'var(--colors-type-tertiary, #888)' }}>REFINE WITH INSTRUCTIONS</p>
           <textarea
             value={refineText}
             onChange={e => setRefineText(e.target.value)}
-            placeholder="e.g. Focus only on budget cafes under ₹500 for two"
-            style={{ width: '100%', minHeight: 80, fontSize: 13, padding: 10, borderRadius: 8, border: '0.5px solid #ddd', resize: 'vertical', boxSizing: 'border-box' }}
+            placeholder='"Focus only on budget options under ₹2000/night"'
+            style={{ width: '100%', minHeight: 60, fontSize: 11, padding: 8, borderRadius: 8, border: '0.5px solid var(--colors-stroke-tertiary, #ddd)', resize: 'vertical', boxSizing: 'border-box' }}
           />
-          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-            <button onClick={() => setShowRefine(false)} style={{ flex: 1, padding: 10, fontSize: 13, borderRadius: 8, cursor: 'pointer', background: '#f0f0f0', border: 'none' }}>
+          <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+            <button onClick={() => setShowRefine(false)} style={{ flex: 1, padding: 8, fontSize: 11, borderRadius: 6, cursor: 'pointer', background: 'var(--colors-surface-surface, white)', border: '0.5px solid var(--colors-stroke-tertiary, #ddd)' }}>
               Cancel
             </button>
             <button
               onClick={handleRefine}
               disabled={loading || !refineText.trim()}
-              style={{ flex: 2, padding: 10, fontSize: 13, borderRadius: 8, cursor: 'pointer', background: '#1B3A2F', color: 'white', border: 'none', opacity: loading ? 0.7 : 1 }}>
-              {loading && loadingAction === 'refine' ? 'AI is refining...' : 'Apply'}
+              style={{ flex: 1, padding: 8, fontSize: 11, borderRadius: 6, cursor: 'pointer', background: 'var(--colors-brands-primary-main, #1B3A2F)', color: 'white', border: 'none', opacity: loading ? 0.6 : 1 }}>
+              {loading && loadingAction === 'refine' ? 'Refining...' : 'Apply'}
             </button>
           </div>
         </div>
       )}
 
-      {/* Action bar — fixed bottom */}
-      <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, background: 'white', borderTop: '0.5px solid #eee', padding: '12px 20px', display: 'flex', gap: 8, maxWidth: 480, margin: '0 auto' }}>
-        <button onClick={handleRegenerate} disabled={loading} style={{ flex: 1, padding: '10px 0', fontSize: 12, borderRadius: 8, cursor: 'pointer', background: '#f5f5f5', border: 'none', opacity: loading ? 0.6 : 1 }}>
-          {loading && loadingAction === 'regenerate' ? '...' : '↺ Redo'}
-        </button>
-        <button onClick={() => setShowRefine(!showRefine)} disabled={loading} style={{ flex: 1, padding: '10px 0', fontSize: 12, borderRadius: 8, cursor: 'pointer', background: '#f5f5f5', border: 'none', opacity: loading ? 0.6 : 1 }}>
-          ✎ Refine
-        </button>
-        <button onClick={handleExportPdf} style={{ flex: 1, padding: '10px 0', fontSize: 12, borderRadius: 8, cursor: 'pointer', background: '#f5f5f5', border: 'none' }}>
-          ↓ PDF
-        </button>
+      {/* Save button - bottom */}
+      <div style={{ padding: '0 20px 12px', display: 'flex', gap: 8 }}>
         <button
           onClick={handleSave}
           disabled={loading || saved}
-          style={{ flex: 1.5, padding: '10px 0', fontSize: 12, borderRadius: 8, cursor: 'pointer', background: saved ? '#2E6B52' : '#1B3A2F', color: 'white', border: 'none', opacity: loading ? 0.7 : 1 }}>
-          {saved ? '✓ Saved' : loading && loadingAction === 'save' ? 'Saving...' : 'Save'}
+          style={{ flex: 1, padding: '12px 0', background: saved ? 'var(--colors-brands-success-main, #2E6B52)' : 'var(--colors-brands-primary-main, #1B3A2F)', color: 'white', border: 'none', borderRadius: 12, fontSize: 12, fontWeight: 600, cursor: 'pointer', opacity: loading ? 0.6 : 1 }}>
+          {saved ? '✓ Saved to collection' : loading && loadingAction === 'save' ? 'Saving...' : 'Save to collection'}
         </button>
       </div>
     </div>
