@@ -51,15 +51,15 @@ const extractPrice = (text) => {
 };
 
 const fetch = async (source) => {
-  const url = typeof source === 'string' ? source : source.url;
-  const asin = extractAsin(url);
-
-  if (!asin) {
-    logger.warn(`Amazon provider: could not extract ASIN from ${url}`);
-    return null;
-  }
-
   try {
+    const url = typeof source === 'string' ? source : source.url;
+    const asin = extractAsin(url);
+
+    if (!asin) {
+      logger.warn(`Amazon provider: could not extract ASIN from ${url}`);
+      return null;
+    }
+
     const { data } = await axios.get(url, {
       timeout: 8000,
       headers: {

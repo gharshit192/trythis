@@ -323,7 +323,7 @@ const processSave = async (saveId) => {
       let raw = null;
 
       // Only attempt transcription if MP4 exists
-      if (mp4Ready) {
+      if (mp4Ready && fs.existsSync(mp4Path)) {
         try {
           await extractWavForWhisper(mp4Path, wavPath);
           raw = await transcribeWithWhisperOrClaude(wavPath, {

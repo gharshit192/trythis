@@ -117,14 +117,15 @@ const fetch_ = async (source) => {
     let ocrSource = 'tesseract';
     try {
       const result = await runTesseractOrClaude(imagePath);
-      ocrText = result.text;
+      ocrText = result.text || '';
       ocrSource = result._source || 'tesseract';
       logger.info(`OCR extracted ${ocrText.length} chars from ${imagePath} via ${ocrSource}`);
     } catch (err) {
       logger.warn(`OCR (Tesseract + Claude) failed: ${err.message}`);
+      ocrText = '';
     }
 
-    const firstLine = ocrText.split('\n').find((l) => l.trim()) || '';
+    const firstLine = (ocrText || '').split('\n').find((l) => l.trim()) || '';
     const title = source.title || (firstLine ? firstLine.slice(0, 80) : 'Screenshot');
 
     return {
