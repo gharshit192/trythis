@@ -3,7 +3,7 @@ const Notification = require('../../../models/Notification');
 const { getMessage } = require('../../notificationMessageService');
 const logger = require('../../../utils/logger');
 
-const weekendReminder = async (userId) => {
+const evaluate = async (userId, context = {}, userPersona = {}) => {
   try {
     const day = new Date().getDay();
     if (day !== 5 && day !== 6) return [];
@@ -47,12 +47,15 @@ const weekendReminder = async (userId) => {
     if (!messageData || !messageData.body) return [];
 
     return [{
-      type:     'weekend_reminder',
-      title:    messageData.title,
-      body:     messageData.body,
-      saveId:   featured._id,
-      priority: 'medium',
-      metadata: { dayName, saveCount: saves.length }
+      type:            'weekend_reminder',
+      category:        featured.category,
+      title:           messageData.title,
+      message:         messageData.body,
+      relatedSaveId:   featured._id,
+      priority:        'medium',
+      relevanceScore:  0.8,
+      metadata:        { dayName, saveCount: saves.length },
+      actionUrl:       `/saves/${featured._id}`
     }];
   } catch (err) {
     logger.error(`[weekendReminder] failed: ${err.message}`);
@@ -60,4 +63,4 @@ const weekendReminder = async (userId) => {
   }
 };
 
-module.exports = weekendReminder;
+module.exports = { evaluate };

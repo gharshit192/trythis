@@ -3,7 +3,7 @@ const Notification = require('../../../models/Notification');
 const { getMessage } = require('../../notificationMessageService');
 const logger = require('../../../utils/logger');
 
-const resurface = async (userId) => {
+const evaluate = async (userId, context = {}, userPersona = {}) => {
   try {
     const fourteenDaysAgo  = new Date(Date.now() - 14  * 24 * 60 * 60 * 1000);
     const sixtyDaysAgo     = new Date(Date.now() - 60  * 24 * 60 * 60 * 1000);
@@ -45,12 +45,15 @@ const resurface = async (userId) => {
     if (!messageData || !messageData.body) return [];
 
     return [{
-      type:     'resurface',
-      title:    messageData.title,
-      body:     messageData.body,
-      saveId:   save._id,
-      priority: 'high',
-      metadata: { saveId: save._id.toString(), daysAgo }
+      type:            'resurface',
+      category:        save.category,
+      title:           messageData.title,
+      message:         messageData.body,
+      relatedSaveId:   save._id,
+      priority:        'high',
+      relevanceScore:  0.85,
+      metadata:        { saveId: save._id.toString(), daysAgo },
+      actionUrl:       `/saves/${save._id}`
     }];
   } catch (err) {
     logger.error(`[resurface] failed: ${err.message}`);
@@ -58,4 +61,4 @@ const resurface = async (userId) => {
   }
 };
 
-module.exports = resurface;
+module.exports = { evaluate };

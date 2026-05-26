@@ -134,7 +134,7 @@ const getKnownEvents = (destination, month) => {
 };
 
 // Main trigger
-const travelIntelligence = async (userId) => {
+const evaluate = async (userId, context = {}, userPersona = {}) => {
   try {
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
@@ -215,11 +215,13 @@ const travelIntelligence = async (userId) => {
       if (!messageData || !messageData.body) continue;
 
       notifications.push({
-        type:     'travel_intelligence',
-        title:    messageData.title,
-        body:     messageData.body,
-        saveId:   featuredSave._id,
-        priority: signal.type === 'cultural_event' ? 'high' : 'medium',
+        type:           'travel_intelligence',
+        category:       featuredSave.category,
+        title:          messageData.title,
+        message:        messageData.body,
+        relatedSaveId:  featuredSave._id,
+        priority:       signal.type === 'cultural_event' ? 'high' : 'medium',
+        relevanceScore: signal.type === 'cultural_event' ? 0.9 : 0.75,
         metadata: {
           destination,
           signalType:  signal.type,
@@ -227,7 +229,8 @@ const travelIntelligence = async (userId) => {
           eventName:   signal.eventName   || null,
           weatherTemp: signal.maxTemp     || null,
           eventUrl:    signal.url         || null
-        }
+        },
+        actionUrl: `/saves/${featuredSave._id}`
       });
 
       // Only one notification per destination per run
@@ -241,4 +244,4 @@ const travelIntelligence = async (userId) => {
   }
 };
 
-module.exports = travelIntelligence;
+module.exports = { evaluate };

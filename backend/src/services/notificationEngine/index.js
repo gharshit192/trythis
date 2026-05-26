@@ -10,6 +10,9 @@ const seasonal = require('./triggers/seasonal');
 const weatherAware = require('./triggers/weatherAware');
 const timeBehavioral = require('./triggers/timeBehavioral');
 const priceDrop = require('./triggers/priceDrop');
+const travelIntelligence = require('./triggers/travelIntelligence');
+const weekendReminder = require('./triggers/weekendReminder');
+const resurface = require('./triggers/resurface');
 
 // Personalization
 const personaEngine = require('./personalization/userPersona');
@@ -62,6 +65,9 @@ async function evaluateNotifications(userId, context = {}) {
       { name: 'weather_aware', module: weatherAware },
       { name: 'time_behavioral', module: timeBehavioral },
       { name: 'price_drop', module: priceDrop },
+      { name: 'travel_intelligence', module: travelIntelligence },
+      { name: 'weekend_reminder', module: weekendReminder },
+      { name: 'resurface', module: resurface },
     ].filter((t) => !shouldSuppressTrigger(engagementProfile, t.name));
 
     // Gather candidates in parallel
