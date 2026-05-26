@@ -28,6 +28,35 @@ function App() {
   const [currentScreen, setCurrentScreen] = useState('onboarding');
   const [payload, setPayload] = useState(null);
   const [saves, setSaves] = useState([]);
+  const [nearbySaves, setNearbySaves] = useState([]);
+  const [showNearbyBanner, setShowNearbyBanner] = useState(false);
+
+  const requestAndStoreLocation = async () => {
+    if (!navigator.geolocation) return;
+
+    const stored = localStorage.getItem('location_requested');
+    if (stored) return; // only ask once per session
+
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude: lat, longitude: lng } = pos.coords;
+        localStorage.setItem('location_requested', 'true');
+        try {
+          await api.updateLocation(lat, lng, null);
+          // Check for nearby saves and show banner if any found
+          const result = await api.getNearbySaves(lat, lng);
+          if (result.status === 'success' && result.saves?.length > 0) {
+            setNearbySaves(result.saves);
+            setShowNearbyBanner(true);
+          }
+        } catch {}
+      },
+      (err) => {
+        localStorage.setItem('location_requested', 'denied');
+      },
+      { timeout: 10000, maximumAge: 300000 }
+    );
+  };
 
   useEffect(() => {
     // Synchronous auth check before rendering (prevents login flash)
@@ -50,6 +79,8 @@ function App() {
             } else {
               setCurrentScreen(result.data.length > 0 ? 'home' : 'home-empty');
             }
+            // Request location permission after saves are loaded
+            requestAndStoreLocation();
           }
         }).catch(() => {});
       } catch {
@@ -110,7 +141,7 @@ function App() {
     'firstSaveSuccess': <FirstSaveSuccess {...props} />,
     'notification-permission': <NotificationPermission {...props} />,
     'home-empty': <HomeEmpty {...props} />,
-    'home': <HomeFeed {...props} />,
+    'home': <HomeFeed {...props} nearbySaves={nearbySaves} showNearbyBanner={showNearbyBanner} onDismissNearby={() => setShowNearbyBanner(false)} />,
     'savedList': <SavedList {...props} saves={saves} filter={payload?.filter} title={payload?.title} />,
     'add-save': <AddSave {...props} />,
     'save-detail': <SaveDetail {...props} />,
