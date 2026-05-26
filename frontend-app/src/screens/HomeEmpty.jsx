@@ -3,27 +3,6 @@ export default function HomeEmpty({ onNavigate }) {
   const firstName = user?.name?.split(' ')[0] || 'there';
   const initials = user?.name?.substring(0, 2).toUpperCase() || '?';
 
-  const actionCards = [
-    {
-      icon: '🔗',
-      title: 'Save from web',
-      description: 'Paste a URL or use our browser extension',
-      action: () => onNavigate('add-save'),
-    },
-    {
-      icon: '📸',
-      title: 'Screenshot',
-      description: 'Capture and save images from your device',
-      action: () => onNavigate('add-save'),
-    },
-    {
-      icon: '✍️',
-      title: 'Add manually',
-      description: 'Create a save with your own notes',
-      action: () => onNavigate('add-save'),
-    },
-  ];
-
   return (
     <div className="phone-frame">
       <div style={{ background: 'var(--paper)', flex: 1, display: 'flex', flexDirection: 'column' }}>
@@ -40,37 +19,35 @@ export default function HomeEmpty({ onNavigate }) {
           <span style={{ fontSize: '14px', color: 'var(--slate)', flex: 1 }}>Search saves, places, vibes…</span>
         </div>
 
-        <div style={{ textAlign: 'center', flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 20px 80px', overflow: 'auto' }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 20px 80px' }}>
           <i className="ti ti-inbox" style={{ fontSize: '48px', color: 'var(--forest)', marginBottom: '16px' }}></i>
           <h2 className="display" style={{ fontSize: '22px', marginBottom: '8px' }}>No saves yet</h2>
           <p style={{ fontSize: '14px', color: 'var(--slate)', marginBottom: '32px' }}>Start saving things to try later</p>
 
-          <div style={{ width: '100%', maxWidth: '320px', display: 'grid', gap: '12px' }}>
-            {actionCards.map((card, idx) => (
-              <div
-                key={idx}
-                onClick={card.action}
-                style={{
-                  background: 'white',
-                  border: '1px solid var(--stone)',
-                  borderRadius: '12px',
-                  padding: '16px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  gap: '12px',
-                  alignItems: 'flex-start',
-                  transition: 'all 0.2s',
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--forest)'}
-                onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--stone)'}
-              >
-                <div style={{ fontSize: '24px', flexShrink: 0 }}>{card.icon}</div>
-                <div style={{ textAlign: 'left' }}>
-                  <p style={{ fontSize: '14px', fontWeight: 500, color: 'var(--ink)', margin: '0 0 4px 0' }}>{card.title}</p>
-                  <p style={{ fontSize: '12px', color: 'var(--slate)', margin: 0 }}>{card.description}</p>
-                </div>
+          <div style={{ width: '100%', maxWidth: '320px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div onClick={() => onNavigate('add-save')} style={{ background: 'white', border: '1px solid #d4d4d0', borderRadius: '12px', padding: '16px', cursor: 'pointer', display: 'flex', gap: '12px', alignItems: 'flex-start', transition: 'all 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.borderColor = '#1B3A2F'} onMouseLeave={(e) => e.currentTarget.style.borderColor = '#d4d4d0'}>
+              <div style={{ fontSize: '24px', flexShrink: 0 }}>🔗</div>
+              <div style={{ textAlign: 'left' }}>
+                <p style={{ fontSize: '14px', fontWeight: 500, color: '#000', margin: '0 0 4px 0' }}>Save from web</p>
+                <p style={{ fontSize: '12px', color: '#888', margin: 0 }}>Paste a URL or use our browser extension</p>
               </div>
-            ))}
+            </div>
+
+            <div onClick={() => onNavigate('add-save')} style={{ background: 'white', border: '1px solid #d4d4d0', borderRadius: '12px', padding: '16px', cursor: 'pointer', display: 'flex', gap: '12px', alignItems: 'flex-start', transition: 'all 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.borderColor = '#1B3A2F'} onMouseLeave={(e) => e.currentTarget.style.borderColor = '#d4d4d0'}>
+              <div style={{ fontSize: '24px', flexShrink: 0 }}>📸</div>
+              <div style={{ textAlign: 'left' }}>
+                <p style={{ fontSize: '14px', fontWeight: 500, color: '#000', margin: '0 0 4px 0' }}>Screenshot</p>
+                <p style={{ fontSize: '12px', color: '#888', margin: 0 }}>Capture and save images from your device</p>
+              </div>
+            </div>
+
+            <div onClick={() => onNavigate('add-save')} style={{ background: 'white', border: '1px solid #d4d4d0', borderRadius: '12px', padding: '16px', cursor: 'pointer', display: 'flex', gap: '12px', alignItems: 'flex-start', transition: 'all 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.borderColor = '#1B3A2F'} onMouseLeave={(e) => e.currentTarget.style.borderColor = '#d4d4d0'}>
+              <div style={{ fontSize: '24px', flexShrink: 0 }}>✍️</div>
+              <div style={{ textAlign: 'left' }}>
+                <p style={{ fontSize: '14px', fontWeight: 500, color: '#000', margin: '0 0 4px 0' }}>Add manually</p>
+                <p style={{ fontSize: '12px', color: '#888', margin: 0 }}>Create a save with your own notes</p>
+              </div>
+            </div>
           </div>
         </div>
 
