@@ -342,6 +342,32 @@ const api = {
     });
     return handle(res);
   },
+
+  // ---- Location & Settings ----
+  async updateLocation(lat, lng, city) {
+    const res = await fetch(`${API_BASE_URL}/auth/location`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
+      body: JSON.stringify({ lat, lng, city }),
+    });
+    return handle(res);
+  },
+
+  async updateSettings(settings) {
+    const res = await fetch(`${API_BASE_URL}/auth/settings`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
+      body: JSON.stringify(settings),
+    });
+    return handle(res);
+  },
+
+  async getNearbySaves(lat, lng, radiusMetres = 1000) {
+    const res = await fetch(`${API_BASE_URL}/saves/nearby?lat=${lat}&lng=${lng}&radiusMetres=${radiusMetres}`, {
+      headers: authHeader(),
+    });
+    return handle(res);
+  },
 };
 
 export default api;
