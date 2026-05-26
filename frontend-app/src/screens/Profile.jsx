@@ -41,6 +41,11 @@ export default function Profile({ onNavigate }) {
   const [collections, setCollections] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Notification & Location settings
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [locationEnabled, setLocationEnabled] = useState(false);
+  const [settingsSaving, setSettingsSaving] = useState(false);
+
   // Modals
   const [confirmLogout, setConfirmLogout] = useState(false);
   const [showChangePw, setShowChangePw] = useState(false);
@@ -52,7 +57,14 @@ export default function Profile({ onNavigate }) {
   const [pwSaving, setPwSaving] = useState(false);
 
   useEffect(() => {
-    setUser(JSON.parse(localStorage.getItem('user') || 'null'));
+    const storedUser = JSON.parse(localStorage.getItem('user') || 'null');
+    setUser(storedUser);
+    // Initialize settings from user data
+    if (storedUser) {
+      setNotificationsEnabled(storedUser.notificationsEnabled ?? true);
+      setLocationEnabled(storedUser.locationEnabled ?? false);
+    }
+
     const ctrl = new AbortController();
     (async () => {
       try {
@@ -82,6 +94,71 @@ export default function Profile({ onNavigate }) {
   const resetPwForm = () => {
     setPwCurrent(''); setPwNew(''); setPwConfirm('');
     setPwError(null); setPwInfo(null);
+  };
+
+  const handleNotificationsToggle = async () => {
+    setSettingsSaving(true);
+    try {
+      const newValue = !notificationsEnabled;
+      await api.updateSettings({ notificationsEnabled: newValue });
+      setNotificationsEnabled(newValue);
+      // Update localStorage
+      const updatedUser = { ...user, notificationsEnabled: newValue };
+      setUser(updatedUser);
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+    } catch (err) {
+      console.error('Failed to update notifications setting', err);
+    } finally {
+      setSettingsSaving(false);
+    }
+  };
+
+  const handleLocationToggle = async () => {
+    if (locationEnabled) {
+      // Turning off location
+      setSettingsSaving(true);
+      try {
+        await api.updateSettings({ locationEnabled: false });
+        setLocationEnabled(false);
+        const updatedUser = { ...user, locationEnabled: false };
+        setUser(updatedUser);
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+      } catch (err) {
+        console.error('Failed to update location setting', err);
+      } finally {
+        setSettingsSaving(false);
+      }
+    } else {
+      // Turning on location — request geolocation first
+      if (!navigator.geolocation) {
+        alert('Geolocation is not supported by your browser.');
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          const { latitude: lat, longitude: lng } = pos.coords;
+          setSettingsSaving(true);
+          try {
+            await api.updateLocation(lat, lng, null);
+            await api.updateSettings({ locationEnabled: true });
+            setLocationEnabled(true);
+            const updatedUser = { ...user, locationEnabled: true };
+            setUser(updatedUser);
+            localStorage.setItem('user', JSON.stringify(updatedUser));
+          } catch (err) {
+            console.error('Failed to enable location', err);
+          } finally {
+            setSettingsSaving(false);
+          }
+        },
+        (err) => {
+          console.error('Geolocation permission denied', err);
+          alert('Location permission required. Please enable it in your browser settings.');
+        },
+        { timeout: 10000 }
+      );
+    }
   };
 
   const handleChangePassword = async () => {
@@ -225,6 +302,72 @@ export default function Profile({ onNavigate }) {
               <button className="btn-primary" onClick={() => onNavigate('add-save')}>Add your first save</button>
             </div>
           )}
+
+          {/* Settings */}
+          <Section title="Settings">
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 4px', borderBottom: '0.5px solid var(--hairline)' }}>
+                <i className="ti ti-bell" style={{ fontSize: 16, color: 'var(--forest)', width: 18 }}></i>
+                <p style={{ fontSize: 13, flex: 1 }}>Notifications</p>
+                <button
+                  onClick={handleNotificationsToggle}
+                  disabled={settingsSaving}
+                  style={{
+                    background: notificationsEnabled ? 'var(--forest)' : 'var(--mute,#cbd5e1)',
+                    border: 'none',
+                    borderRadius: 12,
+                    width: 40,
+                    height: 24,
+                    cursor: settingsSaving ? 'not-allowed' : 'pointer',
+                    opacity: settingsSaving ? 0.6 : 1,
+                    position: 'relative',
+                    transition: 'background 0.2s',
+                  }}
+                >
+                  <div style={{
+                    position: 'absolute',
+                    width: 20,
+                    height: 20,
+                    borderRadius: '50%',
+                    background: 'white',
+                    top: 2,
+                    left: notificationsEnabled ? 18 : 2,
+                    transition: 'left 0.2s',
+                  }} />
+                </button>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 4px', borderBottom: '0.5px solid var(--hairline)' }}>
+                <i className="ti ti-map-pin" style={{ fontSize: 16, color: 'var(--forest)', width: 18 }}></i>
+                <p style={{ fontSize: 13, flex: 1 }}>Location-based saves</p>
+                <button
+                  onClick={handleLocationToggle}
+                  disabled={settingsSaving}
+                  style={{
+                    background: locationEnabled ? 'var(--forest)' : 'var(--mute,#cbd5e1)',
+                    border: 'none',
+                    borderRadius: 12,
+                    width: 40,
+                    height: 24,
+                    cursor: settingsSaving ? 'not-allowed' : 'pointer',
+                    opacity: settingsSaving ? 0.6 : 1,
+                    position: 'relative',
+                    transition: 'background 0.2s',
+                  }}
+                >
+                  <div style={{
+                    position: 'absolute',
+                    width: 20,
+                    height: 20,
+                    borderRadius: '50%',
+                    background: 'white',
+                    top: 2,
+                    left: locationEnabled ? 18 : 2,
+                    transition: 'left 0.2s',
+                  }} />
+                </button>
+              </div>
+            </div>
+          </Section>
 
           {/* Account */}
           <Section title="Account">

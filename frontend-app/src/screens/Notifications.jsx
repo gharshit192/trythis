@@ -10,6 +10,21 @@ const timeAgo = (dateStr) => {
   return `${Math.floor(diff / 86400)}d ago`;
 };
 
+const NOTIFICATION_STYLES = {
+  welcome: { icon: 'ti-sparkles', color: '#16a766', bgColor: '#d3f9d8' },
+  travel_intelligence: { icon: 'ti-plane', color: '#4a86e8', bgColor: '#dbeafe' },
+  weekend_reminder: { icon: 'ti-sun', color: '#f59e0b', bgColor: '#fef3c7' },
+  resurface: { icon: 'ti-refresh', color: '#16a766', bgColor: '#d3f9d8' },
+  shared_save_viewed: { icon: 'ti-eye', color: '#a855f7', bgColor: '#f3e8ff' },
+  nearby: { icon: 'ti-map-pin', color: '#f59e0b', bgColor: '#fef3c7' },
+  food_nearby: { icon: 'ti-utensils', color: '#f59e0b', bgColor: '#fef3c7' },
+  shopping_deal: { icon: 'ti-shopping-cart', color: '#ec4899', bgColor: '#fce7f3' },
+};
+
+const getNotificationStyle = (type) => {
+  return NOTIFICATION_STYLES[type] || { icon: 'ti-bell', color: '#1B3A2F', bgColor: '#e8f5e9' };
+};
+
 export default function Notifications({ onNavigate }) {
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -54,29 +69,32 @@ export default function Notifications({ onNavigate }) {
           ) : list.length === 0 ? (
             <p style={{ fontSize: 13, color: 'var(--slate)', textAlign: 'center', padding: 24 }}>No notifications.</p>
           ) : (
-            list.map((n) => (
-              <div
-                key={n._id}
-                style={{
-                  background: n.read ? 'var(--linen)' : 'var(--forest-faint)',
-                  borderRadius: '12px', padding: '12px 14px', marginBottom: '10px',
-                  display: 'flex', gap: '12px', cursor: 'pointer',
-                }}
-                onClick={() => !n.read && handleMarkRead(n._id)}
-              >
-                <div style={{ width: '36px', height: '36px', background: 'var(--forest)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <i className="ti ti-bell" style={{ fontSize: '16px', color: 'var(--linen)' }}></i>
+            list.map((n) => {
+              const style = getNotificationStyle(n.type);
+              return (
+                <div
+                  key={n._id}
+                  style={{
+                    background: n.read ? 'var(--linen)' : style.bgColor,
+                    borderRadius: '12px', padding: '12px 14px', marginBottom: '10px',
+                    display: 'flex', gap: '12px', cursor: 'pointer',
+                  }}
+                  onClick={() => !n.read && handleMarkRead(n._id)}
+                >
+                  <div style={{ width: '36px', height: '36px', background: style.color, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <i className={`ti ${style.icon}`} style={{ fontSize: '16px', color: 'white' }}></i>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <p style={{ fontSize: '13px', fontWeight: '500', color: 'var(--ink)' }}>{n.message}</p>
+                    <p style={{ fontSize: '12px', color: 'var(--slate)', marginTop: '2px' }}>{n.trigger || n.type}</p>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+                    <p style={{ fontSize: '11px', color: 'var(--mute)', whiteSpace: 'nowrap' }}>{timeAgo(n.createdAt)}</p>
+                    <button onClick={(e) => { e.stopPropagation(); handleDismiss(n._id); }} style={{ background: 'transparent', border: 'none', color: 'var(--slate)', cursor: 'pointer', fontSize: 11 }}>Dismiss</button>
+                  </div>
                 </div>
-                <div style={{ flex: 1 }}>
-                  <p style={{ fontSize: '13px', fontWeight: '500', color: 'var(--ink)' }}>{n.message}</p>
-                  <p style={{ fontSize: '12px', color: 'var(--slate)', marginTop: '2px' }}>{n.trigger || n.type}</p>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
-                  <p style={{ fontSize: '11px', color: 'var(--mute)', whiteSpace: 'nowrap' }}>{timeAgo(n.createdAt)}</p>
-                  <button onClick={(e) => { e.stopPropagation(); handleDismiss(n._id); }} style={{ background: 'transparent', border: 'none', color: 'var(--slate)', cursor: 'pointer', fontSize: 11 }}>Dismiss</button>
-                </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>
