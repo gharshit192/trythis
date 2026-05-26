@@ -37,7 +37,7 @@ function App() {
 
     if (storedToken && storedUser) {
       try {
-        const user = JSON.parse(storedUser);
+        JSON.parse(storedUser); // Validate JSON before proceeding
         // Record app session for D7 retention analytics
         api.ping().catch(() => {});
         // Load saves for SavedList
