@@ -255,7 +255,7 @@ export default function HomeFeed({ onNavigate }) {
                 </div>
                 <div style={{ display: 'flex', gap: 12, padding: '0 16px 12px', overflowX: 'auto', scrollbarWidth: 'none' }}>
                   {videoSaves.slice(0, activeFilter === 'video' ? undefined : 6).map((save) => (
-                    <div key={save._id} style={{ flex: '0 0 148px', cursor: 'pointer' }} onClick={() => onNavigate('saveDetail', { saveId: save._id })}>
+                    <div key={save._id} style={{ flex: '0 0 148px', cursor: 'pointer' }} onClick={() => onNavigate('save-detail', { id: save._id })}>
                       <div style={{
                         width: 148,
                         height: 110,
@@ -323,7 +323,7 @@ export default function HomeFeed({ onNavigate }) {
                     return (
                       <div
                         key={save._id}
-                        onClick={() => onNavigate('saveDetail', { saveId: save._id })}
+                        onClick={() => onNavigate('save-detail', { id: save._id })}
                         style={{
                           display: 'flex',
                           alignItems: 'center',
@@ -400,7 +400,7 @@ export default function HomeFeed({ onNavigate }) {
                     return (
                       <div
                         key={save._id}
-                        onClick={() => onNavigate('screenshotSummary', { sessionId: save._id, summary: data, saveId: save._id })}
+                        onClick={() => onNavigate('screenshot-summary', { sessionId: save._id, summary: data, saveId: save._id })}
                         style={{
                           flex: '0 0 180px',
                           borderRadius: 12,
