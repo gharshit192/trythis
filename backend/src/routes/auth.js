@@ -75,6 +75,27 @@ router.post('/signup', signupLimiter, async (req, res) => {
 
     await user.save();
 
+    // Fire-and-forget welcome notification
+    setImmediate(async () => {
+      try {
+        const Notification = require('../models/Notification');
+        await Notification.create({
+          userId: user._id,
+          type: 'welcome',
+          title: 'Welcome to TryThis 👋',
+          body: "You're all set. Save your first Instagram reel, YouTube video, or any link — we'll organise it and remind you at the right moment.",
+          priority: 'high',
+          read: false,
+          dismissed: false,
+          metadata: { isOnboarding: true }
+        });
+        user.onboardingNotificationSent = true;
+        await user.save();
+      } catch (err) {
+        logger.error('[welcome notification] failed:', err.message);
+      }
+    });
+
     // Generate token
     const token = jwt.sign(
       { id: user._id, email: user.email },

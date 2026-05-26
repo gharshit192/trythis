@@ -51,6 +51,58 @@ router.get('/:shareId', async (req, res) => {
     const { shareId } = req.params;
     const save = await Save.findOne({ shareId, status: 'active' }).populate('userId', 'firstName');
 
+    // Track view and create notification (fire-and-forget)
+    if (save) {
+      setImmediate(async () => {
+        try {
+          const Notification = require('../models/Notification');
+
+          // Increment view count
+          await Save.findByIdAndUpdate(save._id, {
+            $inc: { 'shareStats.viewCount': 1 },
+            $set: { 'shareStats.lastViewedAt': new Date() }
+          });
+
+          // Only create notification if not sent in last 6 hours
+          const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000);
+          const recentNotif = await Notification.findOne({
+            userId: save.userId,
+            type: 'shared_save_viewed',
+            'metadata.saveId': save._id.toString(),
+            createdAt: { $gte: sixHoursAgo }
+          });
+
+          if (!recentNotif) {
+            // Get updated view count
+            const updatedSave = await Save.findById(save._id).select('shareStats title');
+            const viewCount = updatedSave.shareStats?.viewCount || 1;
+
+            const body = viewCount === 1
+              ? `Someone just opened your shared save "${save.title}".`
+              : `Your save "${save.title}" has been viewed ${viewCount} times.`;
+
+            await Notification.create({
+              userId: save.userId,
+              type: 'shared_save_viewed',
+              title: viewCount === 1 ? 'Someone viewed your save' : `${viewCount} people viewed your save`,
+              body,
+              saveId: save._id,
+              priority: 'low',
+              read: false,
+              dismissed: false,
+              metadata: {
+                saveId: save._id.toString(),
+                saveTitle: save.title,
+                viewCount
+              }
+            });
+          }
+        } catch (err) {
+          logger.error('[share view tracking] failed:', err.message);
+        }
+      });
+    }
+
     if (!save) {
       return res.status(404).send(`
         <!DOCTYPE html>
