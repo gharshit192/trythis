@@ -9,6 +9,7 @@ const recommendationsRoutes = require('./routes/recommendations');
 const notificationsRoutes = require('./routes/notifications');
 const audioProcessingRoutes = require('./routes/audioProcessing');
 const adminRoutes = require('./routes/admin');
+const shareRoutes = require('./routes/share');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
@@ -53,6 +54,7 @@ app.use('/search', searchRoutes);
 app.use('/recommendations', recommendationsRoutes);
 app.use('/notifications', notificationsRoutes);
 app.use('/admin', adminRoutes);
+app.use('/s', shareRoutes);
 app.use(audioProcessingRoutes);  // mounts /saves/:id/process-audio etc. at root
 
 app.use((req, res) => {

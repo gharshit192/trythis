@@ -161,6 +161,22 @@ const api = {
     return handle(res);
   },
 
+  async shareSave(saveId) {
+    const res = await fetch(`${API_BASE_URL}/saves/${saveId}/share`, {
+      method: 'POST',
+      headers: authHeader(),
+    });
+    return handle(res);
+  },
+
+  async unshareSave(saveId) {
+    const res = await fetch(`${API_BASE_URL}/saves/${saveId}/share`, {
+      method: 'DELETE',
+      headers: authHeader(),
+    });
+    return handle(res);
+  },
+
   async uploadScreenshots({ files, title, notes, collectionId, category } = {}) {
     if (!files || !files.length) throw new Error('files[] required');
     const fd = new FormData();

@@ -3,9 +3,11 @@ const path = require('path');
 const os = require('os');
 const multer = require('multer');
 const { v4: uuidv4 } = require('uuid');
+const { nanoid } = require('nanoid');
 const router = express.Router();
 const Save = require('../models/Save');
 const Collection = require('../models/Collection');
+const User = require('../models/User');
 const UserBehavior = require('../models/UserBehavior');
 const authMiddleware = require('../middleware/auth');
 const validateObjectId = require('../middleware/validateObjectId');
@@ -478,6 +480,74 @@ router.delete('/:id', validateObjectId('id'), async (req, res) => {
     res.status(500).json({
       status: 'error',
       error: { code: 'DELETE_ERROR', message: error.message },
+    });
+  }
+});
+
+// POST /:id/share — Generate a unique shareId for public sharing
+router.post('/:id/share', validateObjectId('id'), async (req, res) => {
+  try {
+    const save = await Save.findById(req.params.id);
+
+    if (!save || save.userId.toString() !== req.user.id) {
+      return res.status(404).json({
+        status: 'error',
+        error: { code: 'NOT_FOUND', message: 'Save not found' },
+      });
+    }
+
+    if (save.shareId) {
+      return res.json({
+        status: 'success',
+        shareId: save.shareId,
+        shareUrl: `${process.env.BASE_URL || 'http://localhost:4000'}/s/${save.shareId}`,
+      });
+    }
+
+    const shareId = nanoid(8);
+    save.shareId = shareId;
+    await save.save();
+
+    logger.info(`Save shared: ${save._id} with shareId ${shareId}`);
+    res.json({
+      status: 'success',
+      shareId,
+      shareUrl: `${process.env.BASE_URL || 'http://localhost:4000'}/s/${shareId}`,
+    });
+  } catch (error) {
+    logger.error(`Share save error: ${error.message}`);
+    res.status(500).json({
+      status: 'error',
+      error: { code: 'SHARE_ERROR', message: error.message },
+    });
+  }
+});
+
+// DELETE /:id/share — Remove shareId, making save private again
+router.delete('/:id/share', validateObjectId('id'), async (req, res) => {
+  try {
+    const save = await Save.findById(req.params.id);
+
+    if (!save || save.userId.toString() !== req.user.id) {
+      return res.status(404).json({
+        status: 'error',
+        error: { code: 'NOT_FOUND', message: 'Save not found' },
+      });
+    }
+
+    save.shareId = null;
+    await save.save();
+
+    logger.info(`Share removed: ${save._id}`);
+    res.json({
+      status: 'success',
+      message: 'Share removed',
+    });
+  } catch (error) {
+    logger.error(`Unshare save error: ${error.message}`);
+    res.status(500).json({
+      status: 'error',
+      error: { code: 'UNSHARE_ERROR', message: error.message },
     });
   }
 });

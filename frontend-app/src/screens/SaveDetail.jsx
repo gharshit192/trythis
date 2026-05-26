@@ -232,6 +232,9 @@ export default function SaveDetail({ onNavigate, payload }) {
   const [deleteError, setDeleteError] = useState(null);
   const [retrying, setRetrying] = useState(false);
   const [toast, setToast] = useState(null);
+  const [showShareSheet, setShowShareSheet] = useState(false);
+  const [shareLoading, setShareLoading] = useState(false);
+  const [shareError, setShareError] = useState(null);
 
   const showToast = (msg) => {
     setToast(msg);
@@ -291,16 +294,48 @@ export default function SaveDetail({ onNavigate, payload }) {
   };
 
   const handleShare = async () => {
-    if (!save?.url) { showToast('Nothing to share'); return; }
-    if (navigator.share) {
-      try { await navigator.share({ title: save.title, url: save.url }); return; } catch (err) {
-        if (err?.name === 'AbortError') return;
+    setShowShareSheet(true);
+    setShareError(null);
+    if (save?.shareId) return;
+
+    setShareLoading(true);
+    try {
+      const res = await api.shareSave(id);
+      if (res.status === 'success') {
+        setSave({ ...save, shareId: res.shareId });
+      } else {
+        setShareError(res.error?.message || 'Failed to create share link');
       }
+    } catch (err) {
+      setShareError(err.message || 'Failed to create share link');
+    } finally {
+      setShareLoading(false);
     }
-    if (navigator.clipboard) {
-      try { await navigator.clipboard.writeText(save.url); showToast('Link copied'); return; } catch {}
+  };
+
+  const handleCopyShareLink = () => {
+    if (!save?.shareId) return;
+    const shareUrl = `${window.location.origin}/s/${save.shareId}`;
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      showToast('Link copied!');
+      setShowShareSheet(false);
+    }).catch(() => {
+      showToast('Failed to copy');
+    });
+  };
+
+  const handleUnshare = async () => {
+    if (!save?.shareId) return;
+    try {
+      const res = await api.unshareSave(id);
+      if (res.status === 'success') {
+        setSave({ ...save, shareId: null });
+        showToast('Share link removed');
+        setShowShareSheet(false);
+      }
+    } catch (err) {
+      setShareError(err.message || 'Failed to remove share link');
     }
-    showToast('Sharing not supported');
   };
 
   if (!id) {
@@ -647,6 +682,55 @@ export default function SaveDetail({ onNavigate, payload }) {
                     style={{ width: '100%', padding: '10px 0', background: 'transparent', color: T.text, border: `1px solid ${T.border}`, borderRadius: 10, fontSize: 14, marginTop: 8, cursor: 'pointer' }}>
               Cancel
             </button>
+          </div>
+        </div>
+      )}
+
+      {showShareSheet && (
+        <div onClick={() => setShowShareSheet(false)}
+             style={{ position: 'fixed', bottom: 0, left: 0, right: 0, top: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', zIndex: 55 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: T.bg, borderRadius: '16px 16px 0 0', padding: 20, maxHeight: '80vh', overflow: 'auto' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+              <h3 style={{ fontSize: 17, fontWeight: 600, margin: 0 }}>Share this save</h3>
+              <button onClick={() => setShowShareSheet(false)} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', padding: 0 }}>✕</button>
+            </div>
+
+            {shareLoading ? (
+              <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                <p style={{ color: T.textMuted }}>Creating share link…</p>
+              </div>
+            ) : shareError ? (
+              <div style={{ background: T.redBg, color: T.redFg, padding: 12, borderRadius: 8, marginBottom: 16, fontSize: 13 }}>
+                {shareError}
+              </div>
+            ) : save?.shareId ? (
+              <>
+                <div style={{ background: T.bgInner, padding: 14, borderRadius: 10, marginBottom: 14, border: `1px solid ${T.border}` }}>
+                  <p style={{ fontSize: 11, color: T.textFaint, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 8 }}>Share URL</p>
+                  <div style={{ fontSize: 13, color: T.text, wordBreak: 'break-all', fontFamily: 'monospace', marginBottom: 12 }}>
+                    {`${window.location.origin}/s/${save.shareId}`}
+                  </div>
+                  <button onClick={handleCopyShareLink} style={{ width: '100%', padding: '10px 0', background: T.text, color: T.bg, border: 0, borderRadius: 8, fontSize: 14, fontWeight: 500, cursor: 'pointer' }}>
+                    Copy link
+                  </button>
+                </div>
+
+                <div style={{ background: T.bgInner, padding: 14, borderRadius: 10, marginBottom: 14, border: `1px solid ${T.border}` }}>
+                  <p style={{ fontSize: 11, color: T.textFaint, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 8 }}>Save preview</p>
+                  <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                    {save.thumbnail && <SmartImage src={save.thumbnail} style={{ width: 60, height: 60, borderRadius: 6, objectFit: 'cover' }} />}
+                    <div style={{ flex: 1 }}>
+                      <p style={{ fontSize: 12, fontWeight: 500, color: T.text, margin: '0 0 4px 0' }}>{save.title}</p>
+                      <p style={{ fontSize: 11, color: T.textMuted, margin: 0 }}>Public preview with OG meta tags</p>
+                    </div>
+                  </div>
+                </div>
+
+                <button onClick={handleUnshare} style={{ width: '100%', padding: '10px 0', background: 'transparent', color: T.redFg, border: `1px solid ${T.redFg}`, borderRadius: 8, fontSize: 14, fontWeight: 500, cursor: 'pointer' }}>
+                  Stop sharing
+                </button>
+              </>
+            ) : null}
           </div>
         </div>
       )}

@@ -203,6 +203,9 @@ const intentItemSchema = new mongoose.Schema({
     enum: ['active', 'archived', 'deleted'],
     default: 'active',
   },
+
+  // Shared save feature: unique ID for public sharing via /s/:shareId route
+  shareId: { type: String, unique: true, sparse: true, index: true, default: null },
 }, { timestamps: true });
 
 intentItemSchema.virtual('notes').get(function () { return this.userNote; });
