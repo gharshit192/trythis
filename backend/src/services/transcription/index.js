@@ -39,34 +39,104 @@ const stripVtt = (vtt) => {
     .trim();
 };
 
+// Sanitize transcript for Claude prompts to avoid JSON breaking
+const sanitizeForPrompt = (text) => {
+  if (!text) return '';
+  return text
+    .replace(/"/g, "'")        // replace double quotes with single quotes
+    .replace(/\\/g, '')        // remove backslashes
+    .replace(/[\x00-\x1F]/g, ' ')  // remove control characters
+    .slice(0, 3000)            // limit length
+    .trim();
+};
+
+// Extract and fetch captions with priority: English manual > English auto > Hindi auto > any language
+const extractCaptionsFromYtDlp = async (ytDlpJson) => {
+  if (!ytDlpJson) return null;
+
+  const captions = ytDlpJson.automatic_captions || {};
+  const manualSubs = ytDlpJson.subtitles || {};
+
+  // Try English manual subtitles first (best quality)
+  const enManual = manualSubs?.en?.[0];
+  if (enManual?.url) {
+    try {
+      const r = await fetch(enManual.url, { redirect: 'follow' });
+      if (r.ok) {
+        const vtt = await r.text();
+        const text = stripVtt(vtt);
+        if (text && text.length > 50) {
+          return { text, language: 'en', source: 'manual_subtitles' };
+        }
+      }
+    } catch {}
+  }
+
+  // Try English auto-captions
+  const enAuto = captions?.en?.[0];
+  if (enAuto?.url) {
+    try {
+      const r = await fetch(enAuto.url, { redirect: 'follow' });
+      if (r.ok) {
+        const vtt = await r.text();
+        const text = stripVtt(vtt);
+        if (text && text.length > 50) {
+          return { text, language: 'en', source: 'auto_captions' };
+        }
+      }
+    } catch {}
+  }
+
+  // Try Hindi auto-captions (common for Indian content)
+  const hiAuto = captions?.hi?.[0];
+  if (hiAuto?.url) {
+    try {
+      const r = await fetch(hiAuto.url, { redirect: 'follow' });
+      if (r.ok) {
+        const vtt = await r.text();
+        const text = stripVtt(vtt);
+        if (text && text.length > 50) {
+          return { text, language: 'hi', source: 'auto_captions_hindi' };
+        }
+      }
+    } catch {}
+  }
+
+  // Try any available language
+  for (const [lang, tracks] of Object.entries(captions)) {
+    const track = tracks?.[0];
+    if (track?.url) {
+      try {
+        const r = await fetch(track.url, { redirect: 'follow' });
+        if (r.ok) {
+          const vtt = await r.text();
+          const text = stripVtt(vtt);
+          if (text && text.length > 50) {
+            return { text, language: lang, source: 'auto_captions_other' };
+          }
+        }
+      } catch {}
+    }
+  }
+
+  return null;
+};
+
 // ---- Step 1: try subtitles from yt-dlp info JSON ----
 const fromYtdlpInfo = async (info) => {
   if (!info) return null;
-  const subs = info.subtitles || {};
-  const autoCaps = info.automatic_captions || {};
 
-  // Prefer manual English subs, then auto English.
-  const candidates = [];
-  for (const langKey of Object.keys(subs)) {
-    if (/^en/i.test(langKey)) candidates.push(...subs[langKey]);
-  }
-  for (const langKey of Object.keys(autoCaps)) {
-    if (/^en/i.test(langKey)) candidates.push(...autoCaps[langKey]);
+  const captionResult = await extractCaptionsFromYtDlp(info);
+  if (captionResult && captionResult.text) {
+    return {
+      source: 'subtitles',
+      text: captionResult.text,
+      kind: 'auto-captions',
+      language: captionResult.language
+    };
   }
 
-  const vttCandidate = candidates.find((c) => c.ext === 'vtt' || c.url?.includes('fmt=vtt'));
-  if (!vttCandidate) return null;
-
-  try {
-    const r = await fetch(vttCandidate.url, { redirect: 'follow' });
-    if (!r.ok) return null;
-    const vtt = await r.text();
-    const text = stripVtt(vtt);
-    return text ? { source: 'subtitles', text, kind: 'auto-captions' } : null;
-  } catch (err) {
-    logger.warn(`subtitle fetch failed: ${err.message}`);
-    return null;
-  }
+  return null;
 };
 
 // ---- Step 2: yt-dlp download audio + whisper ----
@@ -137,14 +207,17 @@ const fromWhisper = async (url) => {
 const transcribe = async ({ url, ytdlpInfo } = {}) => {
   if (!url) throw new Error('url is required');
 
-  // Step 1: subtitles
+  // Step 1: subtitles (faster, free, no video download)
   const fromSubs = await fromYtdlpInfo(ytdlpInfo);
   if (fromSubs) {
     logger.info(`Transcript from ${fromSubs.kind} for ${url}`);
-    return fromSubs;
+    return {
+      ...fromSubs,
+      text: sanitizeForPrompt(fromSubs.text)
+    };
   }
 
-  // Step 2: whisper
+  // Step 2: whisper (only if no captions available)
   const fromAsr = await fromWhisper(url);
   if (fromAsr) {
     logger.info(`Transcript from whisper for ${url}`);

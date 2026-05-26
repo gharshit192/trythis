@@ -133,7 +133,7 @@ Rules:
     const response = await withRetry(async () => {
       return await client.messages.create({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 1024,
+        max_tokens: 2048,
         system: SYSTEM_PROMPT,
         messages: [
           {
@@ -287,7 +287,7 @@ const analyzeScreenshot = async (imageFilePath, screenshotType = 'unknown') => {
     const response = await withRetry(async () => {
       return await client.messages.create({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 1024,
+        max_tokens: 2048,
         messages: [
           {
             role: 'user',

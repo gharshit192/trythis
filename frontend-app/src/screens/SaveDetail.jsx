@@ -265,7 +265,10 @@ export default function SaveDetail({ onNavigate, payload }) {
     setDeleteError(null); setDeleting(true);
     try {
       const res = await api.deleteSave(id);
-      if (res.status === 'success') { setConfirmDelete(false); onNavigate('home'); }
+      if (res.status === 'success') {
+        setConfirmDelete(false);
+        onNavigate('home', { refresh: true });
+      }
       else setDeleteError(res.error?.message || 'Delete failed');
     } catch (err) { setDeleteError(err.message || 'Delete failed'); }
     finally { setDeleting(false); }
@@ -353,26 +356,52 @@ export default function SaveDetail({ onNavigate, payload }) {
             : <span style={{ color: T.textFaint, fontSize: 36 }}>▢</span>}
         </div>
 
-        {/* Partial warning with inline Retry */}
-        {save?.processingStatus === 'partial' && (
-          <WarningBanner
-            tone="amber"
-            action={
-              <button
-                onClick={handleRetry} disabled={retrying}
-                style={{ background: T.amberFg, color: T.bg, border: 0, borderRadius: 6, padding: '5px 12px', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}
-              >{retrying ? '…' : 'Retry'}</button>
-            }
-          >
-            Some details missing{save.processingError ? ` — ${save.processingError}` : ''}. Retry to reprocess.
-          </WarningBanner>
-        )}
-        {save?.processingStatus === 'failed' && (
-          <WarningBanner tone="red">Processing failed{save.processingError ? ` — ${save.processingError}` : ''}.</WarningBanner>
-        )}
-        {save?.processingStatus === 'processing' && (
-          <WarningBanner tone="amber">⏳ Still processing — refresh in a moment.</WarningBanner>
-        )}
+        {/* Status messages: only show if data is missing */}
+        {(() => {
+          const hasGoodData = save?.aiAnalysis?.summary || (save?.aiAnalysis?.keyPoints?.length > 0);
+
+          if (save?.processingStatus === 'partial') {
+            // If partial but has good data, don't show warning
+            if (hasGoodData) return null;
+            return (
+              <WarningBanner
+                tone="amber"
+                action={
+                  <button
+                    onClick={handleRetry} disabled={retrying}
+                    style={{ background: T.amberFg, color: T.bg, border: 0, borderRadius: 6, padding: '5px 12px', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}
+                  >{retrying ? '…' : 'Retry'}</button>
+                }
+              >
+                Still gathering details...
+              </WarningBanner>
+            );
+          }
+
+          if (save?.processingStatus === 'failed') {
+            return (
+              <WarningBanner
+                tone="red"
+                action={
+                  <button
+                    onClick={handleRetry} disabled={retrying}
+                    style={{ background: T.redFg, color: T.bg, border: 0, borderRadius: 6, padding: '5px 12px', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}
+                  >{retrying ? '…' : 'Retry'}</button>
+                }
+              >
+                Could not process this save fully.
+              </WarningBanner>
+            );
+          }
+
+          if (save?.processingStatus === 'processing') {
+            return (
+              <WarningBanner tone="amber">⏳ Still processing — refresh in a moment.</WarningBanner>
+            );
+          }
+
+          return null;
+        })()}
 
         <CardHeader save={save} />
 

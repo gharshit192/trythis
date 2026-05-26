@@ -5,6 +5,7 @@ const multer = require('multer');
 const { v4: uuidv4 } = require('uuid');
 const router = express.Router();
 const Save = require('../models/Save');
+const Collection = require('../models/Collection');
 const UserBehavior = require('../models/UserBehavior');
 const authMiddleware = require('../middleware/auth');
 const validateObjectId = require('../middleware/validateObjectId');
@@ -458,10 +459,16 @@ router.delete('/:id', validateObjectId('id'), async (req, res) => {
       });
     }
 
+    // Remove save from ALL collections before deleting
+    await Collection.updateMany(
+      { saves: save._id },
+      { $pull: { saves: save._id } }
+    );
+
     save.status = 'deleted';
     await save.save();
 
-    logger.info(`Save deleted: ${save._id}`);
+    logger.info(`Save deleted: ${save._id}, removed from collections`);
     res.json({
       status: 'success',
       message: 'Save deleted',

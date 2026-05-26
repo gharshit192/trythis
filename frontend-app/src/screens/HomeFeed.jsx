@@ -80,27 +80,34 @@ const getFilteredSaves = (allSaves, filter) => {
   }
 };
 
-export default function HomeFeed({ onNavigate }) {
+export default function HomeFeed({ onNavigate, payload }) {
   const [saves, setSaves] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState('all');
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const result = await api.getSaves();
-        if (result.status === 'success') {
-          setSaves(result.data);
-        }
-      } catch (err) {
-        // Error handled by empty state fallback
-      } finally {
-        setLoading(false);
+  const fetchData = async () => {
+    try {
+      const result = await api.getSaves();
+      if (result.status === 'success') {
+        setSaves(result.data);
       }
-    };
+    } catch (err) {
+      // Error handled by empty state fallback
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchData();
   }, []);
+
+  // Refetch saves when coming back from delete with refresh flag
+  useEffect(() => {
+    if (payload?.refresh) {
+      fetchData();
+    }
+  }, [payload?.refresh]);
 
   if (loading) {
     return (

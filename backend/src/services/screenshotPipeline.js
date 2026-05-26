@@ -15,6 +15,7 @@ const screenshotHandler = require('./fetchSystem/handlers/screenshotHandler');
 const screenshotAnalyzer = require('./screenshotAnalyzer');
 const { addWorkingDays } = require('../utils/workingDays');
 const logger = require('../utils/logger');
+const { uploadBuffer } = require('./cloudinaryService');
 
 const UPLOADS_DIR = process.env.UPLOADS_DIR || path.join(__dirname, '..', '..', '..', 'uploads');
 const PUBLIC_BASE_URL = process.env.PUBLIC_BASE_URL || 'http://localhost:4000';
@@ -40,11 +41,9 @@ const safeExt = (mime) => {
   return 'bin';
 };
 
-// Generate a unique on-disk basename: <userId>-<timestamp>-<rand>
 const makeBasename = (userId) => `${userId}-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`;
 
-// Move multer's temp file into our managed dir; return absolute final path + relative URL.
-const persistFull = (multerFile, userId) => {
+const persistFullLocal = (multerFile, userId) => {
   ensureDirs();
   const ext = safeExt(multerFile.mimetype);
   const basename = makeBasename(userId);
@@ -60,7 +59,40 @@ const persistFull = (multerFile, userId) => {
   return { destPath, filename, basename };
 };
 
+const persistFull = async (multerFile, userId) => {
+  // Use Cloudinary if configured (Vercel)
+  if (process.env.CLOUDINARY_CLOUD_NAME) {
+    const basename = makeBasename(userId);
+    const ext = safeExt(multerFile.mimetype);
+    const publicId = `screenshots/${userId}/${basename}`;
+
+    const buffer = multerFile.buffer || (multerFile.path ? fs.readFileSync(multerFile.path) : null);
+    if (!buffer) throw new Error('multer file has neither .path nor .buffer');
+
+    const result = await uploadBuffer(buffer, multerFile.mimetype, 'screenshots', publicId);
+    if (!result) throw new Error('Cloudinary upload failed');
+
+    logger.info(`[persistFull] uploaded to Cloudinary: ${result.url}`);
+    return {
+      cloudinaryUrl: result.url,
+      publicId: result.publicId,
+      filename: publicId,
+      basename,
+      destPath: null
+    };
+  }
+
+  // Fallback to local disk for development
+  const local = persistFullLocal(multerFile, userId);
+  return { destPath: local.destPath, filename: local.filename, basename: local.basename };
+};
+
 const makeThumbnail = async (fullPath, basename) => {
+  // When using Cloudinary, skip thumbnail generation (Cloudinary handles resizing)
+  if (!fullPath) {
+    return { filename: null, destPath: null };
+  }
+
   const filename = `${basename}.jpg`;
   const destPath = path.join(THUMB_DIR, filename);
   await sharp(fullPath)
@@ -92,33 +124,43 @@ const processFiles = async (files = [], { userId, title, source = 'screenshot', 
 
   for (let i = 0; i < files.length; i++) {
     const f = files[i];
-    let fullPath, filename, basename, thumbResult;
+    let fullPath, filename, basename, thumbResult, cloudinaryUrl, fileSize;
     try {
       logger.info(`Processing file ${i}: ${f.originalname} (${f.mimetype}, ${f.size} bytes)`);
-      ({ destPath: fullPath, filename, basename } = persistFull(f, userId));
-      logger.info(`File ${i} persisted to ${fullPath}`);
-      thumbResult = await makeThumbnail(fullPath, basename);
-      logger.info(`Thumbnail created for file ${i}`);
+      const persisted = await persistFull(f, userId);
+      cloudinaryUrl = persisted.cloudinaryUrl;
+      filename = persisted.filename;
+      basename = persisted.basename;
+      fullPath = persisted.destPath;
+
+      if (cloudinaryUrl) {
+        logger.info(`File ${i} uploaded to Cloudinary: ${cloudinaryUrl}`);
+        fileSize = f.size;
+      } else {
+        logger.info(`File ${i} persisted locally to ${fullPath}`);
+        thumbResult = await makeThumbnail(fullPath, basename);
+        logger.info(`Thumbnail created for file ${i}`);
+        const stat = fs.statSync(fullPath);
+        fileSize = stat.size;
+      }
     } catch (err) {
       logger.error(`screenshotPipeline: failed on file ${i} (${f.originalname}): ${err.message}`, { stack: err.stack });
       continue;
     }
 
     const ocrText = await runOcr(fullPath);
-
-    const stat = fs.statSync(fullPath);
     const uploadedAt = new Date();
     const purgeAfter = addWorkingDays(uploadedAt, PURGE_AFTER_DAYS);
 
     screenshots.push({
-      url: `${PUBLIC_BASE_URL}/static/screenshots/full/${filename}`,
-      thumbnailUrl: `${PUBLIC_BASE_URL}/static/screenshots/thumb/${thumbResult.filename}`,
+      url: cloudinaryUrl || `${PUBLIC_BASE_URL}/static/screenshots/full/${filename}`,
+      thumbnailUrl: cloudinaryUrl ? cloudinaryUrl : (thumbResult?.filename ? `${PUBLIC_BASE_URL}/static/screenshots/thumb/${thumbResult.filename}` : null),
       ocrText,
       order: i,
       uploadedAt,
       purgeAfter,
       purgedAt: null,
-      bytes: stat.size,
+      bytes: fileSize,
     });
 
     if (ocrText) mergedText += mergedSeparator(i) + ocrText;

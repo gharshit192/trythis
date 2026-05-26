@@ -24,31 +24,81 @@ import DemoSaves from './screens/DemoSaves';
 import FirstSaveSuccess from './screens/FirstSaveSuccess';
 
 function App() {
+  const [authChecked, setAuthChecked] = useState(false);
   const [currentScreen, setCurrentScreen] = useState('onboarding');
   const [payload, setPayload] = useState(null);
   const [saves, setSaves] = useState([]);
 
   useEffect(() => {
-    const token = localStorage.getItem('auth_token');
-    if (token) {
-      // Record app session for D7 retention analytics
-      api.ping().catch(() => {});
-      // Load saves for SavedList
-      api.getSaves().then(result => {
-        if (result.status === 'success') {
-          setSaves(result.data);
-          // Go to home if user has saves, otherwise show home-empty
-          setCurrentScreen(result.data.length > 0 ? 'home' : 'home-empty');
-        }
-      }).catch(() => {});
+    // Synchronous auth check before rendering (prevents login flash)
+    const storedToken = localStorage.getItem('auth_token');
+    const storedUser = localStorage.getItem('user');
+    const lastScreen = localStorage.getItem('last_screen');
+
+    if (storedToken && storedUser) {
+      try {
+        const user = JSON.parse(storedUser);
+        // Record app session for D7 retention analytics
+        api.ping().catch(() => {});
+        // Load saves for SavedList
+        api.getSaves().then(result => {
+          if (result.status === 'success') {
+            setSaves(result.data);
+            // Go to last screen or home if user has saves
+            if (lastScreen && ['home', 'collections', 'profile', 'search', 'notifications'].includes(lastScreen)) {
+              setCurrentScreen(lastScreen);
+            } else {
+              setCurrentScreen(result.data.length > 0 ? 'home' : 'home-empty');
+            }
+          }
+        }).catch(() => {});
+      } catch {
+        // Corrupted storage — clear and restart
+        localStorage.clear();
+        setCurrentScreen('onboarding');
+      }
+    } else {
+      setCurrentScreen('onboarding');
     }
+    setAuthChecked(true);
   }, []);
 
   // navigate(screen) or navigate(screen, payload)
   const navigate = (screen, nextPayload = null) => {
     setPayload(nextPayload);
     setCurrentScreen(screen);
+    // Persist navigable screens to localStorage for recovery on hard refresh
+    const persistable = ['home', 'collections', 'profile', 'search', 'notifications'];
+    if (persistable.includes(screen)) {
+      localStorage.setItem('last_screen', screen);
+    }
   };
+
+  // Show splash screen while auth is being checked
+  if (!authChecked) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        width: '100%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: '#FFFFFF'
+      }}>
+        <div style={{
+          width: 56,
+          height: 56,
+          borderRadius: 16,
+          background: '#1B3A2F',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
+          <span style={{ fontSize: 24, color: 'white', fontWeight: 600 }}>T</span>
+        </div>
+      </div>
+    );
+  }
 
   const props = { onNavigate: navigate, payload };
 

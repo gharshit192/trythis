@@ -74,15 +74,33 @@ function LinkFlow({ collections, onBack, onNavigate }) {
   const [notes, setNotes] = useState('');
   const [selectedCollectionIds, setSelectedCollectionIds] = useState([]);
   const [saving, setSaving] = useState(false);
+  const [processingStep, setProcessingStep] = useState(0);
   const [error, setError] = useState(null);
 
   const toggleCollection = (id) =>
     setSelectedCollectionIds((p) => p.includes(id) ? p.filter((x) => x !== id) : [...p, id]);
 
+  const PROCESSING_STEPS = [
+    'Saving your link...',
+    'Reading the content...',
+    'Organising it for you...',
+    'Almost done...',
+    'Done! ✓'
+  ];
+
   const handleSave = async () => {
     setError(null);
     if (!url.trim() && !title.trim()) return setError('Add a link or a title.');
+
+    // Start UI immediately — before API call
     setSaving(true);
+    setProcessingStep(0);
+
+    // Progress through messages on a timer
+    const t1 = setTimeout(() => setProcessingStep(1), 1500);
+    const t2 = setTimeout(() => setProcessingStep(2), 3500);
+    const t3 = setTimeout(() => setProcessingStep(3), 6000);
+
     try {
       const res = await api.createSave({
         title: title.trim() || undefined,
@@ -91,16 +109,30 @@ function LinkFlow({ collections, onBack, onNavigate }) {
         sourceType: detectType(url.trim()),
         collectionIds: selectedCollectionIds.length ? selectedCollectionIds : undefined,
       });
+
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+
       if (res.status === 'success') {
-        // Navigate through processing screen, then to home
-        onNavigate('firstSaveSuccess', { nextScreen: 'home' });
+        setProcessingStep(4); // Done!
+        setTimeout(() => {
+          setSaving(false);
+          setUrl('');
+          onNavigate('firstSaveSuccess', { nextScreen: 'home' });
+        }, 800);
       } else {
+        setSaving(false);
+        setProcessingStep(0);
         setError(res.error?.message || 'Save failed');
       }
     } catch (err) {
-      setError(err.message || 'Save failed');
-    } finally {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
       setSaving(false);
+      setProcessingStep(0);
+      setError(err.message || 'Save failed');
     }
   };
 
@@ -108,6 +140,47 @@ function LinkFlow({ collections, onBack, onNavigate }) {
 
   return (
     <>
+      {saving && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(255,255,255,0.95)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 999
+        }}>
+          <div style={{
+            width: 56,
+            height: 56,
+            borderRadius: 28,
+            background: '#E1F5EE',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: 24
+          }}>
+            <span style={{ fontSize: 24 }}>
+              {processingStep === 4 ? '✓' : '⟳'}
+            </span>
+          </div>
+          <p style={{
+            fontSize: 18,
+            fontWeight: 500,
+            textAlign: 'center',
+            color: '#1A1A1A',
+            margin: '0 0 8px',
+            transition: 'opacity 0.3s'
+          }}>
+            {PROCESSING_STEPS[processingStep]}
+          </p>
+          <p style={{ fontSize: 13, color: '#888', textAlign: 'center' }}>
+            {processingStep < 4 ? 'This takes just a few seconds' : 'Navigating...'}
+          </p>
+        </div>
+      )}
+
       <FlowHeader title="Paste a link" onBack={onBack} />
 
       <p className="label">Link (Instagram, YouTube, any URL)</p>
@@ -134,10 +207,19 @@ function PhotosFlow({ collections, onBack, onNavigate }) {
   const [notes, setNotes] = useState('');
   const [selectedCollectionId, setSelectedCollectionId] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [processingStep, setProcessingStep] = useState(0);
   const [bundleLoading, setBundleLoading] = useState(false);
   const [error, setError] = useState(null);
   const inputRef = useRef(null);
   const [dragging, setDragging] = useState(false);
+
+  const PROCESSING_STEPS = [
+    'Uploading your photos...',
+    'Reading the content...',
+    'Organising it for you...',
+    'Almost done...',
+    'Done! ✓'
+  ];
 
   useEffect(() => {
     return () => { files.forEach((f) => URL.revokeObjectURL(f.previewUrl)); };
@@ -166,7 +248,16 @@ function PhotosFlow({ collections, onBack, onNavigate }) {
 
   const handleUpload = async () => {
     if (!files.length) return setError('Pick at least one image.');
+
+    // Start UI immediately
     setUploading(true);
+    setProcessingStep(0);
+
+    // Progress through messages on a timer
+    const t1 = setTimeout(() => setProcessingStep(1), 1500);
+    const t2 = setTimeout(() => setProcessingStep(2), 3500);
+    const t3 = setTimeout(() => setProcessingStep(3), 6000);
+
     try {
       const res = await api.uploadScreenshots({
         files: files.map((x) => x.file),
@@ -174,17 +265,30 @@ function PhotosFlow({ collections, onBack, onNavigate }) {
         notes: notes.trim() || undefined,
         collectionId: selectedCollectionId || undefined,
       });
+
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+
       if (res.status === 'success') {
+        setProcessingStep(4); // Done!
         files.forEach((x) => URL.revokeObjectURL(x.previewUrl));
-        // Navigate through processing screen, then to home
-        onNavigate('firstSaveSuccess', { nextScreen: 'home' });
+        setTimeout(() => {
+          setUploading(false);
+          onNavigate('firstSaveSuccess', { nextScreen: 'home' });
+        }, 800);
       } else {
+        setUploading(false);
+        setProcessingStep(0);
         setError(res.error?.message || 'Upload failed');
       }
     } catch (err) {
-      setError(err.message || 'Upload failed');
-    } finally {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
       setUploading(false);
+      setProcessingStep(0);
+      setError(err.message || 'Upload failed');
     }
   };
 
@@ -214,6 +318,47 @@ function PhotosFlow({ collections, onBack, onNavigate }) {
 
   return (
     <>
+      {uploading && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(255,255,255,0.95)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 999
+        }}>
+          <div style={{
+            width: 56,
+            height: 56,
+            borderRadius: 28,
+            background: '#E1F5EE',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: 24
+          }}>
+            <span style={{ fontSize: 24 }}>
+              {processingStep === 4 ? '✓' : '⟳'}
+            </span>
+          </div>
+          <p style={{
+            fontSize: 18,
+            fontWeight: 500,
+            textAlign: 'center',
+            color: '#1A1A1A',
+            margin: '0 0 8px',
+            transition: 'opacity 0.3s'
+          }}>
+            {PROCESSING_STEPS[processingStep]}
+          </p>
+          <p style={{ fontSize: 13, color: '#888', textAlign: 'center' }}>
+            {processingStep < 4 ? 'This takes just a few seconds' : 'Navigating...'}
+          </p>
+        </div>
+      )}
+
       <FlowHeader title="Upload photos" onBack={onBack} />
 
       <div
