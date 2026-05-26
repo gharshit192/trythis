@@ -80,7 +80,7 @@ const getFilteredSaves = (allSaves, filter) => {
   }
 };
 
-export default function HomeFeed({ onNavigate, payload }) {
+export default function HomeFeed({ onNavigate, payload, nearbySaves = [], showNearbyBanner = false, onDismissNearby = () => {} }) {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const userName = user?.name?.split(' ')[0] || '';
   const [saves, setSaves] = useState([]);
@@ -237,6 +237,49 @@ export default function HomeFeed({ onNavigate, payload }) {
 
         {/* Divider */}
         <div style={{ height: '0.5px', background: '#eee' }}></div>
+
+        {/* Nearby banner */}
+        {showNearbyBanner && nearbySaves.length > 0 && (
+          <div style={{
+            margin: '0 16px 16px',
+            background: '#E1F5EE',
+            borderRadius: 12,
+            padding: '12px 14px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10
+          }}>
+            <div style={{
+              width: 36, height: 36,
+              borderRadius: 8,
+              background: '#9FE1CB',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0
+            }}>
+              <i className="ti ti-map-pin" style={{ fontSize: 18, color: '#0F6E56' }} aria-hidden="true" />
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13, fontWeight: 500, color: '#085041', marginBottom: 2 }}>
+                {nearbySaves.length === 1
+                  ? `You saved "${nearbySaves[0].title}" nearby`
+                  : `${nearbySaves.length} of your saves are nearby`}
+              </div>
+              <div style={{ fontSize: 11, color: '#0F6E56' }}>Tap to see them</div>
+            </div>
+            <button
+              onClick={() => onNavigate('savedList', { filter: 'nearby', saves: nearbySaves, title: 'Nearby saves' })}
+              style={{ fontSize: 11, fontWeight: 500, color: '#0F6E56', background: 'none', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+              View →
+            </button>
+            <button
+              onClick={onDismissNearby}
+              style={{ fontSize: 18, color: '#6BAF94', background: 'none', border: 'none', cursor: 'pointer' }}>
+              ×
+            </button>
+          </div>
+        )}
 
         {/* Content */}
         {showNoResults ? (
