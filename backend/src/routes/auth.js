@@ -401,4 +401,50 @@ router.post('/ping', authMiddleware, async (req, res) => {
   }
 });
 
+// ── Update user location
+router.patch('/location', authMiddleware, async (req, res) => {
+  try {
+    const { lat, lng, city } = req.body;
+
+    if (lat === undefined || lat === null || lng === undefined || lng === null) {
+      return res.status(400).json({
+        status: 'error',
+        error: { code: 'INVALID_LOCATION', message: 'lat and lng required' },
+      });
+    }
+
+    await User.findByIdAndUpdate(req.user.id, {
+      locationEnabled: true,
+      location: { lat, lng, city: city || null, updatedAt: new Date() }
+    });
+
+    res.json({ status: 'success', message: 'Location updated' });
+  } catch (err) {
+    logger.error(`❌ Location update error: ${err.message}`);
+    res.status(500).json({ status: 'error', error: { code: 'INTERNAL', message: err.message } });
+  }
+});
+
+// ── Update notification and location settings
+router.patch('/settings', authMiddleware, async (req, res) => {
+  try {
+    const { notificationsEnabled, locationEnabled } = req.body;
+    const update = {};
+
+    if (typeof notificationsEnabled === 'boolean') {
+      update.notificationsEnabled = notificationsEnabled;
+    }
+    if (typeof locationEnabled === 'boolean') {
+      update.locationEnabled = locationEnabled;
+    }
+
+    await User.findByIdAndUpdate(req.user.id, update);
+
+    res.json({ status: 'success', message: 'Settings updated' });
+  } catch (err) {
+    logger.error(`❌ Settings update error: ${err.message}`);
+    res.status(500).json({ status: 'error', error: { code: 'INTERNAL', message: err.message } });
+  }
+});
+
 module.exports = router;

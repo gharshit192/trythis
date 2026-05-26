@@ -892,4 +892,50 @@ router.post('/bulk/import', async (req, res) => {
   }
 });
 
+// GET /nearby — Fetch saves near user's current location
+router.get('/nearby', authMiddleware, async (req, res) => {
+  try {
+    const { lat, lng, radiusMetres = 1000 } = req.query;
+
+    if (!lat || !lng) {
+      return res.status(400).json({
+        status: 'error',
+        error: { code: 'MISSING_LOCATION', message: 'lat and lng query params required' }
+      });
+    }
+
+    const userLat = parseFloat(lat);
+    const userLng = parseFloat(lng);
+    const radius  = parseInt(radiusMetres) || 1000;
+
+    // Fetch saves that have location data
+    const saves = await Save.find({
+      userId: req.user.id,
+      status: 'active',
+      'extractedLocation.lat': { $ne: null }
+    }).select('title category thumbnail extractedLocation aiAnalysis tags createdAt');
+
+    // Calculate distance using Haversine formula and filter
+    const nearby = saves
+      .map(save => {
+        const lat2 = save.extractedLocation.lat;
+        const lng2 = save.extractedLocation.lng;
+        const R = 6371000; // Earth's radius in meters
+        const dLat = (lat2 - userLat) * Math.PI / 180;
+        const dLng = (lng2 - userLng) * Math.PI / 180;
+        const a = Math.sin(dLat/2)**2 +
+                  Math.cos(userLat*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
+        const distanceMetres = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return { ...save.toObject(), distanceMetres: Math.round(distanceMetres) };
+      })
+      .filter(s => s.distanceMetres <= radius)
+      .sort((a, b) => a.distanceMetres - b.distanceMetres);
+
+    res.json({ status: 'success', saves: nearby, count: nearby.length });
+  } catch (err) {
+    logger.error(`Nearby saves error: ${err.message}`);
+    res.status(500).json({ status: 'error', error: { code: 'INTERNAL', message: err.message } });
+  }
+});
+
 module.exports = router;
