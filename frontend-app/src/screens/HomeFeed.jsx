@@ -11,11 +11,11 @@ const FILTERS = [
   { id: 'shopping',  icon: 'ti-shopping-bag',     label: 'Shopping' },
 ];
 
-const getGreeting = () => {
+const getGreeting = (userName) => {
   const hour = new Date().getHours();
-  if (hour < 12) return 'Good morning';
-  if (hour < 17) return 'Good afternoon';
-  return 'Good evening';
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  const name = userName ? `, ${userName}` : '';
+  return `${greeting}${name}`;
 };
 
 const getRelativeTime = (dateString) => {
@@ -81,6 +81,8 @@ const getFilteredSaves = (allSaves, filter) => {
 };
 
 export default function HomeFeed({ onNavigate, payload }) {
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const userName = user?.name?.split(' ')[0] || '';
   const [saves, setSaves] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState('all');
@@ -122,7 +124,7 @@ export default function HomeFeed({ onNavigate, payload }) {
       <div className="phone-frame">
         <div style={{ padding: '16px 16px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
-            <div style={{ fontSize: 20, fontWeight: 500 }}>{getGreeting()}</div>
+            <div style={{ fontSize: 20, fontWeight: 500 }}>{getGreeting(userName)}</div>
             <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>0 saves</div>
           </div>
           <button onClick={() => onNavigate('search')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: 22 }}>
@@ -178,7 +180,7 @@ export default function HomeFeed({ onNavigate, payload }) {
         {/* Header */}
         <div style={{ padding: '16px 16px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '0.5px solid #eee' }}>
           <div>
-            <div style={{ fontSize: 20, fontWeight: 500 }}>{getGreeting()}</div>
+            <div style={{ fontSize: 20, fontWeight: 500 }}>{getGreeting(userName)}</div>
             <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>{saves.length} saves</div>
           </div>
           <div style={{ display: 'flex', gap: 14 }}>
