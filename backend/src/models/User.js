@@ -41,6 +41,17 @@ const userSchema = new mongoose.Schema(
     passwordResetOtp: { type: String, default: null },
     passwordResetExpires: { type: Date, default: null },
 
+    // Notification settings
+    notificationsEnabled: { type: Boolean, default: true },
+    locationEnabled: { type: Boolean, default: false },
+    location: {
+      lat: { type: Number, default: null },
+      lng: { type: Number, default: null },
+      city: { type: String, default: null },
+      updatedAt: { type: Date, default: null }
+    },
+    onboardingNotificationSent: { type: Boolean, default: false },
+
     // Analytics: track unprompted return (D7 retention)
     lastActiveAt: { type: Date, default: null },
     sessionCount: { type: Number, default: 0 },

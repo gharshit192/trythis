@@ -206,6 +206,21 @@ const intentItemSchema = new mongoose.Schema({
 
   // Shared save feature: unique ID for public sharing via /s/:shareId route
   shareId: { type: String, unique: true, sparse: true, index: true, default: null },
+
+  // Share analytics
+  shareStats: {
+    viewCount: { type: Number, default: 0 },
+    lastViewedAt: { type: Date, default: null }
+  },
+
+  // Location data for nearby feature
+  extractedLocation: {
+    name: { type: String, default: null },
+    city: { type: String, default: null },
+    country: { type: String, default: null },
+    lat: { type: Number, default: null },
+    lng: { type: Number, default: null }
+  }
 }, { timestamps: true });
 
 intentItemSchema.virtual('notes').get(function () { return this.userNote; });
