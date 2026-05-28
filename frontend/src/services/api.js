@@ -1,11 +1,10 @@
 import axios from 'axios';
 import * as storage from './storage';
 
-// Expo exposes EXPO_PUBLIC_* to client code. Fall back to localhost for web dev.
 const API_URL =
   process.env.EXPO_PUBLIC_API_URL ||
   process.env.REACT_APP_API_URL ||
-  'http://localhost:4000';
+  'http://192.168.1.27:4000';
 
 const api = axios.create({
   baseURL: API_URL,
@@ -53,17 +52,28 @@ api.interceptors.response.use(
 );
 
 // ============ AUTH APIs ============
-export const signup = (data) => {
-  console.log('📤 Signup request:', data.email);
-  return api.post('/auth/signup', data);
-};
+export const signup = (email, password, name) =>
+  api.post('/auth/signup', { email, password, name });
 
-export const login = (data) => {
-  console.log('📤 Login request:', data.email);
-  return api.post('/auth/login', data);
-};
+export const login = (email, password) =>
+  api.post('/auth/login', { email, password });
+
+export const forgotPassword = (email) =>
+  api.post('/auth/forgot-password', { email });
+
+export const resetPassword = (email, otp, newPassword) =>
+  api.post('/auth/reset-password', { email, otp, newPassword });
+
+export const changePassword = (currentPassword, newPassword) =>
+  api.post('/auth/change-password', { currentPassword, newPassword });
 
 export const refresh = () => api.post('/auth/refresh');
+
+export const ping = () => api.post('/auth/ping');
+
+export const logout = async () => {
+  await storage.logout();
+};
 
 // ============ SAVE APIs ============
 export const createSave = (data) => {
@@ -76,15 +86,18 @@ export const getSaves = () => {
   return api.get('/saves');
 };
 
-export const getSaveDetail = (id) => api.get(`/saves/${id}`);
+export const getSaveById = (id) => api.get(`/saves/${id}`);
 
-export const updateSave = (id, data) => api.patch(`/saves/${id}`, data);
+export const patchSave = (id, patch) => api.patch(`/saves/${id}`, patch);
 
 export const deleteSave = (id) => api.delete(`/saves/${id}`);
 
-export const refreshThumb = (id) => api.post(`/saves/${id}/refresh-thumb`);
+export const shareSave = (saveId) =>
+  api.post(`/saves/${saveId}/share`);
 
-// Multi-screenshot upload. `pickerResults` from expo-image-picker, plus optional fields.
+export const unshareSave = (saveId) =>
+  api.delete(`/saves/${saveId}/share`);
+
 export const uploadScreenshots = async ({ pickerResults, title, notes, collectionId, category } = {}) => {
   if (!pickerResults || !pickerResults.length) throw new Error('pickerResults required');
   const form = new FormData();
@@ -92,26 +105,53 @@ export const uploadScreenshots = async ({ pickerResults, title, notes, collectio
     const uri = asset.uri || asset;
     const filename = asset.fileName || (uri.split('/').pop()) || `photo-${Date.now()}.jpg`;
     const mime = asset.mimeType || (filename.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg');
-    // RN FormData accepts { uri, name, type } objects.
     form.append('images', { uri, name: filename, type: mime });
   }
   if (title) form.append('title', title);
   if (notes) form.append('notes', notes);
   if (collectionId) form.append('collectionId', collectionId);
   if (category) form.append('category', category);
-  // Strip the JSON Content-Type so RN sets the multipart boundary itself.
   return api.post('/saves/upload-screenshots', form, {
     headers: { 'Content-Type': 'multipart/form-data' },
     transformRequest: (data) => data,
   });
 };
 
+export const analyzeScreenshotBundle = (formData) =>
+  api.post('/saves/screenshot-bundle', formData);
+
+export const refineScreenshotBundle = (sessionId, instruction) =>
+  api.post(`/saves/screenshot-bundle/${sessionId}/refine`, { instruction });
+
+export const saveScreenshotBundle = (sessionId, summary) =>
+  api.post(`/saves/screenshot-bundle/${sessionId}/save`, { summary });
+
+export const exportBundlePdf = (sessionId) => {
+  const url = `${API_URL}/saves/screenshot-bundle/${sessionId}/export-pdf`;
+  // For mobile, we can't use the browser download pattern. Return the URL
+  // and let the app handle it (e.g., with expo-file-system or Share)
+  return Promise.resolve(url);
+};
+
 export const updateIntent = (id, body) => api.patch(`/saves/${id}/intent`, body);
+
+export const refreshThumb = (id) => api.post(`/saves/${id}/refresh-thumb`);
+
+export const retrySave = (id) => api.post(`/saves/${id}/retry`);
 
 // ============ COLLECTION APIs ============
 export const getCollections = () => api.get('/collections');
 
-export const createCollection = (data) => api.post('/collections', data);
+export const getCollectionById = (id) => api.get(`/collections/${id}`);
+
+export const createCollection = (name, description = '', icon = '📌', color = '#1B3A2F') =>
+  api.post('/collections', { name, description, icon, color });
+
+export const updateCollection = (id, patch) =>
+  api.patch(`/collections/${id}`, patch);
+
+export const deleteCollection = (id) =>
+  api.delete(`/collections/${id}`);
 
 export const addSaveToCollection = (collectionId, saveId) =>
   api.post(`/collections/${collectionId}/saves/${saveId}`);
@@ -120,7 +160,7 @@ export const removeSaveFromCollection = (collectionId, saveId) =>
   api.delete(`/collections/${collectionId}/saves/${saveId}`);
 
 // ============ SEARCH API ============
-export const search = (query) => api.get('/search', { params: query });
+export const search = (query) => api.get('/search', { params: { q: query } });
 
 // ============ RECOMMENDATIONS API ============
 export const getRecommendations = (saveId) =>
@@ -134,3 +174,13 @@ export const markNotificationRead = (id) =>
 
 export const dismissNotification = (id) =>
   api.post(`/notifications/${id}/dismiss`);
+
+// ============ LOCATION & SETTINGS ============
+export const updateLocation = (lat, lng, city) =>
+  api.patch('/auth/location', { lat, lng, city });
+
+export const updateSettings = (settings) =>
+  api.patch('/auth/settings', settings);
+
+export const getNearbySaves = (lat, lng, radiusMetres = 1000) =>
+  api.get('/saves/nearby', { params: { lat, lng, radiusMetres } });

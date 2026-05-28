@@ -5,13 +5,17 @@ import { ActivityIndicator, View } from 'react-native';
 
 import SignupScreen from '../screens/SignupScreen';
 import LoginScreen from '../screens/LoginScreen';
+import OnboardingScreen from '../screens/OnboardingScreen';
 import HomeScreen from '../screens/HomeScreen';
+import HomeEmptyScreen from '../screens/HomeEmptyScreen';
 import SearchScreen from '../screens/SearchScreen';
 import QuickSaveScreen from '../screens/QuickSaveScreen';
 import SavesScreen from '../screens/SavesScreen';
+import SavedListScreen from '../screens/SavedListScreen';
 import CollectionsScreen from '../screens/CollectionsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import SaveDetailScreen from '../screens/SaveDetailScreen';
+import NotificationsScreen from '../screens/NotificationsScreen';
 
 import { colors } from '../theme/colors';
 import { useAuth } from '../services/AuthContext';
@@ -22,6 +26,7 @@ const Tab = createBottomTabNavigator();
 function AuthStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false, animationEnabled: false }}>
+      <Stack.Screen name="Onboarding" component={OnboardingScreen} />
       <Stack.Screen name="Signup" component={SignupScreen} />
       <Stack.Screen name="Login" component={LoginScreen} />
     </Stack.Navigator>
@@ -66,7 +71,10 @@ export default function RootNavigator() {
         <>
           <Stack.Screen name="Tabs" component={Tabs} />
           <Stack.Screen name="SaveDetail" component={SaveDetailScreen} />
+          <Stack.Screen name="SavedList" component={SavedListScreen} />
           <Stack.Screen name="Collections" component={CollectionsScreen} />
+          <Stack.Screen name="Notifications" component={NotificationsScreen} />
+          <Stack.Screen name="HomeEmpty" component={HomeEmptyScreen} />
         </>
       )}
     </Stack.Navigator>

@@ -5,16 +5,26 @@
     "version": "1.0.0",
     "sdkVersion": "54.0.0",
     "newArchEnabled": false,
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "plugins": [],
     "ios": {
       "supportsTabletMode": true,
       "bundleIdentifier": "com.trythis.app",
-      "deploymentTarget": "13.0"
+      "deploymentTarget": "13.0",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.trythis.app",
       "minSdkVersion": 21
+    },
+    "extra": {
+      "eas": {
+        "projectId": "e13b25ee-e69a-4c49-9eee-90374baaaebd"
+      }
     }
   }
 }
