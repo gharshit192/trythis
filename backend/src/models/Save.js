@@ -197,6 +197,52 @@ const intentItemSchema = new mongoose.Schema({
   },
   processingError: String,
 
+  // Stage-based processing progress (tracks which enrichment stages completed)
+  processingStages: {
+    metadata: {
+      completed: { type: Boolean, default: false },
+      error: { type: String, default: null },
+      completedAt: { type: Date, default: null }
+    },
+    captions: {
+      completed: { type: Boolean, default: false },
+      error: { type: String, default: null },
+      completedAt: { type: Date, default: null }
+    },
+    videoDownload: {
+      completed: { type: Boolean, default: false },
+      error: { type: String, default: null },
+      completedAt: { type: Date, default: null }
+    },
+    audioTranscription: {
+      completed: { type: Boolean, default: false },
+      error: { type: String, default: null },
+      completedAt: { type: Date, default: null }
+    },
+    frameOCR: {
+      completed: { type: Boolean, default: false },
+      error: { type: String, default: null },
+      completedAt: { type: Date, default: null }
+    },
+    aiAnalysis: {
+      completed: { type: Boolean, default: false },
+      error: { type: String, default: null },
+      completedAt: { type: Date, default: null }
+    },
+    structuredExtraction: {
+      completed: { type: Boolean, default: false },
+      error: { type: String, default: null },
+      completedAt: { type: Date, default: null }
+    }
+  },
+
+  // URL deduplication
+  canonicalKey: { type: String, default: null, index: true },
+  originalUrl: { type: String, default: null },
+
+  // Quality/confidence metric (0.0 to 1.0)
+  confidence: { type: Number, default: 0, min: 0, max: 1 },
+
   // Status (soft-delete / archive — kept from old schema)
   status: {
     type: String,
@@ -205,7 +251,7 @@ const intentItemSchema = new mongoose.Schema({
   },
 
   // Shared save feature: unique ID for public sharing via /s/:shareId route
-  shareId: { type: String, unique: true, sparse: true, index: true, default: null },
+  shareId: { type: String, index: true, default: null },
 
   // Share analytics
   shareStats: {

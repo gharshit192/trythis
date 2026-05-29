@@ -433,7 +433,7 @@ Return JSON matching this schema: ${SCHEMA_FALLBACK}`,
 const VALID_CATEGORIES = ['food', 'travel', 'shopping', 'experience', 'blog', 'fashion', 'beauty', 'tech', 'other', 'general'];
 const VALID_INTENTS = ['buy', 'read_later', 'reference', 'inspiration', 'share'];
 
-const analyze = async ({ mergedOcrText, imageCount = 1, fallbackTitle = '' } = {}) => {
+const analyze = async ({ mergedOcrText, imageCount = 1, fallbackTitle = '', imageUrls = [] } = {}) => {
   const cleaned = cleanOcrText(mergedOcrText);
   const classification = classifyScreenshot(cleaned);
   logger.info(`[screenshotAnalyzer] type=${classification.type} confidence=${classification.confidence} (top3: ${JSON.stringify(classification.allMatches)})`);
@@ -442,7 +442,30 @@ const analyze = async ({ mergedOcrText, imageCount = 1, fallbackTitle = '' } = {
 
   let raw;
   try {
-    logger.info('[screenshotAnalyzer] using Claude API');
+    logger.info('[screenshotAnalyzer] using Claude API with images');
+
+    // Build content with images and text
+    const content = [];
+
+    // Add images from URLs
+    if (imageUrls && imageUrls.length > 0) {
+      for (const url of imageUrls) {
+        content.push({
+          type: 'image',
+          source: {
+            type: 'url',
+            url: url,
+          },
+        });
+      }
+    }
+
+    // Add the analysis prompt
+    content.push({
+      type: 'text',
+      text: prompt,
+    });
+
     const response = await client.messages.create({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 1024,
@@ -450,7 +473,7 @@ const analyze = async ({ mergedOcrText, imageCount = 1, fallbackTitle = '' } = {
       messages: [
         {
           role: 'user',
-          content: prompt,
+          content: content,
         },
       ],
     });
@@ -494,6 +517,44 @@ const analyze = async ({ mergedOcrText, imageCount = 1, fallbackTitle = '' } = {
     structuredData: (raw && typeof raw.structuredData === 'object') ? raw.structuredData : { type: classification.type },
     _classification: classification,
   };
+
+  // Calculate comprehensive confidence score
+  let confidence = 0;
+
+  // 1. Pattern match confidence (0-0.4)
+  confidence += Math.min(classification.confidence, 0.4);
+
+  // 2. OCR text length bonus (0-0.3)
+  const ocrLength = (cleaned || '').length;
+  if (ocrLength > 100) {
+    confidence += 0.3;
+  } else if (ocrLength > 50) {
+    confidence += 0.2;
+  } else if (ocrLength > 0) {
+    confidence += 0.1;
+  }
+
+  // 3. Extracted fields bonus (0-0.3)
+  // Count non-empty fields in structuredData
+  if (out.structuredData && typeof out.structuredData === 'object') {
+    let filledFields = 0;
+    let totalFields = 0;
+    for (const [key, value] of Object.entries(out.structuredData)) {
+      if (key !== 'type') {
+        totalFields++;
+        if (value && (typeof value === 'string' ? value.trim().length > 0 : Array.isArray(value) ? value.length > 0 : value)) {
+          filledFields++;
+        }
+      }
+    }
+    if (totalFields > 0) {
+      confidence += Math.min((filledFields / totalFields) * 0.3, 0.3);
+    }
+  }
+
+  // Cap at 1.0 and round to 2 decimals
+  out.confidence = Math.min(Math.round(confidence * 100) / 100, 1);
+
   return out;
 };
 
