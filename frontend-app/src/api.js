@@ -425,13 +425,24 @@ const api = {
   },
 
   async exportScreenshotPdf(saveId) {
-    const url = new URL(`${API_BASE_URL}/saves/${saveId}/export-pdf`);
-    const a = document.createElement('a');
-    a.href = url.toString();
-    a.setAttribute('download', `screenshot-${Date.now()}.pdf`);
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    try {
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch(`${API_BASE_URL}/saves/${saveId}/export-pdf`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!response.ok) throw new Error('Export failed');
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.setAttribute('download', `screenshot-${Date.now()}.pdf`);
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      throw new Error(err.message || 'Export failed');
+    }
   },
 };
 

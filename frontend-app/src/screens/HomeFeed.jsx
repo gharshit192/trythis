@@ -359,7 +359,7 @@ export default function HomeFeed({ onNavigate, payload, nearbySaves = [], showNe
                     return (
                       <div
                         key={save._id}
-                        onClick={() => onNavigate('screenshot-summary', { sessionId: save._id, summary: save.aiAnalysis?.summary, saveId: save._id })}
+                        onClick={() => onNavigate('save-detail', { id: save._id })}
                         style={{
                           margin: '0 16px 8px',
                           background: 'var(--paper)',

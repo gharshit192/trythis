@@ -330,11 +330,91 @@ const analyzeScreenshot = async (imageFilePath, screenshotType = 'unknown') => {
   }
 };
 
+// ---- 4. Aggregate Analyses ----
+// Combines multiple screenshot analyses into a single comprehensive analysis
+// Returns: { combinedSummary, commonThemes, keyInsights, suggestedAction }
+const aggregateAnalyses = async (analysisText) => {
+  if (!analysisText || typeof analysisText !== 'string' || analysisText.trim().length === 0) {
+    logger.warn('aggregateAnalyses: Empty analysisText received');
+    return {
+      combinedSummary: 'No analysis data provided',
+      commonThemes: '',
+      keyInsights: '',
+      suggestedAction: '',
+    };
+  }
+
+  const SYSTEM_PROMPT = `You are analyzing multiple screenshots to identify patterns and insights.
+Given analysis text from screenshots, return ONLY a valid JSON object (no markdown, no code blocks, just raw JSON) with these exact fields:
+
+{
+  "combinedSummary": "1-2 sentences summarizing the screenshots as a cohesive narrative",
+  "commonThemes": "Key patterns or themes present across the screenshots",
+  "keyInsights": "Noteworthy patterns, insights or observations",
+  "suggestedAction": "A single suggested action based on the analysis"
+}
+
+Respond with ONLY the JSON object. No other text.`;
+
+  const result = await withRetry(async () => {
+    const message = await client.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 512,
+      system: SYSTEM_PROMPT,
+      messages: [
+        {
+          role: 'user',
+          content: `Analyze and find patterns in these screenshots:\n\n${analysisText}`,
+        },
+      ],
+    });
+
+    const responseText = message.content[0]?.type === 'text' ? message.content[0].text.trim() : '';
+
+    if (!responseText) {
+      logger.error('aggregateAnalyses: Claude returned empty response');
+      return {
+        combinedSummary: 'Unable to analyze - received empty response',
+        commonThemes: '',
+        keyInsights: '',
+        suggestedAction: '',
+      };
+    }
+
+    const parsed = parseJsonSafely(responseText);
+
+    if (!parsed) {
+      logger.error('aggregateAnalyses: Failed to parse Claude response', { responseText: responseText.substring(0, 200) });
+      return {
+        combinedSummary: 'Unable to parse analysis - malformed response',
+        commonThemes: '',
+        keyInsights: '',
+        suggestedAction: '',
+      };
+    }
+
+    return {
+      combinedSummary: parsed.combinedSummary || '',
+      commonThemes: parsed.commonThemes || '',
+      keyInsights: parsed.keyInsights || '',
+      suggestedAction: parsed.suggestedAction || '',
+    };
+  });
+
+  return result || {
+    combinedSummary: 'Analysis failed',
+    commonThemes: '',
+    keyInsights: '',
+    suggestedAction: '',
+  };
+};
+
 // ---- Exports ----
 module.exports = {
   analyzeTranscript,
   transcribeAudio,
   analyzeScreenshot,
+  aggregateAnalyses,
   parseJsonSafely,
   withRetry,
 };

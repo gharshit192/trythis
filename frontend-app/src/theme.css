@@ -170,17 +170,12 @@ body {
 .tab-bar {
   background: var(--paper);
   border-top: 0.5px solid var(--hairline);
-  padding: 10px 20px 20px;
+  padding: 10px 0 16px;
   display: flex;
-  justify-content: space-between;
+  justify-content: space-around;
   align-items: center;
-  position: fixed;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100%;
-  max-width: 430px;
-  z-index: 100;
+  flex-shrink: 0;
+  z-index: 50;
 }
 .tab {
   display: flex;
@@ -212,12 +207,9 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  position: absolute;
-  bottom: 16px;
-  left: 50%;
-  transform: translateX(-50%);
   box-shadow: 0 6px 14px -4px rgba(27, 58, 47, 0.35);
   cursor: pointer;
+  flex-shrink: 0;
 }
 .fab i {
   font-size: 22px;

@@ -7,6 +7,7 @@ const collectionsRoutes = require('./routes/collections');
 const searchRoutes = require('./routes/search');
 const recommendationsRoutes = require('./routes/recommendations');
 const notificationsRoutes = require('./routes/notifications');
+const notificationTestRoutes = require('./routes/notificationTest');
 const uploadsRoutes = require('./routes/uploads');
 const audioProcessingRoutes = require('./routes/audioProcessing');
 const adminRoutes = require('./routes/admin');
@@ -54,6 +55,7 @@ app.use('/collections', collectionsRoutes);
 app.use('/search', searchRoutes);
 app.use('/recommendations', recommendationsRoutes);
 app.use('/notifications', notificationsRoutes);
+app.use('/notifications', notificationTestRoutes);  // test endpoints at /notifications/test/*
 app.use('/uploads', uploadsRoutes);
 app.use('/admin', adminRoutes);
 app.use('/s', shareRoutes);

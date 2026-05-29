@@ -60,14 +60,18 @@ const initializeServer = async () => {
       uploadWorker.start();
       console.log('✅ Upload worker started');
 
-      if (process.env.NODE_ENV !== 'production') {
-        console.log('[DEBUG] Starting background jobs (non-production mode)...');
-        purgeScreenshots.start();
+      // Start background jobs in all modes (including production)
+      if (process.env.ENABLE_NOTIFICATIONS !== 'false') {
+        console.log('[DEBUG] Starting notification scheduler...');
         notificationScheduler.start();
+        console.log('✅ Notification scheduler started');
+      }
+
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('[DEBUG] Starting additional jobs (non-production mode)...');
+        purgeScreenshots.start();
         setInterval(cleanupBundles, 60 * 60 * 1000);
-        console.log('✅ Background jobs started');
-      } else {
-        console.log('[DEBUG] Skipping background jobs in production mode');
+        console.log('✅ Additional jobs started');
       }
 
       console.log('[DEBUG] Server initialization complete');

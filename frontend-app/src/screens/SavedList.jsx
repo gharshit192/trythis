@@ -39,8 +39,7 @@ const isLink = (save) =>
   !isVideo(save);
 
 const isBundle = (save) =>
-  save.source === 'screenshot_bundle' ||
-  save.contentType === 'screenshot';
+  save.contentType === 'image' || save.source === 'screenshot';
 
 export default function SavedList({ filter, title, saves = [], onNavigate, payload }) {
   const [filteredSaves, setFilteredSaves] = useState([]);
@@ -126,7 +125,7 @@ export default function SavedList({ filter, title, saves = [], onNavigate, paylo
                 {filteredSaves.map((save) => (
                   <div
                     key={save._id}
-                    onClick={() => onNavigate('saveDetail', { saveId: save._id })}
+                    onClick={() => onNavigate('save-detail', { id: save._id })}
                     style={{ cursor: 'pointer' }}
                   >
                     <div style={{
@@ -163,7 +162,7 @@ export default function SavedList({ filter, title, saves = [], onNavigate, paylo
                   return (
                     <div
                       key={save._id}
-                      onClick={() => onNavigate('saveDetail', { saveId: save._id })}
+                      onClick={() => onNavigate('save-detail', { id: save._id })}
                       style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -212,7 +211,7 @@ export default function SavedList({ filter, title, saves = [], onNavigate, paylo
                   return (
                     <div
                       key={save._id}
-                      onClick={() => onNavigate('screenshotSummary', { sessionId: save._id, summary: data, saveId: save._id })}
+                      onClick={() => onNavigate('save-detail', { id: save._id })}
                       style={{
                         borderRadius: 12,
                         border: '0.5px solid #eee',

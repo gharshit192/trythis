@@ -938,4 +938,106 @@ router.get('/nearby', authMiddleware, async (req, res) => {
   }
 });
 
+// POST /:id/aggregate-analysis — Aggregate and analyze multiple screenshots
+router.post('/:id/aggregate-analysis', validateObjectId('id'), async (req, res) => {
+  try {
+    const save = await Save.findById(req.params.id);
+
+    if (!save || save.userId.toString() !== req.user.id) {
+      return res.status(404).json({
+        status: 'error',
+        error: { code: 'NOT_FOUND', message: 'Save not found' },
+      });
+    }
+
+    const { analysisText } = req.body;
+    if (!analysisText) {
+      return res.status(400).json({
+        status: 'error',
+        error: { code: 'MISSING_TEXT', message: 'analysisText is required' },
+      });
+    }
+
+    const claudeService = require('../services/claudeService');
+    const aggregated = await claudeService.aggregateAnalyses(analysisText);
+
+    res.json({
+      status: 'success',
+      data: aggregated,
+    });
+  } catch (error) {
+    logger.error(`Aggregate analysis error: ${error.message}`);
+    res.status(500).json({
+      status: 'error',
+      error: { code: 'AGGREGATE_ERROR', message: error.message },
+    });
+  }
+});
+
+// GET /:id/export-pdf — Export screenshot detail as PDF
+router.get('/:id/export-pdf', validateObjectId('id'), async (req, res) => {
+  try {
+    const PDFDocument = require('pdfkit');
+    const save = await Save.findById(req.params.id);
+
+    if (!save || save.userId.toString() !== req.user.id) {
+      return res.status(404).json({
+        status: 'error',
+        error: { code: 'NOT_FOUND', message: 'Save not found' },
+      });
+    }
+
+    const doc = new PDFDocument({ margin: 40, bufferPages: true });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="screenshot-${Date.now()}.pdf"`);
+    doc.pipe(res);
+
+    // Title
+    doc.fontSize(20).font('Helvetica-Bold').text(save.title, { align: 'left' });
+    doc.moveDown(0.3);
+
+    // Meta
+    doc.fontSize(10).font('Helvetica').fillColor('#666666');
+    doc.text(`Category: ${save.category || 'General'}`);
+    doc.text(`Saved: ${new Date(save.createdAt).toLocaleDateString()}`);
+    doc.moveDown(0.5);
+
+    // Summary
+    if (save.description) {
+      doc.fontSize(12).font('Helvetica-Bold').fillColor('#1B3A2F').text('Summary', { underline: true });
+      doc.fontSize(11).font('Helvetica').fillColor('#000000');
+      doc.text(save.description, { align: 'left' });
+      doc.moveDown(0.5);
+    }
+
+    // Key Points
+    if (save.aiAnalysis?.keyPoints?.length) {
+      doc.fontSize(12).font('Helvetica-Bold').fillColor('#1B3A2F').text('Key Points', { underline: true });
+      doc.fontSize(11).font('Helvetica').fillColor('#000000');
+      save.aiAnalysis.keyPoints.forEach((point) => {
+        doc.text(`• ${point}`, { align: 'left' });
+      });
+      doc.moveDown(0.5);
+    }
+
+    // Tags
+    if (save.tags?.length) {
+      doc.fontSize(12).font('Helvetica-Bold').fillColor('#1B3A2F').text('Tags', { underline: true });
+      doc.fontSize(11).font('Helvetica').fillColor('#000000');
+      doc.text(save.tags.map((t) => `#${t}`).join(' '), { align: 'left' });
+      doc.moveDown(0.5);
+    }
+
+    doc.end();
+  } catch (error) {
+    logger.error(`Export PDF error: ${error.message}`);
+    if (!res.headersSent) {
+      res.status(500).json({
+        status: 'error',
+        error: { code: 'EXPORT_ERROR', message: error.message },
+      });
+    }
+  }
+});
+
 module.exports = router;

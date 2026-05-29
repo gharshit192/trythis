@@ -413,8 +413,7 @@ export default function SaveDetail({ onNavigate, payload }) {
   if (error) return <div className="phone-frame" style={{ background: T.bg, color: T.text }}><div style={{ padding: 32, color: T.redFg }}>{error}</div></div>;
 
   // Route to ScreenshotDetail for screenshot saves
-  const isScreenshot = (save?.contentType === 'image' || save?.contentType === 'image') &&
-                       (save?.source === 'screenshot');
+  const isScreenshot = save?.contentType === 'image' || save?.source === 'screenshot';
 
   if (isScreenshot) {
     return <ScreenshotDetail save={save} onNavigate={onNavigate} />;

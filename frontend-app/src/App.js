@@ -97,6 +97,13 @@ function App() {
 
   // navigate(screen) or navigate(screen, payload)
   const navigate = (screen, nextPayload = null) => {
+    // Check if trying to access protected screen without auth
+    const protectedScreens = ['home', 'save-detail', 'savedList', 'search', 'collections', 'profile', 'notifications'];
+    if (protectedScreens.includes(screen) && !localStorage.getItem('auth_token')) {
+      setCurrentScreen('login');
+      return;
+    }
+
     setPayload(nextPayload);
     setCurrentScreen(screen);
     // Persist navigable screens to localStorage for recovery on hard refresh

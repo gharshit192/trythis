@@ -4,6 +4,13 @@ const logger = require('../../../utils/logger');
 const MIN_SAMPLE_SIZE = 5;
 const LOOKBACK_DAYS = 60;
 
+// System notification types are excluded from engagement analysis because:
+// - They're triggered by user actions (uploads), not by the scheduler
+// - Users always open them immediately (100% open rate)
+// - They skew fatigue metrics and trigger suppression of smart notifications
+// - We only measure engagement with smart triggers to decide suppression
+const SYSTEM_NOTIFICATION_TYPES = ['upload_completed', 'upload_failed'];
+
 /**
  * Build engagement profile for a user.
  * Returns: { byTriggerType: { [type]: stats }, overall: stats }
@@ -18,6 +25,7 @@ async function getEngagementProfile(userId) {
           userId,
           createdAt: { $gte: since },
           status: { $in: ['sent', 'opened', 'acted', 'dismissed'] },
+          type: { $nin: SYSTEM_NOTIFICATION_TYPES },
         },
       },
       {
