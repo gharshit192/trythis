@@ -15,8 +15,8 @@ function normalizeUrl(url) {
     return { canonicalKey: null, canonicalUrl: url, originalUrl: url };
   }
 
-  // YouTube
-  const youtubeMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  // YouTube (shorts, regular videos, youtu.be) - handle all formats
+  const youtubeMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/i);
   if (youtubeMatch) {
     const videoId = youtubeMatch[1];
     return {

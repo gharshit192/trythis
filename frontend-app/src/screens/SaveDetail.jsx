@@ -391,13 +391,48 @@ export default function SaveDetail({ onNavigate, payload }) {
             : <span style={{ color: T.textFaint, fontSize: 36 }}>▢</span>}
         </div>
 
-        {/* Status messages: only show if data is missing */}
+        {/* Status messages: show context-aware info based on processingStages */}
         {(() => {
           const hasGoodData = save?.aiAnalysis?.summary || (save?.aiAnalysis?.keyPoints?.length > 0);
+          const stages = save?.processingStages || {};
 
-          if (save?.processingStatus === 'partial') {
-            // If partial but has good data, don't show warning
-            if (hasGoodData) return null;
+          // Video unavailable but we have fallback analysis from metadata
+          if (stages.videoDownload?.error && hasGoodData) {
+            return (
+              <WarningBanner tone="amber" icon="📹">
+                Video couldn't be accessed — analysis from title & description
+              </WarningBanner>
+            );
+          }
+
+          // Video still processing
+          if (!stages.videoDownload?.completed && !stages.videoDownload?.error && save?.processingStatus === 'processing') {
+            return (
+              <WarningBanner tone="amber">
+                ⏳ Enhancing with video details...
+              </WarningBanner>
+            );
+          }
+
+          // Processing failed with no fallback data
+          if (save?.processingStatus === 'failed' && !hasGoodData) {
+            return (
+              <WarningBanner
+                tone="red"
+                action={
+                  <button
+                    onClick={handleRetry} disabled={retrying}
+                    style={{ background: T.redFg, color: T.bg, border: 0, borderRadius: 6, padding: '5px 12px', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}
+                  >{retrying ? '…' : 'Retry'}</button>
+                }
+              >
+                Could not process this save.
+              </WarningBanner>
+            );
+          }
+
+          // Partial processing with insufficient data
+          if (save?.processingStatus === 'partial' && !hasGoodData) {
             return (
               <WarningBanner
                 tone="amber"
@@ -413,28 +448,6 @@ export default function SaveDetail({ onNavigate, payload }) {
             );
           }
 
-          if (save?.processingStatus === 'failed') {
-            return (
-              <WarningBanner
-                tone="red"
-                action={
-                  <button
-                    onClick={handleRetry} disabled={retrying}
-                    style={{ background: T.redFg, color: T.bg, border: 0, borderRadius: 6, padding: '5px 12px', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}
-                  >{retrying ? '…' : 'Retry'}</button>
-                }
-              >
-                Could not process this save fully.
-              </WarningBanner>
-            );
-          }
-
-          if (save?.processingStatus === 'processing') {
-            return (
-              <WarningBanner tone="amber">⏳ Still processing — refresh in a moment.</WarningBanner>
-            );
-          }
-
           return null;
         })()}
 
@@ -447,6 +460,34 @@ export default function SaveDetail({ onNavigate, payload }) {
         )}
         {showRawDescription && (
           <p style={{ fontSize: 13, color: T.textMuted, lineHeight: 1.5, marginBottom: 12 }}>{save.description}</p>
+        )}
+
+        {/* Extracted Location — shows city/country if available with maps link */}
+        {save?.extractedLocation?.city && (
+          <div style={{ marginBottom: 12 }}>
+            <a
+              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(save.extractedLocation.city + ', ' + (save.extractedLocation.country || ''))}`}
+              target="_blank"
+              rel="noreferrer"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '6px 12px',
+                borderRadius: 999,
+                background: `${meta.accent}22`,
+                color: meta.accent,
+                fontSize: 12,
+                fontWeight: 500,
+                border: `1px solid ${meta.accent}44`,
+                textDecoration: 'none',
+                cursor: 'pointer',
+              }}
+            >
+              <span>📍</span>
+              <span>{save.extractedLocation.city}{save.extractedLocation.country ? ', ' + save.extractedLocation.country : ''}</span>
+            </a>
+          </div>
         )}
 
         {/* Buy link removed shield — fires only when backend stripped a URL */}
