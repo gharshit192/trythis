@@ -145,7 +145,7 @@ function App() {
     'savedList': <SavedList {...props} saves={saves} filter={payload?.filter} title={payload?.title} />,
     'add-save': <AddSave {...props} />,
     'save-detail': <SaveDetail {...props} />,
-    'screenshot-summary': <ScreenshotSummary {...props} />,
+    'screenshot-summary': <ScreenshotSummary {...props} sessionId={payload?.sessionId} summary={payload?.summary} saveId={payload?.saveId} />,
     'collections': <Collections {...props} />,
     'collection-detail': <CollectionDetail {...props} />,
     'trip-collection': <TripCollection {...props} />,
