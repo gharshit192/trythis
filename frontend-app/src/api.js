@@ -321,8 +321,12 @@ const api = {
   },
 
   // ---- Notifications ----
-  async getNotifications() {
-    const res = await fetch(`${API_BASE_URL}/notifications`, { headers: authHeader() });
+  async getNotifications(limit = 10, offset = 0) {
+    const params = new URLSearchParams({
+      limit: Math.min(limit, 100),
+      offset: Math.max(offset, 0),
+    });
+    const res = await fetch(`${API_BASE_URL}/notifications?${params}`, { headers: authHeader() });
     return handle(res);
   },
 
@@ -367,6 +371,46 @@ const api = {
       headers: authHeader(),
     });
     return handle(res);
+  },
+
+  // ---- Uploads (async processing) ----
+  async submitLink(url) {
+    const res = await fetch(`${API_BASE_URL}/uploads`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
+      body: JSON.stringify({ type: 'LINK', url }),
+    });
+    const data = await handle(res);
+    return data?.data || data;
+  },
+
+  async submitScreenshot(file) {
+    const fd = new FormData();
+    fd.append('type', 'SCREENSHOT');
+    fd.append('file', file);
+    const res = await fetch(`${API_BASE_URL}/uploads`, {
+      method: 'POST',
+      headers: authHeader(),
+      body: fd,
+    });
+    const data = await handle(res);
+    return data?.data || data;
+  },
+
+  async getJobStatus(jobId) {
+    const res = await fetch(`${API_BASE_URL}/uploads/${jobId}`, {
+      headers: authHeader(),
+    });
+    const data = await handle(res);
+    return data?.data || data;
+  },
+
+  async listJobs(limit = 50, skip = 0) {
+    const res = await fetch(`${API_BASE_URL}/uploads?limit=${limit}&skip=${skip}`, {
+      headers: authHeader(),
+    });
+    const data = await handle(res);
+    return data?.data || data;
   },
 };
 

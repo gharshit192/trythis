@@ -81,51 +81,31 @@ function LinkFlow({ collections, onBack, onNavigate }) {
     setSelectedCollectionIds((p) => p.includes(id) ? p.filter((x) => x !== id) : [...p, id]);
 
   const PROCESSING_STEPS = [
-    'Saving your link...',
-    'Reading the content...',
-    'Organising it for you...',
-    'Almost done...',
-    'Done! ✓'
+    'Submitting your link...',
+    'Submitted! Processing in background...',
   ];
 
   const handleSave = async () => {
     setError(null);
-    if (!url.trim() && !title.trim()) return setError('Add a link or a title.');
+    if (!url.trim()) return setError('Paste a link to save.');
 
-    // Start UI immediately — before API call
     setSaving(true);
     setProcessingStep(0);
 
-    // Progress through messages on a timer
-    const t1 = setTimeout(() => setProcessingStep(1), 1500);
-    const t2 = setTimeout(() => setProcessingStep(2), 3500);
-    const t3 = setTimeout(() => setProcessingStep(3), 6000);
-
     try {
-      const res = await api.createSave({
-        title: title.trim() || undefined,
-        url: url.trim() || undefined,
-        notes: notes.trim() || undefined,
-        sourceType: detectType(url.trim()),
-        collectionIds: selectedCollectionIds.length ? selectedCollectionIds : undefined,
-      });
+      // Submit link for async processing
+      const job = await api.submitLink(url.trim());
 
-      clearTimeout(t1);
-      clearTimeout(t2);
-      clearTimeout(t3);
-
-      if (res.status === 'success') {
-        setProcessingStep(4); // Done!
-        setTimeout(() => {
-          setSaving(false);
-          setUrl('');
-          onNavigate('firstSaveSuccess', { nextScreen: 'home' });
-        }, 800);
-      } else {
+      // Show "submitted" state
+      setProcessingStep(1);
+      setTimeout(() => {
         setSaving(false);
+        setUrl('');
         setProcessingStep(0);
-        setError(res.error?.message || 'Save failed');
-      }
+        // Show a confirmation and navigate back
+        alert(`Submitted! Your link is being processed. You can continue uploading while you wait.`);
+        onNavigate('home');
+      }, 1200);
     } catch (err) {
       clearTimeout(t1);
       clearTimeout(t2);
@@ -162,7 +142,7 @@ function LinkFlow({ collections, onBack, onNavigate }) {
             marginBottom: 24
           }}>
             <span style={{ fontSize: 24 }}>
-              {processingStep === 4 ? '✓' : '⟳'}
+              {processingStep === 1 ? '✓' : '⟳'}
             </span>
           </div>
           <p style={{
@@ -215,10 +195,7 @@ function PhotosFlow({ collections, onBack, onNavigate }) {
 
   const PROCESSING_STEPS = [
     'Uploading your photos...',
-    'Reading the content...',
-    'Organising it for you...',
-    'Almost done...',
-    'Done! ✓'
+    'Submitted! Processing in background...',
   ];
 
   useEffect(() => {
@@ -249,43 +226,31 @@ function PhotosFlow({ collections, onBack, onNavigate }) {
   const handleUpload = async () => {
     if (!files.length) return setError('Pick at least one image.');
 
-    // Start UI immediately
     setUploading(true);
     setProcessingStep(0);
 
-    // Progress through messages on a timer
-    const t1 = setTimeout(() => setProcessingStep(1), 1500);
-    const t2 = setTimeout(() => setProcessingStep(2), 3500);
-    const t3 = setTimeout(() => setProcessingStep(3), 6000);
-
     try {
-      const res = await api.uploadScreenshots({
-        files: files.map((x) => x.file),
-        title: title.trim() || undefined,
-        notes: notes.trim() || undefined,
-        collectionId: selectedCollectionId || undefined,
-      });
-
-      clearTimeout(t1);
-      clearTimeout(t2);
-      clearTimeout(t3);
-
-      if (res.status === 'success') {
-        setProcessingStep(4); // Done!
-        files.forEach((x) => URL.revokeObjectURL(x.previewUrl));
-        setTimeout(() => {
-          setUploading(false);
-          onNavigate('firstSaveSuccess', { nextScreen: 'home' });
-        }, 800);
-      } else {
-        setUploading(false);
-        setProcessingStep(0);
-        setError(res.error?.message || 'Upload failed');
+      // Submit each screenshot as a separate async job
+      let failedCount = 0;
+      for (const { file } of files) {
+        try {
+          await api.submitScreenshot(file);
+        } catch (err) {
+          failedCount++;
+        }
       }
+
+      setProcessingStep(1);
+      files.forEach((x) => URL.revokeObjectURL(x.previewUrl));
+      setTimeout(() => {
+        setUploading(false);
+        setFiles([]);
+        setProcessingStep(0);
+        const msg = failedCount ? `${files.length - failedCount} of ${files.length} submitted` : `${files.length} screenshot(s) submitted! Processing in background...`;
+        alert(msg);
+        onNavigate('home');
+      }, 1200);
     } catch (err) {
-      clearTimeout(t1);
-      clearTimeout(t2);
-      clearTimeout(t3);
       setUploading(false);
       setProcessingStep(0);
       setError(err.message || 'Upload failed');
@@ -340,7 +305,7 @@ function PhotosFlow({ collections, onBack, onNavigate }) {
             marginBottom: 24
           }}>
             <span style={{ fontSize: 24 }}>
-              {processingStep === 4 ? '✓' : '⟳'}
+              {processingStep === 1 ? '✓' : '⟳'}
             </span>
           </div>
           <p style={{
@@ -354,7 +319,7 @@ function PhotosFlow({ collections, onBack, onNavigate }) {
             {PROCESSING_STEPS[processingStep]}
           </p>
           <p style={{ fontSize: 13, color: '#888', textAlign: 'center' }}>
-            {processingStep < 4 ? 'This takes just a few seconds' : 'Navigating...'}
+            {processingStep === 0 ? 'Uploading...' : 'Navigating...'}
           </p>
         </div>
       )}

@@ -32,26 +32,39 @@ async function extractLocation(text) {
   if (!text) return null;
 
   try {
-    // Normalize text: lowercase, remove punctuation
-    const normalizedText = text.toLowerCase().replace(/[^\w\s]/g, ' ');
+    // Normalize text: lowercase
+    const normalizedText = text.toLowerCase();
 
-    // Search for known locations
-    for (const [key, location] of Object.entries(KNOWN_LOCATIONS)) {
-      // Word boundary matching: ensure we match whole words, not substrings
-      const wordRegex = new RegExp(`\\b${key}\\b`, 'i');
-      if (wordRegex.test(normalizedText)) {
-        return {
-          name: location.city,
-          city: location.city,
-          country: location.country,
-          state: location.state || undefined,
-          lat: location.lat,
-          lng: location.lng,
-          source: 'keyword_match'
-        };
+    // Search for known locations (try longer names first to avoid partial matches)
+    const sortedLocations = Object.entries(KNOWN_LOCATIONS)
+      .sort((a, b) => b[0].length - a[0].length);
+
+    for (const [key, location] of sortedLocations) {
+      // More flexible matching: word boundary or within text
+      const patterns = [
+        new RegExp(`\\b${key}\\b`, 'i'),           // Word boundary
+        new RegExp(`\\b${key}`, 'i'),              // At word start
+        new RegExp(`${key}\\b`, 'i'),              // At word end
+        new RegExp(key.replace(/\s+/g, '\\s+'), 'i') // Allow flexible spaces
+      ];
+
+      for (const pattern of patterns) {
+        if (pattern.test(normalizedText)) {
+          logger.info(`[locationExtractor] Found: ${location.city} via pattern "${key}"`);
+          return {
+            name: location.city,
+            city: location.city,
+            country: location.country,
+            state: location.state || undefined,
+            lat: location.lat,
+            lng: location.lng,
+            source: 'keyword_match'
+          };
+        }
       }
     }
 
+    logger.debug(`[locationExtractor] No location found in: "${text.substring(0, 100)}..."`);
     return null;
   } catch (err) {
     logger.warn(`[locationExtractor] Error extracting location: ${err.message}`);

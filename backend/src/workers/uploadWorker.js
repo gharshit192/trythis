@@ -173,7 +173,11 @@ async function processLinkJob(job) {
   let extractedLocation = null;
   try {
     const locationText = `${metadata.title || ''} ${metadata.description || ''}`;
+    logger.info(`[processLinkJob] Extracting location from: "${locationText.substring(0, 100)}..."`);
     extractedLocation = await extractLocation(locationText);
+    if (extractedLocation) {
+      logger.info(`[processLinkJob] ✓ Location extracted: ${extractedLocation.city}, ${extractedLocation.country}`);
+    }
   } catch (err) {
     logger.warn(`[processLinkJob] Location extraction failed: ${err.message}`);
   }
@@ -212,6 +216,8 @@ async function processLinkJob(job) {
   const isVideoSource = url && /(?:instagram\.com|tiktok\.com|youtube\.com|youtu\.be|vimeo\.com|facebook\.com|fb\.watch|twitter\.com|x\.com|reddit\.com)/i.test(url);
 
   // Update save with Stage 0 & Stage 1 complete
+  logger.info(`[processLinkJob] Setting processingStages.metadata + aiAnalysis, confidence=0.4, location=${extractedLocation?.city || 'none'}`);
+
   const save = await Save.findByIdAndUpdate(
     job.resultSaveId,
     {
@@ -251,6 +257,8 @@ async function processLinkJob(job) {
     },
     { new: true }
   );
+
+  logger.info(`[processLinkJob] ✓ Save ${save._id} updated: stages=${Object.values(save.processingStages).filter(s => s.completed).length}/2, confidence=${save.confidence}`);
 
   // Cache thumbnail locally from remote URL
   if (save.thumbnail && !save.thumbnail.startsWith('/static/')) {

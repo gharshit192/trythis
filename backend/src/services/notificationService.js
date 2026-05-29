@@ -1,0 +1,62 @@
+const Notification = require('../models/Notification');
+const User = require('../models/User');
+const emailService = require('./emailService');
+const logger = require('../utils/logger');
+
+/**
+ * Send in-app & push notification for upload job completion/failure
+ */
+async function sendJobNotification(userId, payload) {
+  try {
+    const { type, jobId, saveId, message } = payload;
+
+    // Determine notification content
+    let title, notifMessage, notificationType;
+
+    if (type === 'JOB_COMPLETED') {
+      title = '✅ Upload ready!';
+      notifMessage = 'Your save is ready to view.';
+      notificationType = 'upload_completed';
+    } else if (type === 'JOB_FAILED') {
+      title = '❌ Upload failed';
+      notifMessage = message || 'We had trouble processing your upload. Please try again.';
+      notificationType = 'upload_failed';
+    } else {
+      throw new Error(`Unknown notification type: ${type}`);
+    }
+
+    // Create in-app notification
+    const notification = await Notification.create({
+      userId,
+      type: notificationType,
+      title,
+      message: notifMessage,
+      relatedSaveId: saveId || null,
+      priority: type === 'JOB_COMPLETED' ? 'medium' : 'high',
+      relevanceScore: 0.8,
+      status: 'sent',
+      deliveryMethod: 'in_app',
+      sentAt: new Date(),
+      metadata: {
+        jobId: jobId.toString(),
+        channel: 'in_app',
+      },
+    });
+
+    logger.info(`[notificationService] Created notification ${notification._id} for user ${userId} (${type})`);
+
+    // Try to send push notification if user has pushToken
+    // TODO: Wire this up when push service is ready
+    // const user = await User.findById(userId).select('pushToken').lean();
+    // if (user?.pushToken) {
+    //   await sendPushNotification(user.pushToken, title, notifMessage);
+    // }
+
+    return notification._id;
+  } catch (err) {
+    logger.error(`[notificationService] sendJobNotification error: ${err.message}`);
+    throw err;
+  }
+}
+
+module.exports = { sendJobNotification };

@@ -479,6 +479,28 @@ export default function SaveDetail({ onNavigate, payload }) {
           </div>
         )}
 
+        {/* Screenshot analysis — for contentType='image' with screenshotAnalysis */}
+        {save?.contentType === 'image' && save?.aiAnalysis?.screenshotAnalysis && (
+          <div style={{ background: T.bgInner, border: `1px solid ${T.border}`, borderRadius: 12, padding: 14, marginBottom: 12 }}>
+            {save.aiAnalysis.screenshotAnalysis.data?.features?.length > 0 && (
+              <>
+                <p style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em', color: T.textFaint, margin: '0 0 8px' }}>Features</p>
+                <PillRow items={save.aiAnalysis.screenshotAnalysis.data.features} accent={meta.accent} />
+              </>
+            )}
+            {save.aiAnalysis.screenshotAnalysis.data?.framework && (
+              <p style={{ fontSize: 12, color: T.text, marginTop: 10 }}>
+                <strong>Framework:</strong> {save.aiAnalysis.screenshotAnalysis.data.framework}
+              </p>
+            )}
+            {save.aiAnalysis.screenshotAnalysis.data?.type && (
+              <p style={{ fontSize: 12, color: T.text, marginTop: 6 }}>
+                <strong>Type:</strong> {save.aiAnalysis.screenshotAnalysis.data.type}
+              </p>
+            )}
+          </div>
+        )}
+
         {/* Screenshot carousel */}
         {save?.screenshots?.length > 0 && (
           <>

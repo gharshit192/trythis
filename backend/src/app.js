@@ -7,6 +7,7 @@ const collectionsRoutes = require('./routes/collections');
 const searchRoutes = require('./routes/search');
 const recommendationsRoutes = require('./routes/recommendations');
 const notificationsRoutes = require('./routes/notifications');
+const uploadsRoutes = require('./routes/uploads');
 const audioProcessingRoutes = require('./routes/audioProcessing');
 const adminRoutes = require('./routes/admin');
 const shareRoutes = require('./routes/share');
@@ -22,7 +23,7 @@ app.set('trust proxy', 1);
 app.use(cors({
   origin: process.env.CORS_ORIGINS
     ? process.env.CORS_ORIGINS.split(',').map((s) => s.trim())
-    : [process.env.FRONTEND_URL || 'http://localhost:3000', 'https://trythis-frontend.vercel.app'],
+    : [process.env.FRONTEND_URL || 'http://localhost:3000', 'https://trythis-frontend.vercel.app', 'http://localhost:3001','http://localhost:3002','http://localhost:3003'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -53,6 +54,7 @@ app.use('/collections', collectionsRoutes);
 app.use('/search', searchRoutes);
 app.use('/recommendations', recommendationsRoutes);
 app.use('/notifications', notificationsRoutes);
+app.use('/uploads', uploadsRoutes);
 app.use('/admin', adminRoutes);
 app.use('/s', shareRoutes);
 app.use(audioProcessingRoutes);  // mounts /saves/:id/process-audio etc. at root

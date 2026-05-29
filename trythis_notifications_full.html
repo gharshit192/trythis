@@ -1,0 +1,370 @@
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,600;1,400&display=swap');
+  :root {
+    --forest: #1b3a2f; --forest-soft: #e8efe9; --forest-faint: #f4f8f4;
+    --ink: #0e0e0c; --slate: #6b6b6b; --mute: #b0aea7;
+    --linen: #f7f6f2; --paper: #fff; --hairline: #e0ddd3;
+    --hairline-soft: #f0eee6; --sand: #c9a87c; --amber-link: #b85c28;
+    --clay: #ebd9c2; --sage: #b8c9b5;
+    --font-display: "Fraunces", Georgia, serif;
+    --font-body: "Inter", -apple-system, sans-serif;
+    --r-sm: 8px; --r-md: 12px; --r-lg: 16px; --r-xl: 20px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font-body); background: var(--linen); }
+  .page { max-width: 480px; margin: 0 auto; background: var(--linen); min-height: 600px; }
+
+  .topbar {
+    display: flex; align-items: center; gap: 12px;
+    padding: 18px 20px 14px; background: var(--paper);
+    border-bottom: 0.5px solid var(--hairline);
+    position: sticky; top: 0; z-index: 10;
+  }
+  .back-btn {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: var(--forest-faint); border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--forest); font-size: 16px; flex-shrink: 0;
+  }
+  .topbar-title { font-family: var(--font-display); font-size: 20px; font-weight: 600; color: var(--ink); flex: 1; }
+  .unread-pill {
+    background: var(--forest); color: #fff;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.02em;
+    padding: 3px 10px; border-radius: 20px;
+  }
+
+  .mark-all-btn {
+    margin: 12px 16px 0; padding: 10px 16px;
+    background: none; border: 0.5px solid var(--hairline);
+    border-radius: var(--r-md); font-size: 13px; font-weight: 500;
+    color: var(--forest); cursor: pointer; width: calc(100% - 32px);
+    transition: background 0.15s; display: block;
+  }
+  .mark-all-btn:hover { background: var(--forest-soft); }
+
+  .section-label {
+    padding: 18px 20px 8px;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--mute);
+  }
+
+  .notif-list { display: flex; flex-direction: column; gap: 6px; padding: 0 12px 8px; }
+
+  /* ── Base card ── */
+  .notif-card {
+    background: var(--paper); border-radius: var(--r-lg);
+    border: 0.5px solid var(--hairline-soft);
+    padding: 14px 16px; display: flex; gap: 12px; align-items: flex-start;
+    cursor: pointer; position: relative; transition: opacity 0.2s, transform 0.2s;
+  }
+  .notif-card.unread-card { background: var(--forest-faint); border-color: #d0e4d2; }
+  .notif-card.failed-card { background: #fdf6f2; border-color: #eeddd3; }
+
+  /* ── Curated / smart cards ── */
+  .notif-card.price-card {
+    background: linear-gradient(135deg, #fffdf7 0%, #fef8ec 100%);
+    border-color: #e8d9b8;
+  }
+  .notif-card.nearby-card {
+    background: linear-gradient(135deg, #f4f8f4 0%, #eaf3e8 100%);
+    border-color: #cce0cc;
+  }
+  .notif-card.resurface-card {
+    background: linear-gradient(135deg, #f7f6ff 0%, #eeecfa 100%);
+    border-color: #d8d3f0;
+  }
+  .notif-card.weekend-card {
+    background: linear-gradient(135deg, #fdf5f0 0%, #f9ece3 100%);
+    border-color: #e8d0c0;
+  }
+  .notif-card.seasonal-card {
+    background: linear-gradient(135deg, #f0f8ff 0%, #e4f2fa 100%);
+    border-color: #c4ddf0;
+  }
+
+  .notif-icon-wrap {
+    width: 40px; height: 40px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; font-size: 17px;
+  }
+  .ico-success  { background: var(--forest-soft); color: var(--forest); }
+  .ico-failed   { background: #fce8df; color: #b85c28; }
+  .ico-price    { background: #fef0cc; color: #9a6800; }
+  .ico-nearby   { background: #d8eed8; color: #1b5e1f; }
+  .ico-resurface{ background: #e8e4f8; color: #4a3db0; }
+  .ico-weekend  { background: #fde8d8; color: #9c4a1a; }
+  .ico-seasonal { background: #d8edf8; color: #1a5f8a; }
+
+  .notif-body { flex: 1; min-width: 0; }
+  .notif-title { font-size: 14px; font-weight: 600; color: var(--ink); margin-bottom: 3px; line-height: 1.35; }
+  .notif-msg { font-size: 13px; color: var(--slate); line-height: 1.5; }
+
+  .notif-actions { display: flex; align-items: center; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+
+  .action-btn {
+    font-size: 12px; font-weight: 600; padding: 5px 12px;
+    border-radius: var(--r-sm); border: none; cursor: pointer; transition: opacity 0.15s;
+  }
+  .action-btn:hover { opacity: 0.82; }
+  .btn-forest    { background: var(--forest); color: #fff; }
+  .btn-amber     { background: #b85c28; color: #fff; }
+  .btn-purple    { background: #4a3db0; color: #fff; }
+  .btn-ghost     { background: none; border: 0.5px solid var(--hairline); color: var(--slate); }
+
+  .price-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: #fef0cc; color: #7a5000;
+    font-size: 11px; font-weight: 700; padding: 3px 9px;
+    border-radius: 20px; margin-top: 7px;
+  }
+  .price-old { text-decoration: line-through; color: var(--mute); font-weight: 400; }
+  .price-new { color: #1b5e1f; font-size: 13px; }
+
+  .save-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: var(--forest-soft); color: var(--forest);
+    font-size: 11px; font-weight: 600; padding: 3px 9px;
+    border-radius: 20px; margin-top: 6px;
+  }
+
+  .notif-right { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; flex-shrink: 0; }
+  .notif-time { font-size: 11px; color: var(--mute); white-space: nowrap; }
+  .dismiss-btn {
+    font-size: 11px; font-weight: 500; color: var(--mute);
+    background: none; border: 0.5px solid var(--hairline);
+    cursor: pointer; padding: 2px 7px; border-radius: 6px; transition: all 0.15s;
+  }
+  .dismiss-btn:hover { color: var(--slate); background: var(--hairline-soft); }
+
+  .unread-dot {
+    position: absolute; top: 15px; right: 15px;
+    width: 7px; height: 7px; border-radius: 50%; background: var(--forest);
+  }
+
+  .section-end { height: 24px; }
+</style>
+
+<div class="page">
+
+  <div class="topbar">
+    <button class="back-btn" aria-label="Go back"><i class="ti ti-arrow-left" aria-hidden="true"></i></button>
+    <span class="topbar-title">Notifications</span>
+    <span class="unread-pill" id="unread-pill">8 new</span>
+  </div>
+
+  <button class="mark-all-btn" onclick="markAll()">
+    <i class="ti ti-checks" style="font-size:14px;vertical-align:-1px;margin-right:6px" aria-hidden="true"></i>
+    Mark all as read
+  </button>
+
+  <!-- ── SMART / CURATED ── -->
+  <div class="section-label">Smart reminders</div>
+  <div class="notif-list">
+
+    <!-- Price drop -->
+    <div class="notif-card price-card unread-card" id="n-price" onclick="markRead('n-price')">
+      <div class="notif-icon-wrap ico-price"><i class="ti ti-trending-down" aria-hidden="true"></i></div>
+      <div class="notif-body">
+        <div class="notif-title">Flight prices to Goa just dropped</div>
+        <div class="notif-msg">You saved a Goa itinerary 3 weeks ago. Flights are now at their lowest this season.</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap;">
+          <span class="price-badge">
+            <i class="ti ti-tag" style="font-size:11px" aria-hidden="true"></i>
+            <span class="price-old">₹7,400</span>
+            <span style="color:var(--mute)">→</span>
+            <span class="price-new">₹4,200</span>
+          </span>
+        </div>
+        <div class="notif-actions">
+          <button class="action-btn btn-amber" onclick="event.stopPropagation()">Book now</button>
+          <button class="action-btn btn-ghost" onclick="event.stopPropagation()">View save</button>
+        </div>
+      </div>
+      <div class="notif-right">
+        <span class="notif-time">2h ago</span>
+        <button class="dismiss-btn" onclick="event.stopPropagation();dismiss('n-price')">Dismiss</button>
+      </div>
+      <div class="unread-dot" id="dot-n-price"></div>
+    </div>
+
+    <!-- Nearby -->
+    <div class="notif-card nearby-card unread-card" id="n-nearby" onclick="markRead('n-nearby')">
+      <div class="notif-icon-wrap ico-nearby"><i class="ti ti-map-pin" aria-hidden="true"></i></div>
+      <div class="notif-body">
+        <div class="notif-title">You're near a saved café</div>
+        <div class="notif-msg">Araku Valley Coffee Roasters is 1.2 km away — you saved it 2 months ago.</div>
+        <div class="notif-actions">
+          <button class="action-btn btn-forest" onclick="event.stopPropagation()">Open in Maps</button>
+          <button class="action-btn btn-ghost" onclick="event.stopPropagation()">View save</button>
+        </div>
+      </div>
+      <div class="notif-right">
+        <span class="notif-time">34m ago</span>
+        <button class="dismiss-btn" onclick="event.stopPropagation();dismiss('n-nearby')">Dismiss</button>
+      </div>
+      <div class="unread-dot" id="dot-n-nearby"></div>
+    </div>
+
+    <!-- Weekend resurface -->
+    <div class="notif-card weekend-card unread-card" id="n-weekend" onclick="markRead('n-weekend')">
+      <div class="notif-icon-wrap ico-weekend"><i class="ti ti-calendar-event" aria-hidden="true"></i></div>
+      <div class="notif-body">
+        <div class="notif-title">Long weekend coming up — got plans?</div>
+        <div class="notif-msg">You saved 4 Coorg experiences. 3-day weekend starts Friday — perfect timing.</div>
+        <span class="save-chip"><i class="ti ti-bookmark" style="font-size:11px" aria-hidden="true"></i> 4 saved places</span>
+        <div class="notif-actions">
+          <button class="action-btn btn-forest" onclick="event.stopPropagation()">Plan Coorg trip</button>
+        </div>
+      </div>
+      <div class="notif-right">
+        <span class="notif-time">5h ago</span>
+        <button class="dismiss-btn" onclick="event.stopPropagation();dismiss('n-weekend')">Dismiss</button>
+      </div>
+      <div class="unread-dot" id="dot-n-weekend"></div>
+    </div>
+
+    <!-- Forgotten intent -->
+    <div class="notif-card resurface-card unread-card" id="n-resurface" onclick="markRead('n-resurface')">
+      <div class="notif-icon-wrap ico-resurface"><i class="ti ti-clock-hour-4" aria-hidden="true"></i></div>
+      <div class="notif-body">
+        <div class="notif-title">Remember this? You saved it 47 days ago</div>
+        <div class="notif-msg">Ziro Festival of Music — tickets are still available. You never revisited this save.</div>
+        <div class="notif-actions">
+          <button class="action-btn btn-purple" onclick="event.stopPropagation()">View save</button>
+          <button class="action-btn btn-ghost" onclick="event.stopPropagation()">Not interested</button>
+        </div>
+      </div>
+      <div class="notif-right">
+        <span class="notif-time">Yesterday</span>
+        <button class="dismiss-btn" onclick="event.stopPropagation();dismiss('n-resurface')">Dismiss</button>
+      </div>
+      <div class="unread-dot" id="dot-n-resurface"></div>
+    </div>
+
+    <!-- Seasonal -->
+    <div class="notif-card seasonal-card" id="n-seasonal" onclick="markRead('n-seasonal')">
+      <div class="notif-icon-wrap ico-seasonal"><i class="ti ti-cloud-rain" aria-hidden="true"></i></div>
+      <div class="notif-body">
+        <div class="notif-title">Monsoon is perfect for Meghalaya</div>
+        <div class="notif-msg">You saved a Meghalaya trip post in March. Waterfalls are at their best right now.</div>
+        <span class="save-chip"><i class="ti ti-leaf" style="font-size:11px" aria-hidden="true"></i> Monsoon season</span>
+        <div class="notif-actions">
+          <button class="action-btn btn-forest" onclick="event.stopPropagation()">View save</button>
+        </div>
+      </div>
+      <div class="notif-right">
+        <span class="notif-time">2d ago</span>
+        <button class="dismiss-btn" onclick="event.stopPropagation();dismiss('n-seasonal')">Dismiss</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── UPLOAD NOTIFICATIONS ── -->
+  <div class="section-label">Uploads</div>
+  <div class="notif-list">
+
+    <div class="notif-card unread-card" id="n-u1" onclick="markRead('n-u1')">
+      <div class="notif-icon-wrap ico-success"><i class="ti ti-bookmark-check" aria-hidden="true"></i></div>
+      <div class="notif-body">
+        <div class="notif-title">Save is ready to view</div>
+        <div class="notif-msg">Your link was processed and saved successfully.</div>
+        <div class="notif-actions">
+          <button class="action-btn btn-forest" onclick="event.stopPropagation()">View save</button>
+        </div>
+      </div>
+      <div class="notif-right">
+        <span class="notif-time">4m ago</span>
+        <button class="dismiss-btn" onclick="event.stopPropagation();dismiss('n-u1')">Dismiss</button>
+      </div>
+      <div class="unread-dot" id="dot-n-u1"></div>
+    </div>
+
+    <div class="notif-card unread-card" id="n-u2" onclick="markRead('n-u2')">
+      <div class="notif-icon-wrap ico-success"><i class="ti ti-bookmark-check" aria-hidden="true"></i></div>
+      <div class="notif-body">
+        <div class="notif-title">Save is ready to view</div>
+        <div class="notif-msg">Your link was processed and saved successfully.</div>
+        <div class="notif-actions">
+          <button class="action-btn btn-forest" onclick="event.stopPropagation()">View save</button>
+        </div>
+      </div>
+      <div class="notif-right">
+        <span class="notif-time">10m ago</span>
+        <button class="dismiss-btn" onclick="event.stopPropagation();dismiss('n-u2')">Dismiss</button>
+      </div>
+      <div class="unread-dot" id="dot-n-u2"></div>
+    </div>
+
+    <div class="notif-card failed-card" id="n-f1" onclick="markRead('n-f1')">
+      <div class="notif-icon-wrap ico-failed"><i class="ti ti-alert-circle" aria-hidden="true"></i></div>
+      <div class="notif-body">
+        <div class="notif-title">Screenshot upload failed</div>
+        <div class="notif-msg">We had trouble processing your screenshot. Please try again.</div>
+        <div class="notif-actions">
+          <button class="action-btn btn-amber" onclick="event.stopPropagation()">Try again</button>
+        </div>
+      </div>
+      <div class="notif-right">
+        <span class="notif-time">22m ago</span>
+        <button class="dismiss-btn" onclick="event.stopPropagation();dismiss('n-f1')">Dismiss</button>
+      </div>
+    </div>
+
+    <div class="notif-card failed-card" id="n-f2" onclick="markRead('n-f2')">
+      <div class="notif-icon-wrap ico-failed"><i class="ti ti-alert-circle" aria-hidden="true"></i></div>
+      <div class="notif-body">
+        <div class="notif-title">Link upload failed</div>
+        <div class="notif-msg">We had trouble processing your link. Please try again.</div>
+        <div class="notif-actions">
+          <button class="action-btn btn-amber" onclick="event.stopPropagation()">Try again</button>
+        </div>
+      </div>
+      <div class="notif-right">
+        <span class="notif-time">1h ago</span>
+        <button class="dismiss-btn" onclick="event.stopPropagation();dismiss('n-f2')">Dismiss</button>
+      </div>
+    </div>
+
+  </div>
+  <div class="section-end"></div>
+</div>
+
+<script>
+const unreadIds = new Set(['n-price','n-nearby','n-weekend','n-resurface','n-u1','n-u2']);
+
+function updatePill() {
+  const pill = document.getElementById('unread-pill');
+  const count = unreadIds.size;
+  pill.textContent = count > 0 ? count + ' new' : 'All read';
+  if (count === 0) pill.style.background = '#b0aea7';
+}
+
+function markRead(id) {
+  if (!unreadIds.has(id)) return;
+  unreadIds.delete(id);
+  const card = document.getElementById(id);
+  if (card) {
+    card.classList.remove('unread-card');
+    const dot = document.getElementById('dot-' + id);
+    if (dot) dot.remove();
+  }
+  updatePill();
+}
+
+function markAll() {
+  [...unreadIds].forEach(markRead);
+}
+
+function dismiss(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  markRead(id);
+  el.style.opacity = '0';
+  el.style.transform = 'translateX(10px)';
+  setTimeout(() => el.remove(), 200);
+}
+
+updatePill();
+</script>

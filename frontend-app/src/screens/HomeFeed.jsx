@@ -57,7 +57,7 @@ const isLink = (save) =>
 
 const isBundle = (save) =>
   save.source === 'screenshot_bundle' ||
-  save.contentType === 'screenshot';
+  (save.contentType === 'image' && save.source === 'screenshot');
 
 const isTravelCategory = (save) => save.category === 'travel';
 const isFoodCategory = (save) =>

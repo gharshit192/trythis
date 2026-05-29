@@ -8,29 +8,51 @@ router.use(authMiddleware);
 
 router.get('/', async (req, res) => {
   try {
-    const { status = 'pending', limit = 20 } = req.query;
+    const { status = 'all', limit = 10, offset = 0 } = req.query;
+    const userId = req.user.id;
 
-    const query = { userId: req.user.id };
+    const query = { userId };
+
+    // Filter by status if not 'all'
     if (status !== 'all') {
       query.status = status;
     }
 
-    const notifications = await Notification.find(query)
-      .populate('saveId')
-      .sort({ createdAt: -1 })
-      .limit(parseInt(limit));
+    const parsedLimit = Math.min(parseInt(limit) || 10, 100);
+    const parsedOffset = Math.max(parseInt(offset) || 0, 0);
 
+    logger.info(`[notifications] Fetching with query: ${JSON.stringify(query)}, limit: ${parsedLimit}, offset: ${parsedOffset}`);
+
+    // Get total count for pagination
+    const totalCount = await Notification.countDocuments(query);
+
+    const notifications = await Notification.find(query)
+      .sort({ sentAt: -1 })
+      .skip(parsedOffset)
+      .limit(parsedLimit)
+      .lean();
+
+    logger.info(`[notifications] Found ${notifications.length} / ${totalCount} notifications`);
+
+    // Always count unread (pending + sent status)
     const unreadCount = await Notification.countDocuments({
-      userId: req.user.id,
-      read: false,
+      userId,
+      status: { $in: ['pending', 'sent'] },
     });
 
-    logger.info(`Fetched notifications for user ${req.user.id}`);
+    logger.info(`[notifications] Unread count: ${unreadCount}`);
+
     res.json({
       status: 'success',
       data: {
         notifications,
         unreadCount,
+        pagination: {
+          limit: parsedLimit,
+          offset: parsedOffset,
+          total: totalCount,
+          hasMore: parsedOffset + parsedLimit < totalCount,
+        },
       },
     });
   } catch (error) {

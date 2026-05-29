@@ -22,6 +22,8 @@ const notificationSchema = new mongoose.Schema(
         'time_behavioral',
         'forgotten_intent',
         'smart_collection',
+        'upload_completed',
+        'upload_failed',
       ],
       required: true,
       index: true,

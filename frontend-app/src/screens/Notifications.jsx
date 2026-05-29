@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import api from '../api';
+import './Notifications.css';
 
 const timeAgo = (dateStr) => {
   if (!dateStr) return '';
@@ -7,96 +8,540 @@ const timeAgo = (dateStr) => {
   if (diff < 60) return 'just now';
   if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
   if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-  return `${Math.floor(diff / 86400)}d ago`;
+  const days = Math.floor(diff / 86400);
+  if (days === 1) return 'Yesterday';
+  return `${days}d ago`;
 };
 
-const NOTIFICATION_STYLES = {
-  welcome: { icon: 'ti-sparkles', color: '#16a766', bgColor: '#d3f9d8' },
-  travel_intelligence: { icon: 'ti-plane', color: '#4a86e8', bgColor: '#dbeafe' },
-  weekend_reminder: { icon: 'ti-sun', color: '#f59e0b', bgColor: '#fef3c7' },
-  resurface: { icon: 'ti-refresh', color: '#16a766', bgColor: '#d3f9d8' },
-  shared_save_viewed: { icon: 'ti-eye', color: '#a855f7', bgColor: '#f3e8ff' },
-  nearby: { icon: 'ti-map-pin', color: '#f59e0b', bgColor: '#fef3c7' },
-  food_nearby: { icon: 'ti-utensils', color: '#f59e0b', bgColor: '#fef3c7' },
-  shopping_deal: { icon: 'ti-shopping-cart', color: '#ec4899', bgColor: '#fce7f3' },
+const formatPrice = (price) => {
+  if (!price) return '';
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    minimumFractionDigits: 0,
+  }).format(price);
 };
 
-const getNotificationStyle = (type) => {
-  return NOTIFICATION_STYLES[type] || { icon: 'ti-bell', color: '#1B3A2F', bgColor: '#e8f5e9' };
+const getSeasonIcon = (season) => {
+  if (!season) return 'ti-cloud-rain';
+  const seasonLower = season.toLowerCase();
+  if (seasonLower.includes('monsoon')) return 'ti-cloud-rain';
+  if (seasonLower.includes('summer')) return 'ti-sun';
+  if (seasonLower.includes('winter')) return 'ti-snowflake';
+  return 'ti-leaf';
+};
+
+const NotificationCard = ({
+  notification,
+  onMarkRead,
+  onDismiss,
+  onNavigateToSave,
+}) => {
+  const { _id, type, title, message, metadata, sentAt, relatedSaveId } = notification;
+  const isUnread = notification.status === 'sent' || notification.status === 'pending';
+
+  const handleCardClick = () => {
+    if (isUnread) {
+      onMarkRead(_id);
+    }
+  };
+
+  const handleDismissClick = (e) => {
+    e.stopPropagation();
+    onDismiss(_id);
+  };
+
+  const handleActionClick = (e) => {
+    e.stopPropagation();
+  };
+
+  const handleViewSave = (e) => {
+    handleActionClick(e);
+    if (relatedSaveId) {
+      onNavigateToSave(relatedSaveId);
+    }
+  };
+
+  const handleBookNow = (e) => {
+    handleActionClick(e);
+    if (relatedSaveId) {
+      onNavigateToSave(relatedSaveId);
+    }
+  };
+
+  const handleOpenInMaps = (e) => {
+    handleActionClick(e);
+    const saveName = metadata?.saveName || 'location';
+    const url = `https://maps.google.com/?q=${encodeURIComponent(saveName)}`;
+    window.open(url, '_blank');
+  };
+
+  const handleTryAgain = (e) => {
+    handleActionClick(e);
+    window.location.href = '/#/add-save';
+  };
+
+  const handlePlanTrip = (e) => {
+    handleActionClick(e);
+    if (relatedSaveId) {
+      onNavigateToSave(relatedSaveId);
+    }
+  };
+
+  const renderActions = () => {
+    switch (type) {
+      case 'upload_completed':
+        return (
+          <div className="notif-actions">
+            <button
+              className="action-btn btn-forest"
+              onClick={handleViewSave}
+            >
+              View save
+            </button>
+          </div>
+        );
+
+      case 'upload_failed':
+        return (
+          <div className="notif-actions">
+            <button
+              className="action-btn btn-amber"
+              onClick={handleTryAgain}
+            >
+              Try again
+            </button>
+          </div>
+        );
+
+      case 'price_drop':
+        return (
+          <div className="notif-actions">
+            <button className="action-btn btn-amber" onClick={handleBookNow}>
+              Book now
+            </button>
+            <button className="action-btn btn-ghost" onClick={handleViewSave}>
+              View save
+            </button>
+          </div>
+        );
+
+      case 'nearby_rediscovery':
+        return (
+          <div className="notif-actions">
+            <button className="action-btn btn-forest" onClick={handleOpenInMaps}>
+              Open in Maps
+            </button>
+            <button className="action-btn btn-ghost" onClick={handleViewSave}>
+              View save
+            </button>
+          </div>
+        );
+
+      case 'time_behavioral':
+        return (
+          <div className="notif-actions">
+            <button className="action-btn btn-forest" onClick={handlePlanTrip}>
+              Plan trip
+            </button>
+          </div>
+        );
+
+      case 'forgotten_intent':
+        return (
+          <div className="notif-actions">
+            <button className="action-btn btn-purple" onClick={handleViewSave}>
+              View save
+            </button>
+            <button className="action-btn btn-ghost" onClick={handleActionClick}>
+              Not interested
+            </button>
+          </div>
+        );
+
+      case 'seasonal':
+      case 'smart_collection':
+        return (
+          <div className="notif-actions">
+            <button className="action-btn btn-forest" onClick={handleViewSave}>
+              {type === 'smart_collection' ? 'View collection' : 'View save'}
+            </button>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  const getCardConfig = () => {
+    const configs = {
+      upload_completed: {
+        cardClass: 'upload-success-card',
+        iconBg: 'ico-success',
+        icon: 'ti-bookmark-check',
+      },
+      upload_failed: {
+        cardClass: 'failed-card',
+        iconBg: 'ico-failed',
+        icon: 'ti-alert-circle',
+      },
+      price_drop: {
+        cardClass: 'price-card',
+        iconBg: 'ico-price',
+        icon: 'ti-trending-down',
+      },
+      nearby_rediscovery: {
+        cardClass: 'nearby-card',
+        iconBg: 'ico-nearby',
+        icon: 'ti-map-pin',
+      },
+      time_behavioral: {
+        cardClass: 'weekend-card',
+        iconBg: 'ico-weekend',
+        icon: 'ti-calendar-event',
+      },
+      forgotten_intent: {
+        cardClass: 'resurface-card',
+        iconBg: 'ico-resurface',
+        icon: 'ti-clock-hour-4',
+      },
+      seasonal: {
+        cardClass: 'seasonal-card',
+        iconBg: 'ico-seasonal',
+        icon: 'ti-cloud-rain',
+      },
+      smart_collection: {
+        cardClass: 'smart-collection-card',
+        iconBg: 'ico-success',
+        icon: 'ti-layout-grid',
+      },
+    };
+
+    return configs[type] || {
+      cardClass: 'default-card',
+      iconBg: 'ico-success',
+      icon: 'ti-bell',
+    };
+  };
+
+  const config = getCardConfig();
+
+  return (
+    <div
+      className={`notif-card ${config.cardClass} ${isUnread ? 'unread-card' : ''}`}
+      onClick={handleCardClick}
+    >
+      <div className={`notif-icon-wrap ${config.iconBg}`}>
+        <i className={`ti ${config.icon}`} aria-hidden="true" />
+      </div>
+
+      <div className="notif-body">
+        <div className="notif-title">{title}</div>
+        <div className="notif-msg">{message}</div>
+
+        {/* Price badge for price_drop */}
+        {type === 'price_drop' && metadata?.priceOld && metadata?.priceNew && (
+          <div className="price-badge">
+            <i className="ti ti-tag" aria-hidden="true" />
+            <span className="price-old">{formatPrice(metadata.priceOld)}</span>
+            <span style={{ color: 'var(--mute)' }}>→</span>
+            <span className="price-new">{formatPrice(metadata.priceNew)}</span>
+          </div>
+        )}
+
+        {/* Distance display for nearby_rediscovery */}
+        {type === 'nearby_rediscovery' && metadata?.distanceKm && (
+          <div style={{ fontSize: '13px', color: 'var(--slate)', marginTop: '6px' }}>
+            {metadata.distanceKm.toFixed(1)} km away
+          </div>
+        )}
+
+        {/* Days old save for forgotten_intent */}
+        {type === 'forgotten_intent' && metadata?.daysOldSave && (
+          <div style={{ fontSize: '13px', color: 'var(--slate)', marginTop: '6px' }}>
+            {metadata.daysOldSave} days ago
+          </div>
+        )}
+
+        {/* Save count chip for time_behavioral or seasonal */}
+        {(type === 'time_behavioral' || type === 'seasonal') && metadata?.savedCount > 1 && (
+          <div className="save-chip">
+            <i className="ti ti-bookmark" aria-hidden="true" />
+            {metadata.savedCount} saved places
+          </div>
+        )}
+
+        {/* Season chip for seasonal */}
+        {type === 'seasonal' && metadata?.season && (
+          <div className="save-chip">
+            <i className={`ti ${getSeasonIcon(metadata.season)}`} aria-hidden="true" />
+            {metadata.season} season
+          </div>
+        )}
+
+        {/* Actions */}
+        {renderActions()}
+      </div>
+
+      <div className="notif-right">
+        <span className="notif-time">{timeAgo(sentAt)}</span>
+        {/* Only show dismiss button for unread notifications */}
+        {isUnread && (
+          <button
+            className="dismiss-btn"
+            onClick={handleDismissClick}
+            aria-label="Dismiss notification"
+            title="Dismiss"
+          >
+            <i className="ti ti-x" aria-hidden="true" />
+          </button>
+        )}
+      </div>
+
+      {isUnread && <div className="unread-dot" />}
+    </div>
+  );
 };
 
 export default function Notifications({ onNavigate }) {
-  const [list, setList] = useState([]);
+  const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(null);
+  const [screenMounted, setScreenMounted] = useState(false);
+  const [offset, setOffset] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [pagination, setPagination] = useState(null);
 
-  const load = async () => {
-    setLoading(true);
+  const PAGE_SIZE = 10;
+
+  // Only load notifications when screen mounts (lazy load)
+  useEffect(() => {
+    setScreenMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (screenMounted) {
+      loadNotifications(0);
+    }
+  }, [screenMounted]);
+
+  const loadNotifications = async (pageOffset) => {
+    if (pageOffset === 0) {
+      setLoading(true);
+    } else {
+      setLoadingMore(true);
+    }
     try {
-      const res = await api.getNotifications();
-      if (res.status === 'success') setList(res.data.notifications);
+      const res = await api.getNotifications(PAGE_SIZE, pageOffset);
+      if (res.status === 'success') {
+        const newNotifications = res.data.notifications || [];
+        if (pageOffset === 0) {
+          setNotifications(newNotifications);
+        } else {
+          setNotifications((prev) => [...prev, ...newNotifications]);
+        }
+        setPagination(res.data.pagination);
+        setHasMore(res.data.pagination?.hasMore || false);
+        setOffset(pageOffset);
+      }
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   };
 
-  useEffect(() => { load(); }, []);
-
-  const handleDismiss = async (id) => {
-    await api.dismissNotification(id);
-    setList((prev) => prev.filter((n) => n._id !== id));
+  const handleLoadMore = () => {
+    if (!loadingMore && hasMore) {
+      loadNotifications(offset + PAGE_SIZE);
+    }
   };
 
   const handleMarkRead = async (id) => {
-    await api.markNotificationRead(id);
-    setList((prev) => prev.map((n) => (n._id === id ? { ...n, read: true } : n)));
+    setNotifications((prev) =>
+      prev.map((n) =>
+        n._id === id ? { ...n, status: 'opened' } : n
+      )
+    );
+    try {
+      await api.markNotificationRead(id);
+    } catch (err) {
+      console.error('Failed to mark notification as read:', err);
+      loadNotifications();
+    }
   };
+
+  const handleDismiss = async (id) => {
+    setNotifications((prev) => prev.filter((n) => n._id !== id));
+    try {
+      await api.dismissNotification(id);
+    } catch (err) {
+      console.error('Failed to dismiss notification:', err);
+      loadNotifications();
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    const unreadIds = notifications
+      .filter((n) => n.status === 'sent' || n.status === 'pending')
+      .map((n) => n._id);
+
+    if (unreadIds.length === 0) return;
+
+    setNotifications((prev) =>
+      prev.map((n) =>
+        unreadIds.includes(n._id) ? { ...n, status: 'opened' } : n
+      )
+    );
+
+    try {
+      await Promise.all(
+        unreadIds.map((id) => api.markNotificationRead(id))
+      );
+    } catch (err) {
+      console.error('Failed to mark all as read:', err);
+      loadNotifications();
+    }
+  };
+
+  const handleNavigateToSave = (saveId) => {
+    onNavigate('save-detail', { id: saveId });
+  };
+
+  const unreadCount = notifications.filter(
+    (n) => n.status === 'sent' || n.status === 'pending'
+  ).length;
+
+  const smartReminders = notifications.filter(
+    (n) =>
+      [
+        'price_drop',
+        'nearby_rediscovery',
+        'time_behavioral',
+        'seasonal',
+        'forgotten_intent',
+        'smart_collection',
+      ].includes(n.type)
+  );
+
+  const uploads = notifications.filter(
+    (n) => ['upload_completed', 'upload_failed'].includes(n.type)
+  );
+
+  if (!loading && notifications.length === 0) {
+    return (
+      <div className="phone-frame">
+        <div className="notifications-container">
+          <div className="topbar">
+            <button
+              className="back-btn"
+              onClick={() => onNavigate('home')}
+              aria-label="Go back"
+            >
+              <i className="ti ti-arrow-left" aria-hidden="true" />
+            </button>
+            <h1 className="topbar-title">Notifications</h1>
+            <span className="unread-pill all-read">All read</span>
+          </div>
+
+          <div className="notifications-empty">
+            <i className="ti ti-bell" aria-hidden="true" />
+            <h2>You're all caught up</h2>
+            <p>Smart reminders will appear here</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="phone-frame">
-      <div style={{ background: 'var(--paper)', flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
-        <div style={{ padding: '12px 16px 14px', display: 'flex', alignItems: 'center', gap: 12, borderBottom: '0.5px solid #eee' }}>
-          <button onClick={() => onNavigate('home')} style={{ background: '#f5f5f5', border: 'none', cursor: 'pointer', width: 32, height: 32, borderRadius: 8, fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>←</button>
-          <h1 className="display" style={{ fontSize: '18px', margin: 0 }}>Notifications</h1>
+      <div className="notifications-container">
+        <div className="topbar sticky">
+          <button
+            className="back-btn"
+            onClick={() => onNavigate('home')}
+            aria-label="Go back"
+          >
+            <i className="ti ti-arrow-left" aria-hidden="true" />
+          </button>
+          <h1 className="topbar-title">Notifications</h1>
+          <span className={`unread-pill ${unreadCount === 0 ? 'all-read' : ''}`}>
+            {unreadCount > 0 ? `${unreadCount} new` : 'All read'}
+          </span>
         </div>
-        <div style={{ padding: '0 20px 80px', flex: 1 }}>
-          {loading ? (
-            <p style={{ fontSize: 13, color: 'var(--slate)', textAlign: 'center', padding: 24 }}>Loading…</p>
-          ) : error ? (
-            <p style={{ color: 'var(--error,#d33)', padding: 16 }}>{error}</p>
-          ) : list.length === 0 ? (
-            <p style={{ fontSize: 13, color: 'var(--slate)', textAlign: 'center', padding: 24 }}>No notifications.</p>
-          ) : (
-            list.map((n) => {
-              const style = getNotificationStyle(n.type);
-              return (
-                <div
-                  key={n._id}
-                  style={{
-                    background: n.read ? 'var(--linen)' : style.bgColor,
-                    borderRadius: '12px', padding: '12px 14px', marginBottom: '10px',
-                    display: 'flex', gap: '12px', cursor: 'pointer',
-                  }}
-                  onClick={() => !n.read && handleMarkRead(n._id)}
-                >
-                  <div style={{ width: '36px', height: '36px', background: style.color, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <i className={`ti ${style.icon}`} style={{ fontSize: '16px', color: 'white' }}></i>
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <p style={{ fontSize: '13px', fontWeight: '500', color: 'var(--ink)' }}>{n.message}</p>
-                    <p style={{ fontSize: '12px', color: 'var(--slate)', marginTop: '2px' }}>{n.trigger || n.type}</p>
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
-                    <p style={{ fontSize: '11px', color: 'var(--mute)', whiteSpace: 'nowrap' }}>{timeAgo(n.createdAt)}</p>
-                    <button onClick={(e) => { e.stopPropagation(); handleDismiss(n._id); }} style={{ background: 'transparent', border: 'none', color: 'var(--slate)', cursor: 'pointer', fontSize: 11 }}>Dismiss</button>
-                  </div>
+
+        {unreadCount > 0 && (
+          <button className="mark-all-btn" onClick={handleMarkAllAsRead}>
+            <i className="ti ti-checks" aria-hidden="true" />
+            Mark all as read
+          </button>
+        )}
+
+        {loading ? (
+          <div className="notifications-loading">
+            <p>Loading…</p>
+          </div>
+        ) : error ? (
+          <div className="notifications-error">
+            <p>{error}</p>
+          </div>
+        ) : (
+          <div className="notifications-content">
+            {/* Smart Reminders Section */}
+            {smartReminders.length > 0 && (
+              <>
+                <div className="section-label">Smart reminders</div>
+                <div className="notif-list">
+                  {smartReminders.map((notif) => (
+                    <NotificationCard
+                      key={notif._id}
+                      notification={notif}
+                      onMarkRead={handleMarkRead}
+                      onDismiss={handleDismiss}
+                      onNavigateToSave={handleNavigateToSave}
+                    />
+                  ))}
                 </div>
-              );
-            })
-          )}
-        </div>
+              </>
+            )}
+
+            {/* Uploads Section */}
+            {uploads.length > 0 && (
+              <>
+                <div className="section-label">Uploads</div>
+                <div className="notif-list">
+                  {uploads.map((notif) => (
+                    <NotificationCard
+                      key={notif._id}
+                      notification={notif}
+                      onMarkRead={handleMarkRead}
+                      onDismiss={handleDismiss}
+                      onNavigateToSave={handleNavigateToSave}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
+
+            {/* Load More Button */}
+            {hasMore && (
+              <button
+                className="load-more-btn"
+                onClick={handleLoadMore}
+                disabled={loadingMore}
+              >
+                {loadingMore && <span className="load-more-spinner" />}
+                {loadingMore ? 'Loading...' : 'Load More'}
+              </button>
+            )}
+
+            <div className="section-end" />
+          </div>
+        )}
       </div>
     </div>
   );

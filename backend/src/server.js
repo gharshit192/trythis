@@ -7,6 +7,7 @@ const redisClient = require('./config/redis');
 const purgeScreenshots = require('./jobs/purgeScreenshots');
 const notificationScheduler = require('./jobs/notificationScheduler');
 const { cleanupBundles } = require('./jobs/cleanupBundles');
+const uploadWorker = require('./workers/uploadWorker');
 
 const PORT = process.env.PORT || 4000;
 let dbConnected = false;
@@ -53,6 +54,11 @@ const initializeServer = async () => {
       } catch (err) {
         console.warn(`⚠️  Redis not available, continuing without it: ${err.message}`);
       }
+
+      // Start upload worker (runs in all modes)
+      console.log('[DEBUG] Starting upload worker...');
+      uploadWorker.start();
+      console.log('✅ Upload worker started');
 
       if (process.env.NODE_ENV !== 'production') {
         console.log('[DEBUG] Starting background jobs (non-production mode)...');

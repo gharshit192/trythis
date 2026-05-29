@@ -298,7 +298,16 @@ const processSave = async (saveId) => {
   const wavPath = path.join(work, 'audio.wav');
 
   const setStatus = async (status, extra = {}) => {
-    await Save.findByIdAndUpdate(saveId, { processingStatus: status, ...extra });
+    // Preserve processingStages while updating status
+    const update = { processingStatus: status, ...extra };
+
+    // Preserve existing processingStages to avoid losing data
+    const existing = await Save.findById(saveId).select('processingStages');
+    if (existing?.processingStages) {
+      update.processingStages = existing.processingStages;
+    }
+
+    await Save.findByIdAndUpdate(saveId, update);
   };
 
   // Collected during the run; any entry → final status becomes `partial` so the
@@ -315,8 +324,28 @@ const processSave = async (saveId) => {
     if (!mp4Ready) {
       logger.warn(`[mediaProcessor ${saveId}] MP4 download returned null or file does not exist — skipping transcription`);
       partialReasons.push('video download failed');
+      // Mark videoDownload stage as failed
+      const existing = await Save.findById(saveId).select('processingStages');
+      if (existing?.processingStages) {
+        existing.processingStages.videoDownload = {
+          completed: false,
+          error: 'Video download unavailable (private, geo-blocked, or removed)',
+          completedAt: null
+        };
+        await Save.findByIdAndUpdate(saveId, { processingStages: existing.processingStages });
+      }
     } else {
       logger.info(`[mediaProcessor ${saveId}] mp4 ready (tmp, will be discarded)`);
+      // Mark videoDownload stage as completed
+      const existing = await Save.findById(saveId).select('processingStages');
+      if (existing?.processingStages) {
+        existing.processingStages.videoDownload = {
+          completed: true,
+          error: null,
+          completedAt: new Date()
+        };
+        await Save.findByIdAndUpdate(saveId, { processingStages: existing.processingStages });
+      }
     }
 
     // Transcription + LLM enrichment (best-effort)
@@ -440,6 +469,17 @@ const processSave = async (saveId) => {
           const merged = Array.from(new Set([...(fresh.tags || []), ...analysis.audioTags])).slice(0, 16);
           update.tags = merged;
         }
+
+        // Preserve processingStages from initial creation
+        const existing = await Save.findById(saveId).select('processingStages confidence');
+        if (existing?.processingStages) {
+          update.processingStages = existing.processingStages;
+          // Update confidence if video download failed (use metadata+aiAnalysis only)
+          if (update.processingStages.videoDownload?.error && !update.confidence) {
+            update.confidence = 0.4; // metadata + aiAnalysis, video failed
+          }
+        }
+
         const updated = await Save.findByIdAndUpdate(saveId, update, { new: true });
         logger.info(`[mediaProcessor ${saveId}] analysis done (type=${analysis.structuredData.type}, tags=${analysis.audioTags.length}, title="${updated.title}")`);
 

@@ -1,0 +1,20 @@
+{
+  "expo": {
+    "name": "TryThis",
+    "slug": "trythis",
+    "version": "1.0.0",
+    "sdkVersion": "54.0.0",
+    "newArchEnabled": false,
+    "assetBundlePatterns": ["**/*"],
+    "plugins": [],
+    "ios": {
+      "supportsTabletMode": true,
+      "bundleIdentifier": "com.trythis.app",
+      "deploymentTarget": "13.0"
+    },
+    "android": {
+      "package": "com.trythis.app",
+      "minSdkVersion": 21
+    }
+  }
+}

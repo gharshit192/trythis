@@ -180,10 +180,14 @@ const processFiles = async (files = [], { userId, title, source = 'screenshot', 
   // + screenshot-typed structuredData + classification metadata.
   let analysis;
   try {
+    // Extract image URLs from processed screenshots
+    const imageUrls = screenshots.map(s => s.url).filter(Boolean);
+
     analysis = await screenshotAnalyzer.analyze({
       mergedOcrText: mergedText.trim(),
       imageCount: screenshots.length,
       fallbackTitle: title,
+      imageUrls,
     });
     logger.info(`screenshotAnalyzer completed: title="${analysis.title}", category="${analysis.category}"`);
   } catch (err) {
