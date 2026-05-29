@@ -235,6 +235,8 @@ export default function SaveDetail({ onNavigate, payload }) {
   const [showShareSheet, setShowShareSheet] = useState(false);
   const [shareLoading, setShareLoading] = useState(false);
   const [shareError, setShareError] = useState(null);
+  const [showFullTranscript, setShowFullTranscript] = useState(false);
+  const [completed, setCompleted] = useState(false);
 
   const showToast = (msg) => {
     setToast(msg);
@@ -250,6 +252,7 @@ export default function SaveDetail({ onNavigate, payload }) {
         if (!active) return;
         if (detail.status !== 'success') throw new Error(detail.error?.message || 'Not found');
         setSave(detail.data);
+        setCompleted(detail.data?.engagement?.completed || false);
       } catch (err) {
         if (active) setError(err.message);
       } finally {
@@ -283,6 +286,27 @@ export default function SaveDetail({ onNavigate, payload }) {
       const r = await api.updateIntent(id, { intentStatus: next });
       if (r.status === 'success') setSave(r.data);
     } catch {}
+  };
+
+  const getPrimaryCTALabel = () => {
+    const category = save?.category || 'general';
+    if (category === 'food') return completed ? 'Cooked!' : 'Mark as cooked';
+    if (category === 'travel') return 'Plan this trip';
+    if (category === 'shopping') return 'Mark as bought';
+    if (category === 'experience') return 'Mark as done';
+    return completed ? 'Done!' : 'Mark as tried';
+  };
+
+  const handlePrimaryCTA = async () => {
+    if (!id) return;
+    try {
+      const newStatus = !completed;
+      setCompleted(newStatus);
+      await api.patchSave(id, { completed: newStatus });
+    } catch (err) {
+      showToast('Failed to update status');
+      setCompleted(!completed);
+    }
   };
 
   const handleRetry = async () => {
