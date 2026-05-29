@@ -144,15 +144,22 @@ See [MONOREPO_STRUCTURE.md](./MONOREPO_STRUCTURE.md) for detailed breakdown.
 
 ## 🔧 Recent Updates
 
-### Footer Fixes
-- Fixed footer positioning across all 18 screens
-- Changed from `position: relative` to `position: fixed`
-- Added `padding-bottom: 80px` to all screen content
-- Tested consistency across Home, Search, Collections, Profile
+### Screenshot Navigation & Aggregate Analysis (May 29, 2026)
+- ✅ Fixed screenshot detail view navigation - now shows individual detail instead of batch summary
+- ✅ Fixed screenshot filtering logic in SavedList to include all screenshot types
+- ✅ Fixed aggregate analysis using proper Claude model (sonnet-4-6)
+- ✅ Fixed export PDF with proper authentication headers
+- See [LATEST_FIXES.md](./LATEST_FIXES.md) for detailed changes
+
+### Footer Architecture Improvements
+- Restructured bottom navigation from embedded components to App root level
+- Implemented flexbox column layout for fixed footer without position:fixed
+- Auth error handling with graceful navigation instead of page reload
+- Consistent footer appearance across all 18 screens
 
 ### API Integration
 - Implemented real backend API calls in frontend
-- Added axios-based API service layer
+- Added axios-based API service layer with auth headers
 - JWT token management in localStorage
 - Error handling and loading states
 
@@ -189,11 +196,25 @@ Password: Password123
 
 ## 📚 Documentation
 
+**Latest Changes:**
+- [LATEST_FIXES.md](./LATEST_FIXES.md) - Screenshot navigation & aggregate analysis fixes (May 29, 2026)
+
+**Architecture & Design:**
 - [MONOREPO_STRUCTURE.md](./MONOREPO_STRUCTURE.md) - Detailed monorepo architecture
 - [ARCHITECTURE.md](./ARCHITECTURE.md) - System design and components
+
+**Implementation Guides:**
+- [IMPLEMENTATION_SUMMARY.md](./IMPLEMENTATION_SUMMARY.md) - Latest feature implementations
+- [FIXES_SUMMARY.md](./FIXES_SUMMARY.md) - UI fixes and refinements
+
+**API & Database:**
 - [docs/api/endpoints.md](./docs/api/endpoints.md) - API endpoint documentation
 - [docs/architecture/tech-stack.md](./docs/architecture/tech-stack.md) - Technology choices
 - [docs/data-models/schema.md](./docs/data-models/schema.md) - Database schemas
+
+**Features & Systems:**
+- [NOTIFICATIONS_COMPLETE_SETUP.md](./NOTIFICATIONS_COMPLETE_SETUP.md) - Notification system setup
+- [NOTIFICATION_TESTING_GUIDE.md](./NOTIFICATION_TESTING_GUIDE.md) - Testing notifications
 
 ## 🛠️ Tech Stack
 
