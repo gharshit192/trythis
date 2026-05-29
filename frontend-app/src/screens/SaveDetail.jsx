@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import api from '../api';
 import SmartImage from '../components/SmartImage';
+import ScreenshotDetail from './ScreenshotDetail';
 
 // ─── Theme palette using design system CSS variables ─────────────────────────
 // Uses app-wide CSS variables for surfaces, text, and semantic colors.
@@ -279,6 +280,13 @@ export default function SaveDetail({ onNavigate, payload }) {
       try {
         const detail = await api.getSaveById(id);
         if (!active) return;
+
+        // Check if auth failed (401 or unauthorized message)
+        if (detail.status === 'error' && (detail.error?.message?.includes('Unauthorized') || detail.error?.message?.includes('401'))) {
+          onNavigate('login');
+          return;
+        }
+
         if (detail.status !== 'success') throw new Error(detail.error?.message || 'Not found');
         setSave(detail.data);
         setCompleted(detail.data?.engagement?.completed || false);
@@ -293,7 +301,7 @@ export default function SaveDetail({ onNavigate, payload }) {
       .then((r) => { if (active && r?.status === 'success') setRecs(r.data || []); })
       .catch(() => {});
     return () => { active = false; };
-  }, [id]);
+  }, [id, onNavigate]);
 
   const handleDelete = async () => {
     if (!id) return;
@@ -403,6 +411,14 @@ export default function SaveDetail({ onNavigate, payload }) {
   }
   if (loading) return <div className="phone-frame" style={{ background: T.bg, color: T.text }}><div style={{ padding: 32, textAlign: 'center' }}>Loading…</div></div>;
   if (error) return <div className="phone-frame" style={{ background: T.bg, color: T.text }}><div style={{ padding: 32, color: T.redFg }}>{error}</div></div>;
+
+  // Route to ScreenshotDetail for screenshot saves
+  const isScreenshot = (save?.contentType === 'image' || save?.contentType === 'image') &&
+                       (save?.source === 'screenshot');
+
+  if (isScreenshot) {
+    return <ScreenshotDetail save={save} onNavigate={onNavigate} />;
+  }
 
   const sd = save?.aiAnalysis?.structuredData || {};
   const recipe = sd.recipe?.isRecipe ? sd.recipe : null;

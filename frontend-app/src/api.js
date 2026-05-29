@@ -10,7 +10,8 @@ const handle = async (response) => {
   if (!response.ok && response.status === 401) {
     localStorage.removeItem('auth_token');
     localStorage.removeItem('user');
-    window.location.reload();
+    // Return error response instead of reloading - let component handle navigation
+    return { status: 'error', error: { message: 'Unauthorized - please log in again' } };
   }
   return data;
 };
@@ -411,6 +412,26 @@ const api = {
     });
     const data = await handle(res);
     return data?.data || data;
+  },
+
+  // ---- Screenshot Analysis ----
+  async aggregateScreenshotAnalysis(saveId, analysisText) {
+    const res = await fetch(`${API_BASE_URL}/saves/${saveId}/aggregate-analysis`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
+      body: JSON.stringify({ analysisText }),
+    });
+    return handle(res);
+  },
+
+  async exportScreenshotPdf(saveId) {
+    const url = new URL(`${API_BASE_URL}/saves/${saveId}/export-pdf`);
+    const a = document.createElement('a');
+    a.href = url.toString();
+    a.setAttribute('download', `screenshot-${Date.now()}.pdf`);
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   },
 };
 
