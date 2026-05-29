@@ -195,8 +195,8 @@ export default function Profile({ onNavigate }) {
     || (saves.length ? saves[saves.length - 1].createdAt : null);
 
   return (
-    <div className="phone-frame">
-      <div style={{ background: 'var(--paper)', flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
+    <>
+      <div style={{ background: 'var(--paper)', display: 'flex', flexDirection: 'column', width: '100%', flex: 1, overflowY: 'auto' }}>
         <div style={{ padding: '16px 20px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h1 className="display" style={{ fontSize: '22px' }}>Profile</h1>
           <i
@@ -220,7 +220,7 @@ export default function Profile({ onNavigate }) {
           )}
         </div>
 
-        <div style={{ padding: '0 20px 96px' }}>
+        <div style={{ padding: '0 20px' }}>
           {/* Headline stats */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 18 }}>
             <StatCard value={loading ? '…' : stats.totalSaves}  label="Saves" />
@@ -393,16 +393,9 @@ export default function Profile({ onNavigate }) {
             </div>
           </Section>
         </div>
+      </div>
 
-        <div className="tab-bar">
-          <div className="tab" onClick={() => onNavigate('home')}><i className="ti ti-home tab-icon"></i><span className="tab-label">Home</span></div>
-          <div className="tab" onClick={() => onNavigate('search')}><i className="ti ti-search tab-icon"></i><span className="tab-label">Search</span></div>
-          <div className="fab" onClick={() => onNavigate('add-save')}><i className="ti ti-plus"></i></div>
-          <div className="tab" onClick={() => onNavigate('collections')}><i className="ti ti-folder tab-icon"></i><span className="tab-label">Collections</span></div>
-          <div className="tab active" onClick={() => onNavigate('profile')}><i className="ti ti-user tab-icon"></i><span className="tab-label">Profile</span></div>
-        </div>
-
-        {confirmLogout && (
+      {confirmLogout && (
           <div
             onClick={() => setConfirmLogout(false)}
             style={{ position: 'absolute', inset: 0, background: 'rgba(14,14,12,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: 24 }}
@@ -474,8 +467,7 @@ export default function Profile({ onNavigate }) {
             </div>
           </div>
         )}
-      </div>
-    </div>
+    </>
   );
 }
 

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import './theme.css';
 import api from './api';
 
+import BottomNav from './components/BottomNav';
 import Login from './screens/Login';
 import Signup from './screens/Signup';
 import HomeEmpty from './screens/HomeEmpty';
@@ -156,9 +157,27 @@ function App() {
     'profile': <Profile {...props} />,
   };
 
+  // Screens that should show the bottom nav
+  const hasBottomNav = ['home', 'home-empty', 'search', 'collections', 'profile', 'saved-list', 'save-detail', 'notifications'].includes(currentScreen);
+
   return (
     <div style={{ minHeight: '100vh', width: '100%', display: 'flex', justifyContent: 'center', background: 'var(--paper)' }}>
-      {screenMap[currentScreen] || screenMap['login']}
+      <div style={{
+        width: '100%',
+        maxWidth: 430,
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100vh',
+        overflow: 'hidden'
+      }}>
+        {/* Screen Content */}
+        <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+          {screenMap[currentScreen] || screenMap['login']}
+        </div>
+
+        {/* Bottom Navigation - shown on main screens */}
+        {hasBottomNav && <BottomNav currentScreen={currentScreen} onNavigate={navigate} />}
+      </div>
     </div>
   );
 }

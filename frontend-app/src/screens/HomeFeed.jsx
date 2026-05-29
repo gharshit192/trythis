@@ -1,21 +1,33 @@
 import { useState, useEffect } from 'react';
 import api from '../api';
 
-const FILTERS = [
-  { id: 'all',       icon: 'ti-layout-grid',      label: 'All' },
-  { id: 'video',     icon: 'ti-player-play',      label: 'Videos' },
-  { id: 'link',      icon: 'ti-link',             label: 'Links' },
-  { id: 'bundle',    icon: 'ti-files',            label: 'Bundles' },
-  { id: 'travel',    icon: 'ti-map-pin',          label: 'Travel' },
-  { id: 'food',      icon: 'ti-tools-kitchen-2',  label: 'Food' },
-  { id: 'shopping',  icon: 'ti-shopping-bag',     label: 'Shopping' },
+const FILTER_PILLS = [
+  { id: 'all', label: 'All' },
+  { id: 'video', label: 'Videos' },
+  { id: 'screenshots', label: 'Screenshots' },
+  { id: 'travel', label: 'Travel' },
+  { id: 'food', label: 'Food' },
+  { id: 'shopping', label: 'Shopping' },
 ];
+
+const getCategoryInfo = (category) => {
+  const map = {
+    food: { bg: '#fff0e8', color: '#9a3c14', icon: 'ti-tools-kitchen-2' },
+    restaurant: { bg: '#fff0e8', color: '#9a3c14', icon: 'ti-tools-kitchen-2' },
+    cafe: { bg: '#fff0e8', color: '#9a3c14', icon: 'ti-tools-kitchen-2' },
+    travel: { bg: '#daeaf8', color: '#1a5f8a', icon: 'ti-map-2' },
+    experience: { bg: '#fce8df', color: '#9a3c14', icon: 'ti-ticket' },
+    shopping: { bg: '#fef0cc', color: '#9a6800', icon: 'ti-shopping-bag' },
+    'home-decor': { bg: '#ebd9c2', color: '#7a4a10', icon: 'ti-building-skyscraper' },
+    tech: { bg: '#e8e4f8', color: '#4a3db0', icon: 'ti-device-laptop' },
+  };
+  return map[category] || { bg: '#e8efe9', color: '#1b3a2f', icon: 'ti-bookmark' };
+};
 
 const getGreeting = (userName) => {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
-  const name = userName ? `, ${userName}` : '';
-  return `${greeting}${name}`;
+  return `${greeting}${userName ? `, ${userName}` : ''}`;
 };
 
 const getRelativeTime = (dateString) => {
@@ -24,518 +36,490 @@ const getRelativeTime = (dateString) => {
   if (days === 0) return 'Today';
   if (days === 1) return 'Yesterday';
   if (days < 7) return `${days} days ago`;
-  if (days < 30) return `${Math.floor(days/7)} week${Math.floor(days/7)>1?'s':''} ago`;
-  return `${Math.floor(days/30)} month${Math.floor(days/30)>1?'s':''} ago`;
+  if (days < 30) return `${Math.floor(days / 7)} week${Math.floor(days / 7) > 1 ? 's' : ''} ago`;
+  return `${Math.floor(days / 30)} month${Math.floor(days / 30) > 1 ? 's' : ''} ago`;
 };
 
-const getDomain = (url) => {
-  try { return new URL(url).hostname.replace('www.', ''); }
-  catch { return ''; }
+const getNewCount = (saves) => {
+  const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  return saves.filter(s => new Date(s.createdAt).getTime() > weekAgo).length;
 };
 
-const getCategoryColors = (category) => {
-  const map = {
-    travel:     { bg: '#E1F5EE', color: '#0F6E56', icon: 'ti-map' },
-    food:       { bg: '#FAEEDA', color: '#854F0B', icon: 'ti-coffee' },
-    restaurant: { bg: '#FAEEDA', color: '#854F0B', icon: 'ti-tools-kitchen-2' },
-    cafe:       { bg: '#FAEEDA', color: '#854F0B', icon: 'ti-tools-kitchen-2' },
-    shopping:   { bg: '#EEEDFE', color: '#534AB7', icon: 'ti-shoe' },
-    tech:       { bg: '#E6F1FB', color: '#185FA5', icon: 'ti-device-laptop' },
-    blog:       { bg: '#E6F1FB', color: '#185FA5', icon: 'ti-article' },
-  };
-  return map[category] || { bg: '#F1EFE8', color: '#5F5E5A', icon: 'ti-world' };
+const getScreenshotCount = (save) => {
+  // Try multiple field paths for screenshot count
+  return save.screenshotCount
+    || save.screenshots?.length
+    || save.raw?.screenshots?.length
+    || save.metadata?.screenshotCount
+    || save.aiAnalysis?.screenshots?.length
+    || 0;
 };
 
-const isVideo = (save) =>
-  save.contentType === 'video' ||
-  save.source === 'instagram' ||
-  save.source === 'youtube';
+const isVideo = (save) => save.contentType === 'video' || save.source === 'instagram' || save.source === 'youtube';
+const isScreenshot = (save) => save.source === 'screenshot_bundle' || (save.contentType === 'image' && save.source === 'screenshot');
+const isTravel = (save) => save.category === 'travel' || save.category === 'experience';
+const isFood = (save) => save.category === 'food' || save.category === 'restaurant' || save.category === 'cafe';
+const isShopping = (save) => save.category === 'shopping';
 
-const isLink = (save) =>
-  (save.contentType === 'link' || save.contentType === 'article' || save.source === 'url') &&
-  !isVideo(save);
+const getSmartNotifications = (notifications) => {
+  const smartTypes = ['time_behavioral', 'seasonal', 'nearby_rediscovery', 'forgotten_intent'];
+  return notifications
+    .filter(n => smartTypes.includes(n.type) && n.status === 'sent')
+    .slice(0, 3);
+};
 
-const isBundle = (save) =>
-  save.source === 'screenshot_bundle' ||
-  (save.contentType === 'image' && save.source === 'screenshot');
-
-const isTravelCategory = (save) => save.category === 'travel';
-const isFoodCategory = (save) =>
-  save.category === 'food' || save.category === 'restaurant' || save.category === 'cafe';
-const isShoppingCategory = (save) => save.category === 'shopping';
-
-const isCategoryFilter = (filterId) =>
-  ['travel', 'food', 'shopping'].includes(filterId);
-
-const getFilteredSaves = (allSaves, filter) => {
-  switch(filter) {
-    case 'all':      return allSaves;
-    case 'video':    return allSaves.filter(isVideo);
-    case 'link':     return allSaves.filter(isLink);
-    case 'bundle':   return allSaves.filter(isBundle);
-    case 'travel':   return allSaves.filter(isTravelCategory);
-    case 'food':     return allSaves.filter(isFoodCategory);
-    case 'shopping': return allSaves.filter(isShoppingCategory);
-    default:         return allSaves;
-  }
+const getCompletedSaves = (saves) => {
+  return saves
+    .filter(s => s.intentStatus === 'tried')
+    .sort((a, b) => new Date(b.updatedAt || b.createdAt).getTime() - new Date(a.updatedAt || a.createdAt).getTime())
+    .slice(0, 5);
 };
 
 export default function HomeFeed({ onNavigate, payload, nearbySaves = [], showNearbyBanner = false, onDismissNearby = () => {} }) {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const userName = user?.name?.split(' ')[0] || '';
   const [saves, setSaves] = useState([]);
+  const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState('all');
 
-  const fetchData = async () => {
-    try {
-      const result = await api.getSaves();
-      if (result.status === 'success') {
-        setSaves(result.data);
-      }
-    } catch (err) {
-      // Error handled by empty state fallback
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [savesRes, notifsRes] = await Promise.all([
+          api.getSaves(),
+          api.getNotifications(),
+        ]);
+        if (savesRes.status === 'success') setSaves(savesRes.data);
+        if (notifsRes.status === 'success') {
+          setNotifications(notifsRes.data?.notifications || []);
+        }
+      } catch (err) {
+        // Silently fail
+      } finally {
+        setLoading(false);
+      }
+    };
     fetchData();
   }, []);
 
-  // Refetch saves when coming back from delete with refresh flag
   useEffect(() => {
     if (payload?.refresh) {
-      fetchData();
+      setLoading(true);
+      const fetch = async () => {
+        try {
+          const result = await api.getSaves();
+          if (result.status === 'success') setSaves(result.data);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetch();
     }
   }, [payload?.refresh]);
 
-  if (loading) {
-    return (
-      <div className="phone-frame" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div>Loading...</div>
-      </div>
-    );
-  }
+  const getFilteredSaves = () => {
+    switch (activeFilter) {
+      case 'video': return saves.filter(isVideo);
+      case 'screenshots': return saves.filter(isScreenshot);
+      case 'travel': return saves.filter(isTravel);
+      case 'food': return saves.filter(isFood);
+      case 'shopping': return saves.filter(isShopping);
+      default: return saves;
+    }
+  };
 
-  if (saves.length === 0) {
-    return (
-      <div className="phone-frame">
-        <div style={{ padding: '16px 16px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div>
-            <div style={{ fontSize: 20, fontWeight: 500 }}>{getGreeting(userName)}</div>
-            <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>0 saves</div>
-          </div>
-          <button onClick={() => onNavigate('search')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: 22 }}>
-            <i className="ti ti-search" style={{ color: '#888' }}></i>
-          </button>
-        </div>
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', textAlign: 'center', gap: 16 }}>
-          <i className="ti ti-inbox" style={{ fontSize: 48, color: '#ccc' }}></i>
-          <div>
-            <div style={{ fontSize: 16, fontWeight: 500, marginBottom: 4 }}>No saves yet</div>
-            <div style={{ fontSize: 12, color: '#888' }}>Tap + to add your first save</div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Calculate which save types exist for dynamic filter visibility
-  const hasVideos = saves.some(isVideo);
-  const hasLinks = saves.some(isLink);
-  const hasBundles = saves.some(isBundle);
-  const hasTravel = saves.some(isTravelCategory);
-  const hasFood = saves.some(isFoodCategory);
-  const hasShopping = saves.some(isShoppingCategory);
-
-  // Filter circles only show for types that exist
-  const visibleFilters = FILTERS.filter(f => {
-    if (f.id === 'all') return true;
-    if (f.id === 'video') return hasVideos;
-    if (f.id === 'link') return hasLinks;
-    if (f.id === 'bundle') return hasBundles;
-    if (f.id === 'travel') return hasTravel;
-    if (f.id === 'food') return hasFood;
-    if (f.id === 'shopping') return hasShopping;
-    return false;
-  });
-
-  // If active filter is no longer visible, reset to 'all'
-  if (!visibleFilters.some(f => f.id === activeFilter)) {
-    setActiveFilter('all');
-  }
-
-  const filteredSaves = getFilteredSaves(saves, activeFilter);
+  const filteredSaves = getFilteredSaves();
   const videoSaves = filteredSaves.filter(isVideo);
-  const linkSaves = filteredSaves.filter(isLink).slice(0, activeFilter === 'link' ? undefined : 5);
-  const bundleSaves = filteredSaves.filter(isBundle);
+  const bundleSaves = filteredSaves.filter(isScreenshot);
+  const unreadCount = notifications.filter(n => n.status === 'sent').length;
 
-  const showNoResults = activeFilter !== 'all' && filteredSaves.length === 0;
+  // Show limited preview on home (all filter), full list when filtering
+  const displayVideos = activeFilter === 'all' ? videoSaves.slice(0, 3) : videoSaves;
+  const displayBundles = activeFilter === 'all' ? bundleSaves.slice(0, 2) : bundleSaves;
+
+  if (loading) {
+    return <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading...</div>;
+  }
 
   return (
-    <div className="phone-frame">
-      <div style={{ background: 'white', minHeight: '100vh', paddingBottom: 20, display: 'flex', flexDirection: 'column' }}>
-        {/* Header */}
-        <div style={{ padding: '16px 16px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '0.5px solid #eee' }}>
-          <div>
-            <div style={{ fontSize: 20, fontWeight: 500 }}>{getGreeting(userName)}</div>
-            <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>{saves.length} saves</div>
-          </div>
-          <div style={{ display: 'flex', gap: 14 }}>
-            <button onClick={() => onNavigate('search')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: 22 }}>
-              <i className="ti ti-search" style={{ color: '#888' }}></i>
-            </button>
-            <button onClick={() => onNavigate('notifications')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: 22 }}>
-              <i className="ti ti-bell" style={{ color: '#888' }}></i>
-            </button>
-          </div>
-        </div>
-
-        {/* Filters */}
-        <div style={{ padding: '0 16px 14px', overflow: 'visible' }}>
-          <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 2, scrollbarWidth: 'none' }}>
-            {visibleFilters.map((filter) => (
-              <button
-                key={filter.id}
-                onClick={() => setActiveFilter(filter.id)}
-                style={{
-                  flex: '0 0 auto',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: 5,
-                  cursor: 'pointer',
-                  background: 'none',
-                  border: 'none',
-                  padding: 0
-                }}
-              >
+    <>
+      <div style={{ display: 'flex', flexDirection: 'column', width: '100%', flex: 1, overflowY: 'auto' }}>
+        {/* Top bar */}
+        <div style={{
+          padding: '18px 16px 10px',
+          background: 'var(--paper)',
+          borderBottom: '0.5px solid var(--hairline)',
+          flexShrink: 0,
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div>
+              <div style={{ fontSize: 20, fontWeight: 600, color: 'var(--ink)' }}>
+                {getGreeting(userName)}
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--mute)', marginTop: 1 }}>
+                {saves.length} saves · {getNewCount(saves)} new this week
+              </div>
+            </div>
+            <button
+              onClick={() => onNavigate('notifications')}
+              style={{
+                width: 34,
+                height: 34,
+                borderRadius: '50%',
+                background: 'var(--paper)',
+                border: '0.5px solid var(--hairline)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'var(--slate)',
+                fontSize: 16,
+                cursor: 'pointer',
+                position: 'relative',
+              }}
+            >
+              <i className="ti ti-bell"></i>
+              {unreadCount > 0 && (
                 <div style={{
-                  width: 52,
-                  height: 52,
+                  position: 'absolute',
+                  top: 6,
+                  right: 6,
+                  width: 7,
+                  height: 7,
                   borderRadius: '50%',
-                  background: activeFilter === filter.id ? '#1B3A2F' : '#f5f5f5',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  border: activeFilter === filter.id ? 'none' : '0.5px solid #ddd'
-                }}>
-                  <i className={`ti ${filter.icon}`} style={{
-                    fontSize: 22,
-                    color: activeFilter === filter.id ? 'white' : '#888'
-                  }}></i>
-                </div>
-                <span style={{ fontSize: 10, color: activeFilter === filter.id ? '#1B3A2F' : '#888', fontWeight: 500 }}>
-                  {filter.label}
-                </span>
-              </button>
-            ))}
+                  background: 'var(--forest)',
+                }}></div>
+              )}
+            </button>
           </div>
         </div>
 
-        {/* Divider */}
-        <div style={{ height: '0.5px', background: '#eee' }}></div>
+        {/* Filter pills */}
+        <div style={{
+          display: 'flex',
+          gap: 6,
+          padding: '8px 16px 0',
+          overflow: 'auto',
+          scrollbarWidth: 'none',
+          flexShrink: 0,
+        }}>
+          {FILTER_PILLS.map((pill) => (
+            <button
+              key={pill.id}
+              onClick={() => setActiveFilter(pill.id)}
+              style={{
+                whiteSpace: 'nowrap',
+                padding: '5px 12px',
+                borderRadius: 20,
+                fontSize: 12,
+                fontWeight: 500,
+                cursor: 'pointer',
+                border: activeFilter === pill.id ? 'none' : '0.5px solid var(--hairline)',
+                background: activeFilter === pill.id ? 'var(--forest)' : 'var(--paper)',
+                color: activeFilter === pill.id ? '#fff' : 'var(--slate)',
+              }}
+            >
+              {pill.label}
+            </button>
+          ))}
+        </div>
 
-        {/* Nearby banner */}
-        {showNearbyBanner && nearbySaves.length > 0 && (
-          <div style={{
-            margin: '0 16px 16px',
-            background: '#E1F5EE',
-            borderRadius: 12,
-            padding: '12px 14px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10
-          }}>
+        {/* Scrollable content area */}
+        <div style={{ flex: 1 }}>
+          {/* Nearby banner */}
+          {showNearbyBanner && nearbySaves.length > 0 && (
             <div style={{
-              width: 36, height: 36,
-              borderRadius: 8,
-              background: '#9FE1CB',
+              margin: '16px 16px 0',
+              background: '#E1F5EE',
+              borderRadius: 12,
+              padding: '12px 14px',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0
+              gap: 10,
             }}>
-              <i className="ti ti-map-pin" style={{ fontSize: 18, color: '#0F6E56' }} aria-hidden="true" />
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 13, fontWeight: 500, color: '#085041', marginBottom: 2 }}>
-                {nearbySaves.length === 1
-                  ? `You saved "${nearbySaves[0].title}" nearby`
-                  : `${nearbySaves.length} of your saves are nearby`}
+              <div style={{
+                width: 36,
+                height: 36,
+                borderRadius: 8,
+                background: '#9FE1CB',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}>
+                <i className="ti ti-map-pin" style={{ fontSize: 18, color: '#0F6E56' }}></i>
               </div>
-              <div style={{ fontSize: 11, color: '#0F6E56' }}>Tap to see them</div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 500, color: '#085041', marginBottom: 2 }}>
+                  {nearbySaves.length === 1 ? `You saved "${nearbySaves[0].title}" nearby` : `${nearbySaves.length} of your saves are nearby`}
+                </div>
+                <div style={{ fontSize: 11, color: '#0F6E56' }}>Tap to see them</div>
+              </div>
+              <button
+                onClick={() => onNavigate('savedList', { filter: 'nearby', saves: nearbySaves, title: 'Nearby saves' })}
+                style={{ fontSize: 11, fontWeight: 500, color: '#0F6E56', background: 'none', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}
+              >
+                View →
+              </button>
+              <button
+                onClick={onDismissNearby}
+                style={{ fontSize: 18, color: '#6BAF94', background: 'none', border: 'none', cursor: 'pointer' }}
+              >
+                ×
+              </button>
             </div>
-            <button
-              onClick={() => onNavigate('savedList', { filter: 'nearby', saves: nearbySaves, title: 'Nearby saves' })}
-              style={{ fontSize: 11, fontWeight: 500, color: '#0F6E56', background: 'none', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-              View →
-            </button>
-            <button
-              onClick={onDismissNearby}
-              style={{ fontSize: 18, color: '#6BAF94', background: 'none', border: 'none', cursor: 'pointer' }}>
-              ×
-            </button>
-          </div>
-        )}
+          )}
 
-        {/* Content */}
-        {showNoResults ? (
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', textAlign: 'center', gap: 16 }}>
-            <i className="ti ti-inbox" style={{ fontSize: 48, color: '#ccc' }}></i>
-            <div>
-              <div style={{ fontSize: 16, fontWeight: 500, marginBottom: 4 }}>
-                No {visibleFilters.find(f => f.id === activeFilter)?.label.toLowerCase()} yet
+          {filteredSaves.length === 0 ? (
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', textAlign: 'center', gap: 16 }}>
+              <i className="ti ti-inbox" style={{ fontSize: 48, color: '#ccc' }}></i>
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 500, marginBottom: 4 }}>No saves yet</div>
+                <div style={{ fontSize: 12, color: 'var(--mute)' }}>Tap + to add your first save</div>
               </div>
-              <div style={{ fontSize: 12, color: '#888' }}>Tap + to add your first save</div>
             </div>
-          </div>
-        ) : (
-          <div style={{ flex: 1, overflow: 'auto' }}>
-            {/* Video section */}
-            {(activeFilter === 'all' || activeFilter === 'video' || isCategoryFilter(activeFilter)) && videoSaves.length > 0 && (
-              <div>
-                <div style={{ padding: '18px 16px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: 14, fontWeight: 500 }}>Videos & reels</span>
-                  <button
-                    onClick={() => onNavigate('savedList', { filter: 'video', title: 'Videos & reels' })}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: '#888', padding: 0 }}>
-                    {videoSaves.length} saves →
-                  </button>
-                </div>
-                <div style={{ display: 'flex', gap: 12, padding: '0 16px 12px', overflowX: 'auto', scrollbarWidth: 'none' }}>
-                  {videoSaves.slice(0, activeFilter === 'video' ? undefined : 6).map((save) => (
-                    <div key={save._id} style={{ flex: '0 0 148px', cursor: 'pointer' }} onClick={() => onNavigate('save-detail', { id: save._id })}>
-                      <div style={{
-                        width: 148,
-                        height: 110,
-                        borderRadius: 12,
-                        background: getCategoryColors(save.category).bg,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        position: 'relative',
-                        marginBottom: 8,
-                        overflow: 'hidden'
-                      }}>
-                        {save.thumbnail ? (
-                          <img src={save.thumbnail} alt={save.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        ) : null}
-                        <i className="ti ti-player-play" style={{ fontSize: 30, color: getCategoryColors(save.category).color, position: 'absolute' }}></i>
-                        {save.aiAnalysis?.structuredData?.duration && (
-                          <div style={{ position: 'absolute', bottom: 8, right: 8, background: '#085041', color: '#9FE1CB', fontSize: 10, padding: '2px 7px', borderRadius: 999 }}>
-                            {save.aiAnalysis.structuredData.duration}
-                          </div>
-                        )}
-                      </div>
-                      <div style={{ fontSize: 12, fontWeight: 500, color: '#1a1a1a', lineHeight: 1.4, marginBottom: 6, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
-                        {save.title}
-                      </div>
-                      {save.category && (
-                        <div style={{ display: 'flex', gap: 4, marginBottom: 6, flexWrap: 'wrap' }}>
-                          <span style={{
-                            background: getCategoryColors(save.category).bg,
-                            color: getCategoryColors(save.category).color,
-                            fontSize: 10,
-                            padding: '4px 10px',
-                            borderRadius: 999,
-                            fontWeight: 500,
-                            whiteSpace: 'nowrap'
-                          }}>
-                            {save.category.charAt(0).toUpperCase() + save.category.slice(1)}
-                          </span>
-                        </div>
-                      )}
-                      <div style={{ fontSize: 11, color: '#888' }}>
-                        {save.source ? save.source.charAt(0).toUpperCase() + save.source.slice(1) : 'Saved'} · {getRelativeTime(save.createdAt)}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <div style={{ height: '0.5px', background: '#eee', margin: '18px 0 0' }}></div>
-              </div>
-            )}
-
-            {/* Link section */}
-            {(activeFilter === 'all' || activeFilter === 'link' || isCategoryFilter(activeFilter)) && linkSaves.length > 0 && (
-              <div>
-                <div style={{ padding: '18px 16px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: 14, fontWeight: 500 }}>Links & articles</span>
-                  <button
-                    onClick={() => onNavigate('savedList', { filter: 'link', title: 'Links & articles' })}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: '#888', padding: 0 }}>
-                    {saves.filter(isLink).length} saves →
-                  </button>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 0, padding: '0 16px' }}>
-                  {linkSaves.map((save, idx) => {
-                    const colors = getCategoryColors(save.category);
-                    return (
+          ) : (
+            <>
+              {/* Videos section */}
+              {videoSaves.length > 0 && (
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 16px 8px', fontSize: 12, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--mute)' }}>
+                    <span>Videos & reels</span>
+                    <button onClick={() => onNavigate('savedList', { filter: 'video', title: 'Videos & reels' })} style={{ fontSize: 12, color: 'var(--amber-link)', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer' }}>
+                      {videoSaves.length} saves →
+                    </button>
+                  </div>
+                  {displayVideos.map((save) => (
+                    <div key={save._id}>
                       <div
-                        key={save._id}
                         onClick={() => onNavigate('save-detail', { id: save._id })}
                         style={{
                           display: 'flex',
                           alignItems: 'center',
-                          gap: 12,
-                          padding: '12px 0',
-                          borderBottom: idx < linkSaves.length - 1 ? '0.5px solid #eee' : 'none',
-                          cursor: 'pointer'
+                          gap: 10,
+                          padding: '10px 16px',
+                          cursor: 'pointer',
                         }}
                       >
                         <div style={{
-                          width: 40,
-                          height: 40,
-                          borderRadius: 8,
-                          background: colors.bg,
+                          width: 52,
+                          height: 52,
+                          borderRadius: 10,
+                          background: getCategoryInfo(save.category).bg,
+                          flexShrink: 0,
+                          overflow: 'hidden',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          flexShrink: 0
+                          fontSize: 20,
+                          color: getCategoryInfo(save.category).color,
                         }}>
-                          <i className={`ti ${colors.icon}`} style={{ fontSize: 18, color: colors.color }}></i>
+                          {save.thumbnail ? <img src={save.thumbnail} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <i className="ti ti-player-play"></i>}
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 13, fontWeight: 500, color: '#1a1a1a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginBottom: 4 }}>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginBottom: 2 }}>
                             {save.title}
                           </div>
-                          <div style={{ display: 'flex', gap: 4, alignItems: 'center', marginBottom: 4, flexWrap: 'wrap' }}>
-                            {save.category && (
-                              <span style={{
-                                background: colors.bg,
-                                color: colors.color,
-                                fontSize: 10,
-                                padding: '3px 8px',
-                                borderRadius: 999,
-                                fontWeight: 500,
-                                whiteSpace: 'nowrap'
-                              }}>
-                                {save.category.charAt(0).toUpperCase() + save.category.slice(1)}
-                              </span>
-                            )}
-                          </div>
-                          <div style={{ fontSize: 11, color: '#888' }}>
-                            {getDomain(save.url) || save.source}
+                          <div style={{ fontSize: 11, color: 'var(--mute)' }}>
+                            <span style={{
+                              display: 'inline-block',
+                              fontSize: 10,
+                              fontWeight: 600,
+                              padding: '2px 7px',
+                              borderRadius: 20,
+                              marginRight: 4,
+                              background: getCategoryInfo(save.category).bg,
+                              color: getCategoryInfo(save.category).color,
+                            }}>
+                              {save.category?.charAt(0).toUpperCase() + save.category?.slice(1)}
+                            </span>
+                            {save.source ? save.source.charAt(0).toUpperCase() + save.source.slice(1) : 'Saved'} · {getRelativeTime(save.createdAt)}
                           </div>
                         </div>
-                        <i className="ti ti-chevron-right" style={{ fontSize: 16, color: '#bbb', flexShrink: 0 }}></i>
+                        <i className="ti ti-chevron-right" style={{ fontSize: 14, color: 'var(--mute)', flexShrink: 0 }}></i>
                       </div>
-                    );
-                  })}
+                      <div style={{ height: '0.5px', background: 'var(--hairline)', margin: '0 16px' }}></div>
+                    </div>
+                  ))}
                 </div>
-                <div style={{ height: '0.5px', background: '#eee', marginTop: 6 }}></div>
-              </div>
-            )}
+              )}
 
-            {/* Bundle section */}
-            {(activeFilter === 'all' || activeFilter === 'bundle' || isCategoryFilter(activeFilter)) && bundleSaves.length > 0 && (
-              <div>
-                <div style={{ padding: '18px 16px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: 14, fontWeight: 500 }}>Screenshot bundles</span>
-                  <button
-                    onClick={() => onNavigate('savedList', { filter: 'bundle', title: 'Screenshot bundles' })}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: '#888', padding: 0 }}>
-                    {bundleSaves.length} bundles →
-                  </button>
-                </div>
-                <div style={{ display: 'flex', gap: 12, padding: '0 16px 12px', overflowX: 'auto', scrollbarWidth: 'none' }}>
-                  {bundleSaves.slice(0, activeFilter === 'bundle' ? undefined : 4).map((save) => {
-                    const data = save.aiAnalysis?.screenshotAnalysis?.data || {};
-                    const colors = getCategoryColors(save.category);
-                    const facts = save.aiAnalysis?.keyPoints?.slice(0, 3) ||
-                                 save.aiAnalysis?.summary?.split('\n').slice(0, 3) ||
-                                 ['Tap to view analysis'];
-                    const categories = data.categories?.slice(0, 3) || [];
-
+              {/* Screenshot bundles section */}
+              {bundleSaves.length > 0 && (
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 16px 8px', fontSize: 12, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--mute)' }}>
+                    <span>Screenshot bundles</span>
+                    <button onClick={() => onNavigate('savedList', { filter: 'bundle', title: 'Screenshot bundles' })} style={{ fontSize: 12, color: 'var(--amber-link)', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer' }}>
+                      {bundleSaves.length} bundles →
+                    </button>
+                  </div>
+                  {displayBundles.map((save) => {
+                    const catInfo = getCategoryInfo(save.category);
+                    const screenshotCount = getScreenshotCount(save);
                     return (
                       <div
                         key={save._id}
                         onClick={() => onNavigate('screenshot-summary', { sessionId: save._id, summary: save.aiAnalysis?.summary, saveId: save._id })}
                         style={{
-                          flex: '0 0 180px',
-                          borderRadius: 12,
-                          border: '0.5px solid #eee',
-                          padding: 14,
-                          background: 'white',
-                          cursor: 'pointer'
+                          margin: '0 16px 8px',
+                          background: 'var(--paper)',
+                          border: '0.5px solid var(--hairline-soft)',
+                          borderRadius: 14,
+                          padding: '12px 14px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 12,
                         }}
                       >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                          <div style={{
-                            width: 36,
-                            height: 36,
-                            borderRadius: 8,
-                            background: colors.bg,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            flexShrink: 0
-                          }}>
-                            <i className={`ti ${colors.icon}`} style={{ fontSize: 18, color: colors.color }}></i>
+                        <div style={{
+                          width: 44,
+                          height: 44,
+                          borderRadius: 10,
+                          background: catInfo.bg,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: catInfo.color,
+                          fontSize: 18,
+                          flexShrink: 0,
+                        }}>
+                          <i className={`ti ${catInfo.icon}`}></i>
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginBottom: 2 }}>
+                            {save.title}
                           </div>
-                          <div>
-                            <div style={{ fontSize: 12, fontWeight: 500, color: '#1a1a1a' }}>{save.title}</div>
-                            <div style={{ fontSize: 10, color: '#888' }}>{save.aiAnalysis?.screenshots?.length || 0} screenshots</div>
+                          <div style={{ fontSize: 11, color: 'var(--mute)' }}>
+                            {screenshotCount > 0 && `${screenshotCount} screenshot${screenshotCount !== 1 ? 's' : ''} · `}
+                            {save.category?.charAt(0).toUpperCase() + save.category?.slice(1)} · {getRelativeTime(save.createdAt)}
                           </div>
                         </div>
-                        <div style={{ fontSize: 11, color: '#888', lineHeight: 1.7, marginBottom: 10 }}>
-                          {facts.map((f, i) => (
-                            <div key={i}>{typeof f === 'string' ? f.substring(0, 40) : f}</div>
-                          ))}
-                        </div>
-                        {categories.length > 0 && (
-                          <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-                            {categories.map((cat, i) => {
-                              const catColors = getCategoryColors(cat.name);
-                              return (
-                                <span key={i} style={{
-                                  background: catColors.bg,
-                                  color: catColors.color,
-                                  fontSize: 9,
-                                  padding: '2px 8px',
-                                  borderRadius: 999,
-                                  fontWeight: 500
-                                }}>
-                                  {cat.count} {cat.name}
-                                </span>
-                              );
-                            })}
-                          </div>
-                        )}
+                        <i className="ti ti-chevron-right" style={{ fontSize: 14, color: 'var(--mute)', flexShrink: 0 }}></i>
                       </div>
                     );
                   })}
                 </div>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+              )}
 
-      {/* Bottom Tab Bar */}
-      <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', padding: '12px 0', borderTop: '0.5px solid #eee', background: 'white', position: 'sticky', bottom: 0 }}>
-        <button onClick={() => onNavigate('home')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '8px 12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, fontSize: 10, color: '#1B3A2F' }}>
-          <i className="ti ti-home" style={{ fontSize: 22 }}></i>
-          <span>Home</span>
-        </button>
-        <button onClick={() => onNavigate('search')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '8px 12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, fontSize: 10, color: '#888' }}>
-          <i className="ti ti-search" style={{ fontSize: 22 }}></i>
-          <span>Search</span>
-        </button>
-        <button onClick={() => onNavigate('add-save')} style={{ background: '#1B3A2F', border: 'none', cursor: 'pointer', padding: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', width: 48, height: 48, color: 'white', marginTop: -16 }}>
-          <i className="ti ti-plus" style={{ fontSize: 24 }}></i>
-        </button>
-        <button onClick={() => onNavigate('collections')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '8px 12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, fontSize: 10, color: '#888' }}>
-          <i className="ti ti-folder" style={{ fontSize: 22 }}></i>
-          <span>Collections</span>
-        </button>
-        <button onClick={() => onNavigate('profile')} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '8px 12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, fontSize: 10, color: '#888' }}>
-          <i className="ti ti-user" style={{ fontSize: 22 }}></i>
-          <span>Profile</span>
-        </button>
+              {/* Smart Reminders Strip */}
+              {getSmartNotifications(notifications).length > 0 && (
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 16px 8px', fontSize: 12, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--mute)' }}>
+                    <span>Smart reminders</span>
+                    <button onClick={() => onNavigate('notifications')} style={{ fontSize: 12, color: 'var(--amber-link)', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer' }}>
+                      See all →
+                    </button>
+                  </div>
+                  <div style={{ display: 'flex', gap: 12, padding: '0 16px 12px', overflowX: 'auto', scrollbarWidth: 'none' }}>
+                    {getSmartNotifications(notifications).map((notif) => (
+                      <div
+                        key={notif._id}
+                        onClick={() => onNavigate('notifications')}
+                        style={{
+                          flex: '0 0 200px',
+                          background: 'var(--paper)',
+                          border: '0.5px solid var(--hairline)',
+                          borderRadius: 14,
+                          padding: 12,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)', marginBottom: 6, lineHeight: 1.3, maxHeight: '2.6em', overflow: 'hidden' }}>
+                          {notif.title}
+                        </div>
+                        <div style={{ fontSize: 11, color: 'var(--mute)', marginBottom: 8, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {notif.message}
+                        </div>
+                        <button style={{
+                          fontSize: 10,
+                          background: 'var(--forest)',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: 20,
+                          padding: '3px 10px',
+                          cursor: 'pointer',
+                          fontWeight: 500,
+                        }}>
+                          Explore
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Recently Completed */}
+              {getCompletedSaves(saves).length > 0 && (
+                <div>
+                  <div style={{ padding: '16px 16px 8px', fontSize: 12, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--mute)' }}>
+                    Recently completed
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, padding: '0 16px 12px', overflowX: 'auto', scrollbarWidth: 'none' }}>
+                    {getCompletedSaves(saves).map((save) => (
+                      <div
+                        key={save._id}
+                        onClick={() => onNavigate('save-detail', { id: save._id })}
+                        style={{
+                          flex: '0 0 auto',
+                          background: 'var(--paper)',
+                          border: '0.5px solid var(--hairline)',
+                          borderRadius: 10,
+                          padding: '8px 12px',
+                          display: 'flex',
+                          gap: 8,
+                          alignItems: 'center',
+                          cursor: 'pointer',
+                          position: 'relative',
+                        }}
+                      >
+                        <div style={{
+                          width: 36,
+                          height: 36,
+                          borderRadius: 8,
+                          background: getCategoryInfo(save.category).bg,
+                          flexShrink: 0,
+                          overflow: 'hidden',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: 16,
+                          color: getCategoryInfo(save.category).color,
+                          position: 'relative',
+                        }}>
+                          {save.thumbnail ? <img src={save.thumbnail} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <i className={`ti ${getCategoryInfo(save.category).icon}`}></i>}
+                          <div style={{
+                            position: 'absolute',
+                            bottom: -4,
+                            right: -4,
+                            width: 16,
+                            height: 16,
+                            background: 'var(--forest)',
+                            borderRadius: '50%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: 'white',
+                            fontSize: 10,
+                            fontWeight: 600,
+                          }}>
+                            ✓
+                          </div>
+                        </div>
+                        <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100px' }}>
+                          {save.title}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div style={{ height: 16 }}></div>
+            </>
+          )}
+        </div>
       </div>
-    </div>
+    </>
   );
 }

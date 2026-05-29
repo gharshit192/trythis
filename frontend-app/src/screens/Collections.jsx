@@ -52,8 +52,8 @@ export default function Collections({ onNavigate }) {
   const totalSaves = collections.reduce((sum, c) => sum + (c.saves?.length || 0), 0);
 
   return (
-    <div className="phone-frame">
-      <div style={{ background: 'var(--paper)', flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
+    <>
+      <div style={{ background: 'var(--paper)', display: 'flex', flexDirection: 'column', width: '100%', flex: 1, overflowY: 'auto' }}>
         <div style={{ padding: '16px 20px 14px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h1 className="display" style={{ fontSize: '22px' }}>Collections</h1>
@@ -107,7 +107,7 @@ export default function Collections({ onNavigate }) {
           </div>
         )}
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', padding: '12px 20px 80px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', padding: '12px 20px' }}>
           {loading ? (
             <p style={{ fontSize: '13px', color: 'var(--slate)', gridColumn: '1 / -1', textAlign: 'center' }}>Loading collections...</p>
           ) : visible.length > 0 ? (
@@ -131,28 +131,6 @@ export default function Collections({ onNavigate }) {
               {tab === 'auto' ? 'No auto-collections yet — save a few items and TryThis will group them.' : tab === 'shared' ? 'No shared collections.' : 'No collections yet'}
             </p>
           )}
-        </div>
-
-        <div className="tab-bar">
-          <div className="tab" onClick={() => onNavigate('home')}>
-            <i className="ti ti-home tab-icon"></i>
-            <span className="tab-label">Home</span>
-          </div>
-          <div className="tab" onClick={() => onNavigate('search')}>
-            <i className="ti ti-search tab-icon"></i>
-            <span className="tab-label">Search</span>
-          </div>
-          <div className="fab" onClick={() => onNavigate('add-save')}>
-            <i className="ti ti-plus"></i>
-          </div>
-          <div className="tab active" onClick={() => onNavigate('collections')}>
-            <i className="ti ti-folder tab-icon"></i>
-            <span className="tab-label">Collections</span>
-          </div>
-          <div className="tab" onClick={() => onNavigate('profile')}>
-            <i className="ti ti-user tab-icon"></i>
-            <span className="tab-label">Profile</span>
-          </div>
         </div>
 
         {showCreate && (
@@ -209,6 +187,6 @@ export default function Collections({ onNavigate }) {
           </div>
         )}
       </div>
-    </div>
+    </>
   );
 }

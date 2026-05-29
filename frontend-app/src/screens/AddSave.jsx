@@ -98,7 +98,7 @@ function LinkFlow({ collections, onBack, onNavigate }) {
 
       // Show "submitted" state
       setProcessingStep(1);
-      setTimeout(() => {
+      const timeoutId = setTimeout(() => {
         setSaving(false);
         setUrl('');
         setProcessingStep(0);
@@ -107,9 +107,6 @@ function LinkFlow({ collections, onBack, onNavigate }) {
         onNavigate('home');
       }, 1200);
     } catch (err) {
-      clearTimeout(t1);
-      clearTimeout(t2);
-      clearTimeout(t3);
       setSaving(false);
       setProcessingStep(0);
       setError(err.message || 'Save failed');
