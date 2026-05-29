@@ -1,12 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import api from '../api';
 
-const detectType = (url) => {
-  if (!url) return 'screenshot';
-  if (/instagram\.com/i.test(url)) return 'instagram';
-  return 'url';
-};
-
 // Top-level mode picker → sub-flows
 export default function AddSave({ onNavigate }) {
   const [mode, setMode] = useState(null); // null | 'link' | 'photos'
@@ -94,11 +88,11 @@ function LinkFlow({ collections, onBack, onNavigate }) {
 
     try {
       // Submit link for async processing
-      const job = await api.submitLink(url.trim());
+      await api.submitLink(url.trim());
 
       // Show "submitted" state
       setProcessingStep(1);
-      const timeoutId = setTimeout(() => {
+      setTimeout(() => {
         setSaving(false);
         setUrl('');
         setProcessingStep(0);

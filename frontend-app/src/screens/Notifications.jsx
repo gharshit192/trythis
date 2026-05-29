@@ -312,7 +312,7 @@ export default function Notifications({ onNavigate }) {
   const [screenMounted, setScreenMounted] = useState(false);
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(true);
-  const [pagination, setPagination] = useState(null);
+  const [, setPagination] = useState(null);
 
   const PAGE_SIZE = 10;
 
