@@ -420,7 +420,7 @@ export default function SaveDetail({ onNavigate, payload }) {
 
   return (
     <div className="phone-frame" style={{ background: T.bg, color: T.text, minHeight: '100vh' }}>
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '0 0 80px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', padding: '0 0 80px' }}>
         {/* Hero / static thumbnail with overlays */}
         <div style={{ borderRadius: 0, marginBottom: 0, overflow: 'hidden', background: '#000', aspectRatio: '16 / 11', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
           {(save?.thumbnail || save?.image)

@@ -186,7 +186,7 @@ export default function ScreenshotDetail({ save, onNavigate }) {
 
   return (
     <div className="phone-frame" style={{ background: T.bg, color: T.text, minHeight: '100vh' }}>
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', paddingBottom: 80 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', paddingBottom: 80 }}>
         {/* Hero section with overlays */}
         <div
           style={{
