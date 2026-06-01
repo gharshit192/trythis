@@ -238,6 +238,7 @@ const TYPE_ALLOWED_FIELDS = {
   event:     ['event', 'place'],
   article:   [],
   listing:   ['place'],
+  place:     ['place'],
   other:     [],
 };
 

@@ -430,6 +430,24 @@ const processSave = async (saveId) => {
       // Always run analysis if we have title/description (for tags generation)
       const analysisInput = englishClean || '';
       const fresh = await Save.findById(saveId);
+
+      // FALLBACK: Thumbnail OCR when video download fails
+      // Extract text overlays from the cached thumbnail image
+      if (!frameOcr && !mp4Ready && fresh.thumbnail) {
+        try {
+          logger.info(`[mediaProcessor ${saveId}] attempting thumbnail OCR fallback`);
+          const thumbnailRes = await frameExtractor.extractAndOcrFrames(fresh.thumbnail, {
+            count: 1,  // Just one image (the thumbnail)
+            langs: pickOcrLangs(raw.language),
+          });
+          frameOcr = thumbnailRes.mergedText || '';
+          if (frameOcr) {
+            logger.info(`[mediaProcessor ${saveId}] thumbnail OCR: ${frameOcr.length} chars (fallback)`);
+          }
+        } catch (err) {
+          logger.warn(`[mediaProcessor ${saveId}] thumbnail OCR fallback failed: ${err.message}`);
+        }
+      }
       const hasContent = analysisInput || frameOcr || fresh.title || fresh.description;
 
       if (hasContent) {

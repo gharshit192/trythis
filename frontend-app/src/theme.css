@@ -55,7 +55,7 @@ body {
   width: 100%;
   max-width: 430px;
   background: var(--paper);
-  overflow: hidden;
+  overflow-y: auto;
   position: relative;
   margin: 0 auto;
   display: flex;

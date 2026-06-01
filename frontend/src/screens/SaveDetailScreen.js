@@ -217,7 +217,7 @@ export default function SaveDetailScreen({ route, navigation }) {
             <Text style={styles.sourceBadgeText}>{sourceLabel}</Text>
           </View>
 
-          {save?.raw?.processingStatus === 'partial' && (
+          {false && save?.raw?.processingStatus === 'partial' && (
             <View style={styles.partialBadge}>
               <Text style={styles.partialBadgeText}>Partial</Text>
             </View>
