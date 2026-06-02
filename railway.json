@@ -1,9 +1,10 @@
 {
   "build": {
-    "builder": "nixpacks"
+    "builder": "dockerfile",
+    "dockerfilePath": "Dockerfile"
   },
   "deploy": {
-    "startCommand": "cd backend && npm install --legacy-peer-deps && node src/server.js",
+    "startCommand": "node src/server.js",
     "restartPolicyType": "on_failure",
     "restartPolicyMaxRetries": 5
   }
