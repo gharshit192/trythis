@@ -126,7 +126,9 @@ router.post('/', validateSaveInput, async (req, res) => {
         return cleaned.split(' ').filter(Boolean).map((w) => w[0].toUpperCase() + w.slice(1)).join(' ').slice(0, 80);
       } catch { return null; }
     })();
-    const finalTitle = metadata.title || title || titleFromUrlSlug;
+    const finalTitle = extractionEngine.pickTitle(metadata.title, metadata.description)
+      || title
+      || titleFromUrlSlug;
     if (!finalTitle) {
       return res.status(400).json({
         status: 'error',

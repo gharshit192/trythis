@@ -392,18 +392,19 @@ const processSave = async (saveId) => {
           logger.warn(`[mediaProcessor ${saveId}] partial: ${raw.language} audio had empty translation pass`);
         }
 
+        // Always mark stage complete — Whisper ran even if translation was empty.
+        const transcriptionUpdate = {
+          'processingStages.audioTranscription': { completed: true, error: null, completedAt: new Date() },
+        };
         if (englishClean) {
-          const transcriptionSource = raw._source || 'whisper';
-          await Save.findByIdAndUpdate(saveId, {
-            'aiAnalysis.transcription': {
-              text: englishClean,
-              source: transcriptionSource,
-              detectedLanguage: raw.language || null,
-            },
-            'processingStages.audioTranscription': { completed: true, error: null, completedAt: new Date() },
-          });
+          transcriptionUpdate['aiAnalysis.transcription'] = {
+            text: englishClean,
+            source: raw._source || 'whisper',
+            detectedLanguage: raw.language || null,
+          };
           logger.info(`[mediaProcessor ${saveId}] transcript: ${englishClean.length} chars (lang=${raw.language || 'auto'})`);
         }
+        await Save.findByIdAndUpdate(saveId, transcriptionUpdate);
       }
 
       // P2: extract a handful of keyframes from the video and OCR them.
@@ -423,11 +424,15 @@ const processSave = async (saveId) => {
           });
           frameOcr = res.mergedText || '';
           if (frameOcr) logger.info(`[mediaProcessor ${saveId}] frame OCR: ${frameOcr.length} chars`);
+          // Mark complete whether or not text was found — the stage ran.
           await Save.findByIdAndUpdate(saveId, {
             'processingStages.frameOCR': { completed: true, error: null, completedAt: new Date() },
           });
         } catch (err) {
           logger.warn(`[mediaProcessor ${saveId}] frame OCR failed: ${err.message}`);
+          await Save.findByIdAndUpdate(saveId, {
+            'processingStages.frameOCR': { completed: false, error: err.message, completedAt: null },
+          });
         }
       }
 
