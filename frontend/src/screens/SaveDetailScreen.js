@@ -70,25 +70,39 @@ export default function SaveDetailScreen({ route, navigation }) {
   // Field fallbacks
   const title = save?.title || 'Untitled save';
   const image = save?.image || null;
-  const description = save?.description || save?.raw?.aiAnalysis?.structuredData?.summary || null;
-  const location = save?.location || save?.raw?.extracted?.places?.primary || null;
-  const price = save?.price || save?.raw?.extracted?.estimatedPrice || null;
-  const sourceType = save?.raw?.source?.type || 'link';
-  const sourceLabel =
-    sourceType === 'instagram_reel' ? 'Instagram' :
-    sourceType === 'youtube' ? 'YouTube' :
-    sourceType === 'tiktok' ? 'TikTok' :
-    sourceType === 'screenshot' ? 'Screenshot' :
-    sourceType === 'link' ? 'Web' :
-    'Source';
+  const rawAI = save?.raw?.aiAnalysis || {};
+  const sd = rawAI.structuredData || {};
+  // summary lives at aiAnalysis.summary, not structuredData.summary
+  const description = rawAI.summary || save?.description || null;
+  const processingStatus = save?.raw?.processingStatus;
+  const sourceLabel = save?.raw?.source
+    ? save.raw.source[0].toUpperCase() + save.raw.source.slice(1)
+    : 'Web';
 
-  // Sections
-  const keyPoints = save?.raw?.aiAnalysis?.structuredData?.keyPoints || [];
-  const recipe = save?.raw?.aiAnalysis?.structuredData?.recipe;
-  const isRecipe = recipe?.isRecipe;
-  const transcript = save?.raw?.aiAnalysis?.transcription;
+  // Structured data sections — correct paths
+  const keyPoints = rawAI.keyPoints || [];
+  const recipe    = sd.recipe;
+  const isRecipe  = recipe?.isRecipe;
+  const place     = sd.place;
+  const product   = sd.product;
+  const itinerary = sd.itinerary;
+  const event     = sd.event;
+  const transcript = rawAI.transcription;
   const screenshots = save?.raw?.screenshots || [];
-  const tags = [...(save?.tags || []), ...(save?.raw?.extracted?.vibes || [])];
+
+  // Merge save tags + AI audio tags, dedupe
+  const audioTags = (rawAI.audioTags || []).map(t => t.replace(/-/g, ' '));
+  const tags = [...new Set([...(save?.tags || []), ...audioTags])];
+
+  // Place-derived location chip
+  const locationChip = place?.city
+    ? [place.name, place.city].filter(Boolean).join(', ')
+    : save?.location && save.location !== '—' ? save.location : null;
+
+  // Product price chip
+  const priceChip = product?.price
+    ? `${product.currency || '₹'}${product.price}`
+    : save?.price || null;
 
   // Get primary CTA label
   const getPrimaryCTALabel = () => {
@@ -235,34 +249,59 @@ export default function SaveDetailScreen({ route, navigation }) {
           </Pressable>
         </View>
 
+        {/* PROCESSING BANNER */}
+        {processingStatus === 'processing' && (
+          <View style={styles.bannerAmber}>
+            <Text style={styles.bannerText}>⏳ Enhancing with video details…</Text>
+          </View>
+        )}
+        {processingStatus === 'failed' && (
+          <View style={styles.bannerRed}>
+            <Text style={styles.bannerText}>⚠️ Could not process this save</Text>
+          </View>
+        )}
+
         {/* META CHIPS */}
         <View style={styles.metaChips}>
-          {location && location !== '—' && (
+          {locationChip && (
+            <Pressable style={styles.chip} onPress={() => {
+              const q = encodeURIComponent(locationChip);
+              Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${q}`);
+            }}>
+              <Text style={styles.chipText}>📍 {locationChip}</Text>
+            </Pressable>
+          )}
+          {priceChip && (
             <View style={styles.chip}>
-              <Text style={styles.chipText}>📍 {location}</Text>
+              <Text style={styles.chipText}>💰 {priceChip}</Text>
             </View>
           )}
-          {price && (
+          {place?.hours && (
             <View style={styles.chip}>
-              <Text style={styles.chipText}>💰 {price}</Text>
+              <Text style={styles.chipText}>🕐 {place.hours}</Text>
             </View>
           )}
-          {save?.raw?.extracted?.budgetLevel && (
+          {place?.closedDays?.length > 0 && (
             <View style={styles.chip}>
-              <Text style={styles.chipText}>🏷 {save.raw.extracted.budgetLevel}</Text>
+              <Text style={styles.chipText}>🚫 Closed {place.closedDays.join(', ')}</Text>
             </View>
           )}
-          {save?.raw?.extracted?.bestSeason && (
+          {place?.metro && (
             <View style={styles.chip}>
-              <Text style={styles.chipText}>🌍 {save.raw.extracted.bestSeason}</Text>
+              <Text style={styles.chipText}>🚇 {place.metro}</Text>
+            </View>
+          )}
+          {place?.entryFee && (
+            <View style={styles.chip}>
+              <Text style={styles.chipText}>🎟 {place.entryFee}</Text>
             </View>
           )}
           <View style={styles.chip}>
-            <Text style={styles.chipText}>📅 Saved {getRelativeTime(save?.raw?.createdAt)}</Text>
+            <Text style={styles.chipText}>📅 {getRelativeTime(save?.raw?.createdAt)}</Text>
           </View>
         </View>
 
-        {/* DESCRIPTION */}
+        {/* DESCRIPTION / SUMMARY */}
         {description && (
           <Text style={styles.description}>{description}</Text>
         )}
@@ -328,6 +367,98 @@ export default function SaveDetailScreen({ route, navigation }) {
                 ))}
               </View>
             )}
+          </>
+        )}
+
+        {/* PLACE SECTION */}
+        {place && (place.name || place.city) && (
+          <>
+            <Text style={styles.sectionLabel}>
+              {isRecipe ? 'Location' : product ? 'Store location' : 'Place'}
+            </Text>
+            <View style={styles.card}>
+              {place.name && <Text style={styles.cardHeader}>{place.name}</Text>}
+              {place.address && <Text style={styles.cardMeta}>{place.address}</Text>}
+              {place.city && <Text style={styles.cardMeta}>📍 {[place.city, place.country].filter(Boolean).join(', ')}</Text>}
+              {place.hours && <Text style={styles.cardMeta}>🕐 {place.hours}</Text>}
+              {place.closedDays?.length > 0 && <Text style={styles.cardMeta}>🚫 Closed {place.closedDays.join(', ')}</Text>}
+              {place.metro && <Text style={styles.cardMeta}>🚇 Metro: {place.metro}</Text>}
+              {place.priceRange && <Text style={styles.cardMeta}>💰 {place.priceRange}</Text>}
+              {(place.name || place.city) && (
+                <Pressable style={styles.mapsButton} onPress={() => {
+                  const q = encodeURIComponent([place.name, place.city, place.country].filter(Boolean).join(', '));
+                  Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${q}`);
+                }}>
+                  <Text style={styles.mapsButtonText}>📍 Open in Maps</Text>
+                </Pressable>
+              )}
+            </View>
+          </>
+        )}
+
+        {/* PRODUCT SECTION */}
+        {product && (product.name || product.price) && (
+          <>
+            <Text style={styles.sectionLabel}>Product</Text>
+            <View style={styles.card}>
+              {product.name && <Text style={styles.cardHeader}>{product.name}</Text>}
+              {product.brand && <Text style={styles.cardMeta}>Brand: {product.brand}</Text>}
+              {product.price && <Text style={styles.cardMeta}>Price: {product.currency || '₹'}{product.price}</Text>}
+              {product.availableItems?.length > 0 && (
+                <View style={[styles.metaChips, { marginTop: 8 }]}>
+                  {product.availableItems.map((item, i) => (
+                    <View key={i} style={styles.tagChip}>
+                      <Text style={styles.tagChipText}>{item}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+              {product.buyUrl && (
+                <Pressable style={styles.mapsButton} onPress={() => Linking.openURL(product.buyUrl)}>
+                  <Text style={styles.mapsButtonText}>🛒 Buy now</Text>
+                </Pressable>
+              )}
+            </View>
+          </>
+        )}
+
+        {/* ITINERARY SECTION */}
+        {itinerary && (itinerary.destination || itinerary.highlights?.length > 0) && (
+          <>
+            <Text style={styles.sectionLabel}>Destination</Text>
+            <View style={styles.card}>
+              {itinerary.destination && <Text style={styles.cardHeader}>{itinerary.destination}</Text>}
+              {itinerary.duration && <Text style={styles.cardMeta}>⏱ {itinerary.duration}</Text>}
+              {itinerary.bestSeason && <Text style={styles.cardMeta}>🌤 Best in {itinerary.bestSeason}</Text>}
+              {itinerary.estimatedCost && <Text style={styles.cardMeta}>💰 ~{itinerary.estimatedCost}</Text>}
+              {itinerary.highlights?.length > 0 && (
+                <View style={[styles.metaChips, { marginTop: 8 }]}>
+                  {itinerary.highlights.map((h, i) => (
+                    <View key={i} style={styles.tagChip}>
+                      <Text style={styles.tagChipText}>{h}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+          </>
+        )}
+
+        {/* EVENT SECTION */}
+        {event && (event.eventName || event.venue) && (
+          <>
+            <Text style={styles.sectionLabel}>Event</Text>
+            <View style={styles.card}>
+              {event.eventName && <Text style={styles.cardHeader}>{event.eventName}</Text>}
+              {event.venue && <Text style={styles.cardMeta}>📍 {event.venue}</Text>}
+              {event.eventDate && <Text style={styles.cardMeta}>📅 {new Date(event.eventDate).toLocaleDateString()}</Text>}
+              {event.price && <Text style={styles.cardMeta}>🎟 {event.currency || ''}{event.price}</Text>}
+              {event.ticketUrl && (
+                <Pressable style={styles.mapsButton} onPress={() => Linking.openURL(event.ticketUrl)}>
+                  <Text style={styles.mapsButtonText}>🎟 Get tickets</Text>
+                </Pressable>
+              )}
+            </View>
           </>
         )}
 
@@ -427,33 +558,32 @@ export default function SaveDetailScreen({ route, navigation }) {
           </>
         )}
 
-        {/* ACTIONS GRID */}
+        {/* CONTEXTUAL ACTIONS GRID */}
         <Text style={styles.sectionLabel}>Actions</Text>
         <View style={styles.actionsGrid}>
-          <ActionCard
-            icon="📁"
-            label="Add to collection"
-            sub="Organise"
-            onPress={() => handleAction('collection')}
-          />
-          <ActionCard
-            icon="🔔"
-            label="Set reminder"
-            sub="Later"
-            onPress={() => handleAction('reminder')}
-          />
-          <ActionCard
-            icon="✨"
-            label="Find similar"
-            sub={`${recs.length} matches`}
-            onPress={() => handleAction('similar')}
-          />
-          <ActionCard
-            icon="↗️"
-            label="Open source"
-            sub={sourceLabel}
-            onPress={() => handleAction('source')}
-          />
+          {/* Directions — show when place data exists */}
+          {(place?.name || place?.city) && (
+            <ActionCard icon="📍" label="Directions" sub="Open Maps" onPress={() => {
+              const q = encodeURIComponent([place.name, place.city].filter(Boolean).join(', '));
+              Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${q}`);
+            }} />
+          )}
+          {/* Buy now — show when product has buyUrl */}
+          {product?.buyUrl && (
+            <ActionCard icon="🛒" label="Buy now" sub={product.brand || 'View product'} onPress={() => Linking.openURL(product.buyUrl)} />
+          )}
+          {/* Get tickets — show for events */}
+          {event?.ticketUrl && (
+            <ActionCard icon="🎟" label="Get tickets" sub="Reserve now" onPress={() => Linking.openURL(event.ticketUrl)} />
+          )}
+          {/* Open source — always */}
+          {save?.url && (
+            <ActionCard icon="↗️" label="Open source" sub={sourceLabel} onPress={() => handleAction('source')} />
+          )}
+          {/* Similar saves */}
+          <ActionCard icon="✨" label="Find similar" sub={recs.length > 0 ? `${recs.length} matches` : 'Search'} onPress={() => handleAction('similar')} />
+          {/* Add to collection */}
+          <ActionCard icon="📁" label="Collection" sub="Organise" onPress={() => handleAction('collection')} />
         </View>
 
         {/* LOADING */}
@@ -513,7 +643,7 @@ export default function SaveDetailScreen({ route, navigation }) {
                     {rec.title}
                   </Text>
                   <Text style={styles.simCardMeta}>
-                    {Math.round(Math.random() * 30 + 70)}% match · {rec.category}
+                    {rec.score ? `${Math.round(rec.score * 100)}% match · ` : ''}{rec.category}
                   </Text>
                 </View>
                 <Text style={styles.simCardChevron}>→</Text>
@@ -673,6 +803,28 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
+  // PROCESSING BANNERS
+  bannerAmber: {
+    backgroundColor: 'rgba(217,144,40,0.12)',
+    borderWidth: 0.5,
+    borderColor: 'rgba(217,144,40,0.4)',
+    borderRadius: 10,
+    padding: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  bannerRed: {
+    backgroundColor: 'rgba(211,51,51,0.10)',
+    borderWidth: 0.5,
+    borderColor: 'rgba(211,51,51,0.4)',
+    borderRadius: 10,
+    padding: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  bannerText: {
+    fontSize: 13,
+    color: colors.text,
+  },
+
   // CONTENT
   content: {
     padding: spacing.md,
@@ -762,6 +914,23 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.text,
     marginBottom: spacing.sm,
+  },
+  cardMeta: {
+    fontSize: 13,
+    color: colors.muted,
+    marginTop: 4,
+  },
+  mapsButton: {
+    marginTop: spacing.sm,
+    backgroundColor: colors.accent,
+    borderRadius: 10,
+    padding: spacing.sm,
+    alignItems: 'center',
+  },
+  mapsButtonText: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '600',
   },
 
   // KEY POINTS
