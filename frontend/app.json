@@ -3,7 +3,7 @@
     "name": "TryThis",
     "slug": "trythis",
     "version": "1.0.0",
-    "sdkVersion": "52.0.0",
+    "sdkVersion": "54.0.0",
     "newArchEnabled": false,
     "assetBundlePatterns": [
       "**/*"

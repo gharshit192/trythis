@@ -1,24 +1,17 @@
 import React, { useCallback, useState } from 'react';
 import {
-  ScrollView,
-  Text,
-  StyleSheet,
-  View,
-  ActivityIndicator,
-  RefreshControl,
-  Modal,
-  TextInput,
-  Pressable,
-  Alert,
+  FlatList, Text, StyleSheet, View, ActivityIndicator,
+  RefreshControl, Modal, TextInput, Pressable, Alert,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import CollectionCard from '../components/CollectionCard';
+import SaveCard from '../components/SaveCard';
 import * as api from '../services/api';
-import { adaptCollections } from '../services/adapters';
+import { adaptCollections, adaptSaves } from '../services/adapters';
 import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
 
-export default function CollectionsScreen() {
+export default function CollectionsScreen({ navigation }) {
   const [collections, setCollections] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -57,29 +50,40 @@ export default function CollectionsScreen() {
     }
   };
 
+  const openCollection = (collection) => {
+    navigation.navigate('SavedList', {
+      collectionId: collection._id || collection.id,
+      title: collection.name,
+    });
+  };
+
   return (
     <>
-      <ScrollView
+      <FlatList
         style={styles.container}
         contentContainerStyle={styles.content}
+        data={collections}
+        keyExtractor={(item) => item.id}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(); }} />}
-      >
-        <View style={styles.header}>
-          <Text style={styles.title}>Collections</Text>
-          <Pressable onPress={() => setShowModal(true)}>
-            <Text style={styles.plus}>＋</Text>
-          </Pressable>
-        </View>
-        {loading ? (
-          <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: spacing.xl }} />
-        ) : error ? (
-          <Text style={styles.error}>{error}</Text>
-        ) : collections.length === 0 ? (
-          <Text style={styles.empty}>No collections yet. Tap ＋ to create one.</Text>
-        ) : (
-          collections.map((collection) => <CollectionCard key={collection.id} collection={collection} />)
+        ListHeaderComponent={
+          <View style={styles.header}>
+            <Text style={styles.title}>Collections</Text>
+            <Pressable onPress={() => setShowModal(true)}>
+              <Text style={styles.plus}>＋</Text>
+            </Pressable>
+          </View>
+        }
+        ListEmptyComponent={
+          loading
+            ? <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: spacing.xl }} />
+            : error
+            ? <Text style={styles.error}>{error}</Text>
+            : <Text style={styles.empty}>No collections yet. Tap ＋ to create one.</Text>
+        }
+        renderItem={({ item }) => (
+          <CollectionCard collection={item} onPress={() => openCollection(item)} />
         )}
-      </ScrollView>
+      />
 
       <Modal visible={showModal} transparent animationType="fade" onRequestClose={() => setShowModal(false)}>
         <View style={styles.modalBg}>
@@ -92,6 +96,7 @@ export default function CollectionsScreen() {
               value={newName}
               onChangeText={setNewName}
               autoFocus
+              onSubmitEditing={handleCreate}
             />
             <View style={styles.modalActions}>
               <Pressable onPress={() => setShowModal(false)} disabled={creating}>
@@ -110,7 +115,7 @@ export default function CollectionsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.md, paddingTop: 56 },
+  content: { padding: spacing.md, paddingTop: 56, paddingBottom: 100 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md },
   title: { fontSize: 30, fontWeight: '900', color: colors.text },
   plus: { fontSize: 30, color: colors.accent },

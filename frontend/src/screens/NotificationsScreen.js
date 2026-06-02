@@ -1,6 +1,9 @@
-import { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import { View, Text, FlatList, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import * as api from '../services/api';
+import { colors } from '../theme/colors';
+import { spacing } from '../theme/spacing';
 
 const timeAgo = (dateStr) => {
   if (!dateStr) return '';
@@ -11,164 +14,126 @@ const timeAgo = (dateStr) => {
   return `${Math.floor(diff / 86400)}d ago`;
 };
 
-const NOTIFICATION_COLORS = {
-  welcome: { bg: '#d3f9d8', icon: '✨' },
-  travel_intelligence: { bg: '#dbeafe', icon: '✈️' },
-  weekend_reminder: { bg: '#fef3c7', icon: '☀️' },
-  resurface: { bg: '#d3f9d8', icon: '🔄' },
+const TYPE_STYLE = {
+  welcome:            { bg: '#d3f9d8', icon: '✨' },
+  travel_intelligence:{ bg: '#dbeafe', icon: '✈️' },
+  weekend_reminder:   { bg: '#fef3c7', icon: '☀️' },
+  resurface:          { bg: '#d3f9d8', icon: '🔄' },
   shared_save_viewed: { bg: '#f3e8ff', icon: '👁️' },
-  nearby: { bg: '#fef3c7', icon: '📍' },
-  food_nearby: { bg: '#fef3c7', icon: '🍽️' },
-  shopping_deal: { bg: '#fce7f3', icon: '🛒' },
+  nearby:             { bg: '#fef3c7', icon: '📍' },
+  food_nearby:        { bg: '#fef3c7', icon: '🍽️' },
+  shopping_deal:      { bg: '#fce7f3', icon: '🛒' },
+  upload_failed:      { bg: '#fee2e2', icon: '❌' },
+  upload_success:     { bg: '#d1fae5', icon: '✅' },
+  processing_done:    { bg: '#d1fae5', icon: '✅' },
 };
-
-const getNotificationStyle = (type) => {
-  return NOTIFICATION_COLORS[type] || { bg: '#e8f5e9', icon: '🔔' };
-};
+const getStyle = (type) => TYPE_STYLE[type] || { bg: '#e8f5e9', icon: '🔔' };
 
 export default function NotificationsScreen({ navigation }) {
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const res = await api.getNotifications();
-      if (res.data?.notifications) {
-        setList(res.data.notifications);
-      }
+      setList(res.data?.notifications || res.data || []);
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    load();
   }, []);
+
+  useFocusEffect(useCallback(() => { load(); }, [load]));
 
   const handleDismiss = async (id) => {
     try {
       await api.dismissNotification(id);
       setList((prev) => prev.filter((n) => n._id !== id));
-    } catch (err) {
-      console.error('Failed to dismiss notification:', err);
+    } catch {}
+  };
+
+  const handleTap = async (n) => {
+    if (n.status !== 'opened') {
+      try { await api.markNotificationRead(n._id); } catch {}
+      setList((prev) => prev.map((x) => x._id === n._id ? { ...x, status: 'opened' } : x));
+    }
+    if (n.relatedSaveId) {
+      navigation.navigate('SaveDetail', { item: { _id: n.relatedSaveId } });
     }
   };
 
-  const handleMarkRead = async (id) => {
-    try {
-      await api.markNotificationRead(id);
-      setList((prev) => prev.map((n) => (n._id === id ? { ...n, read: true } : n)));
-    } catch (err) {
-      console.error('Failed to mark notification as read:', err);
-    }
-  };
-
-  const renderNotification = ({ item: n }) => {
-    const style = getNotificationStyle(n.type);
+  const renderItem = ({ item: n }) => {
+    const { bg, icon } = getStyle(n.type);
+    const isRead = n.status === 'opened';
     return (
-      <TouchableOpacity
-        onPress={() => !n.read && handleMarkRead(n._id)}
-        style={{
-          backgroundColor: n.read ? '#f5f5f5' : style.bg,
-          borderRadius: 12,
-          padding: 12,
-          marginBottom: 10,
-          flexDirection: 'row',
-          gap: 12,
-        }}
-      >
-        <View
-          style={{
-            width: 36,
-            height: 36,
-            borderRadius: 18,
-            backgroundColor: '#16a766',
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}
-        >
-          <Text style={{ fontSize: 16 }}>{style.icon}</Text>
+      <Pressable style={[styles.item, { backgroundColor: isRead ? colors.background : bg }]} onPress={() => handleTap(n)}>
+        <View style={styles.iconWrap}>
+          <Text style={styles.icon}>{icon}</Text>
         </View>
-        <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 13, fontWeight: '500', color: '#1a1a1a' }}>
-            {n.message}
-          </Text>
-          <Text style={{ fontSize: 12, color: '#666', marginTop: 2 }}>
-            {n.trigger || n.type}
-          </Text>
+        <View style={styles.body}>
+          <Text style={styles.msg}>{n.message || n.title}</Text>
+          <Text style={styles.sub}>{n.type?.replace(/_/g, ' ')} · {timeAgo(n.createdAt)}</Text>
         </View>
-        <View style={{ alignItems: 'flex-end', gap: 6 }}>
-          <Text style={{ fontSize: 11, color: '#999' }}>
-            {timeAgo(n.createdAt)}
-          </Text>
-          <TouchableOpacity
-            onPress={(e) => {
-              e.stopPropagation?.();
-              handleDismiss(n._id);
-            }}
-          >
-            <Text style={{ fontSize: 11, color: '#666' }}>Dismiss</Text>
-          </TouchableOpacity>
-        </View>
-      </TouchableOpacity>
+        <Pressable onPress={() => handleDismiss(n._id)} hitSlop={8}>
+          <Text style={styles.dismiss}>✕</Text>
+        </Pressable>
+      </Pressable>
     );
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#fff' }}>
-      <View
-        style={{
-          paddingHorizontal: 16,
-          paddingVertical: 12,
-          borderBottomWidth: 0.5,
-          borderBottomColor: '#eee',
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 12,
-        }}
-      >
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={{
-            width: 32,
-            height: 32,
-            borderRadius: 8,
-            backgroundColor: '#f5f5f5',
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}
-        >
-          <Text style={{ fontSize: 16 }}>←</Text>
-        </TouchableOpacity>
-        <Text style={{ fontSize: 18, fontWeight: '600' }}>Notifications</Text>
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <Pressable style={styles.back} onPress={() => navigation.goBack()}>
+          <Text style={styles.backText}>←</Text>
+        </Pressable>
+        <Text style={styles.title}>Notifications</Text>
       </View>
 
       {loading ? (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <ActivityIndicator size="large" color="#16a766" />
-        </View>
+        <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: spacing.xl }} />
       ) : error ? (
-        <View style={{ padding: 16 }}>
-          <Text style={{ color: '#d33' }}>{error}</Text>
-        </View>
+        <Text style={styles.error}>{error}</Text>
       ) : list.length === 0 ? (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <Text style={{ fontSize: 13, color: '#666', textAlign: 'center' }}>
-            No notifications.
-          </Text>
-        </View>
+        <Text style={styles.empty}>No notifications yet.</Text>
       ) : (
         <FlatList
           data={list}
           keyExtractor={(item) => item._id}
-          renderItem={renderNotification}
-          contentContainerStyle={{ padding: 16 }}
+          renderItem={renderItem}
+          contentContainerStyle={styles.list}
         />
       )}
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: colors.background },
+  header: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
+    paddingHorizontal: spacing.md, paddingTop: 56, paddingBottom: spacing.sm,
+    borderBottomWidth: 0.5, borderBottomColor: colors.border,
+    backgroundColor: colors.card,
+  },
+  back: { width: 32, height: 32, borderRadius: 8, backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' },
+  backText: { fontSize: 16 },
+  title: { fontSize: 18, fontWeight: '700', color: colors.text },
+  list: { padding: spacing.md, paddingBottom: 100 },
+  item: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.sm,
+    borderRadius: 14, padding: spacing.sm, marginBottom: spacing.sm,
+    borderWidth: 0.5, borderColor: colors.border,
+  },
+  iconWrap: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.accent, justifyContent: 'center', alignItems: 'center' },
+  icon: { fontSize: 16 },
+  body: { flex: 1 },
+  msg: { fontSize: 13, fontWeight: '500', color: colors.text },
+  sub: { fontSize: 11, color: colors.muted, marginTop: 2, textTransform: 'capitalize' },
+  dismiss: { fontSize: 12, color: colors.muted, padding: 4 },
+  error: { color: colors.coral, padding: spacing.md, textAlign: 'center' },
+  empty: { color: colors.muted, textAlign: 'center', marginTop: spacing.xl },
+});

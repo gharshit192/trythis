@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { ScrollView, Text, View, StyleSheet, TextInput, ActivityIndicator, Pressable } from 'react-native';
+import { FlatList, Text, View, StyleSheet, ActivityIndicator } from 'react-native';
+import SearchBar from '../components/SearchBar';
 import Chip from '../components/Chip';
 import SaveCard from '../components/SaveCard';
 import * as api from '../services/api';
@@ -7,7 +8,7 @@ import { adaptSaves } from '../services/adapters';
 import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
 
-const QUICK_CHIPS = ['Goa', 'Cafe', 'Cheap', 'Trip', 'Sneakers', 'Workshop'];
+const QUICK_CHIPS = ['cafe', 'beach', 'recipe', 'museum', 'trip', 'sneakers'];
 
 export default function SearchScreen({ navigation }) {
   const [query, setQuery] = useState('');
@@ -16,15 +17,17 @@ export default function SearchScreen({ navigation }) {
   const [error, setError] = useState(null);
   const [searched, setSearched] = useState(false);
 
-  const runSearch = async (q) => {
-    const term = (q ?? query).trim();
-    if (!term) return;
+  const runSearch = async (term = query) => {
+    const q = term.trim();
+    if (!q) return;
+    setQuery(q);
     setLoading(true);
     setError(null);
     setSearched(true);
     try {
-      const res = await api.search({ q: term });
-      setResults(adaptSaves(res.data.saves));
+      // api.search(q) calls GET /search?q=... correctly
+      const res = await api.search(q);
+      setResults(adaptSaves(res.data?.saves || res.data || []));
     } catch (err) {
       setError(err.message || 'Search failed');
     } finally {
@@ -33,56 +36,46 @@ export default function SearchScreen({ navigation }) {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.title}>Search</Text>
-      <View style={styles.searchRow}>
-        <TextInput
-          style={styles.input}
-          placeholder="Search 'beach cafe in Goa'"
-          placeholderTextColor={colors.muted}
-          value={query}
-          onChangeText={setQuery}
-          onSubmitEditing={() => runSearch()}
-          returnKeyType="search"
-        />
-        <Pressable style={styles.button} onPress={() => runSearch()}>
-          <Text style={styles.buttonText}>Go</Text>
-        </Pressable>
-      </View>
-      <View style={styles.chips}>
-        {QUICK_CHIPS.map((label) => (
-          <Chip key={label} label={label} onPress={() => { setQuery(label); runSearch(label); }} />
-        ))}
-      </View>
-      {loading ? (
-        <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: spacing.xl }} />
-      ) : error ? (
-        <Text style={styles.error}>{error}</Text>
-      ) : (
+    <FlatList
+      style={styles.container}
+      contentContainerStyle={styles.content}
+      data={results}
+      keyExtractor={(item) => item.id}
+      ListHeaderComponent={
         <>
-          {searched && (
+          <Text style={styles.title}>Search</Text>
+          <SearchBar
+            placeholder="Places, recipes, products…"
+            value={query}
+            onChangeText={setQuery}
+            onSubmit={() => runSearch()}
+          />
+          <View style={styles.chips}>
+            {QUICK_CHIPS.map((label) => (
+              <Chip key={label} label={label} onPress={() => runSearch(label)} />
+            ))}
+          </View>
+          {loading && <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: spacing.xl }} />}
+          {error && <Text style={styles.error}>{error}</Text>}
+          {searched && !loading && (
             <Text style={styles.section}>
-              {results.length === 0 ? 'No results' : `Results (${results.length})`}
+              {results.length === 0 ? 'No results' : `${results.length} results`}
             </Text>
           )}
-          {results.map((item) => (
-            <SaveCard key={item.id} item={item} onPress={() => navigation.navigate('SaveDetail', { item })} />
-          ))}
         </>
+      }
+      renderItem={({ item }) => (
+        <SaveCard item={item} onPress={() => navigation.navigate('SaveDetail', { item })} />
       )}
-    </ScrollView>
+    />
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.md, paddingTop: 56 },
+  content: { padding: spacing.md, paddingTop: 56, paddingBottom: 100 },
   title: { fontSize: 30, fontWeight: '900', marginBottom: spacing.md, color: colors.text },
-  searchRow: { flexDirection: 'row', gap: spacing.sm },
-  input: { flex: 1, backgroundColor: colors.card, borderRadius: 18, padding: spacing.md, borderWidth: 1, borderColor: colors.border, color: colors.text },
-  button: { backgroundColor: colors.accent, paddingHorizontal: spacing.lg, justifyContent: 'center', borderRadius: 18 },
-  buttonText: { color: '#fff', fontWeight: '900' },
   chips: { flexDirection: 'row', flexWrap: 'wrap', marginTop: spacing.md },
-  section: { fontSize: 20, fontWeight: '900', marginVertical: spacing.md, color: colors.text },
+  section: { fontSize: 18, fontWeight: '900', marginVertical: spacing.sm, color: colors.text },
   error: { color: colors.coral, marginTop: spacing.lg, textAlign: 'center' },
 });

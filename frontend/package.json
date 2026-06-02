@@ -2,7 +2,7 @@
   "name": "trythis-mobile",
   "version": "1.0.0",
   "private": true,
-  "main": "App.js",
+  "main": "index.js",
   "scripts": {
     "start": "expo start --port 8090",
     "android": "expo start --android --port 8090",

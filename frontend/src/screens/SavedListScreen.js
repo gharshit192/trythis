@@ -47,7 +47,7 @@ const isBundle = (save) =>
   save.contentType === 'screenshot';
 
 export default function SavedListScreen({ navigation, route }) {
-  const { filter = '', title = 'Saved' } = route?.params || {};
+  const { filter = '', title = 'Saved', collectionId } = route?.params || {};
   const [filteredSaves, setFilteredSaves] = useState([]);
   const [allSaves, setAllSaves] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -56,10 +56,16 @@ export default function SavedListScreen({ navigation, route }) {
     const loadSaves = async () => {
       setLoading(true);
       try {
-        const res = await api.getSaves();
-        if (res.data) {
-          setAllSaves(res.data);
+        let data;
+        if (collectionId) {
+          // Load saves belonging to a specific collection
+          const res = await api.getCollectionById(collectionId);
+          data = res.data?.saves || [];
+        } else {
+          const res = await api.getSaves();
+          data = res.data || [];
         }
+        setAllSaves(data);
       } catch (err) {
         console.error('Failed to fetch saves:', err);
       } finally {
@@ -68,7 +74,7 @@ export default function SavedListScreen({ navigation, route }) {
     };
 
     loadSaves();
-  }, []);
+  }, [collectionId]);
 
   useEffect(() => {
     let filtered = allSaves;
