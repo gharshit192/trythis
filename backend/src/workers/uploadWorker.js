@@ -251,7 +251,6 @@ async function processLinkJob(job) {
       metadata: {
         domain: metadata.domain,
         provider: metadata.provider,
-        ...extracted,
       },
     },
     { new: true }
