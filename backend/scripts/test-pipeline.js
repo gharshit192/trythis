@@ -97,9 +97,8 @@ async function run() {
     metadata = await fetchSystem.extractMetadata({ title: '', description: '', url });
   }
 
-  // ── Step 2: extraction + classification ──────────────────────────────────
-  console.log('\n[2/5] Extracting entities + classifying category');
-  const extracted = await extractionEngine.extractEntities(metadata);
+  // ── Step 2: classification ────────────────────────────────────────────────
+  console.log('\n[2/5] Classifying category');
   const domainCat  = classifyByDomainFull(url);
   const keywordCat = extractionEngine.classifyCategory(
     `${metadata.title || ''} ${metadata.description || ''}`.trim()
@@ -109,7 +108,6 @@ async function run() {
     : keywordCat;
 
   console.log(`    category: ${category.category} (conf=${category.confidence}, via=${category.extractor || 'keyword'})`);
-  console.log(`    entities:`, JSON.stringify(extracted, null, 2).slice(0, 300));
 
   // ── Derive title: pickTitle prefers first desc line over junk OG titles ──
   const titleFromSlug = (() => {
