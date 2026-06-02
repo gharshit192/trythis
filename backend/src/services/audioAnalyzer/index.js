@@ -4,6 +4,7 @@
 
 const claudeService = require('../claudeService');
 const logger = require('../../utils/logger');
+const { parseDescription, pickTitle } = require('../extractionEngine');
 
 const SYSTEM = `You are a metadata extraction engine for a "save it / try it" app.
 Given a video/article's transcript and metadata, return ONLY valid JSON in this exact shape:
@@ -67,6 +68,174 @@ const validateBuyUrl = (url, contextText) => {
   }
 };
 
+// ── Heuristic recipe helpers (used when Claude unavailable) ──────────────────
+
+// Prepositions / conjunctions that mark the end of an ingredient name.
+const INGREDIENT_STOP_RE = /\s+(?:in|on|at|from|to|into|onto|over|under|and|or|but|the|it|its|a|an|for|with|without|by|of|about|as|than|so|if)\b/i;
+
+const extractIngredientsFromTranscript = (transcript) => {
+  const ingredients = [];
+  const lines = transcript.split(/[.!?\n]+/);
+
+  for (const line of lines) {
+    // "take/add/put/use some X" — stop capture at first preposition/conjunction
+    const takeAdd = line.match(
+      /\b(?:take|add|put|use|need|include)\s+(?:some|a|an|fresh|the|half|chopped|sliced|grated|dried)?\s*([a-zA-Z][a-zA-Z\s]{1,28})/i
+    );
+    if (takeAdd) {
+      // Trim at the first stop word so "lemon in the pot" → "lemon"
+      const raw = takeAdd[1].trim();
+      const stopped = raw.split(INGREDIENT_STOP_RE)[0].trim().replace(/\s+/g, ' ');
+      // Skip pronouns / junk ("it", "cold", "this", short words)
+      const JUNK_EXACT = /^(it|its|this|that|them|they|he|she|we|you|i|me|cold|hot|some|the|a|an)$/i;
+      const JUNK_START = /^(it|its|this|that|them|they|he|she|we|you|i|me)\b/i;
+      if (stopped.length > 2 && stopped.length < 35 && !JUNK_EXACT.test(stopped) && !JUNK_START.test(stopped))
+        ingredients.push(stopped);
+    }
+
+    // "3-4 chokander" / "2 cups flour" — quantity + ingredient (1-2 words)
+    const quantity = line.match(/\b(\d+[-–]?\d*\s+[a-zA-Z]{3,20}(?:\s+[a-zA-Z]{3,15})?)\b/g);
+    if (quantity) {
+      quantity.forEach((q) => {
+        const clean = q.trim();
+        // Skip if it looks like a duration ("3-4 minutes") or measurement gap
+        if (!/\b(minute|second|hour|day|week|cm|ml|mg|kg|lb)\b/i.test(clean) && clean.length > 3)
+          ingredients.push(clean);
+      });
+    }
+  }
+
+  return [...new Set(ingredients)].slice(0, 15);
+};
+
+const extractStepsFromTranscript = (transcript) => {
+  return transcript
+    .split(/[.!?]+/)
+    .map((s) => s.trim())
+    .filter((s) => {
+      if (s.length < 10) return false;
+      return /\b(add|mix|put|take|blend|chop|squeeze|pour|boil|simmer|stir|grate|cook|prepare|drink|let|make|combine|whisk)\b/i.test(s);
+    })
+    .slice(0, 8);
+};
+
+// Common Hinglish (Hindi written in Latin script) starter words.
+// Used to detect non-English titles that have no Devanagari chars.
+const HINGLISH_STARTER_RE = /^(agar|aaj|yeh|ye|ek|do|teen|kya|kaise|maine|mera|meri|apna|apni|aur|lekin|toh|hai|hain|nahi|kuch|bahut|sabse|kyun|kyunki|jab|tab|phir|sirf|sab|hum|tum|aap|woh|yahan|wahan|dekho|sunlo|jano|bolo)\b/i;
+
+const buildRecipeSummary = (title, transcript) => {
+  const nonAscii = (title.match(/[^\x00-\x7F]/g) || []).length;
+  const isNonEnglish = title.length > 0 && (
+    nonAscii / title.length > 0.3 ||        // Devanagari / Arabic script
+    HINGLISH_STARTER_RE.test(title.trim())   // Latin-script Hinglish
+  );
+
+  if (isNonEnglish && transcript) {
+    const fruitMatch = transcript.match(
+      /\b(watermelon|mango|lemon|beetroot|carrot|spinach|ginger|turmeric|mint|chokander|banana|apple|orange|pomegranate|coconut|amla|giloy)\b/gi
+    );
+    if (fruitMatch) {
+      const items = [...new Set(fruitMatch.map((f) => f.toLowerCase()))].slice(0, 3);
+      return `Health drink recipe with ${items.join(', ')}`;
+    }
+  }
+  return title;
+};
+
+// ── Fix 4: Heuristic fallback when Claude unavailable ─────────────────────────
+const buildHeuristicFallback = ({ title, description, transcript, visualText }) => {
+  const { classifyCategory } = require('../extractionEngine');
+
+  const parsed = parseDescription(description);
+  const effectiveTitle = pickTitle(title, description) || title || '';
+
+  const classifyText = [transcript, visualText, title, description].filter(Boolean).join(' ');
+  const cat = classifyCategory(classifyText);
+
+  const keyPoints = [];
+  if (parsed.location?.name && parsed.location?.city)
+    keyPoints.push(`${parsed.location.name}, ${parsed.location.city}`);
+  else if (parsed.location?.name) keyPoints.push(parsed.location.name);
+  else if (parsed.location?.city) keyPoints.push(parsed.location.city);
+  if (parsed.hours)               keyPoints.push(`Open: ${parsed.hours}`);
+  if (parsed.closedDays?.length)  keyPoints.push(`Closed: ${parsed.closedDays.join(', ')}`);
+  if (parsed.metro)               keyPoints.push(`Metro: ${parsed.metro}`);
+
+  const cookingText = [transcript, visualText].filter(Boolean).join(' ');
+  const isRecipe = cookingText.length > 0 && (
+    /\b(ingredient|tablespoon|teaspoon|tbsp|tsp|cup of|recipe|how to (make|cook)|step \d)\b/i.test(cookingText) ||
+    /\b(add\s+(some|a|the|half|fresh)|take\s+(some|a|fresh)|mix\s+in|blend\s+in|chop(ped)?|pour\s+(in|over)|squeeze|grate|boil|simmer)\b/i.test(cookingText) ||
+    /\b(watermelon|lemon|ginger|turmeric|mint|chokander|beetroot|spinach|carrot|black salt|cumin|coriander|ghee|paneer|tomato|onion|garlic)\b/i.test(cookingText)
+  );
+
+  const hasPlace = parsed.location || parsed.hours || parsed.closedDays || parsed.metro;
+  const place = hasPlace ? {
+    name:          parsed.location?.name  || null,
+    address:       null,
+    city:          parsed.location?.city  || null,
+    country:       null,
+    coordinates:   null,
+    googleMapsUrl: null,
+    priceRange:    null,
+    cuisine:       null,
+    bookingUrl:    null,
+    hours:         parsed.hours       || null,
+    closedDays:    parsed.closedDays  || null,
+    metro:         parsed.metro       || null,
+  } : null;
+
+  const sdType = isRecipe ? 'recipe' : place ? 'place' : 'other';
+
+  let recipe = null;
+  let summary = effectiveTitle;
+
+  if (isRecipe && transcript) {
+    const recipeTitle = buildRecipeSummary(effectiveTitle, transcript);
+    summary = recipeTitle;
+    const ingredients = extractIngredientsFromTranscript(transcript);
+    const steps       = extractStepsFromTranscript(transcript);
+    recipe = {
+      isRecipe:    true,
+      foodType:    null,
+      title:       recipeTitle,
+      ingredients,
+      steps,
+      cookingTime: null,
+      servings:    null,
+      cuisine:     null,
+    };
+    // Populate keyPoints from recipe data so the UI card shows useful bullets
+    if (ingredients.length)
+      keyPoints.push(`Ingredients: ${ingredients.slice(0, 5).join(', ')}`);
+    // Health / benefit sentences from transcript (doesn't contain cooking verbs)
+    const benefits = transcript
+      .split(/[.!?]+/)
+      .map((s) => s.trim())
+      .filter((s) => s.length >= 15 &&
+        /\b(reduce|detox|lower|prevent|improve|boost|help|good for|benefit|blood pressure|digestion|inflammation|liver|anti|vitamin|mineral)\b/i.test(s) &&
+        !/\b(add|mix|put|take|blend|chop|pour|boil|simmer|stir|grate|cook|drink|let|make|combine)\b/i.test(s)
+      )
+      .slice(0, 2);
+    benefits.forEach((b) => keyPoints.push(b));
+  }
+
+  return {
+    summary,
+    keyPoints,
+    audioTags:  (parsed.hashtags || []).slice(0, 8).map((h) => h.toLowerCase()),
+    structuredData: {
+      type:      sdType,
+      recipe,
+      product:   null,
+      itinerary: null,
+      event:     null,
+      place,
+    },
+    _category:  cat.category,
+    _provider:  'heuristics_fallback',
+  };
+};
+
 const extractAnalysis = async ({ transcript, title, description, source, category, authorHandle, visualText } = {}) => {
   const text = (transcript || '').trim();
   const visible = (visualText || '').trim();
@@ -76,12 +245,8 @@ const extractAnalysis = async ({ transcript, title, description, source, categor
 
   // Check API key exists before attempting
   if (!process.env.ANTHROPIC_API_KEY) {
-    logger.error('[audioAnalyzer] ANTHROPIC_API_KEY not set — skipping AI analysis');
-    return {
-      ...emptyResult(title),
-      _error: 'API_KEY_MISSING',
-      _errorMessage: 'Anthropic API key not configured',
-    };
+    logger.warn('[audioAnalyzer] ANTHROPIC_API_KEY not set — using heuristic fallback');
+    return buildHeuristicFallback({ title, description, transcript: text, visualText: visible });
   }
 
   logger.info('[audioAnalyzer] using Claude API');

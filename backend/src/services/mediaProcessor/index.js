@@ -400,6 +400,7 @@ const processSave = async (saveId) => {
               source: transcriptionSource,
               detectedLanguage: raw.language || null,
             },
+            'processingStages.audioTranscription': { completed: true, error: null, completedAt: new Date() },
           });
           logger.info(`[mediaProcessor ${saveId}] transcript: ${englishClean.length} chars (lang=${raw.language || 'auto'})`);
         }
@@ -422,6 +423,9 @@ const processSave = async (saveId) => {
           });
           frameOcr = res.mergedText || '';
           if (frameOcr) logger.info(`[mediaProcessor ${saveId}] frame OCR: ${frameOcr.length} chars`);
+          await Save.findByIdAndUpdate(saveId, {
+            'processingStages.frameOCR': { completed: true, error: null, completedAt: new Date() },
+          });
         } catch (err) {
           logger.warn(`[mediaProcessor ${saveId}] frame OCR failed: ${err.message}`);
         }
@@ -466,8 +470,6 @@ const processSave = async (saveId) => {
           'aiAnalysis.keyPoints': Array.isArray(analysis.keyPoints) ? analysis.keyPoints : [],
           'aiAnalysis.structuredData': analysis.structuredData,
           'aiAnalysis.processedAt': new Date(),
-          // Pass-through of analyzer flags (e.g. buyUrlStripped → UI shield
-          // warning). Set even when empty so we can detect the absence.
           'aiAnalysis.flags': analysis._flags || {},
         };
 
@@ -475,12 +477,15 @@ const processSave = async (saveId) => {
         const betterTitle = pickBetterTitle(fresh.title, analysis);
         if (betterTitle) update.title = betterTitle;
 
-        // P4/P1-#4: derive category from structuredData.type. Strong types
-        // (recipe, itinerary, event, place) ALWAYS override the keyword
-        // classifier — fixes "Rajasthani Thali → shopping" cases where the
-        // hashtag dump fooled the keyword classifier.
+        // P4/P1-#4: derive category from structuredData.type (Claude path).
+        // For heuristic fallback: use _category which was classified from the
+        // full transcript+OCR text — more reliable than the initial keyword hit.
         const resolved = resolveCategory(fresh.category, analysis.structuredData.type);
-        if (resolved && resolved !== fresh.category) update.category = resolved;
+        if (resolved && resolved !== fresh.category) {
+          update.category = resolved;
+        } else if (analysis._category && analysis._category !== 'general' && analysis._category !== fresh.category) {
+          update.category = analysis._category;
+        }
 
         // Merge LLM tags into the save's tags (dedupe).
         if (analysis.audioTags.length) {
@@ -488,13 +493,15 @@ const processSave = async (saveId) => {
           update.tags = merged;
         }
 
-        // Preserve processingStages from initial creation
+        // Merge processingStages as a full object — avoids the MongoDB conflict
+        // that occurs when dot-path keys (processingStages.aiAnalysis) and the
+        // full processingStages object are both present in the same $set.
         const existing = await Save.findById(saveId).select('processingStages confidence');
         if (existing?.processingStages) {
+          existing.processingStages.aiAnalysis = { completed: true, error: null, completedAt: new Date() };
           update.processingStages = existing.processingStages;
-          // Update confidence if video download failed (use metadata+aiAnalysis only)
           if (update.processingStages.videoDownload?.error && !update.confidence) {
-            update.confidence = 0.4; // metadata + aiAnalysis, video failed
+            update.confidence = 0.4;
           }
         }
 

@@ -139,7 +139,6 @@ async function processLinkJob(job) {
     metadata = await fetchSystem.extractMetadata({ url });
   }
 
-  const extracted = await extractionEngine.extractEntities(metadata);
   const domainCat = classifyByDomainFull(url);
   const keywordCat = extractionEngine.classifyCategory(
     `${metadata.title || ''} ${metadata.description || ''}`.trim()

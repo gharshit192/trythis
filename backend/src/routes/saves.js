@@ -97,7 +97,6 @@ router.post('/', validateSaveInput, async (req, res) => {
       metadata = await fetchSystem.extractMetadata(submitted);
     }
 
-    const extracted = await extractionEngine.extractEntities(metadata);
     // Tier 0: URL-pattern classifier (deterministic, ~90% precision on the
     // 73-URL test set). Catches Zomato/Amazon/Booking/etc. where the keyword
     // classifier can't get text. Falls through to keyword classifier when no
