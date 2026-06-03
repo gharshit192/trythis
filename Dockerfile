@@ -20,7 +20,8 @@ FROM node:20-alpine
 # - ca-certificates, wget: TLS + downloads
 RUN apk add --no-cache \
     python3 ffmpeg ca-certificates wget \
-    tesseract-ocr tesseract-ocr-data-hin
+    tesseract-ocr tesseract-ocr-data-hin \
+    libstdc++
 
 # yt-dlp — official binary, avoids pip/managed-env issues on Alpine
 RUN wget -qO /usr/local/bin/yt-dlp \
