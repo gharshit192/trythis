@@ -11,7 +11,7 @@ const os = require('os');
 const crypto = require('crypto');
 const logger = require('../../utils/logger');
 
-const FFMPEG_TIMEOUT = 30 * 1000;
+const FFMPEG_TIMEOUT = 90 * 1000;
 const TESSERACT_TIMEOUT = 15 * 1000;
 
 // Cache of `tesseract --list-langs` to avoid re-running per frame.
