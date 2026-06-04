@@ -30,8 +30,8 @@ const WHISPER_MODEL = process.env.WHISPER_MODEL || '';
 const WHISPER_MODEL_SMALL = process.env.WHISPER_MODEL_SMALL || '';
 const ENABLED = (process.env.ENABLE_MEDIA_PROCESSING || 'true') !== 'false';
 
-const YTDLP_TIMEOUT = 120 * 1000;
-const YTDLP_GRACEFUL_TIMEOUT = 30 * 1000;
+const YTDLP_TIMEOUT = 180 * 1000; // 3 minutes for full download
+const YTDLP_GRACEFUL_TIMEOUT = 60 * 1000; // 1 minute for initial extraction (Instagram is slow)
 const FFMPEG_TIMEOUT = 60 * 1000;
 const WHISPER_TIMEOUT = 5 * 60 * 1000;
 
@@ -82,17 +82,23 @@ const runCmd = (cmd, args, timeoutMs) => new Promise((resolve, reject) => {
 
 // Graceful yt-dlp wrapper for downloading video. Always resolves (returns null on error).
 const downloadMergedMp4Graceful = async (sourceUrl, outPath) => new Promise((resolve) => {
+  // Instagram requires longer socket timeout on Vercel due to slow CDN response times
+  const isInstagram = /instagram\.com/i.test(sourceUrl);
+  const socketTimeout = isInstagram ? '60' : '30';
+  const retries = isInstagram ? '8' : '5';
+
   const args = [
     '-f', 'bv*[height<=480]+ba/best[height<=480]/best',
     '--merge-output-format', 'mp4',
     '-o', outPath,
     '--no-playlist',
     '--no-warnings',
-    '--socket-timeout', '30',
-    '--retries', '5',
+    '--socket-timeout', socketTimeout,
+    '--retries', retries,
     '--retry-sleep', 'linear=2:5',
-    '--fragment-retries', '3',
+    '--fragment-retries', '5',
     '--extractor-args', 'youtube:player_client=ios,web',
+    ...(isInstagram ? ['--extractor-args', 'instagram:max_requests=3,request_wait=1'] : []),
     sourceUrl,
   ];
 
@@ -127,20 +133,23 @@ const downloadMergedMp4Graceful = async (sourceUrl, outPath) => new Promise((res
 // ---- pipeline steps ----
 const downloadMergedMp4 = async (sourceUrl, outPath) => {
   // Best video+audio under 1080p, merge to mp4. yt-dlp picks formats that ffmpeg can mux.
-  // Gap 1: yt-dlp retry tuning. Was --retries 1 (one shot) — IG rate-limits would
-  // park saves in 'failed' until manual re-trigger. 5 retries with linear backoff
-  // 2..5s catches transient 429s and CDN flaps without blocking too long.
+  // Instagram requires longer timeouts on Vercel due to slow CDN response times.
+  const isInstagram = /instagram\.com/i.test(sourceUrl);
+  const socketTimeout = isInstagram ? '60' : '30';
+  const retries = isInstagram ? '8' : '5';
+
   await runCmd('yt-dlp', [
     '-f', 'bv*[height<=480]+ba/best[height<=480]/best',
     '--merge-output-format', 'mp4',
     '-o', outPath,
     '--no-playlist',
     '--no-warnings',
-    '--socket-timeout', '30',
-    '--retries', '5',
+    '--socket-timeout', socketTimeout,
+    '--retries', retries,
     '--retry-sleep', 'linear=2:5',
-    '--fragment-retries', '3',
+    '--fragment-retries', '5',
     '--extractor-args', 'youtube:player_client=ios,web',
+    ...(isInstagram ? ['--extractor-args', 'instagram:max_requests=3,request_wait=1'] : []),
     sourceUrl,
   ], YTDLP_TIMEOUT);
 };
