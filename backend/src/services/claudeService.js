@@ -202,61 +202,10 @@ Rules:
 // Converts audio WAV file to English text
 // Returns: { transcription, translation, language }
 const transcribeAudio = async (wavFilePath, durationSeconds = 30, language = 'en') => {
-  if (!wavFilePath || !fs.existsSync(wavFilePath)) {
-    logger.warn(`claudeService.transcribeAudio: WAV file not found: ${wavFilePath}`);
-    return { transcription: '', translation: '', language: 'en' };
-  }
-
-  try {
-    // Read file and encode to base64
-    const fileBuffer = fs.readFileSync(wavFilePath);
-    const base64Audio = fileBuffer.toString('base64');
-
-    // For large files (>25MB), would need to chunk. For now, send directly.
-    const response = await withRetry(async () => {
-      return await client.messages.create({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 2048,
-        messages: [
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: 'Transcribe this audio to text. Return only the transcription, no preamble.',
-              },
-              {
-                type: 'audio',
-                source: {
-                  type: 'base64',
-                  media_type: 'audio/wav',
-                  data: base64Audio,
-                },
-              },
-            ],
-          },
-        ],
-      });
-    });
-
-    if (!response) {
-      logger.warn('claudeService.transcribeAudio: API returned null after retries');
-      return { transcription: '', translation: '', language: 'en' };
-    }
-
-    const transcription = response.content[0]?.type === 'text' ? response.content[0].text.trim() : '';
-
-    logger.info(`[claudeService] transcribeAudio: ${transcription.length} chars extracted`);
-
-    return {
-      transcription,
-      translation: transcription, // Claude returns English directly
-      language,
-    };
-  } catch (err) {
-    logger.error(`claudeService.transcribeAudio failed: ${err.message}`);
-    return { transcription: '', translation: '', language: 'en' };
-  }
+  // NOTE: Claude API does not support audio input (only text, images, documents).
+  // Audio transcription requires Whisper. Fall back to heuristic analysis with metadata.
+  logger.info(`claudeService.transcribeAudio: Claude does not support audio input, falling back to heuristic analysis`);
+  return { transcription: '', translation: '', language: 'en' };
 };
 
 // ---- 3. Analyze Screenshot ----
