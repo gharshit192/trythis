@@ -35,4 +35,15 @@ const uploadBuffer = async (buffer, mimetype, folder, publicId) => {
   return uploadImage(dataUri, folder, publicId);
 };
 
-module.exports = { uploadImage, uploadBuffer };
+const deleteImage = async (publicId) => {
+  if (!publicId) return false;
+  try {
+    const result = await cloudinary.uploader.destroy(publicId);
+    return result.result === 'ok' || result.result === 'not found';
+  } catch (err) {
+    console.error('[cloudinary] delete failed:', err.message);
+    return false;
+  }
+};
+
+module.exports = { uploadImage, uploadBuffer, deleteImage };

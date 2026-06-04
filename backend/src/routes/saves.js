@@ -23,6 +23,41 @@ const thumbnailCache = require('../services/thumbnailCache');
 const typeToCategory = require('../utils/structuredTypeToCategory');
 const { classifyByDomainFull } = require('../services/extractionEngine/domainClassifier');
 const logger = require('../utils/logger');
+const cloudinaryService = require('../services/cloudinaryService');
+
+// Async cleanup: Delete thumbnail from Cloudinary after save is deleted from DB
+// Fire-and-forget: logs only, doesn't block the delete response
+const cleanupCloudinaryThumbnail = async (save) => {
+  if (!save || !save.thumbnail) return;
+
+  // Check if it's a Cloudinary URL
+  if (!save.thumbnail.includes('cloudinary.com')) return;
+
+  try {
+    // Extract public_id from Cloudinary URL
+    // URL format: https://res.cloudinary.com/{cloud_name}/image/upload/{version}/{public_id}
+    const urlParts = save.thumbnail.split('/');
+    const uploadIndex = urlParts.indexOf('upload');
+    if (uploadIndex === -1 || uploadIndex + 2 >= urlParts.length) {
+      logger.warn(`[cleanup] Could not parse Cloudinary URL for save ${save._id}: ${save.thumbnail}`);
+      return;
+    }
+
+    const publicId = urlParts.slice(uploadIndex + 2).join('/').replace(/\.[^.]+$/, '');
+
+    logger.info(`[cleanup] Deleting Cloudinary thumbnail for save ${save._id}: ${publicId}`);
+
+    // Delete from Cloudinary (fire-and-forget)
+    const result = await cloudinaryService.deleteImage(publicId);
+    if (result) {
+      logger.info(`[cleanup] ✓ Deleted Cloudinary thumbnail for save ${save._id}: ${publicId}`);
+    } else {
+      logger.warn(`[cleanup] ✗ Failed to delete Cloudinary thumbnail for save ${save._id}: ${publicId}`);
+    }
+  } catch (err) {
+    logger.warn(`[cleanup] Error deleting Cloudinary thumbnail for save ${save._id}: ${err.message}`);
+  }
+};
 
 // Multer config: disk storage to OS temp dir (pipeline moves files into uploads/).
 const upload = multer({
@@ -472,6 +507,13 @@ router.delete('/:id', validateObjectId('id'), async (req, res) => {
     await save.save();
 
     logger.info(`Save deleted: ${save._id}, removed from collections`);
+
+    // Launch async cleanup job to delete thumbnail from Cloudinary
+    // Fire-and-forget: don't wait, don't block response, just log if it fails
+    cleanupCloudinaryThumbnail(save).catch((err) => {
+      logger.error(`[cleanup] Unexpected error in cleanupCloudinaryThumbnail: ${err.message}`);
+    });
+
     res.json({
       status: 'success',
       message: 'Save deleted',
