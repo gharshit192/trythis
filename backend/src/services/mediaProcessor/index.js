@@ -245,12 +245,13 @@ const transcribeWithWhisperOrClaude = async (wavPath, { durationSeconds, categor
       return { ...result, _source: 'whisper' };
     }
   } catch (err) {
-    const isNotFound = err.message && (err.message.includes('ENOENT') || err.message.includes('not configured') || err.message.includes('file missing'));
+    const isNotFound = err.message && (err.message.includes('ENOENT') || err.message.includes('not configured') || err.message.includes('file missing') || err.message.includes('exit 127'));
     const isTimeout = err.message && err.message.includes('timeout');
     const isEmptyResult = err.message && err.message.includes('not produced');
+    const isLinkerError = err.message && (err.message.includes('symbol not found') || err.message.includes('Error relocating'));
 
-    if (isNotFound || isTimeout || isEmptyResult) {
-      logger.warn(`[mediaProcessor] Whisper failed (${isNotFound ? 'not-found' : isTimeout ? 'timeout' : 'empty'}), falling back to Claude: ${err.message}`);
+    if (isNotFound || isTimeout || isEmptyResult || isLinkerError) {
+      logger.warn(`[mediaProcessor] Whisper failed (${isNotFound ? 'not-found' : isTimeout ? 'timeout' : isLinkerError ? 'linker-error' : 'empty'}), falling back to Claude: ${err.message}`);
     } else {
       logger.warn(`[mediaProcessor] Whisper failed: ${err.message}`);
       throw err;
