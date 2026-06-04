@@ -84,7 +84,7 @@ const aiAnalysisSchema = new mongoose.Schema({
   structuredData: {
     type: {
       type: String,
-      enum: ['recipe', 'product', 'itinerary', 'event', 'article', 'listing', 'other'],
+      enum: ['recipe', 'product', 'itinerary', 'event', 'place', 'article', 'listing', 'other'],
     },
     recipe: recipeSchema,
     product: productSchema,

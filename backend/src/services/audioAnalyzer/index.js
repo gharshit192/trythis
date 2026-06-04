@@ -14,7 +14,7 @@ Given a video/article's transcript and metadata, return ONLY valid JSON in this 
   "keyPoints": string[],         // 3-6 concrete bullet points distilled from caption+OCR+transcript (each <= 90 chars, factual, no fluff)
   "audioTags": string[],         // 4-10 lowercase hyphenated semantic tags
   "structuredData": {
-    "type": "recipe" | "product" | "itinerary" | "event" | "article" | "listing" | "other",
+    "type": "recipe" | "product" | "itinerary" | "event" | "place" | "article" | "listing" | "other",
     "recipe":    { "isRecipe": bool, "foodType": "recipe"|"restaurant"|"street_food"|"cafe"|null, "title": str|null, "ingredients": str[], "steps": str[], "cookingTime": str|null, "servings": str|null, "cuisine": str|null } | null,
     "product":   { "name": str|null, "brand": str|null, "price": num|null, "currency": str|null, "availableItems": str[], "buyUrl": str|null } | null,
     "itinerary": { "destination": str|null, "duration": str|null, "highlights": str[], "bestSeason": str|null, "estimatedCost": str|null } | null,
@@ -431,7 +431,7 @@ const normalize = (json, { authorHandle, contextText = '' } = {}) => {
       ? json.audioTags.filter(Boolean).map((t) => String(t).toLowerCase().trim().replace(/\s+/g, '-')).slice(0, 12)
       : [],
     structuredData: {
-      type: ['recipe', 'product', 'itinerary', 'event', 'article', 'listing', 'other'].includes(sd.type) ? sd.type : 'other',
+      type: ['recipe', 'product', 'itinerary', 'event', 'place', 'article', 'listing', 'other'].includes(sd.type) ? sd.type : 'other',
       recipe: null,
       product: null,
       itinerary: null,

@@ -100,7 +100,7 @@ Given a video/article's transcript and metadata, return ONLY valid JSON in this 
   "keyPoints": ["bullet 1", "bullet 2", "bullet 3"],
   "audioTags": ["tag1", "tag2", "tag3"],
   "structuredData": {
-    "type": "recipe|product|itinerary|event|article|listing|other",
+    "type": "recipe|product|itinerary|event|place|article|listing|other",
     "recipe": {"isRecipe": bool, "foodType": "recipe|restaurant|street_food|cafe|null", "title": str|null, "ingredients": [], "steps": [], "cookingTime": str|null, "servings": str|null, "cuisine": str|null},
     "product": {"name": str|null, "brand": str|null, "price": num|null, "currency": str|null, "availableItems": [], "buyUrl": str|null},
     "itinerary": {"destination": str|null, "duration": str|null, "highlights": [], "bestSeason": str|null, "estimatedCost": str|null},
