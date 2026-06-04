@@ -15,8 +15,7 @@
     "PUBLIC_BASE_URL": "@public_base_url",
     "CLOUDINARY_CLOUD_NAME": "@cloudinary_cloud_name",
     "CLOUDINARY_API_KEY": "@cloudinary_api_key",
-    "CLOUDINARY_API_SECRET": "@cloudinary_api_secret",
-    "ANTHROPIC_API_KEY": "@anthropic_api_key"
+    "CLOUDINARY_API_SECRET": "@cloudinary_api_secret"
   },
   "functions": {
     "backend/src/server.js": {
