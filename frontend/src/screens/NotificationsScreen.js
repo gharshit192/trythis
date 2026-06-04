@@ -2,6 +2,7 @@ import React, { useCallback, useState } from 'react';
 import { View, Text, FlatList, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import * as api from '../services/api';
+import { adaptSave } from '../services/adapters';
 import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
 
@@ -61,6 +62,13 @@ export default function NotificationsScreen({ navigation }) {
       setList((prev) => prev.map((x) => x._id === n._id ? { ...x, status: 'opened' } : x));
     }
     if (n.relatedSaveId) {
+      try {
+        const res = await api.getSaveById(n.relatedSaveId);
+        if (res.status === 'success') {
+          navigation.navigate('SaveDetail', { item: adaptSave(res.data) });
+          return;
+        }
+      } catch {}
       navigation.navigate('SaveDetail', { item: { _id: n.relatedSaveId } });
     }
   };

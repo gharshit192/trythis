@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { View, Text, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
 import * as api from '../services/api';
+import { adaptSave } from '../services/adapters';
 
 const getRelativeTime = (dateString) => {
   const diff = Date.now() - new Date(dateString).getTime();
@@ -97,7 +98,7 @@ export default function SavedListScreen({ navigation, route }) {
   const renderVideoItem = ({ item }) => (
     <TouchableOpacity
       onPress={() =>
-        navigation.navigate('SaveDetail', { saveId: item._id })
+        navigation.navigate('SaveDetail', { item: adaptSave(item) })
       }
       style={{ flex: 0.5, marginRight: 8, marginBottom: 12 }}
     >
@@ -128,7 +129,7 @@ export default function SavedListScreen({ navigation, route }) {
   const renderLinkItem = ({ item, index }) => (
     <TouchableOpacity
       onPress={() =>
-        navigation.navigate('SaveDetail', { saveId: item._id })
+        navigation.navigate('SaveDetail', { item: adaptSave(item) })
       }
       style={{
         flexDirection: 'row',
