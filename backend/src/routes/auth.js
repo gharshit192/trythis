@@ -237,6 +237,9 @@ router.post('/forgot-password', forgotPasswordLimiter, async (req, res) => {
       user.passwordResetExpires = new Date(Date.now() + OTP_TTL_MS);
       await user.save();
       logger.info(`🔑 Password reset OTP for ${email}: ${otp} (expires in 15 min)`);
+      // No email service configured — return OTP directly so the app can
+      // complete the reset in one step without the user ever seeing a code.
+      response.otp = otp;
     } else {
       logger.warn(`Password reset requested for unknown email: ${email}`);
     }
