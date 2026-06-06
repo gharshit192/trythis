@@ -271,6 +271,17 @@ const transcribeWithGroq = async (wavPath) => {
   const transcription = pass1.text || '';
   const detectedLang = pass1.language || null;
 
+  // Detect music-only audio: if most segments have high no_speech_prob, the
+  // "transcription" is just Whisper hallucinating over background music.
+  const segments = pass1.segments || [];
+  if (segments.length > 0) {
+    const avgNoSpeech = segments.reduce((s, g) => s + (g.no_speech_prob || 0), 0) / segments.length;
+    if (avgNoSpeech > 0.6) {
+      logger.warn(`[mediaProcessor] Groq detected music/no-speech (avg no_speech_prob=${avgNoSpeech.toFixed(2)}) — discarding transcript`);
+      throw new Error('audio appears to be music with no speech');
+    }
+  }
+
   if (detectedLang === 'en') {
     return { transcription, translation: transcription, language: 'en', _source: 'groq' };
   }

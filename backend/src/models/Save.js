@@ -53,6 +53,12 @@ const itinerarySchema = new mongoose.Schema({
   highlights: [String],
   bestSeason: String,
   estimatedCost: String,
+  perDestinationCosts: [{
+    destination: String,
+    cost: String,
+    notes: String,
+    _id: false,
+  }],
 }, { _id: false });
 
 const eventSchema = new mongoose.Schema({

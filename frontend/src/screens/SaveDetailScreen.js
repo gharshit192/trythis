@@ -521,6 +521,19 @@ export default function SaveDetailScreen({ route, navigation }) {
               {itinerary.duration && <Text style={styles.cardMeta}>⏱ {itinerary.duration}</Text>}
               {itinerary.bestSeason && <Text style={styles.cardMeta}>🌤 Best in {itinerary.bestSeason}</Text>}
               {itinerary.estimatedCost && <Text style={styles.cardMeta}>💰 ~{itinerary.estimatedCost}</Text>}
+              {itinerary.perDestinationCosts?.length > 0 && (
+                <View style={{ marginTop: 8 }}>
+                  <Text style={styles.cardHeader}>Ticket Prices</Text>
+                  {itinerary.perDestinationCosts.map((c, i) => (
+                    <View key={i} style={styles.keyPointRow}>
+                      <View style={styles.keyPointDot} />
+                      <Text style={styles.keyPointText}>
+                        {c.destination}: {c.cost}{c.notes ? ` — ${c.notes}` : ''}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              )}
               {itinerary.highlights?.length > 0 && (
                 <View style={[styles.metaChips, { marginTop: 8 }]}>
                   {itinerary.highlights.map((h, i) => (

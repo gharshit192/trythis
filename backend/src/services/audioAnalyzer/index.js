@@ -17,7 +17,7 @@ Given a video/article's transcript and metadata, return ONLY valid JSON in this 
     "type": "recipe" | "product" | "itinerary" | "event" | "place" | "article" | "listing" | "other",
     "recipe":    { "isRecipe": bool, "foodType": "recipe"|"restaurant"|"street_food"|"cafe"|null, "title": str|null, "ingredients": str[], "steps": str[], "cookingTime": str|null, "servings": str|null, "cuisine": str|null } | null,
     "product":   { "name": str|null, "brand": str|null, "price": num|null, "currency": str|null, "availableItems": str[], "buyUrl": str|null } | null,
-    "itinerary": { "destination": str|null, "duration": str|null, "highlights": str[], "bestSeason": str|null, "estimatedCost": str|null } | null,
+    "itinerary": { "destination": str|null, "duration": str|null, "highlights": str[], "bestSeason": str|null, "estimatedCost": str|null, "perDestinationCosts": [{"destination": str, "cost": str, "notes": str|null}] } | null,
     "event":     { "eventName": str|null, "venue": str|null, "eventDate": str|null, "ticketUrl": str|null, "price": num|null, "currency": str|null } | null,
     "place":     { "name": str|null, "address": str|null, "city": str|null, "country": str|null, "coordinates": {"lat":num,"lng":num}|null, "googleMapsUrl": str|null, "priceRange": str|null, "cuisine": str|null, "bookingUrl": str|null } | null
   }
@@ -33,6 +33,7 @@ Rules:
 - Prefer SPECIFIC tags: product type ("ro-plant"), brand ("rajmahal"), city ("indore"), dish ("matka-chaat"), material ("cutwork-fabric"). NEVER use generic process words: business, support, installation, service, services, solution, complete, package, deal, offer, info, information, contact, available.
 - keyPoints: 3–6 short factual bullets a reader could act on (e.g. "Located at Rajwada, Indore — wholesale prices", "500+ designer varieties available", "Available at single-piece quantities"). Each bullet ≤ 90 chars. NO marketing fluff. Always fill this — even when transcript is missing, distill the caption/description/OCR.
 - Travel destinations / city guides → type="itinerary" and also fill place{} if a specific location.
+- For itineraries: if the OCR or transcript mentions specific ticket/trip prices per destination (e.g. "Sri Lanka ₹15,000", "Thailand 20k"), populate itinerary.perDestinationCosts as an array. Set estimatedCost to the total or a range if mentioned. NEVER use vague strings like "Budget-friendly" if actual numbers are available.
 - Buying a product / wishlist item → type="product".
 - Events / concerts / tickets → type="event" and fill place{} if venue known.
 - Articles / blog posts → type="article".
@@ -500,6 +501,9 @@ const normalize = (json, { authorHandle, contextText = '' } = {}) => {
       highlights: Array.isArray(it.highlights) ? it.highlights.filter(Boolean).map(String) : [],
       bestSeason: it.bestSeason || null,
       estimatedCost: it.estimatedCost || null,
+      perDestinationCosts: Array.isArray(it.perDestinationCosts)
+        ? it.perDestinationCosts.filter((c) => c?.destination && c?.cost)
+        : [],
     };
   }
 
