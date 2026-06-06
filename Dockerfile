@@ -25,6 +25,11 @@ RUN apk add --no-cache \
     python3 ffmpeg ca-certificates wget \
     tesseract-ocr tesseract-ocr-data-hin
 
+# Verify tessdata is accessible and print what languages are installed
+# Fails the build immediately if tesseract can't find its data files.
+RUN TESSDATA_PREFIX=/usr/share/tessdata tesseract --list-langs \
+ && echo "✓ tesseract OK"
+
 # yt-dlp — official binary, avoids pip/managed-env issues on Alpine
 RUN wget -qO /usr/local/bin/yt-dlp \
       https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp \
