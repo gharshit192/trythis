@@ -16,11 +16,16 @@ const TESSERACT_TIMEOUT = 15 * 1000;
 
 // Cache of `tesseract --list-langs` to avoid re-running per frame.
 // Populated lazily on first OCR call.
+// Pass --tessdata-dir explicitly rather than relying on TESSDATA_PREFIX env var,
+// which spawn() may not inherit correctly on some hosts (e.g. Render).
+const TESSDATA_DIR = process.env.TESSDATA_PREFIX || null;
+const tessArgs = (extra) => TESSDATA_DIR ? ['--tessdata-dir', TESSDATA_DIR, ...extra] : extra;
+
 let installedLangsCache = null;
 const getInstalledLangs = async () => {
   if (installedLangsCache) return installedLangsCache;
   try {
-    const { stdout } = await runCmd('tesseract', ['--list-langs'], 5000);
+    const { stdout } = await runCmd('tesseract', tessArgs(['--list-langs']), 5000);
     installedLangsCache = new Set(
       stdout.split('\n').map((s) => s.trim()).filter((s) => s && !s.startsWith('List of') && !s.includes('tessdata'))
     );
@@ -71,7 +76,7 @@ const extractFrames = async (mp4Path, count, durationSeconds, outDir) => {
 
 const ocrFrame = async (framePath, langs) => {
   try {
-    const { stdout } = await runCmd('tesseract', [framePath, 'stdout', '-l', langs, '--psm', '6'], TESSERACT_TIMEOUT);
+    const { stdout } = await runCmd('tesseract', tessArgs([framePath, 'stdout', '-l', langs, '--psm', '6']), TESSERACT_TIMEOUT);
     return (stdout || '').trim();
   } catch (err) {
     logger.warn(`frameExtractor: tesseract failed for ${framePath}: ${err.message}`);
