@@ -34,6 +34,8 @@ Rules:
 - keyPoints: 3–6 short factual bullets a reader could act on (e.g. "Located at Rajwada, Indore — wholesale prices", "500+ designer varieties available", "Available at single-piece quantities"). Each bullet ≤ 90 chars. NO marketing fluff. Always fill this — even when transcript is missing, distill the caption/description/OCR.
 - Travel destinations / city guides → type="itinerary" and also fill place{} if a specific location.
 - For itineraries: if the OCR or transcript mentions specific ticket/trip prices per destination (e.g. "Sri Lanka ₹15,000", "Thailand 20k"), populate itinerary.perDestinationCosts as an array. Set estimatedCost to the total or a range if mentioned. NEVER use vague strings like "Budget-friendly" if actual numbers are available.
+- OCR from video frames is often noisy. If you see "Ticket Price" followed by garbled text near a destination name, still add that destination to perDestinationCosts with cost="see video" and notes="price shown in video, OCR unreadable". This signals to the user that price data exists in the video.
+- keyPoints must mention any destination where a ticket price slide was detected, even if the exact number is unreadable.
 - Buying a product / wishlist item → type="product".
 - Events / concerts / tickets → type="event" and fill place{} if venue known.
 - Articles / blog posts → type="article".

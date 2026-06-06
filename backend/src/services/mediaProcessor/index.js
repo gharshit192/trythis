@@ -648,14 +648,16 @@ const pickBetterTitle = (currentTitle, analysis) => {
 // over-sampling adjacent stills, long videos were missing text changes.
 // Travel/itinerary videos show price slides for only 1-2 seconds each.
 // Boost frame count for those categories to maximise chance of capturing them.
+// Short travel/info reels are rapid slide shows — need more frames per second
+// to catch price slides that flash by in 1-2s.
 const pickFrameCount = (durationSeconds, category) => {
   const d = durationSeconds || 30;
   const isInfoDense = ['travel', 'shopping', 'food', 'experience'].includes(category);
-  if (d <= 15) return isInfoDense ? 5  : 3;
-  if (d <= 30) return isInfoDense ? 8  : 4;
-  if (d <= 60) return isInfoDense ? 12 : 6;
-  if (d <= 120) return isInfoDense ? 16 : 9;
-  return isInfoDense ? 20 : 12;
+  if (d <= 15) return isInfoDense ? 10 : 4;
+  if (d <= 30) return isInfoDense ? 12 : 5;
+  if (d <= 60) return isInfoDense ? 16 : 7;
+  if (d <= 120) return isInfoDense ? 20 : 10;
+  return isInfoDense ? 24 : 14;
 };
 
 // Gap 2: map whisper's detected audio language → tesseract language packs.
