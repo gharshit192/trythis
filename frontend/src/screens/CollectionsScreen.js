@@ -1,13 +1,12 @@
 import React, { useCallback, useState } from 'react';
 import {
   FlatList, Text, StyleSheet, View, ActivityIndicator,
-  RefreshControl, Modal, TextInput, Pressable, Alert,
+  RefreshControl, Modal, TextInput, Pressable, Alert, TouchableOpacity,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import CollectionCard from '../components/CollectionCard';
-import SaveCard from '../components/SaveCard';
 import * as api from '../services/api';
-import { adaptCollections, adaptSaves } from '../services/adapters';
+import { adaptCollections } from '../services/adapters';
 import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
 
@@ -19,6 +18,7 @@ export default function CollectionsScreen({ navigation }) {
   const [showModal, setShowModal] = useState(false);
   const [newName, setNewName] = useState('');
   const [creating, setCreating] = useState(false);
+  const [editTarget, setEditTarget] = useState(null); // collection being edited
 
   const load = useCallback(async () => {
     try {
@@ -39,15 +39,54 @@ export default function CollectionsScreen({ navigation }) {
     if (!newName.trim()) return;
     setCreating(true);
     try {
-      await api.createCollection({ name: newName.trim() });
+      if (editTarget) {
+        await api.updateCollection(editTarget._id || editTarget.id, { name: newName.trim() });
+      } else {
+        await api.createCollection(newName.trim());
+      }
       setNewName('');
       setShowModal(false);
+      setEditTarget(null);
       load();
     } catch (err) {
-      Alert.alert('Failed to create', err.message);
+      Alert.alert(editTarget ? 'Failed to rename' : 'Failed to create', err.message);
     } finally {
       setCreating(false);
     }
+  };
+
+  const handleLongPress = (collection) => {
+    Alert.alert(collection.name, 'What would you like to do?', [
+      {
+        text: 'Rename',
+        onPress: () => {
+          setEditTarget(collection);
+          setNewName(collection.name);
+          setShowModal(true);
+        },
+      },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: () => {
+          Alert.alert('Delete collection?', `"${collection.name}" and its saves will be unlinked.`, [
+            { text: 'Cancel', style: 'cancel' },
+            {
+              text: 'Delete', style: 'destructive',
+              onPress: async () => {
+                try {
+                  await api.deleteCollection(collection._id || collection.id);
+                  load();
+                } catch (err) {
+                  Alert.alert('Failed', err.message);
+                }
+              },
+            },
+          ]);
+        },
+      },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
   };
 
   const openCollection = (collection) => {
@@ -81,14 +120,23 @@ export default function CollectionsScreen({ navigation }) {
             : <Text style={styles.empty}>No collections yet. Tap ＋ to create one.</Text>
         }
         renderItem={({ item }) => (
-          <CollectionCard collection={item} onPress={() => openCollection(item)} />
+          <CollectionCard
+            collection={item}
+            onPress={() => openCollection(item)}
+            onLongPress={() => handleLongPress(item)}
+          />
         )}
       />
 
-      <Modal visible={showModal} transparent animationType="fade" onRequestClose={() => setShowModal(false)}>
+      <Modal
+        visible={showModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => { setShowModal(false); setEditTarget(null); setNewName(''); }}
+      >
         <View style={styles.modalBg}>
           <View style={styles.modalBox}>
-            <Text style={styles.modalTitle}>New Collection</Text>
+            <Text style={styles.modalTitle}>{editTarget ? 'Rename Collection' : 'New Collection'}</Text>
             <TextInput
               style={styles.input}
               placeholder="Collection name"
@@ -99,11 +147,13 @@ export default function CollectionsScreen({ navigation }) {
               onSubmitEditing={handleCreate}
             />
             <View style={styles.modalActions}>
-              <Pressable onPress={() => setShowModal(false)} disabled={creating}>
+              <Pressable onPress={() => { setShowModal(false); setEditTarget(null); setNewName(''); }} disabled={creating}>
                 <Text style={styles.cancel}>Cancel</Text>
               </Pressable>
               <Pressable onPress={handleCreate} disabled={creating}>
-                <Text style={styles.confirm}>{creating ? 'Creating…' : 'Create'}</Text>
+                <Text style={styles.confirm}>
+                  {creating ? '…' : editTarget ? 'Save' : 'Create'}
+                </Text>
               </Pressable>
             </View>
           </View>

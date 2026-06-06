@@ -108,6 +108,10 @@ export default function LoginScreen({ navigation }) {
         )}
       </Pressable>
 
+      <Pressable onPress={() => navigation.navigate('ForgotPassword')} disabled={loading} style={styles.forgotWrap}>
+        <Text style={styles.link}>Forgot password?</Text>
+      </Pressable>
+
       <View style={styles.footer}>
         <Text style={styles.footerText}>Don't have an account? </Text>
         <Pressable onPress={() => navigation.navigate('Signup')} disabled={loading}>
@@ -180,6 +184,7 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     fontSize: 16,
   },
+  forgotWrap: { alignItems: 'center', marginTop: spacing.md },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',

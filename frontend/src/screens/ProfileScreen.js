@@ -37,24 +37,6 @@ export default function ProfileScreen({ navigation }) {
     ]);
   };
 
-  const handleChangePassword = () => {
-    Alert.alert('Change Password', 'Enter your new password in the next screen.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Continue', onPress: async () => {
-          Alert.prompt?.('New Password', '', async (pwd) => {
-            if (!pwd?.trim()) return;
-            try {
-              await api.changePassword(undefined, pwd.trim());
-              Alert.alert('Done', 'Password changed.');
-            } catch (err) {
-              Alert.alert('Failed', err.message);
-            }
-          }, 'secure-text');
-        },
-      },
-    ]);
-  };
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -77,7 +59,7 @@ export default function ProfileScreen({ navigation }) {
       )}
 
       <Text style={styles.sectionLabel}>Account</Text>
-      <MenuItem label="Change password" sub="Update your password" onPress={handleChangePassword} />
+      <MenuItem label="Change password" sub="Update your password" onPress={() => navigation.navigate('ChangePassword')} />
       <MenuItem
         label="Notifications"
         sub="View all notifications"

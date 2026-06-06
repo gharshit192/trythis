@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable, Alert, ActivityIndicator,
-  Linking, Image, Share, Dimensions
+  Linking, Image, Share, Dimensions, Modal, FlatList,
 } from 'react-native';
 import SmartImage from '../components/SmartImage';
 import Chip from '../components/Chip';
@@ -32,6 +32,10 @@ export default function SaveDetailScreen({ route, navigation }) {
   const [recs, setRecs] = useState([]);
   const [showFullTranscript, setShowFullTranscript] = useState(false);
   const [completed, setCompleted] = useState(item?.engagement?.completed || false);
+  const [showCollectionModal, setShowCollectionModal] = useState(false);
+  const [allCollections, setAllCollections] = useState([]);
+  const [collectionLoading, setCollectionLoading] = useState(false);
+  const [retrying, setRetrying] = useState(false);
 
   useEffect(() => {
     const refresh = async () => {
@@ -138,14 +142,60 @@ export default function SaveDetailScreen({ route, navigation }) {
     }
   };
 
+  const openCollectionModal = async () => {
+    setCollectionLoading(true);
+    setShowCollectionModal(true);
+    try {
+      const res = await api.getCollections();
+      setAllCollections(res.data || []);
+    } catch (err) {
+      Alert.alert('Error', err.message);
+    } finally {
+      setCollectionLoading(false);
+    }
+  };
+
+  const toggleCollection = async (collection) => {
+    const saveId = save._id;
+    const colId = collection._id;
+    const inCollection = (save.raw?.collections || []).includes(colId);
+    try {
+      if (inCollection) {
+        await api.removeSaveFromCollection(colId, saveId);
+      } else {
+        await api.addSaveToCollection(colId, saveId);
+      }
+      // Refresh save to get updated collections list
+      const res = await api.getSaveById(saveId);
+      if (res.status === 'success') setSave(adaptSave(res.data));
+    } catch (err) {
+      Alert.alert('Failed', err.message);
+    }
+  };
+
+  const handleRetry = async () => {
+    setRetrying(true);
+    try {
+      await api.retrySave(save._id);
+      // Poll for updated status after a short delay
+      setTimeout(async () => {
+        try {
+          const res = await api.getSaveById(save._id);
+          if (res.status === 'success') setSave(adaptSave(res.data));
+        } catch {}
+        setRetrying(false);
+      }, 3000);
+    } catch (err) {
+      Alert.alert('Failed', err.message);
+      setRetrying(false);
+    }
+  };
+
   // Handle actions
   const handleAction = (action) => {
     switch (action) {
       case 'collection':
-        Alert.alert('Add to collection', 'Coming soon');
-        break;
-      case 'reminder':
-        Alert.alert('Set reminder', 'Coming soon');
+        openCollectionModal();
         break;
       case 'similar':
         if (recs.length === 0) {
@@ -182,8 +232,8 @@ export default function SaveDetailScreen({ route, navigation }) {
 
   const handleMenu = () => {
     Alert.alert('Options', '', [
-      { text: 'Edit notes', onPress: () => Alert.alert('Coming soon') },
-      { text: 'Move to collection', onPress: () => Alert.alert('Coming soon') },
+      { text: 'Add to collection', onPress: openCollectionModal },
+      { text: 'Open source', onPress: () => { if (save?.url) Linking.openURL(save.url); } },
       { text: 'Delete', style: 'destructive', onPress: handleDelete },
       { text: 'Cancel', style: 'cancel' },
     ]);
@@ -258,6 +308,17 @@ export default function SaveDetailScreen({ route, navigation }) {
         {processingStatus === 'failed' && (
           <View style={styles.bannerRed}>
             <Text style={styles.bannerText}>⚠️ Could not process this save</Text>
+            <Pressable onPress={handleRetry} disabled={retrying} style={styles.retryBtn}>
+              <Text style={styles.retryBtnText}>{retrying ? 'Retrying…' : 'Retry'}</Text>
+            </Pressable>
+          </View>
+        )}
+        {processingStatus === 'partial' && (
+          <View style={styles.bannerAmber}>
+            <Text style={styles.bannerText}>⚡ Partially processed</Text>
+            <Pressable onPress={handleRetry} disabled={retrying} style={styles.retryBtn}>
+              <Text style={styles.retryBtnText}>{retrying ? 'Retrying…' : 'Retry'}</Text>
+            </Pressable>
           </View>
         )}
 
@@ -660,6 +721,41 @@ export default function SaveDetailScreen({ route, navigation }) {
         <View style={styles.bottomSpacer} />
       </View>
     </ScrollView>
+
+    {/* COLLECTION PICKER MODAL */}
+    <Modal
+      visible={showCollectionModal}
+      transparent
+      animationType="slide"
+      onRequestClose={() => setShowCollectionModal(false)}
+    >
+      <Pressable style={colStyles.backdrop} onPress={() => setShowCollectionModal(false)} />
+      <View style={colStyles.sheet}>
+        <View style={colStyles.handle} />
+        <Text style={colStyles.title}>Add to Collection</Text>
+        {collectionLoading ? (
+          <ActivityIndicator color={colors.accent} style={{ marginTop: spacing.lg }} />
+        ) : allCollections.length === 0 ? (
+          <Text style={colStyles.empty}>No collections yet.</Text>
+        ) : (
+          <FlatList
+            data={allCollections}
+            keyExtractor={(c) => c._id}
+            renderItem={({ item: col }) => {
+              const inCollection = (save?.raw?.collections || []).includes(col._id);
+              return (
+                <Pressable style={colStyles.row} onPress={() => toggleCollection(col)}>
+                  <Text style={colStyles.colName}>{col.name}</Text>
+                  <Text style={[colStyles.check, inCollection && colStyles.checkActive]}>
+                    {inCollection ? '✓' : '+'}
+                  </Text>
+                </Pressable>
+              );
+            }}
+          />
+        )}
+      </View>
+    </Modal>
   );
 }
 
@@ -1172,4 +1268,38 @@ const styles = StyleSheet.create({
   bottomSpacer: {
     height: spacing.xl,
   },
+  retryBtn: {
+    marginTop: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+  },
+  retryBtnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+});
+
+const colStyles = StyleSheet.create({
+  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' },
+  sheet: {
+    backgroundColor: colors.card,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: spacing.lg,
+    paddingBottom: 40,
+    maxHeight: '60%',
+  },
+  handle: {
+    width: 36, height: 4, backgroundColor: colors.border,
+    borderRadius: 2, alignSelf: 'center', marginBottom: spacing.md,
+  },
+  title: { fontSize: 18, fontWeight: '900', color: colors.text, marginBottom: spacing.md },
+  empty: { color: colors.muted, textAlign: 'center', marginTop: spacing.lg },
+  row: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: colors.border,
+  },
+  colName: { fontSize: 15, fontWeight: '600', color: colors.text },
+  check: { fontSize: 18, color: colors.muted },
+  checkActive: { color: colors.accent, fontWeight: '900' },
 });
