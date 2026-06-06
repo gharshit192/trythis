@@ -6,7 +6,10 @@ RUN apk add --no-cache git build-base cmake
 
 RUN git clone --depth 1 https://github.com/ggerganov/whisper.cpp /tmp/wcpp \
  && cd /tmp/wcpp \
- && cmake -B build -DCMAKE_BUILD_TYPE=Release -DWHISPER_BUILD_TESTS=OFF \
+ && cmake -B build \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DWHISPER_BUILD_TESTS=OFF \
+      -DBUILD_SHARED_LIBS=OFF \
  && cmake --build build -j$(nproc) \
  && cp build/bin/whisper-cli /usr/local/bin/whisper-cli
 
@@ -20,8 +23,7 @@ FROM node:20-alpine
 # - ca-certificates, wget: TLS + downloads
 RUN apk add --no-cache \
     python3 ffmpeg ca-certificates wget \
-    tesseract-ocr tesseract-ocr-data-hin \
-    libstdc++
+    tesseract-ocr tesseract-ocr-data-hin
 
 # yt-dlp — official binary, avoids pip/managed-env issues on Alpine
 RUN wget -qO /usr/local/bin/yt-dlp \
