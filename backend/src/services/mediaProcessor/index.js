@@ -494,12 +494,18 @@ const processSave = async (saveId) => {
         try {
           const dur = await probeDurationSeconds(mp4Path);
           const res = await frameExtractor.extractAndOcrFrames(mp4Path, {
-            count: pickFrameCount(dur),
+            count: pickFrameCount(dur, save.category),
             durationSeconds: dur,
             langs: pickOcrLangs(raw.language),
           });
           frameOcr = res.mergedText || '';
-          if (frameOcr) logger.info(`[mediaProcessor ${saveId}] frame OCR: ${frameOcr.length} chars`);
+          if (frameOcr) {
+            logger.info(`[mediaProcessor ${saveId}] frame OCR: ${frameOcr.length} chars`);
+            // Store raw OCR text for debugging (first 2000 chars)
+            await Save.findByIdAndUpdate(saveId, {
+              'aiAnalysis.visualText': frameOcr.slice(0, 2000),
+            });
+          }
           // Mark complete whether or not text was found — the stage ran.
           await Save.findByIdAndUpdate(saveId, {
             'processingStages.frameOCR': { completed: true, error: null, completedAt: new Date() },
@@ -634,13 +640,16 @@ const pickBetterTitle = (currentTitle, analysis) => {
 
 // Gap 5: pick frame count by duration. Was a fixed 4 — short reels were
 // over-sampling adjacent stills, long videos were missing text changes.
-const pickFrameCount = (durationSeconds) => {
+// Travel/itinerary videos show price slides for only 1-2 seconds each.
+// Boost frame count for those categories to maximise chance of capturing them.
+const pickFrameCount = (durationSeconds, category) => {
   const d = durationSeconds || 30;
-  if (d <= 15) return 3;
-  if (d <= 30) return 4;
-  if (d <= 60) return 6;
-  if (d <= 120) return 9;
-  return 12;
+  const isInfoDense = ['travel', 'shopping', 'food', 'experience'].includes(category);
+  if (d <= 15) return isInfoDense ? 5  : 3;
+  if (d <= 30) return isInfoDense ? 8  : 4;
+  if (d <= 60) return isInfoDense ? 12 : 6;
+  if (d <= 120) return isInfoDense ? 16 : 9;
+  return isInfoDense ? 20 : 12;
 };
 
 // Gap 2: map whisper's detected audio language → tesseract language packs.

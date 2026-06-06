@@ -109,6 +109,7 @@ const aiAnalysisSchema = new mongoose.Schema({
   //   (extensible — add more flags as we tighten guards)
   flags: mongoose.Schema.Types.Mixed,
   processedAt: Date,
+  visualText: String, // raw OCR output from frame extractor (for debugging)
 }, { _id: false });
 
 const intentItemSchema = new mongoose.Schema({
