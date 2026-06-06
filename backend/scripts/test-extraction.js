@@ -4,7 +4,7 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 
 const extractionEngine = require('../src/services/extractionEngine');
-const { extractByCategoryWrapper } = require('../src/services/extractionEngine/categories');
+const extractByCategoryWrapper = () => null; // categories module removed; field omitted from output
 const { classifyByDomain, EXTRACTOR_TO_SAVE_CATEGORY } = require('../src/services/extractionEngine/domainClassifier');
 const llm = require('../src/services/llm');
 const audioAnalyzer = require('../src/services/audioAnalyzer');
@@ -151,7 +151,19 @@ const classifyAndExtract = async (metadata) => {
   }
 };
 
+const runSingleUrl = async (url) => {
+  console.log(`\n🔍 Testing: ${url}\n`);
+  const metadata = await fetchMetadata(url);
+  const analysis = await classifyAndExtract(metadata);
+  console.log(JSON.stringify({ metadata, analysis }, null, 2));
+};
+
 const main = async () => {
+  const singleUrl = process.argv[2];
+  if (singleUrl && (singleUrl.startsWith('http://') || singleUrl.startsWith('https://'))) {
+    return runSingleUrl(singleUrl);
+  }
+
   console.log('🔍 Reading test URLs...');
   const testUrls = parseTestUrls(TEST_URLS_FILE);
   console.log(`✓ Found ${testUrls.length} test URLs`);
