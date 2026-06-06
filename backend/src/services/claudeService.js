@@ -243,7 +243,9 @@ const analyzeScreenshot = async (imageFilePath, screenshotType = 'unknown') => {
             content: [
               {
                 type: 'text',
-                text: `Extract all text from this ${screenshotType} image. Return only the text, no explanation. If it's a receipt, also extract: merchant, total, date. If it's a menu, extract: restaurant, dishes, prices.`,
+                text: screenshotType === 'video-frame'
+                  ? `Extract ALL visible text from this video frame exactly as it appears. Pay special attention to: prices (₹, $, numbers with currency), destination names, ticket prices, dates. Return only the raw text, no explanation. Preserve numbers and currency symbols exactly.`
+                  : `Extract all text from this ${screenshotType} image. Return only the text, no explanation. If it's a receipt, also extract: merchant, total, date. If it's a menu, extract: restaurant, dishes, prices.`,
               },
               {
                 type: 'image',

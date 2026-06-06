@@ -1,6 +1,7 @@
-// Extract a few evenly-spaced keyframes from an MP4 and OCR them with tesseract.
-// Used to catch visible text overlays (recipe steps, prices, captions) in
-// videos where the audio has no useful speech.
+// Extract evenly-spaced keyframes from an MP4 and OCR them.
+// Primary: tesseract (fast, free, handles plain fonts)
+// Fallback: Claude Vision (handles decorative/stylised fonts — ticket prices,
+//           price tags, stylised overlays that tesseract garbles)
 //
 // Stateless: takes a path, returns merged text. No DB writes.
 
@@ -14,10 +15,6 @@ const logger = require('../../utils/logger');
 const FFMPEG_TIMEOUT = 90 * 1000;
 const TESSERACT_TIMEOUT = 15 * 1000;
 
-// Cache of `tesseract --list-langs` to avoid re-running per frame.
-// Populated lazily on first OCR call.
-// Pass --tessdata-dir explicitly rather than relying on TESSDATA_PREFIX env var,
-// which spawn() may not inherit correctly on some hosts (e.g. Render).
 const TESSDATA_DIR = process.env.TESSDATA_PREFIX || null;
 const tessArgs = (extra) => TESSDATA_DIR ? ['--tessdata-dir', TESSDATA_DIR, ...extra] : extra;
 
@@ -35,8 +32,6 @@ const getInstalledLangs = async () => {
   return installedLangsCache;
 };
 
-// Filter requested `eng+hin+tam` down to packs that are actually installed.
-// Always keeps `eng` as the last-resort fallback.
 const resolveLangs = async (requested) => {
   const installed = await getInstalledLangs();
   const parts = (requested || 'eng').split('+').filter(Boolean);
@@ -59,19 +54,20 @@ const runCmd = (cmd, args, timeoutMs) => new Promise((resolve, reject) => {
   });
 });
 
-// Extract N frames spaced over the video duration. Uses -vf fps=N/duration.
 const extractFrames = async (mp4Path, count, durationSeconds, outDir) => {
-  // fps filter: count/duration frames per second across the whole clip.
   const fps = Math.max(0.01, count / Math.max(durationSeconds, 1));
   const outPattern = path.join(outDir, 'frame-%03d.jpg');
   await runCmd('ffmpeg', [
     '-y', '-i', mp4Path,
     '-vf', `fps=${fps},scale=1080:-2`,
     '-frames:v', String(count),
-    '-q:v', '4',
+    '-q:v', '3',  // slightly higher quality for better OCR
     outPattern,
   ], FFMPEG_TIMEOUT);
-  return fs.readdirSync(outDir).filter((f) => f.startsWith('frame-') && f.endsWith('.jpg')).sort().map((f) => path.join(outDir, f));
+  return fs.readdirSync(outDir)
+    .filter((f) => f.startsWith('frame-') && f.endsWith('.jpg'))
+    .sort()
+    .map((f) => path.join(outDir, f));
 };
 
 const ocrFrame = async (framePath, langs) => {
@@ -81,6 +77,33 @@ const ocrFrame = async (framePath, langs) => {
   } catch (err) {
     logger.warn(`frameExtractor: tesseract failed for ${framePath}: ${err.message}`);
     return '';
+  }
+};
+
+// Heuristic: is the tesseract output too noisy to be useful?
+// High ratio of punctuation/symbols vs alphanumeric chars = likely garbled.
+const looksGarbled = (text) => {
+  if (!text || text.length < 5) return false;
+  const noiseChars = (text.match(/[^\w\s₹$€£¥%.,!?:;'"-]/g) || []).length;
+  const ratio = noiseChars / text.length;
+  // Also flag if the text has backslashes, brackets, pipes — tesseract noise
+  const hasNoise = /[\\|\[\]{}#@]{2,}/.test(text);
+  return ratio > 0.25 || hasNoise;
+};
+
+// Claude Vision fallback — reads stylised/decorative text that tesseract fails on.
+// Only called when ANTHROPIC_API_KEY is set and tesseract output is garbled.
+const ocrFrameWithClaude = async (framePath) => {
+  if (!process.env.ANTHROPIC_API_KEY) return null;
+  try {
+    const claudeService = require('../claudeService');
+    const result = await claudeService.analyzeScreenshot(framePath, 'video-frame');
+    const text = (result?.extractedText || '').trim();
+    if (text) logger.debug(`frameExtractor: Claude Vision read ${text.length} chars from garbled frame`);
+    return text || null;
+  } catch (err) {
+    logger.warn(`frameExtractor: Claude Vision fallback failed: ${err.message}`);
+    return null;
   }
 };
 
@@ -99,10 +122,18 @@ const extractAndOcrFrames = async (mp4Path, { count = 4, durationSeconds, langs 
 
     const perFrame = [];
     for (let i = 0; i < frames.length; i++) {
-      const text = await ocrFrame(frames[i], effectiveLangs);
+      let text = await ocrFrame(frames[i], effectiveLangs);
+
+      // If tesseract output is garbled, try Claude Vision
+      if (looksGarbled(text)) {
+        logger.debug(`frameExtractor: frame ${i + 1} looks garbled (tesseract), trying Claude Vision`);
+        const claudeText = await ocrFrameWithClaude(frames[i]);
+        if (claudeText) text = claudeText;
+      }
+
       perFrame.push({ index: i, text });
     }
-    // Merge with separators; dedupe identical adjacent OCR (still photos in a video).
+
     const lines = [];
     let lastText = null;
     for (const { index, text } of perFrame) {
@@ -118,4 +149,4 @@ const extractAndOcrFrames = async (mp4Path, { count = 4, durationSeconds, langs 
   }
 };
 
-module.exports = { extractAndOcrFrames, __test__: { resolveLangs, getInstalledLangs } };
+module.exports = { extractAndOcrFrames, __test__: { resolveLangs, getInstalledLangs, looksGarbled } };
