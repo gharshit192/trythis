@@ -34,15 +34,17 @@ RUN wget -qO /usr/local/bin/yt-dlp \
 # whisper-cli binary from the build stage
 COPY --from=whisper-builder /usr/local/bin/whisper-cli /usr/local/bin/whisper-cli
 
-# Download whisper base model (148 MB) at build time so it's baked into the
-# image — no cold-start delay when the first reel comes in.
+# Download whisper tiny model (75 MB) — 4x faster than base, fits Render free tier.
+# Base model times out at 5 min on constrained CPUs; tiny finishes in ~30s.
 RUN mkdir -p /models \
- && wget -q --show-progress -O /models/ggml-base.bin \
-      "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin" \
- && echo "whisper model downloaded: $(du -h /models/ggml-base.bin | cut -f1)"
+ && wget -q --show-progress -O /models/ggml-tiny.bin \
+      "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin" \
+ && echo "whisper model downloaded: $(du -h /models/ggml-tiny.bin | cut -f1)"
 
-# Point the app at the baked-in model (can be overridden via Railway env vars)
-ENV WHISPER_MODEL=/models/ggml-base.bin
+# Tesseract needs TESSDATA_PREFIX to find language data on Alpine
+ENV TESSDATA_PREFIX=/usr/share/tessdata
+# Point the app at the baked-in model (can be overridden via env vars)
+ENV WHISPER_MODEL=/models/ggml-tiny.bin
 
 WORKDIR /app
 COPY backend/package*.json ./
