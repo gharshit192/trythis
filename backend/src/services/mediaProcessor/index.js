@@ -291,7 +291,13 @@ const transcribeWithGroq = async (wavPath) => {
     const pass2 = await callGroq('translations');
     translation = pass2.text || transcription;
   } catch (err) {
-    logger.warn(`[mediaProcessor] Groq translation pass failed: ${err.message}`);
+    // 400 = Groq rejects English audio on the translations endpoint — expected,
+    // not an error. Use the original transcription as the English output.
+    if (err.response?.status === 400 || err.message?.includes('400')) {
+      logger.debug(`[mediaProcessor] Groq translations skipped (audio is already English)`);
+    } else {
+      logger.warn(`[mediaProcessor] Groq translation pass failed: ${err.message}`);
+    }
   }
 
   return { transcription, translation, language: detectedLang, _source: 'groq' };
