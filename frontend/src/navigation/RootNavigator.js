@@ -18,6 +18,8 @@ import ProfileScreen from '../screens/ProfileScreen';
 import SaveDetailScreen from '../screens/SaveDetailScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
 import ChangePasswordScreen from '../screens/ChangePasswordScreen';
+import NearbySavesScreen from '../screens/NearbySavesScreen';
+import BulkImportScreen from '../screens/BulkImportScreen';
 
 import { colors } from '../theme/colors';
 import { useAuth } from '../services/AuthContext';
@@ -79,6 +81,8 @@ export default function RootNavigator() {
           <Stack.Screen name="Notifications" component={NotificationsScreen} />
           <Stack.Screen name="HomeEmpty" component={HomeEmptyScreen} />
           <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
+          <Stack.Screen name="NearbySaves" component={NearbySavesScreen} />
+          <Stack.Screen name="BulkImport" component={BulkImportScreen} />
         </>
       )}
     </Stack.Navigator>

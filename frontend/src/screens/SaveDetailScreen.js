@@ -3,12 +3,20 @@ import {
   View, Text, StyleSheet, ScrollView, Pressable, Alert, ActivityIndicator,
   Linking, Image, Share, Dimensions, Modal, FlatList,
 } from 'react-native';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 import SmartImage from '../components/SmartImage';
 import Chip from '../components/Chip';
 import * as api from '../services/api';
+import * as storage from '../services/storage';
 import { adaptSave } from '../services/adapters';
 import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
+
+const API_URL =
+  process.env.EXPO_PUBLIC_API_URL ||
+  process.env.REACT_APP_API_URL ||
+  'http://localhost:4000';
 
 const CATEGORY_ICONS = {
   food: 'ti-tools-kitchen-2',
@@ -173,6 +181,26 @@ export default function SaveDetailScreen({ route, navigation }) {
     }
   };
 
+  const handleExportPdf = async () => {
+    try {
+      const token = await storage.getAuthToken();
+      const dest = FileSystem.cacheDirectory + `save-${save._id}.pdf`;
+      const { uri } = await FileSystem.downloadAsync(
+        `${API_URL}/saves/${save._id}/export-pdf`,
+        dest,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const canShare = await Sharing.isAvailableAsync();
+      if (canShare) {
+        await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: title });
+      } else {
+        Alert.alert('Saved', `PDF saved to: ${uri}`);
+      }
+    } catch (err) {
+      Alert.alert('Export failed', err.message);
+    }
+  };
+
   const handleRetry = async () => {
     setRetrying(true);
     try {
@@ -233,6 +261,7 @@ export default function SaveDetailScreen({ route, navigation }) {
   const handleMenu = () => {
     Alert.alert('Options', '', [
       { text: 'Add to collection', onPress: openCollectionModal },
+      { text: 'Export as PDF', onPress: handleExportPdf },
       { text: 'Open source', onPress: () => { if (save?.url) Linking.openURL(save.url); } },
       { text: 'Delete', style: 'destructive', onPress: handleDelete },
       { text: 'Cancel', style: 'cancel' },

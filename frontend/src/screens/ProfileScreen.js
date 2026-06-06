@@ -71,6 +71,17 @@ export default function ProfileScreen({ navigation }) {
         onPress={() => navigation.navigate('Saves')}
       />
 
+      <MenuItem
+        label="Nearby saves"
+        sub="Find saves close to you"
+        onPress={() => navigation.navigate('NearbySaves')}
+      />
+      <MenuItem
+        label="Bulk import"
+        sub="Paste multiple URLs at once"
+        onPress={() => navigation.navigate('BulkImport')}
+      />
+
       <Text style={styles.sectionLabel}>More</Text>
       <MenuItem label="Log out" danger onPress={handleLogout} />
     </ScrollView>
