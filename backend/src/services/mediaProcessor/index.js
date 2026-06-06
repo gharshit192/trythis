@@ -245,8 +245,63 @@ const transcribeWithWhisper = async (wavPath, { durationSeconds, category } = {}
   };
 };
 
-// Fallback to Claude when Whisper fails or is unavailable
+// Groq Whisper API — cloud transcription, free tier, ~5s for a 60s reel.
+// Requires GROQ_API_KEY env var. Uses whisper-large-v3-turbo (better than local base).
+// Two-pass: transcribe (original lang) → translate (English), mirrors local whisper strategy.
+const transcribeWithGroq = async (wavPath) => {
+  const GROQ_API_KEY = process.env.GROQ_API_KEY;
+  if (!GROQ_API_KEY) throw new Error('GROQ_API_KEY not set');
+
+  const axios = require('axios');
+  const FormData = require('form-data');
+
+  const callGroq = async (endpoint) => {
+    const fd = new FormData();
+    fd.append('file', fs.createReadStream(wavPath), { filename: 'audio.wav', contentType: 'audio/wav' });
+    fd.append('model', 'whisper-large-v3-turbo');
+    fd.append('response_format', 'verbose_json');
+    const res = await axios.post(`https://api.groq.com/openai/v1/audio/${endpoint}`, fd, {
+      headers: { Authorization: `Bearer ${GROQ_API_KEY}`, ...fd.getHeaders() },
+      timeout: 60 * 1000,
+    });
+    return res.data;
+  };
+
+  const pass1 = await callGroq('transcriptions');
+  const transcription = pass1.text || '';
+  const detectedLang = pass1.language || null;
+
+  if (detectedLang === 'en') {
+    return { transcription, translation: transcription, language: 'en', _source: 'groq' };
+  }
+
+  let translation = transcription;
+  try {
+    const pass2 = await callGroq('translations');
+    translation = pass2.text || transcription;
+  } catch (err) {
+    logger.warn(`[mediaProcessor] Groq translation pass failed: ${err.message}`);
+  }
+
+  return { transcription, translation, language: detectedLang, _source: 'groq' };
+};
+
+// Priority: Groq cloud API → local Whisper → give up (Claude can't do audio)
 const transcribeWithWhisperOrClaude = async (wavPath, { durationSeconds, category } = {}) => {
+  // 1. Groq cloud Whisper (fast, free, works on any CPU)
+  if (process.env.GROQ_API_KEY) {
+    try {
+      const result = await transcribeWithGroq(wavPath);
+      if (result && result.translation) {
+        logger.info('[mediaProcessor] transcription via Groq Whisper API');
+        return result;
+      }
+    } catch (err) {
+      logger.warn(`[mediaProcessor] Groq transcription failed, falling back to local Whisper: ${err.message}`);
+    }
+  }
+
+  // 2. Local whisper-cli (fast on Mac/powerful servers, slow on free-tier)
   try {
     const result = await transcribeWithWhisper(wavPath, { durationSeconds, category });
     if (result && result.translation) {
@@ -260,7 +315,7 @@ const transcribeWithWhisperOrClaude = async (wavPath, { durationSeconds, categor
     const isLinkerError = err.message && (err.message.includes('symbol not found') || err.message.includes('Error relocating'));
 
     if (isNotFound || isTimeout || isEmptyResult || isLinkerError) {
-      logger.warn(`[mediaProcessor] Whisper failed (${isNotFound ? 'not-found' : isTimeout ? 'timeout' : isLinkerError ? 'linker-error' : 'empty'}), falling back to Claude: ${err.message}`);
+      logger.warn(`[mediaProcessor] Whisper failed (${isNotFound ? 'not-found' : isTimeout ? 'timeout' : isLinkerError ? 'linker-error' : 'empty'}): ${err.message}`);
     } else {
       logger.warn(`[mediaProcessor] Whisper failed: ${err.message}`);
       throw err;
