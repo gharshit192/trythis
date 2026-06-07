@@ -287,77 +287,70 @@ const analyzeScreenshot = async (imageFilePath, screenshotType = 'unknown') => {
 const aggregateAnalyses = async (analysisText) => {
   if (!analysisText || typeof analysisText !== 'string' || analysisText.trim().length === 0) {
     logger.warn('aggregateAnalyses: Empty analysisText received');
-    return {
-      combinedSummary: 'No analysis data provided',
-      commonThemes: '',
-      keyInsights: '',
-      suggestedAction: '',
-    };
+    return { summary: 'No analysis data provided', highlights: [], themes: [], actions: [], comparison: null, tags: [] };
   }
 
-  const SYSTEM_PROMPT = `You are analyzing multiple screenshots to identify patterns and insights.
-Given analysis text from screenshots, return ONLY a valid JSON object (no markdown, no code blocks, just raw JSON) with these exact fields:
+  const SYSTEM_PROMPT = `You are an expert analyst extracting structured insights from multiple screenshots.
+Return ONLY a valid JSON object — no markdown, no code blocks.
 
 {
-  "combinedSummary": "1-2 sentences summarizing the screenshots as a cohesive narrative",
-  "commonThemes": "Key patterns or themes present across the screenshots",
-  "keyInsights": "Noteworthy patterns, insights or observations",
-  "suggestedAction": "A single suggested action based on the analysis"
+  "summary": "2-3 sentence narrative tying all screenshots together",
+  "highlights": ["string", ...],        // 4-7 specific, concrete, actionable bullet points — the most important facts. Each ≤ 90 chars.
+  "themes": [                           // 2-4 cross-cutting themes
+    { "title": "string", "icon": "emoji", "points": ["string", ...] }
+  ],
+  "actions": [                          // 2-4 specific next steps ranked by priority
+    { "priority": "high|medium|low", "action": "string", "reason": "string" }
+  ],
+  "comparison": {                       // only when ≥2 distinct sources/items — null otherwise
+    "similarities": ["string", ...],
+    "differences": ["string", ...]
+  },
+  "tags": ["string", ...]              // 4-8 lowercase hyphenated topic tags
 }
 
-Respond with ONLY the JSON object. No other text.`;
+Rules:
+- highlights must be SPECIFIC and FACTUAL — no vague statements like "both companies are similar"
+- actions must be concrete — "Apply to KlearNow first as requirements match better" not "Consider applying"
+- icon must be a single relevant emoji
+- Return ONLY the JSON.`;
 
   const result = await withRetry(async () => {
     const message = await client.messages.create({
       model: 'claude-sonnet-4-6',
-      max_tokens: 512,
+      max_tokens: 1024,
       system: SYSTEM_PROMPT,
-      messages: [
-        {
-          role: 'user',
-          content: `Analyze and find patterns in these screenshots:\n\n${analysisText}`,
-        },
-      ],
+      messages: [{ role: 'user', content: `Analyze these screenshots:\n\n${analysisText}` }],
     });
 
     const responseText = message.content[0]?.type === 'text' ? message.content[0].text.trim() : '';
-
     if (!responseText) {
-      logger.error('aggregateAnalyses: Claude returned empty response');
-      return {
-        combinedSummary: 'Unable to analyze - received empty response',
-        commonThemes: '',
-        keyInsights: '',
-        suggestedAction: '',
-      };
+      logger.error('aggregateAnalyses: empty response');
+      return null;
     }
 
     const parsed = parseJsonSafely(responseText);
-
     if (!parsed) {
-      logger.error('aggregateAnalyses: Failed to parse Claude response', { responseText: responseText.substring(0, 200) });
-      return {
-        combinedSummary: 'Unable to parse analysis - malformed response',
-        commonThemes: '',
-        keyInsights: '',
-        suggestedAction: '',
-      };
+      logger.error('aggregateAnalyses: failed to parse response');
+      return null;
     }
 
     return {
-      combinedSummary: parsed.combinedSummary || '',
-      commonThemes: parsed.commonThemes || '',
-      keyInsights: parsed.keyInsights || '',
-      suggestedAction: parsed.suggestedAction || '',
+      summary: parsed.summary || '',
+      highlights: Array.isArray(parsed.highlights) ? parsed.highlights.filter(Boolean) : [],
+      themes: Array.isArray(parsed.themes) ? parsed.themes : [],
+      actions: Array.isArray(parsed.actions) ? parsed.actions : [],
+      comparison: parsed.comparison || null,
+      tags: Array.isArray(parsed.tags) ? parsed.tags : [],
+      // Legacy fields for backwards compat with old clients
+      combinedSummary: parsed.summary || '',
+      commonThemes: Array.isArray(parsed.themes) ? parsed.themes.map(t => t.title).join(', ') : '',
+      keyInsights: Array.isArray(parsed.highlights) ? parsed.highlights.join(' | ') : '',
+      suggestedAction: Array.isArray(parsed.actions) && parsed.actions[0] ? parsed.actions[0].action : '',
     };
   });
 
-  return result || {
-    combinedSummary: 'Analysis failed',
-    commonThemes: '',
-    keyInsights: '',
-    suggestedAction: '',
-  };
+  return result || { summary: 'Analysis failed', highlights: [], themes: [], actions: [], comparison: null, tags: [] };
 };
 
 // ---- Exports ----

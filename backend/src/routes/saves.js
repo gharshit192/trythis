@@ -74,7 +74,47 @@ const upload = multer({
   },
 });
 
+// ── Template saves — public, no auth required
+router.get('/templates', async (req, res) => {
+  try {
+    const templates = await Save.find({ isTemplate: true, status: 'active' })
+      .select('-userId')
+      .lean();
+    res.json({ status: 'success', data: templates });
+  } catch (err) {
+    logger.error(`❌ Get templates error: ${err.message}`);
+    res.status(500).json({ status: 'error', error: { code: 'SERVER_ERROR', message: 'Failed to fetch templates' } });
+  }
+});
+
 router.use(authMiddleware);
+
+// ── Copy a template save into the requesting user's account
+router.post('/templates/:id/copy', async (req, res) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ status: 'error', error: { code: 'INVALID_ID', message: 'Invalid template ID' } });
+    }
+    const template = await Save.findOne({ _id: req.params.id, isTemplate: true });
+    if (!template) {
+      return res.status(404).json({ status: 'error', error: { code: 'NOT_FOUND', message: 'Template not found' } });
+    }
+    const { _id, createdAt, updatedAt, __v, ...templateData } = template.toObject();
+    const copy = new Save({
+      ...templateData,
+      userId: req.user.id,
+      isTemplate: false,
+    });
+    await copy.save();
+    await User.findByIdAndUpdate(req.user.id, {
+      $addToSet: { 'onboarding.templateSaveIds': copy._id },
+    });
+    res.json({ status: 'success', data: copy });
+  } catch (err) {
+    logger.error(`❌ Copy template error: ${err.message}`);
+    res.status(500).json({ status: 'error', error: { code: 'SERVER_ERROR', message: 'Failed to copy template' } });
+  }
+});
 
 router.post('/', validateSaveInput, async (req, res) => {
   try {
@@ -294,7 +334,7 @@ router.get('/', async (req, res) => {
     // Use projection to load only feed-relevant fields (3-5x faster than full document).
     // MongoDB loads entire document by default; this limits to display fields only.
     const saves = await Save.find({ userId: req.user.id, status: 'active' })
-      .select('title thumbnail image category contentType tags intentStatus createdAt source url aiAnalysis')
+      .select('title thumbnail image category contentType tags intentStatus createdAt source url aiAnalysis isTemplate')
       .sort({
         createdAt: -1,
       });
@@ -1017,7 +1057,7 @@ router.post('/:id/aggregate-analysis', validateObjectId('id'), async (req, res) 
   }
 });
 
-// GET /:id/export-pdf — Export screenshot detail as PDF
+// GET /:id/export-pdf — Export save as a structured PDF report
 router.get('/:id/export-pdf', validateObjectId('id'), async (req, res) => {
   try {
     const PDFDocument = require('pdfkit');
@@ -1030,55 +1070,146 @@ router.get('/:id/export-pdf', validateObjectId('id'), async (req, res) => {
       });
     }
 
-    const doc = new PDFDocument({ margin: 40, bufferPages: true });
+    const ai = save.aiAnalysis || {};
+    const sd = ai.structuredData || {};
+    const doc = new PDFDocument({ margin: 50, bufferPages: true, size: 'A4' });
+
+    const safeName = (save.title || 'save').replace(/[^a-z0-9]/gi, '-').slice(0, 40);
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="screenshot-${Date.now()}.pdf"`);
+    res.setHeader('Content-Disposition', `attachment; filename="${safeName}-${Date.now()}.pdf"`);
     doc.pipe(res);
 
-    // Title
-    doc.fontSize(20).font('Helvetica-Bold').text(save.title, { align: 'left' });
-    doc.moveDown(0.3);
+    const ACCENT = '#1B3A2F';
+    const MUTED = '#666666';
+    const BG_LIGHT = '#F5F5F0';
 
-    // Meta
-    doc.fontSize(10).font('Helvetica').fillColor('#666666');
-    doc.text(`Category: ${save.category || 'General'}`);
-    doc.text(`Saved: ${new Date(save.createdAt).toLocaleDateString()}`);
-    doc.moveDown(0.5);
+    const section = (title) => {
+      doc.moveDown(0.8);
+      doc.fontSize(13).font('Helvetica-Bold').fillColor(ACCENT).text(title.toUpperCase(), { characterSpacing: 0.5 });
+      doc.moveTo(doc.x, doc.y).lineTo(doc.page.width - 50, doc.y).stroke(ACCENT);
+      doc.moveDown(0.3);
+    };
 
-    // Summary
-    if (save.description) {
-      doc.fontSize(12).font('Helvetica-Bold').fillColor('#1B3A2F').text('Summary', { underline: true });
-      doc.fontSize(11).font('Helvetica').fillColor('#000000');
-      doc.text(save.description, { align: 'left' });
-      doc.moveDown(0.5);
+    const bullet = (text) => {
+      doc.fontSize(11).font('Helvetica').fillColor('#000000').text(`• ${text}`, { indent: 12, align: 'left' });
+    };
+
+    // ── HEADER ──
+    doc.fontSize(22).font('Helvetica-Bold').fillColor(ACCENT).text(save.title || 'Untitled', { align: 'left' });
+    doc.moveDown(0.2);
+    doc.fontSize(10).font('Helvetica').fillColor(MUTED);
+    doc.text([
+      save.category ? `Category: ${save.category}` : null,
+      save.source ? `Source: ${save.source}` : null,
+      `Saved: ${new Date(save.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}`,
+      save.url ? `URL: ${save.url}` : null,
+    ].filter(Boolean).join('   |   '));
+
+    // ── SUMMARY ──
+    const summary = ai.summary || save.description;
+    if (summary) {
+      doc.moveDown(0.6);
+      doc.fontSize(12).font('Helvetica').fillColor('#222222').text(summary, { align: 'left', lineGap: 2 });
     }
 
-    // Key Points
-    if (save.aiAnalysis?.keyPoints?.length) {
-      doc.fontSize(12).font('Helvetica-Bold').fillColor('#1B3A2F').text('Key Points', { underline: true });
-      doc.fontSize(11).font('Helvetica').fillColor('#000000');
-      save.aiAnalysis.keyPoints.forEach((point) => {
-        doc.text(`• ${point}`, { align: 'left' });
+    // ── KEY POINTS (highlighted) ──
+    if (ai.keyPoints?.length) {
+      section('Key Points');
+      ai.keyPoints.forEach(bullet);
+    }
+
+    // ── STRUCTURED DATA ──
+    if (sd.type === 'recipe' && sd.recipe) {
+      const r = sd.recipe;
+      section('Recipe Details');
+      if (r.cookingTime) doc.fontSize(11).font('Helvetica').fillColor('#000').text(`⏱ Cook time: ${r.cookingTime}`);
+      if (r.servings) doc.text(`🍽 Servings: ${r.servings}`);
+      if (r.cuisine) doc.text(`🌍 Cuisine: ${r.cuisine}`);
+      if (r.ingredients?.length) {
+        doc.moveDown(0.4);
+        doc.fontSize(12).font('Helvetica-Bold').fillColor(ACCENT).text('Ingredients');
+        r.ingredients.forEach(bullet);
+      }
+      if (r.steps?.length) {
+        doc.moveDown(0.4);
+        doc.fontSize(12).font('Helvetica-Bold').fillColor(ACCENT).text('Steps');
+        r.steps.forEach((s, i) => {
+          doc.fontSize(11).font('Helvetica').fillColor('#000').text(`${i + 1}. ${s}`, { indent: 12 });
+        });
+      }
+    }
+
+    if (sd.type === 'itinerary' && sd.itinerary) {
+      const it = sd.itinerary;
+      section('Travel Details');
+      if (it.destination) doc.fontSize(11).font('Helvetica').fillColor('#000').text(`📍 Destination: ${it.destination}`);
+      if (it.duration) doc.text(`⏱ Duration: ${it.duration}`);
+      if (it.bestSeason) doc.text(`🌤 Best season: ${it.bestSeason}`);
+      if (it.estimatedCost) doc.text(`💰 Estimated cost: ${it.estimatedCost}`);
+      if (it.perDestinationCosts?.length) {
+        doc.moveDown(0.4);
+        doc.fontSize(12).font('Helvetica-Bold').fillColor(ACCENT).text('Ticket Prices');
+        it.perDestinationCosts.forEach((c) => bullet(`${c.destination}: ${c.cost}${c.notes ? ` — ${c.notes}` : ''}`));
+      }
+      if (it.highlights?.length) {
+        doc.moveDown(0.4);
+        doc.fontSize(12).font('Helvetica-Bold').fillColor(ACCENT).text('Highlights');
+        it.highlights.forEach(bullet);
+      }
+    }
+
+    if (sd.type === 'product' && sd.product) {
+      const p = sd.product;
+      section('Product Details');
+      if (p.name) doc.fontSize(11).font('Helvetica').fillColor('#000').text(`Product: ${p.name}`);
+      if (p.brand) doc.text(`Brand: ${p.brand}`);
+      if (p.price) doc.text(`Price: ${p.currency || ''}${p.price}`);
+      if (p.availableItems?.length) {
+        doc.moveDown(0.3);
+        doc.fontSize(12).font('Helvetica-Bold').fillColor(ACCENT).text('Available items');
+        p.availableItems.forEach(bullet);
+      }
+    }
+
+    // ── TRANSCRIPT ──
+    if (ai.transcription?.text) {
+      section('Transcript');
+      doc.fontSize(10).font('Helvetica').fillColor('#444').text(ai.transcription.text, { lineGap: 2, align: 'left' });
+    }
+
+    // ── SCREENSHOT OCR TEXT ──
+    if (save.screenshots?.length) {
+      section(`Screenshots (${save.screenshots.length})`);
+      save.screenshots.forEach((sc, i) => {
+        if (sc.ocrText) {
+          doc.fontSize(11).font('Helvetica-Bold').fillColor(ACCENT).text(`Screenshot ${i + 1}`);
+          doc.fontSize(10).font('Helvetica').fillColor('#444').text(sc.ocrText, { lineGap: 2, indent: 12 });
+          doc.moveDown(0.4);
+        }
       });
-      doc.moveDown(0.5);
     }
 
-    // Tags
+    // ── TAGS ──
     if (save.tags?.length) {
-      doc.fontSize(12).font('Helvetica-Bold').fillColor('#1B3A2F').text('Tags', { underline: true });
-      doc.fontSize(11).font('Helvetica').fillColor('#000000');
-      doc.text(save.tags.map((t) => `#${t}`).join(' '), { align: 'left' });
-      doc.moveDown(0.5);
+      section('Tags');
+      doc.fontSize(11).font('Helvetica').fillColor(MUTED).text(save.tags.map((t) => `#${t}`).join('  '));
+    }
+
+    // ── FOOTER ──
+    const pageCount = doc.bufferedPageRange().count;
+    for (let i = 0; i < pageCount; i++) {
+      doc.switchToPage(i);
+      doc.fontSize(8).fillColor(MUTED).text(
+        `TryThis export  •  ${save.title}  •  Page ${i + 1} of ${pageCount}`,
+        50, doc.page.height - 30, { align: 'center' }
+      );
     }
 
     doc.end();
   } catch (error) {
     logger.error(`Export PDF error: ${error.message}`);
     if (!res.headersSent) {
-      res.status(500).json({
-        status: 'error',
-        error: { code: 'EXPORT_ERROR', message: error.message },
-      });
+      res.status(500).json({ status: 'error', error: { code: 'EXPORT_ERROR', message: error.message } });
     }
   }
 });
