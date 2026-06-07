@@ -15,7 +15,7 @@ const SONG_MARKER_WORDS = new Set([
   'darling', 'honey', 'sugar', 'sweetheart', 'boo',
 ]);
 
-// Words that strongly indicate real instructional/informational content.
+// Words that strongly indicate real instructional/informational content (English).
 const CONTENT_SIGNALS = new Set([
   'recipe', 'ingredient', 'hotel', 'price', 'rupees', 'inr', 'usd',
   'flight', 'visa', 'booking', 'destination', 'restaurant', 'product',
@@ -24,19 +24,54 @@ const CONTENT_SIGNALS = new Set([
   'install', 'download', 'subscribe', 'click', 'link', 'bio',
 ]);
 
+// Hindi instructional/content words (Devanagari) — indicates real cooking/travel/info speech.
+const HINDI_CONTENT_SIGNALS = new Set([
+  'डालो', 'डालें', 'मिलाओ', 'मिलाएं', 'काटो', 'काटें', 'उबालो', 'पकाओ', 'भूनो',
+  'ग्राम', 'मिनट', 'चम्मच', 'कप', 'लीटर', 'किलो', 'मसाला', 'सामग्री',
+  'होटल', 'कीमत', 'रुपये', 'बुकिंग', 'उड़ान', 'यात्रा', 'पकाना', 'बनाएं',
+]);
+
+// Hindi 1st/2nd person romantic pronouns — high density = likely song lyrics.
+const HINDI_SONG_PRONOUNS = new Set([
+  'मुझे', 'मुझको', 'मैं', 'तू', 'तुझे', 'तुझको', 'तुझसे', 'तुझी', 'तुने',
+  'मेरे', 'मेरी', 'मेरा', 'तेरे', 'तेरी', 'तेरा', 'हमें', 'हमारा',
+]);
+
+// Hindi romantic/emotional song words not found in instructional speech.
+const HINDI_SONG_MARKERS = new Set([
+  'दिवाने', 'दिवानी', 'प्यार', 'मोहब्बत', 'इश्क', 'दिल', 'जादू',
+  'शराब', 'दीदार', 'तकरार', 'आखिया', 'आंखें', 'नजर', 'सनम', 'जानम',
+  'यार', 'दर्द', 'सुकून', 'खयाल', 'रूह',
+]);
+
+const looksLikeHindiSong = (text) => {
+  // Check Hindi content signals first — bail if instructional
+  if ([...HINDI_CONTENT_SIGNALS].some((w) => text.includes(w))) return false;
+
+  const hasMarker = [...HINDI_SONG_MARKERS].some((w) => text.includes(w));
+  if (hasMarker) return true;
+
+  // Count Hindi romantic pronouns
+  const pronounCount = [...HINDI_SONG_PRONOUNS].filter((w) => text.includes(w)).length;
+  return pronounCount >= 3;
+};
+
 const looksLikeSongLyrics = (text) => {
   if (!text || typeof text !== 'string') return false;
   const words = text.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, '').split(/\s+/).filter(Boolean);
   if (words.length < MIN_WORDS_TO_JUDGE) return false;
 
-  // Bail immediately if content signals are present — it's real speech.
+  // Check Hindi song patterns (Devanagari text — separate path from English)
+  if (looksLikeHindiSong(text)) return true;
+
+  // Bail if English content signals present
   if (words.some((w) => CONTENT_SIGNALS.has(w))) return false;
 
-  // Check for known song marker words.
+  // English song marker words
   const markerCount = words.filter((w) => SONG_MARKER_WORDS.has(w)).length;
   if (markerCount >= 2) return true;
 
-  // High ratio of 1st/2nd person pronouns + emotional words with no content = likely lyrics.
+  // High ratio of English 1st/2nd person pronouns with no content = likely lyrics.
   const lyricPronouns = ['you', 'me', 'i', 'my', 'your', 'mine', 'we', 'us', 'our', 'im', 'youre', 'were'];
   const pronounCount = words.filter((w) => lyricPronouns.includes(w)).length;
   const pronounRatio = pronounCount / words.length;
