@@ -41,10 +41,7 @@ export default function ScreenshotDetail({ save, onNavigate }) {
   const [toast, setToast] = useState(null);
   const [aggregating, setAggregating] = useState(false);
   const [aggregateError, setAggregateError] = useState(null);
-  const [combinedSummary, setCombinedSummary] = useState(null);
-  const [commonThemes, setCommonThemes] = useState(null);
-  const [keyInsights, setKeyInsights] = useState(null);
-  const [suggestedAction, setSuggestedAction] = useState(null);
+  const [aggregateData, setAggregateData] = useState(null);
 
   const showToast = (msg) => {
     setToast(msg);
@@ -153,10 +150,7 @@ export default function ScreenshotDetail({ save, onNavigate }) {
       const res = await api.aggregateScreenshotAnalysis(save._id, analyses);
 
       if (res.status === 'success') {
-        setCombinedSummary(res.data.combinedSummary);
-        setCommonThemes(res.data.commonThemes);
-        setKeyInsights(res.data.keyInsights);
-        setSuggestedAction(res.data.suggestedAction);
+        setAggregateData(res.data);
       } else {
         setAggregateError(res.error?.message || 'Failed to aggregate');
       }
@@ -543,16 +537,9 @@ export default function ScreenshotDetail({ save, onNavigate }) {
             >
               Aggregate Analysis
             </h3>
-            {!combinedSummary ? (
+            {!aggregateData ? (
               <>
-                <p
-                  style={{
-                    fontSize: 12,
-                    color: T.textMuted,
-                    marginBottom: 10,
-                    lineHeight: 1.5,
-                  }}
-                >
+                <p style={{ fontSize: 12, color: T.textMuted, marginBottom: 10, lineHeight: 1.5 }}>
                   {relatedScreenshots.length > 0
                     ? 'Combine all related screenshots into a single analysis'
                     : 'No related screenshots to aggregate'}
@@ -560,83 +547,123 @@ export default function ScreenshotDetail({ save, onNavigate }) {
                 <button
                   onClick={handleAggregate}
                   disabled={aggregating || relatedScreenshots.length === 0}
-                  style={{
-                    padding: '8px 12px',
-                    fontSize: 12,
-                    borderRadius: 6,
-                    background: 'var(--forest)',
-                    color: '#fff',
-                    border: 0,
-                    cursor: aggregating ? 'not-allowed' : 'pointer',
-                    opacity: aggregating || relatedScreenshots.length === 0 ? 0.6 : 1,
-                  }}
+                  style={{ padding: '8px 12px', fontSize: 12, borderRadius: 6, background: 'var(--forest)', color: '#fff', border: 0, cursor: aggregating ? 'not-allowed' : 'pointer', opacity: aggregating || relatedScreenshots.length === 0 ? 0.6 : 1 }}
                 >
                   {aggregating ? 'Aggregating...' : 'Aggregate'}
                 </button>
               </>
             ) : (
               <>
-                {combinedSummary && (
-                  <div style={{ marginBottom: 10 }}>
-                    <p style={{ fontSize: 11, color: T.textMuted, marginBottom: 4 }}>
-                      Combined Summary
+                {/* Summary */}
+                {aggregateData.summary && (
+                  <p style={{ fontSize: 12, color: T.text, lineHeight: 1.6, marginBottom: 14 }}>
+                    {aggregateData.summary}
+                  </p>
+                )}
+
+                {/* Highlights */}
+                {aggregateData.highlights?.length > 0 && (
+                  <div style={{ marginBottom: 14 }}>
+                    <p style={{ fontSize: 11, fontWeight: 600, color: T.textMuted, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      Key Highlights
                     </p>
-                    <p
-                      style={{
-                        fontSize: 12,
-                        color: T.text,
-                        lineHeight: 1.5,
-                        marginBottom: 8,
-                      }}
-                    >
-                      {combinedSummary}
-                    </p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      {aggregateData.highlights.map((h, i) => (
+                        <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                          <span style={{ color: 'var(--forest)', fontWeight: 700, flexShrink: 0, marginTop: 1 }}>•</span>
+                          <span style={{ fontSize: 12, color: T.text, lineHeight: 1.5 }}>{h}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
-                {commonThemes && (
-                  <div style={{ marginBottom: 10 }}>
-                    <p style={{ fontSize: 11, color: T.textMuted, marginBottom: 4 }}>
-                      Common Themes
+
+                {/* Themes */}
+                {aggregateData.themes?.length > 0 && (
+                  <div style={{ marginBottom: 14 }}>
+                    <p style={{ fontSize: 11, fontWeight: 600, color: T.textMuted, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      Themes
                     </p>
-                    <p style={{ fontSize: 12, color: T.text, lineHeight: 1.5 }}>
-                      {commonThemes}
-                    </p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {aggregateData.themes.map((theme, i) => (
+                        <div key={i} style={{ background: T.bg, borderRadius: 8, padding: '8px 10px', border: `1px solid ${T.border}` }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                            <span style={{ fontSize: 14 }}>{theme.icon}</span>
+                            <span style={{ fontSize: 12, fontWeight: 600, color: T.text }}>{theme.title}</span>
+                          </div>
+                          {theme.points?.map((pt, j) => (
+                            <div key={j} style={{ fontSize: 11, color: T.textMuted, lineHeight: 1.5, paddingLeft: 20 }}>· {pt}</div>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
-                {keyInsights && (
-                  <div style={{ marginBottom: 10 }}>
-                    <p style={{ fontSize: 11, color: T.textMuted, marginBottom: 4 }}>
-                      Key Insights
+
+                {/* Actions */}
+                {aggregateData.actions?.length > 0 && (
+                  <div style={{ marginBottom: 14 }}>
+                    <p style={{ fontSize: 11, fontWeight: 600, color: T.textMuted, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      Next Steps
                     </p>
-                    <p style={{ fontSize: 12, color: T.text, lineHeight: 1.5 }}>
-                      {keyInsights}
-                    </p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      {aggregateData.actions.map((a, i) => {
+                        const priorityColor = a.priority === 'high' ? '#c0392b' : a.priority === 'medium' ? '#e67e22' : '#7f8c8d';
+                        return (
+                          <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', padding: '8px 10px', background: T.bg, borderRadius: 8, border: `1px solid ${T.border}` }}>
+                            <span style={{ fontSize: 9, fontWeight: 700, color: '#fff', background: priorityColor, borderRadius: 4, padding: '2px 5px', flexShrink: 0, marginTop: 2, textTransform: 'uppercase' }}>
+                              {a.priority}
+                            </span>
+                            <div>
+                              <p style={{ fontSize: 12, fontWeight: 600, color: T.text, marginBottom: 2 }}>{a.action}</p>
+                              {a.reason && <p style={{ fontSize: 11, color: T.textMuted, lineHeight: 1.4 }}>{a.reason}</p>}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
-                {suggestedAction && (
-                  <div>
-                    <p style={{ fontSize: 11, color: T.textMuted, marginBottom: 4 }}>
-                      Suggested Action
+
+                {/* Comparison */}
+                {aggregateData.comparison && (
+                  <div style={{ marginBottom: 14 }}>
+                    <p style={{ fontSize: 11, fontWeight: 600, color: T.textMuted, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      Comparison
                     </p>
-                    <p style={{ fontSize: 12, color: T.text, lineHeight: 1.5 }}>
-                      {suggestedAction}
-                    </p>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                      <div style={{ background: '#eafaf1', borderRadius: 8, padding: 8 }}>
+                        <p style={{ fontSize: 10, fontWeight: 700, color: '#1e8449', marginBottom: 4 }}>SIMILARITIES</p>
+                        {aggregateData.comparison.similarities?.map((s, i) => (
+                          <p key={i} style={{ fontSize: 11, color: '#1a5e2a', lineHeight: 1.4, marginBottom: 3 }}>· {s}</p>
+                        ))}
+                      </div>
+                      <div style={{ background: '#fef9e7', borderRadius: 8, padding: 8 }}>
+                        <p style={{ fontSize: 10, fontWeight: 700, color: '#9a7d0a', marginBottom: 4 }}>DIFFERENCES</p>
+                        {aggregateData.comparison.differences?.map((d, i) => (
+                          <p key={i} style={{ fontSize: 11, color: '#7e6302', lineHeight: 1.4, marginBottom: 3 }}>· {d}</p>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 )}
+
+                {/* Tags */}
+                {aggregateData.tags?.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 12 }}>
+                    {aggregateData.tags.map((tag, i) => (
+                      <span key={i} style={{ fontSize: 10, background: T.bgInner, color: T.textMuted, borderRadius: 4, padding: '2px 7px', border: `1px solid ${T.border}` }}>
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
                 <button
                   onClick={handleExportPdf}
-                  style={{
-                    marginTop: 10,
-                    padding: '8px 12px',
-                    fontSize: 12,
-                    borderRadius: 6,
-                    background: 'var(--forest)',
-                    color: '#fff',
-                    border: 0,
-                    cursor: 'pointer',
-                  }}
+                  style={{ marginTop: 4, padding: '8px 12px', fontSize: 12, borderRadius: 6, background: 'var(--forest)', color: '#fff', border: 0, cursor: 'pointer', width: '100%' }}
                 >
-                  Export PDF
+                  📄 Export as PDF
                 </button>
               </>
             )}
