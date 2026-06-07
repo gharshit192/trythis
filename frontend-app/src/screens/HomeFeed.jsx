@@ -138,6 +138,18 @@ export default function HomeFeed({ onNavigate, payload, nearbySaves = [], showNe
   const displayVideos = activeFilter === 'all' ? videoSaves.slice(0, 3) : videoSaves;
   const displayBundles = activeFilter === 'all' ? bundleSaves.slice(0, 2) : bundleSaves;
 
+  // Guided new-user state
+  const saveCount = saves.filter(s => !s.isTemplate).length;
+  const isNewUser = saveCount < 5 && !user?.onboarding?.completed;
+
+  const guidedSubtitle = (() => {
+    if (!isNewUser) return `${saveCount} saves · ${getNewCount(saves)} new this week`;
+    if (saveCount === 0) return "Let's build your library";
+    if (saveCount === 1) return '1 save · keep going!';
+    if (saveCount < 5) return `${saveCount} saves · ${5 - saveCount} more to unlock reminders`;
+    return `${saveCount} saves · reminders active`;
+  })();
+
   if (loading) {
     return <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading...</div>;
   }
@@ -158,7 +170,7 @@ export default function HomeFeed({ onNavigate, payload, nearbySaves = [], showNe
                 {getGreeting(userName)}
               </div>
               <div style={{ fontSize: 12, color: 'var(--mute)', marginTop: 1 }}>
-                {saves.length} saves · {getNewCount(saves)} new this week
+                {guidedSubtitle}
               </div>
             </div>
             <button
@@ -193,6 +205,37 @@ export default function HomeFeed({ onNavigate, payload, nearbySaves = [], showNe
             </button>
           </div>
         </div>
+
+        {/* Guided progress bar */}
+        {isNewUser && (
+          <div style={{ height: 3, background: 'var(--forest-faint)', borderRadius: 2, margin: '8px 16px 0' }}>
+            <div style={{
+              height: '100%',
+              borderRadius: 2,
+              background: 'var(--forest)',
+              width: `${Math.min(saveCount / 5 * 100, 100)}%`,
+              transition: 'width 0.5s ease',
+            }} />
+          </div>
+        )}
+
+        {/* Unlock banner */}
+        {isNewUser && (
+          <div style={{
+            background: 'var(--forest-soft)',
+            borderRadius: 8,
+            padding: '8px 10px',
+            margin: '8px 16px 0',
+            fontSize: 11,
+            color: 'var(--forest)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 4,
+          }}>
+            <i className="ti ti-target" style={{ fontSize: 13, flexShrink: 0 }} />
+            Save <strong style={{ margin: '0 2px' }}>{5 - saveCount} more</strong> to unlock smart reminders
+          </div>
+        )}
 
         {/* Filter pills */}
         <div style={{
@@ -512,6 +555,24 @@ export default function HomeFeed({ onNavigate, payload, nearbySaves = [], showNe
                       </div>
                     ))}
                   </div>
+                </div>
+              )}
+
+              {/* Empty save slot — shown when user has < 3 non-template saves */}
+              {saveCount < 3 && (
+                <div
+                  onClick={() => onNavigate('add-save')}
+                  style={{
+                    border: '1.5px dashed var(--hairline)',
+                    borderRadius: 12,
+                    padding: 16,
+                    textAlign: 'center',
+                    margin: '0 16px 8px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <i className="ti ti-plus" style={{ fontSize: 24, color: 'var(--mute)', display: 'block', marginBottom: 4 }} />
+                  <div style={{ fontSize: 11, color: 'var(--mute)' }}>Save your next link</div>
                 </div>
               )}
 

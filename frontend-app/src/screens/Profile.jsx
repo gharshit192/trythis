@@ -477,13 +477,16 @@ function deriveStats(saves, collections) {
   const WEEK = 7 * 24 * 3600 * 1000;
   const MONTH = 30 * 24 * 3600 * 1000;
 
+  // Exclude template/demo saves from all stats
+  const realSaves = saves.filter(s => !s.isTemplate);
+
   const intent = { saved: 0, planned: 0, tried: 0, dismissed: 0 };
   const categories = {};
   const sources = {};
   let savesThisWeek = 0;
   let savesThisMonth = 0;
 
-  for (const s of saves) {
+  for (const s of realSaves) {
     const created = s.createdAt ? new Date(s.createdAt).getTime() : 0;
     if (now - created <= WEEK)  savesThisWeek++;
     if (now - created <= MONTH) savesThisMonth++;
@@ -503,7 +506,7 @@ function deriveStats(saves, collections) {
     .slice(0, 5)
     .map(([key, count]) => ({ key, count }));
 
-  const totalForSources = Math.max(1, saves.length);
+  const totalForSources = Math.max(1, realSaves.length);
   const sourceList = Object.entries(sources)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 4)
@@ -518,7 +521,7 @@ function deriveStats(saves, collections) {
     .slice(0, 3);
 
   return {
-    totalSaves: saves.length,
+    totalSaves: realSaves.length,
     savesThisWeek,
     savesThisMonth,
     intent,

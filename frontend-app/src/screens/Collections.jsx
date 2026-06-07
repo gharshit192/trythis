@@ -3,6 +3,7 @@ import api from '../api';
 
 export default function Collections({ onNavigate }) {
   const [collections, setCollections] = useState([]);
+  const [totalSaveCount, setTotalSaveCount] = useState(null);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('mine'); // 'mine' | 'auto' | 'shared'
   const [showCreate, setShowCreate] = useState(false);
@@ -13,8 +14,15 @@ export default function Collections({ onNavigate }) {
 
   const fetchCollections = async () => {
     try {
-      const result = await api.getCollections();
-      if (result.status === 'success') setCollections(result.data);
+      const [colResult, savesResult] = await Promise.all([
+        api.getCollections(),
+        api.getSaves(),
+      ]);
+      if (colResult.status === 'success') setCollections(colResult.data);
+      if (savesResult.status === 'success') {
+        const real = (savesResult.data || []).filter(s => !s.isTemplate);
+        setTotalSaveCount(real.length);
+      }
     } catch (err) {
       console.error('Failed to fetch collections:', err);
     } finally {
@@ -49,7 +57,7 @@ export default function Collections({ onNavigate }) {
   const autoCollections = collections.filter((c) => c.isAuto);
   const manualCollections = collections.filter((c) => !c.isAuto);
   const visible = tab === 'auto' ? autoCollections : tab === 'shared' ? [] : manualCollections;
-  const totalSaves = collections.reduce((sum, c) => sum + (c.saves?.length || 0), 0);
+  const totalSaves = totalSaveCount ?? collections.reduce((sum, c) => sum + (c.metadata?.itemCount || c.saves?.length || 0), 0);
 
   return (
     <>
