@@ -300,24 +300,18 @@ router.post('/', validateSaveInput, async (req, res) => {
       await autoCollectionEngine.reconcileSaveCollections(save._id, [], collectionIds);
     }
 
-    // Background: decide whether to enqueue for media processing
-    // Uses URL classification to skip unnecessary downloads (music streaming, DRM, etc)
-    let shouldProcessMedia = false;
+    // Background: enqueue all URLs for processing (Claude analysis, metadata extraction)
+    // The URL classifier prevents unnecessary VIDEO downloads but doesn't block processing
     if (url) {
       const urlType = classifyUrl(url);
-      if (urlType.shouldDownload) {
-        shouldProcessMedia = true;
-        logger.info(`Save ${save._id}: will process media (URL type: ${urlType.type})`);
-      } else {
-        logger.info(`Save ${save._id}: skipping media processing (URL type: ${urlType.type}, reason: ${urlType.reason})`);
-      }
-    }
-
-    if (shouldProcessMedia) {
+      logger.info(`Save ${save._id}: URL type: ${urlType.type}, shouldDownload: ${urlType.shouldDownload}`);
+      // Queue for processing: Claude analysis, metadata extraction, etc.
+      // The mediaProcessor will skip video download if classifier says not to
       save.processingStatus = 'processing';
       await save.save();
       mediaProcessor.enqueue(save._id.toString());
     } else {
+      // Screenshots or no URL: mark as done (handled by screenshotPipeline separately)
       save.processingStatus = 'done';
       await save.save();
     }
