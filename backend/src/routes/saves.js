@@ -22,6 +22,7 @@ const autoCollectionEngine = require('../services/autoCollectionEngine');
 const thumbnailCache = require('../services/thumbnailCache');
 const typeToCategory = require('../utils/structuredTypeToCategory');
 const { classifyByDomainFull } = require('../services/extractionEngine/domainClassifier');
+const { classifyUrl } = require('../services/urlClassifier');
 const logger = require('../utils/logger');
 const cloudinaryService = require('../services/cloudinaryService');
 
@@ -299,9 +300,20 @@ router.post('/', validateSaveInput, async (req, res) => {
       await autoCollectionEngine.reconcileSaveCollections(save._id, [], collectionIds);
     }
 
-    // Background: download video, mux to mp4, transcribe with Whisper, then LLM-analyze.
-    const isVideoSource = url && /(?:instagram\.com|tiktok\.com|youtube\.com|youtu\.be|vimeo\.com|facebook\.com|fb\.watch|twitter\.com|x\.com|reddit\.com)/i.test(url);
-    if (isVideoSource) {
+    // Background: decide whether to enqueue for media processing
+    // Uses URL classification to skip unnecessary downloads (music streaming, DRM, etc)
+    let shouldProcessMedia = false;
+    if (url) {
+      const urlType = classifyUrl(url);
+      if (urlType.shouldDownload) {
+        shouldProcessMedia = true;
+        logger.info(`Save ${save._id}: will process media (URL type: ${urlType.type})`);
+      } else {
+        logger.info(`Save ${save._id}: skipping media processing (URL type: ${urlType.type}, reason: ${urlType.reason})`);
+      }
+    }
+
+    if (shouldProcessMedia) {
       save.processingStatus = 'processing';
       await save.save();
       mediaProcessor.enqueue(save._id.toString());
