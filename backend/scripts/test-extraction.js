@@ -4,7 +4,7 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 
 const extractionEngine = require('../src/services/extractionEngine');
-const extractByCategoryWrapper = () => null; // categories module removed; field omitted from output
+const { extractByCategoryWrapper } = require('../src/services/extractionEngine/categories');
 const { classifyByDomain, EXTRACTOR_TO_SAVE_CATEGORY } = require('../src/services/extractionEngine/domainClassifier');
 const llm = require('../src/services/llm');
 const audioAnalyzer = require('../src/services/audioAnalyzer');
