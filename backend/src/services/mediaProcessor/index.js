@@ -19,6 +19,7 @@ const claudeService = require('../claudeService');
 const { looksLikeHallucination } = require('../../utils/hallucinationGuard');
 const typeToCategory = require('../../utils/structuredTypeToCategory');
 const { resolveCategory } = typeToCategory;
+const { classifyUrl } = require('../urlClassifier');
 const logger = require('../../utils/logger');
 
 // __dirname = backend/src/services/mediaProcessor → ../../.. = backend, then 'uploads'
@@ -97,6 +98,7 @@ const downloadMergedMp4Graceful = async (sourceUrl, outPath) => new Promise((res
     '--retries', retries,
     '--retry-sleep', 'linear=2:5',
     '--fragment-retries', '5',
+    '--max-filesize', '80m', // Safety limit: abort if file > 80MB
     '--extractor-args', 'youtube:player_client=ios,web',
     ...(isInstagram ? ['--extractor-args', 'instagram:max_requests=3,request_wait=1'] : []),
     sourceUrl,
@@ -168,6 +170,23 @@ const probeDurationSeconds = async (mp4Path) => {
     return Number.isFinite(n) && n > 0 ? n : 30;
   } catch {
     return 30;
+  }
+};
+
+// Check video duration without downloading the entire file
+// Uses yt-dlp --no-download to fetch metadata only
+const checkVideoDurationRemote = async (sourceUrl) => {
+  try {
+    const { stdout } = await runCmd('yt-dlp', [
+      '--no-download',
+      '--print', 'duration',
+      sourceUrl,
+    ], 30 * 1000); // 30 second timeout for metadata fetch
+    const duration = parseInt((stdout || '').trim());
+    return Number.isFinite(duration) && duration > 0 ? duration : null;
+  } catch (err) {
+    logger.debug(`[mediaProcessor] checkVideoDurationRemote failed for ${sourceUrl.split('?')[0]}: ${err.message}`);
+    return null;
   }
 };
 
@@ -398,12 +417,62 @@ const processSave = async (saveId) => {
 
   try {
     await setStatus('processing');
-    logger.info(`[mediaProcessor ${saveId}] downloading ${save.url}`);
-    const downloadResult = await downloadMergedMp4Graceful(save.url, mp4Path);
 
-    // GUARD: do not attempt transcription/analysis if MP4 download failed
-    const mp4Ready = downloadResult && fs.existsSync(mp4Path);
-    if (!mp4Ready) {
+    // ─── URL CLASSIFICATION: Decide whether to download ───
+    const urlType = classifyUrl(save.url);
+    let mp4Ready = false;
+    let downloadSkipped = false;
+    let skipReason = null;
+
+    if (!urlType.shouldDownload) {
+      logger.info(`[mediaProcessor ${saveId}] skipping download: ${urlType.reason} (type: ${urlType.type})`);
+      downloadSkipped = true;
+      skipReason = urlType.reason;
+      // Mark videoDownload as intentionally skipped
+      const existing = await Save.findById(saveId).select('processingStages');
+      if (existing?.processingStages) {
+        existing.processingStages.videoDownload = {
+          completed: false,
+          error: null,
+          completedAt: null,
+          skipped: true,
+          reason: skipReason,
+        };
+        await Save.findByIdAndUpdate(saveId, { processingStages: existing.processingStages });
+      }
+    } else if (urlType.maxDurationSeconds) {
+      // Check duration before downloading
+      logger.info(`[mediaProcessor ${saveId}] checking video duration (max: ${urlType.maxDurationSeconds}s)`);
+      const duration = await checkVideoDurationRemote(save.url);
+      if (duration !== null && duration > urlType.maxDurationSeconds) {
+        logger.info(`[mediaProcessor ${saveId}] video too long (${duration}s > ${urlType.maxDurationSeconds}s) — skipping download`);
+        downloadSkipped = true;
+        skipReason = 'too_long';
+        const existing = await Save.findById(saveId).select('processingStages');
+        if (existing?.processingStages) {
+          existing.processingStages.videoDownload = {
+            completed: false,
+            error: null,
+            completedAt: null,
+            skipped: true,
+            reason: `too_long (${duration}s)`,
+          };
+          await Save.findByIdAndUpdate(saveId, { processingStages: existing.processingStages });
+        }
+      }
+    }
+
+    // ─── DOWNLOAD (if not skipped) ───
+    if (!downloadSkipped) {
+      logger.info(`[mediaProcessor ${saveId}] downloading ${save.url}`);
+      const downloadResult = await downloadMergedMp4Graceful(save.url, mp4Path);
+      mp4Ready = downloadResult && fs.existsSync(mp4Path);
+    } else {
+      logger.info(`[mediaProcessor ${saveId}] download was skipped, proceeding with metadata analysis`);
+    }
+
+    // ─── GUARD: Mark download stage appropriately ───
+    if (!downloadSkipped && !mp4Ready) {
       logger.warn(`[mediaProcessor ${saveId}] MP4 download returned null or file does not exist — skipping transcription`);
       partialReasons.push('video download failed');
       // Mark videoDownload stage as failed
@@ -416,7 +485,7 @@ const processSave = async (saveId) => {
         };
         await Save.findByIdAndUpdate(saveId, { processingStages: existing.processingStages });
       }
-    } else {
+    } else if (!downloadSkipped && mp4Ready) {
       logger.info(`[mediaProcessor ${saveId}] mp4 ready (tmp, will be discarded)`);
       // Mark videoDownload stage as completed
       const existing = await Save.findById(saveId).select('processingStages');

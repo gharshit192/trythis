@@ -27,11 +27,15 @@ const withRetry = async (fn, retries = MAX_RETRIES) => {
       return await fn();
     } catch (err) {
       if (i === retries) {
-        logger.warn(`Claude API exhausted after ${retries + 1} attempts: ${err.message}`);
+        logger.error(`Claude API exhausted after ${retries + 1} attempts: ${err.message}`, {
+          status: err.status,
+          error: err.error,
+          code: err.code,
+        });
         return null;
       }
       const delayMs = RETRY_DELAY_MS * (i + 1);
-      logger.debug(`Claude API retry ${i + 1}/${retries}, waiting ${delayMs}ms`);
+      logger.debug(`Claude API retry ${i + 1}/${retries}, waiting ${delayMs}ms: ${err.message}`);
       await new Promise((r) => setTimeout(r, delayMs));
     }
   }

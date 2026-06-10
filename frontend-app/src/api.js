@@ -421,6 +421,18 @@ const api = {
     return data?.data || data;
   },
 
+  async submitScreenshotBundle(files) {
+    const fd = new FormData();
+    files.forEach((file) => fd.append('files', file));
+    const res = await fetch(`${API_BASE_URL}/uploads/bundle`, {
+      method: 'POST',
+      headers: authHeader(),
+      body: fd,
+    });
+    const data = await handle(res);
+    return data?.data || data;
+  },
+
   async getJobStatus(jobId) {
     const res = await fetch(`${API_BASE_URL}/uploads/${jobId}`, {
       headers: authHeader(),

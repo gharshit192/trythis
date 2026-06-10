@@ -23,6 +23,7 @@ const autoCollectionEngine = require('../services/autoCollectionEngine');
 const thumbnailCache = require('../services/thumbnailCache');
 const typeToCategory = require('../utils/structuredTypeToCategory');
 const { classifyByDomainFull } = require('../services/extractionEngine/domainClassifier');
+const { classifyUrl } = require('../services/urlClassifier');
 const logger = require('../utils/logger');
 const cloudinaryService = require('../services/cloudinaryService');
 
@@ -302,13 +303,18 @@ router.post('/', validateSaveInput, async (req, res) => {
       await autoCollectionEngine.reconcileSaveCollections(save._id, [], collectionIds);
     }
 
-    // Background: download video, mux to mp4, transcribe with Whisper, then LLM-analyze.
-    const isVideoSource = url && /(?:instagram\.com|tiktok\.com|youtube\.com|youtu\.be|vimeo\.com|facebook\.com|fb\.watch|twitter\.com|x\.com|reddit\.com)/i.test(url);
-    if (isVideoSource) {
+    // Background: enqueue all URLs for processing (Claude analysis, metadata extraction)
+    // The URL classifier prevents unnecessary VIDEO downloads but doesn't block processing
+    if (url) {
+      const urlType = classifyUrl(url);
+      logger.info(`Save ${save._id}: URL type: ${urlType.type}, shouldDownload: ${urlType.shouldDownload}`);
+      // Queue for processing: Claude analysis, metadata extraction, etc.
+      // The mediaProcessor will skip video download if classifier says not to
       save.processingStatus = 'processing';
       await save.save();
       mediaProcessor.enqueue(save._id.toString());
     } else {
+      // Screenshots or no URL: mark as done (handled by screenshotPipeline separately)
       save.processingStatus = 'done';
       await save.save();
     }

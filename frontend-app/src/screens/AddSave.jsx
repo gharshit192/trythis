@@ -179,7 +179,6 @@ function PhotosFlow({ collections, onBack, onNavigate }) {
   const [selectedCollectionId, setSelectedCollectionId] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [processingStep, setProcessingStep] = useState(0);
-  const [bundleLoading, setBundleLoading] = useState(false);
   const [error, setError] = useState(null);
   const inputRef = useRef(null);
   const [dragging, setDragging] = useState(false);
@@ -221,15 +220,7 @@ function PhotosFlow({ collections, onBack, onNavigate }) {
     setProcessingStep(0);
 
     try {
-      // Submit each screenshot as a separate async job
-      let failedCount = 0;
-      for (const { file } of files) {
-        try {
-          await api.submitScreenshot(file);
-        } catch (err) {
-          failedCount++;
-        }
-      }
+      await api.submitScreenshotBundle(files.map((f) => f.file));
 
       setProcessingStep(1);
       files.forEach((x) => URL.revokeObjectURL(x.previewUrl));
@@ -237,8 +228,7 @@ function PhotosFlow({ collections, onBack, onNavigate }) {
         setUploading(false);
         setFiles([]);
         setProcessingStep(0);
-        const msg = failedCount ? `${files.length - failedCount} of ${files.length} submitted` : `${files.length} screenshot(s) submitted! Processing in background...`;
-        alert(msg);
+        alert(`${files.length} screenshot(s) submitted as one entry! Processing in background...`);
         onNavigate('home');
       }, 1200);
     } catch (err) {
@@ -248,27 +238,6 @@ function PhotosFlow({ collections, onBack, onNavigate }) {
     }
   };
 
-  const handleAnalyzeBundle = async () => {
-    if (!files.length) return setError('Pick at least one image.');
-    setError(null);
-    setBundleLoading(true);
-    try {
-      const fd = new FormData();
-      files.forEach((f) => fd.append('files', f.file));
-      if (title.trim()) fd.append('title', title.trim());
-      const res = await api.analyzeScreenshotBundle(fd);
-      if (res.status === 'success') {
-        files.forEach((x) => URL.revokeObjectURL(x.previewUrl));
-        onNavigate('screenshot-summary', { sessionId: res.sessionId, summary: res.summary, thumbnails: res.thumbnails });
-      } else {
-        setError(res.error?.message || 'Analysis failed');
-      }
-    } catch (err) {
-      setError(err.message || 'Analysis failed');
-    } finally {
-      setBundleLoading(false);
-    }
-  };
 
   const manualCollections = collections.filter((c) => !c.isAuto);
 
@@ -379,12 +348,7 @@ function PhotosFlow({ collections, onBack, onNavigate }) {
       <p style={{ fontSize: 11, color: 'var(--slate)', marginBottom: 8 }}>📅 Original images auto-purge after 2 working days. Thumbnails kept forever.</p>
 
       {error && <p style={{ color: 'var(--error,#d33)', fontSize: 13, marginBottom: 8 }}>{error}</p>}
-      {files.length >= 2 && (
-        <button className="btn-primary" disabled={bundleLoading || uploading} onClick={handleAnalyzeBundle} style={{ marginBottom: 8 }}>
-          {bundleLoading ? 'AI is reading your screenshots…' : `Analyse Screenshots (${files.length})`}
-        </button>
-      )}
-      <button className="btn-primary" disabled={uploading || bundleLoading || files.length === 0} onClick={handleUpload} style={{ opacity: bundleLoading ? 0.6 : 1 }}>
+      <button className="btn-primary" disabled={uploading || files.length === 0} onClick={handleUpload}>
         {uploading ? `Uploading ${files.length} image${files.length === 1 ? '' : 's'}…` : `Extract & save${files.length ? ` (${files.length})` : ''}`}
       </button>
     </>

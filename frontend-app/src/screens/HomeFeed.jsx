@@ -132,6 +132,7 @@ export default function HomeFeed({ onNavigate, payload, nearbySaves = [], showNe
   const filteredSaves = getFilteredSaves();
   const videoSaves = filteredSaves.filter(isVideo);
   const bundleSaves = filteredSaves.filter(isScreenshot);
+  const otherSaves = filteredSaves.filter(s => !isVideo(s) && !isScreenshot(s)); // Travel, food, links, etc
   const unreadCount = notifications.filter(n => n.status === 'sent').length;
 
   // Show limited preview on home (all filter), full list when filtering
@@ -442,6 +443,70 @@ export default function HomeFeed({ onNavigate, payload, nearbySaves = [], showNe
                       </div>
                     );
                   })}
+                </div>
+              )}
+
+              {/* Other saves (Travel, Food, Links, etc) */}
+              {otherSaves.length > 0 && (
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 16px 8px', fontSize: 12, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--mute)' }}>
+                    <span>Saved</span>
+                    <button onClick={() => onNavigate('savedList', { filter: 'all', title: 'All saves' })} style={{ fontSize: 12, color: 'var(--amber-link)', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer' }}>
+                      {otherSaves.length} saves →
+                    </button>
+                  </div>
+                  {otherSaves.slice(0, activeFilter === 'all' ? 5 : otherSaves.length).map((save) => (
+                    <div key={save._id}>
+                      <div
+                        onClick={() => onNavigate('save-detail', { id: save._id })}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 10,
+                          padding: '10px 16px',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <div style={{
+                          width: 52,
+                          height: 52,
+                          borderRadius: 10,
+                          background: getCategoryInfo(save.category).bg,
+                          flexShrink: 0,
+                          overflow: 'hidden',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: 20,
+                          color: getCategoryInfo(save.category).color,
+                        }}>
+                          {save.thumbnail ? <img src={save.thumbnail} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <i className={`ti ${getCategoryInfo(save.category).icon}`}></i>}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginBottom: 2 }}>
+                            {save.title}
+                          </div>
+                          <div style={{ fontSize: 11, color: 'var(--mute)' }}>
+                            <span style={{
+                              display: 'inline-block',
+                              fontSize: 10,
+                              fontWeight: 600,
+                              padding: '2px 7px',
+                              borderRadius: 20,
+                              marginRight: 4,
+                              background: getCategoryInfo(save.category).bg,
+                              color: getCategoryInfo(save.category).color,
+                            }}>
+                              {save.category?.charAt(0).toUpperCase() + save.category?.slice(1)}
+                            </span>
+                            {save.source ? save.source.charAt(0).toUpperCase() + save.source.slice(1) : 'Saved'} · {getRelativeTime(save.createdAt)}
+                          </div>
+                        </div>
+                        <i className="ti ti-chevron-right" style={{ fontSize: 14, color: 'var(--mute)', flexShrink: 0 }}></i>
+                      </div>
+                      <div style={{ height: '0.5px', background: 'var(--hairline)', margin: '0 16px' }}></div>
+                    </div>
+                  ))}
                 </div>
               )}
 

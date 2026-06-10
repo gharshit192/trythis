@@ -177,7 +177,7 @@ const ActionBar = ({ save, onIntent, onOpenSource, onShare }) => {
   // Trip planning: travel/experience categories OR an itinerary OR a non-store place
   const isTripContext = itinerary || (place && ['travel', 'experience'].includes(cat));
   if (isTripContext) {
-    buttons.push({ key: 'plan',  label: 'Plan trip', sublabel: 'Build itinerary', iconBg: 'var(--forest-soft)', iconColor: 'var(--forest)', onClick: () => onIntent('planned'), kind: 'secondary' });
+    buttons.push({ key: 'plan',  label: 'Plan trip', sublabel: 'Coming soon', iconBg: 'var(--forest-soft)', iconColor: 'var(--forest)', onClick: () => onIntent('planned'), kind: 'secondary' });
     buttons.push({ key: 'stays', label: 'Find stays', sublabel: 'Search hotels', iconBg: '#daeaf8', iconColor: '#1a5f8a', href: `https://www.google.com/travel/hotels?q=${encodeURIComponent(itinerary?.destination || place?.name || cat)}`, kind: 'secondary' });
   }
 

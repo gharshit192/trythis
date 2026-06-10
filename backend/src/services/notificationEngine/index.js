@@ -1,7 +1,5 @@
 const Notification = require('../../models/Notification');
-const User = require('../../models/User');
 const logger = require('../../utils/logger');
-const { sendNotificationEmail } = require('../emailService');
 
 // Triggers
 const nearbyRediscovery = require('./triggers/nearbyRediscovery');
@@ -157,31 +155,13 @@ async function sendNotification(notificationId) {
       throw new Error('Notification not found');
     }
 
-    // Load user to get email
-    const user = await User.findById(notification.userId);
-    if (!user) {
-      logger.warn(`User ${notification.userId} not found for notification ${notificationId}`);
-      notification.status = 'failed';
-      notification.failureReason = 'User not found';
-      await notification.save();
-      return notification;
-    }
-
-    // Send email notification
-    const emailSent = await sendNotificationEmail(user, notification);
-
-    if (emailSent) {
-      notification.status = 'sent';
-      notification.deliveryMethod = 'email';
-      logger.info(`✅ Notification sent via email: ${notificationId} to ${user.email}`);
-    } else {
-      notification.status = 'failed';
-      notification.failureReason = 'Email delivery failed';
-      logger.warn(`❌ Email delivery failed for notification ${notificationId}`);
-    }
-
+    // In-app only: mark as sent immediately (notification is already in DB)
+    notification.status = 'sent';
+    notification.deliveryMethod = 'in_app';
     notification.sentAt = new Date();
     await notification.save();
+
+    logger.info(`✅ In-app notification created: ${notificationId} for user ${notification.userId}`);
 
     return notification;
   } catch (error) {
