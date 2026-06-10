@@ -558,24 +558,6 @@ export default function HomeFeed({ onNavigate, payload, nearbySaves = [], showNe
                 </div>
               )}
 
-              {/* Empty save slot — shown when user has < 3 non-template saves */}
-              {saveCount < 3 && (
-                <div
-                  onClick={() => onNavigate('add-save')}
-                  style={{
-                    border: '1.5px dashed var(--hairline)',
-                    borderRadius: 12,
-                    padding: 16,
-                    textAlign: 'center',
-                    margin: '0 16px 8px',
-                    cursor: 'pointer',
-                  }}
-                >
-                  <i className="ti ti-plus" style={{ fontSize: 24, color: 'var(--mute)', display: 'block', marginBottom: 4 }} />
-                  <div style={{ fontSize: 11, color: 'var(--mute)' }}>Save your next link</div>
-                </div>
-              )}
-
               <div style={{ height: 16 }}></div>
             </>
           )}

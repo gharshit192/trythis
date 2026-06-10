@@ -52,6 +52,13 @@ const userSchema = new mongoose.Schema(
     },
     onboardingNotificationSent: { type: Boolean, default: false },
 
+    onboarding: {
+      completed:       { type: Boolean, default: false },
+      currentStep:     { type: Number, default: 0 },
+      firstSaveAt:     { type: Date, default: null },
+      templateSaveIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Save' }],
+    },
+
     // Analytics: track unprompted return (D7 retention)
     lastActiveAt: { type: Date, default: null },
     sessionCount: { type: Number, default: 0 },

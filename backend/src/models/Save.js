@@ -266,6 +266,8 @@ const intentItemSchema = new mongoose.Schema({
     lastViewedAt: { type: Date, default: null }
   },
 
+  isTemplate: { type: Boolean, default: false },
+
   // Location data for nearby feature
   extractedLocation: {
     name: { type: String, default: null },

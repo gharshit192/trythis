@@ -1,6 +1,7 @@
 const express = require('express');
 const path = require('path');
 const os = require('os');
+const mongoose = require('mongoose');
 const multer = require('multer');
 const { v4: uuidv4 } = require('uuid');
 const { nanoid } = require('nanoid');
@@ -99,7 +100,9 @@ router.post('/templates/:id/copy', async (req, res) => {
     if (!template) {
       return res.status(404).json({ status: 'error', error: { code: 'NOT_FOUND', message: 'Template not found' } });
     }
-    const { _id, createdAt, updatedAt, __v, ...templateData } = template.toObject();
+    // toObject({ virtuals: false }) to exclude the Mongoose `id` virtual —
+    // otherwise spreading `id` into new Save() causes it to reuse the template's _id.
+    const { _id, id, createdAt, updatedAt, __v, ...templateData } = template.toObject({ virtuals: false });
     const copy = new Save({
       ...templateData,
       userId: req.user.id,

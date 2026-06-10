@@ -107,7 +107,7 @@ router.post('/signup', signupLimiter, async (req, res) => {
     res.status(201).json({
       status: 'success',
       data: {
-        user: { id: user._id, email: user.email, name: user.name, createdAt: user.createdAt },
+        user: { id: user._id, email: user.email, name: user.name, createdAt: user.createdAt, onboarding: user.onboarding },
         token,
       },
     });
@@ -170,7 +170,7 @@ router.post('/login', loginLimiter, async (req, res) => {
     res.json({
       status: 'success',
       data: {
-        user: { id: user._id, email: user.email, name: user.name, createdAt: user.createdAt },
+        user: { id: user._id, email: user.email, name: user.name, createdAt: user.createdAt, onboarding: user.onboarding },
         token,
       },
     });
@@ -447,6 +447,28 @@ router.patch('/settings', authMiddleware, async (req, res) => {
   } catch (err) {
     logger.error(`❌ Settings update error: ${err.message}`);
     res.status(500).json({ status: 'error', error: { code: 'INTERNAL', message: err.message } });
+  }
+});
+
+// ── Update onboarding progress / completion
+router.patch('/me/onboarding', authMiddleware, async (req, res) => {
+  try {
+    const { completed, currentStep, firstSaveAt } = req.body;
+    const patch = {};
+    if (typeof completed === 'boolean') patch['onboarding.completed'] = completed;
+    if (typeof currentStep === 'number') patch['onboarding.currentStep'] = currentStep;
+    if (firstSaveAt) patch['onboarding.firstSaveAt'] = new Date(firstSaveAt);
+
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { $set: patch },
+      { new: true }
+    );
+
+    res.json({ status: 'success', data: { onboarding: user.onboarding } });
+  } catch (error) {
+    logger.error(`❌ Onboarding update error: ${error.message}`);
+    res.status(500).json({ status: 'error', error: { code: 'SERVER_ERROR', message: 'Failed to update onboarding' } });
   }
 });
 

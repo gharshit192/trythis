@@ -67,23 +67,29 @@ function App() {
 
     if (storedToken && storedUser) {
       try {
-        JSON.parse(storedUser); // Validate JSON before proceeding
+        const parsedUser = JSON.parse(storedUser);
         // Record app session for D7 retention analytics
         api.ping().catch(() => {});
-        // Load saves for SavedList
-        api.getSaves().then(result => {
-          if (result.status === 'success') {
-            setSaves(result.data);
-            // Go to last screen or home if user has saves
-            if (lastScreen && ['home', 'collections', 'profile', 'search', 'notifications'].includes(lastScreen)) {
-              setCurrentScreen(lastScreen);
-            } else {
-              setCurrentScreen(result.data.length > 0 ? 'home' : 'home-empty');
+
+        // New users who haven't completed onboarding go there first
+        if (parsedUser.onboarding?.completed === false) {
+          setCurrentScreen('onboarding');
+        } else {
+          // Load saves for SavedList
+          api.getSaves().then(result => {
+            if (result.status === 'success') {
+              setSaves(result.data);
+              // Go to last screen or home if user has saves
+              if (lastScreen && ['home', 'collections', 'profile', 'search', 'notifications'].includes(lastScreen)) {
+                setCurrentScreen(lastScreen);
+              } else {
+                setCurrentScreen(result.data.length > 0 ? 'home' : 'home-empty');
+              }
+              // Request location permission after saves are loaded
+              requestAndStoreLocation();
             }
-            // Request location permission after saves are loaded
-            requestAndStoreLocation();
-          }
-        }).catch(() => {});
+          }).catch(() => {});
+        }
       } catch {
         // Corrupted storage — clear and restart
         localStorage.clear();
@@ -97,6 +103,21 @@ function App() {
 
   // navigate(screen) or navigate(screen, payload)
   const navigate = (screen, nextPayload = null) => {
+    // After login/signup, redirect to onboarding if user hasn't completed it
+    if (screen === 'home' || screen === 'home-empty' || screen === 'demoSaves') {
+      try {
+        const stored = localStorage.getItem('user');
+        if (stored) {
+          const u = JSON.parse(stored);
+          if (u.onboarding?.completed === false) {
+            setPayload(null);
+            setCurrentScreen('onboarding');
+            return;
+          }
+        }
+      } catch {}
+    }
+
     // Check if trying to access protected screen without auth
     const protectedScreens = ['home', 'save-detail', 'savedList', 'search', 'collections', 'profile', 'notifications'];
     if (protectedScreens.includes(screen) && !localStorage.getItem('auth_token')) {
