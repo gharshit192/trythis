@@ -2,6 +2,18 @@ import { useEffect, useState } from 'react';
 import api from '../api';
 import SmartImage from '../components/SmartImage';
 import ScreenshotDetail from './ScreenshotDetail';
+import { getCategoryMeta } from '../categoryMeta';
+
+const getRelativeTime = (dateString) => {
+  if (!dateString) return '';
+  const diff = Date.now() - new Date(dateString).getTime();
+  const days = Math.floor(diff / 86400000);
+  if (days === 0) return 'today';
+  if (days === 1) return 'yesterday';
+  if (days < 7) return `${days} days ago`;
+  if (days < 30) return `${Math.floor(days / 7)} week${Math.floor(days / 7) > 1 ? 's' : ''} ago`;
+  return `${Math.floor(days / 30)} month${Math.floor(days / 30) > 1 ? 's' : ''} ago`;
+};
 
 // ─── Theme palette using design system CSS variables ─────────────────────────
 // Uses app-wide CSS variables for surfaces, text, and semantic colors.
@@ -66,14 +78,14 @@ const directionsHref = (place) => {
 
 // ─── Atomic UI bits ───────────────────────────────────────────────────────────
 const SectionLabel = ({ children }) => (
-  <p style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em', color: T.textFaint, margin: '18px 0 8px' }}>{children}</p>
+  <p style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', color: T.textFaint, margin: '18px 0 8px' }}>{children}</p>
 );
 
 const Chip = ({ children, accent }) => (
   <span style={{
-    display: 'inline-block', fontSize: 12, padding: '5px 11px', borderRadius: '999px', fontWeight: 500,
-    background: accent ? `${accent}22` : 'var(--forest-faint)', color: accent || 'var(--forest)',
-    border: `0.5px solid ${accent ? `${accent}44` : '#ccdacc'}`,
+    display: 'inline-block', fontSize: 13, padding: '5px 11px', borderRadius: '999px', fontWeight: 600,
+    background: accent ? `${accent}14` : 'var(--linen)', color: accent || 'var(--slate)',
+    border: `1px solid ${accent ? `${accent}33` : 'var(--hairline)'}`,
   }}>{children}</span>
 );
 
@@ -90,9 +102,9 @@ const KVTable = ({ rows }) => (
         display: 'grid', gridTemplateColumns: '90px 1fr', columnGap: 12,
         padding: '12px 14px',
         borderBottom: i < arr.length - 1 ? '0.5px solid var(--hairline-soft)' : 'none',
-        fontSize: 13,
+        fontSize: 14,
       }}>
-        <div style={{ color: T.textFaint, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{k}</div>
+        <div style={{ color: T.textFaint, fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{k}</div>
         <div style={{ color: T.text }}>{v}</div>
       </div>
     ))}
@@ -107,7 +119,7 @@ const WarningBanner = ({ tone = 'amber', icon, children, action }) => {
     <div style={{
       display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
       gap: 10, background: p.bg, border: `0.5px solid ${p.border}`,
-      borderRadius: '12px', padding: '10px 14px', fontSize: 13, color: p.fg, marginBottom: 12, lineHeight: 1.5,
+      borderRadius: '12px', padding: '10px 14px', fontSize: 14, color: p.fg, marginBottom: 12, lineHeight: 1.5,
     }}>
       <span style={{ flex: 1, display: 'flex', alignItems: 'flex-start', gap: 6 }}>
         {icon && <span style={{ flexShrink: 0 }}>{icon}</span>}
@@ -118,42 +130,12 @@ const WarningBanner = ({ tone = 'amber', icon, children, action }) => {
   );
 };
 
-// Header pill row: category chip · author handle · status chip
-const CardHeader = ({ save }) => {
-  const meta = catMeta(save?.category);
-  const status = save?.processingStatus;
-  const statusMap = {
-    done:       { label: 'Done',       bg: T.greenBg,      fg: T.greenFg },
-    partial:    { label: 'Partial',    bg: T.amberBg,      fg: T.amberFg },
-    failed:     { label: 'Failed',     bg: T.redBg,        fg: T.redFg },
-    processing: { label: 'Processing', bg: 'rgba(154,154,147,0.16)', fg: T.textMuted },
-  };
-  const sm = statusMap[status] || statusMap.processing;
-  return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-        <span style={{
-          display: 'inline-flex', alignItems: 'center', gap: 5,
-          padding: '4px 10px', borderRadius: 999,
-          background: `${meta.accent}22`, color: meta.accent,
-          fontSize: 11, fontWeight: 600,
-          border: `1px solid ${meta.accent}44`,
-        }}>
-          <span>{meta.icon}</span><span>{meta.label}</span>
-        </span>
-        {(save?.authorHandle || save?.source) && (
-          <span style={{ fontSize: 12, color: T.textMuted }}>
-            {save.authorHandle ? `@${save.authorHandle}` : ''}
-            {save.authorHandle && save.source ? ' · ' : ''}
-            {save.source ? save.source[0].toUpperCase() + save.source.slice(1) : ''}
-          </span>
-        )}
-      </div>
-      <span style={{ padding: '4px 10px', borderRadius: 999, fontSize: 11, fontWeight: 600, background: sm.bg, color: sm.fg }}>
-        {sm.label}
-      </span>
-    </div>
-  );
+// Status chip styling per processingStatus
+const STATUS_META = {
+  done:       { label: 'Done',       bg: 'rgba(70,176,118,0.16)', fg: '#46b076' },
+  partial:    { label: 'Partial',    bg: 'rgba(217,144,40,0.10)', fg: '#d99028' },
+  failed:     { label: 'Failed',     bg: 'rgba(211,51,51,0.10)',  fg: '#e36a6a' },
+  processing: { label: 'Processing', bg: 'rgba(154,154,147,0.16)', fg: '#9a9a93' },
 };
 
 // ─── Action bar — dynamic per category + structured data ──────────────────────
@@ -177,13 +159,13 @@ const ActionBar = ({ save, onIntent, onOpenSource, onShare }) => {
   // Trip planning: travel/experience categories OR an itinerary OR a non-store place
   const isTripContext = itinerary || (place && ['travel', 'experience'].includes(cat));
   if (isTripContext) {
-    buttons.push({ key: 'plan',  label: 'Plan trip', sublabel: 'Coming soon', iconBg: 'var(--forest-soft)', iconColor: 'var(--forest)', onClick: () => onIntent('planned'), kind: 'secondary' });
+    buttons.push({ key: 'plan',  label: 'Plan trip', sublabel: 'Coming soon', iconBg: 'var(--coral-soft)', iconColor: 'var(--coral)', onClick: () => onIntent('planned'), kind: 'secondary' });
     buttons.push({ key: 'stays', label: 'Find stays', sublabel: 'Search hotels', iconBg: '#daeaf8', iconColor: '#1a5f8a', href: `https://www.google.com/travel/hotels?q=${encodeURIComponent(itinerary?.destination || place?.name || cat)}`, kind: 'secondary' });
   }
 
   // Share (shopping spotlight wants this prominent)
   const shareSubLabel = save?.shareId ? 'Link active' : 'Create link';
-  buttons.push({ key: 'share', label: 'Share', sublabel: shareSubLabel, iconBg: 'var(--forest-soft)', iconColor: 'var(--forest)', onClick: onShare, kind: 'secondary' });
+  buttons.push({ key: 'share', label: 'Share', sublabel: shareSubLabel, iconBg: 'var(--coral-soft)', iconColor: 'var(--coral)', onClick: onShare, kind: 'secondary' });
 
   // Lifecycle: tried/visited/attended with dynamic label
   const triedLabel = cat === 'travel'      ? (intentStatus === 'tried' ? '✓ Visited'  : 'Mark visited')
@@ -192,8 +174,8 @@ const ActionBar = ({ save, onIntent, onOpenSource, onShare }) => {
   const triedSubLabel = intentStatus === 'tried' ? 'Completed' : 'Mark as done';
   buttons.push({
     key: 'tried', label: triedLabel, sublabel: triedSubLabel,
-    iconBg: intentStatus === 'tried' ? 'var(--forest-soft)' : 'var(--forest)',
-    iconColor: intentStatus === 'tried' ? 'var(--forest)' : '#fff',
+    iconBg: intentStatus === 'tried' ? 'var(--coral-soft)' : 'var(--coral)',
+    iconColor: intentStatus === 'tried' ? 'var(--coral)' : '#fff',
     onClick: () => onIntent(intentStatus === 'tried' ? 'saved' : 'tried'),
     kind: intentStatus === 'tried' ? 'primary' : 'secondary',
   });
@@ -222,27 +204,27 @@ const ActionBar = ({ save, onIntent, onOpenSource, onShare }) => {
         if (b.href) {
           return (
             <a key={b.key} href={b.href} target="_blank" rel="noreferrer" style={cardStyle}>
-              <div style={{ width: 32, height: 32, borderRadius: '50%', background: b.iconBg, color: b.iconColor, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 600 }}>
+              <div style={{ width: 32, height: 32, borderRadius: '50%', background: b.iconBg, color: b.iconColor, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, fontWeight: 600 }}>
                 {b.key === 'directions' && '📍'}
                 {b.key === 'buy' && '🛒'}
                 {b.key === 'tickets' && '🎟'}
                 {b.key === 'source' && '↗'}
               </div>
-              <span style={{ fontSize: 12, fontWeight: 600, color: T.text, textAlign: 'center' }}>{b.label}</span>
-              <span style={{ fontSize: 11, color: T.textMuted, textAlign: 'center' }}>{b.sublabel}</span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: T.text, textAlign: 'center' }}>{b.label}</span>
+              <span style={{ fontSize: 12, color: T.textMuted, textAlign: 'center' }}>{b.sublabel}</span>
             </a>
           );
         }
         return (
           <button key={b.key} onClick={b.onClick} style={cardStyle}>
-            <div style={{ width: 32, height: 32, borderRadius: '50%', background: b.iconBg, color: b.iconColor, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 600 }}>
+            <div style={{ width: 32, height: 32, borderRadius: '50%', background: b.iconBg, color: b.iconColor, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, fontWeight: 600 }}>
               {b.key === 'plan' && '🗓'}
               {b.key === 'stays' && '🏨'}
               {b.key === 'share' && '↗'}
               {b.key === 'tried' && (intentStatus === 'tried' ? '✓' : '○')}
             </div>
-            <span style={{ fontSize: 12, fontWeight: 600, color: T.text, textAlign: 'center' }}>{b.label}</span>
-            <span style={{ fontSize: 11, color: T.textMuted, textAlign: 'center' }}>{b.sublabel}</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: T.text, textAlign: 'center' }}>{b.label}</span>
+            <span style={{ fontSize: 12, color: T.textMuted, textAlign: 'center' }}>{b.sublabel}</span>
           </button>
         );
       })}
@@ -266,9 +248,33 @@ export default function SaveDetail({ onNavigate, payload }) {
   const [shareLoading, setShareLoading] = useState(false);
   const [shareError, setShareError] = useState(null);
   const [showFullTranscript, setShowFullTranscript] = useState(false);
+  const [showInsights, setShowInsights] = useState(false);
+  const [insights, setInsights] = useState(null);
+  const [insightsLoading, setInsightsLoading] = useState(false);
+  const [insightsError, setInsightsError] = useState(null);
   const showToast = (msg) => {
     setToast(msg);
     setTimeout(() => setToast(null), 2200);
+  };
+
+  // Fetch AI "Discover More" insights on tap (travel saves). Cached server-side 24h.
+  const loadInsights = async () => {
+    setShowInsights(true);
+    if (insights || insightsLoading) return; // already loaded / loading
+    setInsightsLoading(true);
+    setInsightsError(null);
+    try {
+      const res = await api.getInsights(id);
+      if (res.status === 'success' && Array.isArray(res.data)) {
+        setInsights(res.data);
+      } else {
+        setInsightsError(res.error?.message || 'Could not load insights.');
+      }
+    } catch {
+      setInsightsError('Connection error. Please try again.');
+    } finally {
+      setInsightsLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -402,6 +408,21 @@ export default function SaveDetail({ onNavigate, payload }) {
   const event = sd.event;
   const place = sd.place;
   const meta = catMeta(save?.category);
+  const bucket = getCategoryMeta(save?.category);
+  // Human label for the Discover More CTA (city / destination / country).
+  const insightsPlace = save?.extractedLocation?.city
+    || sd?.place?.city
+    || sd?.itinerary?.destination
+    || save?.extractedLocation?.country
+    || '';
+  const sm = STATUS_META[save?.processingStatus] || STATUS_META.processing;
+
+  const heroMapsUrl = directionsHref(place);
+  let primaryAction = null;
+  if (heroMapsUrl) primaryAction = { label: '📍 Get Directions', href: heroMapsUrl };
+  else if (product?.buyUrl) primaryAction = { label: '🛒 Buy Now', href: product.buyUrl };
+  else if (event?.ticketUrl) primaryAction = { label: '🎟 Get Tickets', href: event.ticketUrl };
+  else if (save?.url) primaryAction = { label: '↗ Open Source', href: save.url };
 
   const rawTranscript = save?.aiAnalysis?.transcription?.text || '';
   const transcriptLang = save?.aiAnalysis?.transcription?.detectedLanguage;
@@ -421,39 +442,26 @@ export default function SaveDetail({ onNavigate, payload }) {
   return (
     <div className="phone-frame" style={{ background: T.bg, color: T.text, minHeight: '100vh' }}>
       <div style={{ display: 'flex', flexDirection: 'column', padding: '0 0 80px' }}>
-        {/* Hero / static thumbnail with overlays */}
-        <div style={{ borderRadius: 0, marginBottom: 0, overflow: 'hidden', background: '#000', aspectRatio: '16 / 11', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-          {(save?.thumbnail || save?.image)
-            ? <SmartImage saveId={save._id} src={save.thumbnail || save.image} alt={safeTitle} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            : <span style={{ color: T.textFaint, fontSize: 36 }}>▢</span>}
-
-          {/* Top gradient overlay with back + delete buttons */}
-          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '50%', background: 'linear-gradient(180deg, rgba(0,0,0,0.45) 0%, transparent 100%)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '14px 14px' }}>
-            <button onClick={() => onNavigate('home')} style={{ width: 34, height: 34, borderRadius: '50%', background: 'rgba(255,255,255,0.18)', border: 0, color: '#fff', fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>←</button>
-            <button onClick={() => setConfirmDelete(true)} style={{ width: 34, height: 34, borderRadius: '50%', background: 'rgba(255,255,255,0.18)', border: 0, color: '#fff', fontSize: 16, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>🗑</button>
+        {/* Hero */}
+        <div className={`det-hero ${(save?.thumbnail || save?.image) ? '' : bucket.gradientClass}`}>
+          {(save?.thumbnail || save?.image) ? (
+            <SmartImage saveId={save._id} src={save.thumbnail || save.image} alt={safeTitle} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          ) : (
+            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 58, lineHeight: 1, filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.18))' }}>{bucket.emoji}</div>
+          )}
+          <div className="det-ov"></div>
+          <div className="det-hn">
+            <button className="det-back" onClick={() => onNavigate('home')}>←</button>
+            <div className="det-acts">
+              <button className="det-act" onClick={handleShare}>↗</button>
+              <button className="det-act" onClick={() => setConfirmDelete(true)}>🗑</button>
+            </div>
           </div>
-
-          {/* Bottom gradient overlay with badges */}
-          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '50%', background: 'linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.4) 100%)', display: 'flex', alignItems: 'flex-end', padding: '14px 14px', gap: 8 }}>
-            <span style={{
-              display: 'inline-flex', alignItems: 'center', gap: 5,
-              padding: '4px 10px', borderRadius: '999px',
-              background: `${meta.accent}22`, color: meta.accent,
-              fontSize: 11, fontWeight: 600,
-              border: `1px solid ${meta.accent}44`,
-            }}>
-              <span>{meta.icon}</span><span>{meta.label}</span>
-            </span>
-            {save?.source && (
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 10px', borderRadius: '999px', background: 'rgba(255,255,255,0.15)', color: '#fff', fontSize: 11, fontWeight: 600, border: '1px solid rgba(255,255,255,0.25)' }}>
-                {save.source[0].toUpperCase() + save.source.slice(1)}
-              </span>
-            )}
-          </div>
+          {save?.contentType === 'video' && <div className="det-rbadge">▶ View Reel</div>}
         </div>
 
-        {/* Content area padding and status messages */}
-        <div style={{ padding: '14px 18px 0' }}>
+        {/* Body header: category chip, status, title, location, description, CTAs */}
+        <div className="det-body">
           {/* Status messages: show context-aware info based on processingStages */}
         {(() => {
           const hasGoodData = save?.aiAnalysis?.summary || (save?.aiAnalysis?.keyPoints?.length > 0);
@@ -485,7 +493,7 @@ export default function SaveDetail({ onNavigate, payload }) {
                 action={
                   <button
                     onClick={handleRetry} disabled={retrying}
-                    style={{ background: T.redFg, color: T.bg, border: 0, borderRadius: 6, padding: '5px 12px', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}
+                    style={{ background: T.redFg, color: T.bg, border: 0, borderRadius: 6, padding: '5px 12px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
                   >{retrying ? '…' : 'Retry'}</button>
                 }
               >
@@ -502,7 +510,7 @@ export default function SaveDetail({ onNavigate, payload }) {
                 action={
                   <button
                     onClick={handleRetry} disabled={retrying}
-                    style={{ background: T.amberFg, color: T.bg, border: 0, borderRadius: 6, padding: '5px 12px', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}
+                    style={{ background: T.amberFg, color: T.bg, border: 0, borderRadius: 6, padding: '5px 12px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
                   >{retrying ? '…' : 'Retry'}</button>
                 }
               >
@@ -514,44 +522,34 @@ export default function SaveDetail({ onNavigate, payload }) {
           return null;
         })()}
 
-        <CardHeader save={save} />
+        <div className="det-row">
+          <span className={`chip ${bucket.chipClass}`}>{bucket.emoji} {bucket.shortLabel}</span>
+          <span className="det-age">
+            Saved {getRelativeTime(save?.createdAt)}{save?.source ? ` · ${save.source[0].toUpperCase() + save.source.slice(1)}` : ''}
+          </span>
+          <span style={{ marginLeft: 'auto', padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 600, background: sm.bg, color: sm.fg }}>
+            {sm.label}
+          </span>
+        </div>
 
-        <h2 style={{ fontSize: 22, fontWeight: 600, lineHeight: 1.25, margin: '0 0 8px', color: T.text, fontFamily: 'var(--font-display)' }}>{safeTitle}</h2>
-
-        {safeSummary && (
-          <p style={{ fontSize: 14, color: 'var(--slate)', lineHeight: 1.6, marginBottom: 12, fontFamily: 'var(--font-body)' }}>{safeSummary}</p>
-        )}
-        {showRawDescription && (
-          <p style={{ fontSize: 13, color: 'var(--slate)', lineHeight: 1.6, marginBottom: 12, fontFamily: 'var(--font-body)' }}>{save.description}</p>
-        )}
+        <h2 className="det-title">{safeTitle}</h2>
 
         {/* Extracted Location — shows city/country if available with maps link */}
         {save?.extractedLocation?.city && (
-          <div style={{ marginBottom: 12 }}>
-            <a
-              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(save.extractedLocation.city + ', ' + (save.extractedLocation.country || ''))}`}
-              target="_blank"
-              rel="noreferrer"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-                padding: '6px 12px',
-                borderRadius: '999px',
-                background: 'var(--forest-faint)',
-                color: 'var(--forest)',
-                fontSize: 12,
-                fontWeight: 500,
-                border: '0.5px solid var(--hairline)',
-                textDecoration: 'none',
-                cursor: 'pointer',
-              }}
-            >
-              <span>📍</span>
-              <span>{save.extractedLocation.city}{save.extractedLocation.country ? ', ' + save.extractedLocation.country : ''}</span>
-            </a>
-          </div>
+          <a
+            className="det-loc"
+            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(save.extractedLocation.city + ', ' + (save.extractedLocation.country || ''))}`}
+            target="_blank"
+            rel="noreferrer"
+            style={{ textDecoration: 'none' }}
+          >
+            <span>📍</span>
+            <span>{save.extractedLocation.city}{save.extractedLocation.country ? ', ' + save.extractedLocation.country : ''}</span>
+          </a>
         )}
+
+        {safeSummary && <p className="det-desc">{safeSummary}</p>}
+        {showRawDescription && <p className="det-desc">{save.description}</p>}
 
         {/* Buy link removed shield — fires only when backend stripped a URL */}
         {buyUrlStripped && (
@@ -559,6 +557,43 @@ export default function SaveDetail({ onNavigate, payload }) {
             Buy link was removed — could not verify it was in the original content.
           </WarningBanner>
         )}
+
+        {/* Primary / secondary quick actions */}
+        {primaryAction && (
+          <div style={{ display: 'flex', gap: 8 }}>
+            {primaryAction.href ? (
+              <a className="det-cta" style={{ flex: 1 }} href={primaryAction.href} target="_blank" rel="noreferrer">
+                <span className="det-cta-t">{primaryAction.label}</span>
+              </a>
+            ) : (
+              <button className="det-cta" style={{ flex: 1 }} onClick={primaryAction.onClick}>
+                <span className="det-cta-t">{primaryAction.label}</span>
+              </button>
+            )}
+            <button className="det-sec" style={{ flex: 1 }} onClick={handleShare}>
+              <span className="det-sec-t">Share</span>
+            </button>
+          </div>
+        )}
+
+        {/* Discover More — AI insights, travel saves only */}
+        {bucket?.key === 'travel' && (
+          <div className="dm-sec">
+            <div className="dm-hdr"><span className="dm-title">✨ Discover More</span><div className="dline"></div></div>
+            <div className="dm-card">
+              <div className="dm-row">
+                <div className="dm-ico">🔎</div>
+                <div className="dm-text">
+                  See <b>similar stays</b> and <b>travel guides</b>{insightsPlace ? <> for <b>{insightsPlace}</b></> : ''}
+                </div>
+              </div>
+              <button className="dm-btn" onClick={loadInsights}>✨ Find Similar &amp; Guides →</button>
+            </div>
+          </div>
+        )}
+        </div>
+
+        <div style={{ padding: '0 18px' }}>
 
         {/* Key points — concrete bullets distilled from caption/OCR/transcript.
             Shown especially valuable when transcript is missing/hallucinated. */}
@@ -568,8 +603,8 @@ export default function SaveDetail({ onNavigate, payload }) {
             <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
               {save.aiAnalysis.keyPoints.map((kp, i, arr) => (
                 <li key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', paddingBottom: i < arr.length - 1 ? 10 : 0, marginBottom: i < arr.length - 1 ? 10 : 0, borderBottom: i < arr.length - 1 ? '0.5px solid var(--hairline-soft)' : 'none' }}>
-                  <span style={{ flexShrink: 0, width: 6, height: 6, borderRadius: '50%', background: 'var(--forest)', marginTop: 8 }} />
-                  <span style={{ fontSize: 13, lineHeight: 1.5, color: T.text }}>{kp}</span>
+                  <span style={{ flexShrink: 0, width: 6, height: 6, borderRadius: '50%', background: 'var(--coral)', marginTop: 8 }} />
+                  <span style={{ fontSize: 14, lineHeight: 1.5, color: T.text }}>{kp}</span>
                 </li>
               ))}
             </ul>
@@ -593,12 +628,12 @@ export default function SaveDetail({ onNavigate, payload }) {
               </>
             )}
             {save.aiAnalysis.screenshotAnalysis.data?.framework && (
-              <p style={{ fontSize: 13, color: T.text, marginTop: 10, marginBottom: 4 }}>
+              <p style={{ fontSize: 14, color: T.text, marginTop: 10, marginBottom: 4 }}>
                 <strong>Framework:</strong> {save.aiAnalysis.screenshotAnalysis.data.framework}
               </p>
             )}
             {save.aiAnalysis.screenshotAnalysis.data?.type && (
-              <p style={{ fontSize: 13, color: T.text, marginTop: 4, marginBottom: 0 }}>
+              <p style={{ fontSize: 14, color: T.text, marginTop: 4, marginBottom: 0 }}>
                 <strong>Type:</strong> {save.aiAnalysis.screenshotAnalysis.data.type}
               </p>
             )}
@@ -616,7 +651,7 @@ export default function SaveDetail({ onNavigate, payload }) {
                    style={{ flexShrink: 0, width: 88, display: 'block', borderRadius: 8, overflow: 'hidden', position: 'relative', border: `1px solid ${T.border}` }}
                    title={sc.ocrText ? sc.ocrText.slice(0, 200) : ''}>
                   <img src={sc.thumbnailUrl} alt={`Screenshot ${i + 1}`} style={{ width: '100%', height: 88, objectFit: 'cover', display: 'block', opacity: sc.url ? 1 : 0.65 }} />
-                  {!sc.url && <span style={{ position: 'absolute', bottom: 2, left: 2, background: 'rgba(0,0,0,0.7)', color: '#fff', fontSize: 9, padding: '1px 4px', borderRadius: 3 }}>purged</span>}
+                  {!sc.url && <span style={{ position: 'absolute', bottom: 2, left: 2, background: 'rgba(0,0,0,0.7)', color: '#fff', fontSize: 10, padding: '1px 4px', borderRadius: 3 }}>purged</span>}
                 </a>
               ))}
             </div>
@@ -629,17 +664,17 @@ export default function SaveDetail({ onNavigate, payload }) {
             {(recipe.cookingTime || recipe.servings || recipe.cuisine) && (
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
                 {recipe.cookingTime && (
-                  <span style={{ fontSize: 12, padding: '4px 10px', borderRadius: '999px', border: `0.5px solid var(--hairline)`, color: T.textMuted }}>
+                  <span style={{ fontSize: 13, padding: '4px 10px', borderRadius: '999px', border: `0.5px solid var(--hairline)`, color: T.textMuted }}>
                     ⏱ {recipe.cookingTime}
                   </span>
                 )}
                 {recipe.servings && (
-                  <span style={{ fontSize: 12, padding: '4px 10px', borderRadius: '999px', border: `0.5px solid var(--hairline)`, color: T.textMuted }}>
+                  <span style={{ fontSize: 13, padding: '4px 10px', borderRadius: '999px', border: `0.5px solid var(--hairline)`, color: T.textMuted }}>
                     🍽 {recipe.servings}
                   </span>
                 )}
                 {recipe.cuisine && (
-                  <span style={{ fontSize: 12, padding: '4px 10px', borderRadius: '999px', border: `0.5px solid var(--hairline)`, color: T.textMuted }}>
+                  <span style={{ fontSize: 13, padding: '4px 10px', borderRadius: '999px', border: `0.5px solid var(--hairline)`, color: T.textMuted }}>
                     {recipe.cuisine}
                   </span>
                 )}
@@ -651,9 +686,9 @@ export default function SaveDetail({ onNavigate, payload }) {
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
                   {recipe.ingredients.map((ing, i) => (
                     <span key={i} style={{
-                      display: 'inline-block', fontSize: 12, padding: '5px 11px', borderRadius: '999px',
-                      background: 'var(--forest-faint)', color: 'var(--forest)',
-                      border: `0.5px solid #ccdacc`, fontWeight: 500,
+                      display: 'inline-block', fontSize: 13, padding: '5px 11px', borderRadius: '999px',
+                      background: 'var(--linen)', color: 'var(--slate)',
+                      border: `1px solid var(--hairline)`, fontWeight: 600,
                     }}>{prettifyTag(ing)}</span>
                   ))}
                 </div>
@@ -667,11 +702,11 @@ export default function SaveDetail({ onNavigate, payload }) {
                     <li key={i} style={{ display: 'flex', gap: 12, marginBottom: i < recipe.steps.length - 1 ? 12 : 0, alignItems: 'flex-start' }}>
                       <span style={{
                         flexShrink: 0, width: 28, height: 28, borderRadius: '50%',
-                        background: meta.accent, color: '#fff',
+                        background: bucket.color, color: '#fff',
                         display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 13, fontWeight: 700,
+                        fontSize: 14, fontWeight: 700,
                       }}>{i + 1}</span>
-                      <span style={{ fontSize: 13, lineHeight: 1.55, paddingTop: 2, color: T.text }}>{s}</span>
+                      <span style={{ fontSize: 14, lineHeight: 1.55, paddingTop: 2, color: T.text }}>{s}</span>
                     </li>
                   ))}
                 </ol>
@@ -760,20 +795,20 @@ export default function SaveDetail({ onNavigate, payload }) {
         {transcript && (
           <div style={{ marginTop: 14, marginBottom: 12 }}>
             <div style={{ background: 'var(--paper)', border: '0.5px solid var(--hairline)', borderRadius: '12px', padding: 14 }}>
-              <div style={{ fontSize: 13, color: T.text, lineHeight: 1.55, display: '-webkit-box', WebkitLineClamp: !showFullTranscript ? 4 : 'unset', WebkitBoxOrient: 'vertical', overflow: !showFullTranscript ? 'hidden' : 'visible' }}>
+              <div style={{ fontSize: 14, color: T.text, lineHeight: 1.55, display: '-webkit-box', WebkitLineClamp: !showFullTranscript ? 4 : 'unset', WebkitBoxOrient: 'vertical', overflow: !showFullTranscript ? 'hidden' : 'visible' }}>
                 {transcript}
               </div>
               {transcript.split('\n').length > 4 && (
                 <button
                   onClick={() => setShowFullTranscript(!showFullTranscript)}
-                  style={{ marginTop: 8, background: 'none', border: 'none', color: 'var(--amber-link)', fontSize: 12, fontWeight: 600, cursor: 'pointer', padding: 0 }}
+                  style={{ marginTop: 8, background: 'none', border: 'none', color: 'var(--amber-link)', fontSize: 13, fontWeight: 600, cursor: 'pointer', padding: 0 }}
                 >
                   {showFullTranscript ? 'Show less' : 'Show more'}
                 </button>
               )}
             </div>
             {transcriptLang && transcriptLang !== 'en' && (
-              <p style={{ fontSize: 11, color: T.textMuted, marginTop: 8 }}>
+              <p style={{ fontSize: 12, color: T.textMuted, marginTop: 8 }}>
                 📝 Translated from {transcriptLang}
               </p>
             )}
@@ -800,16 +835,16 @@ export default function SaveDetail({ onNavigate, payload }) {
                   <div key={r._id}
                        style={{ background: 'var(--paper)', border: '0.5px solid var(--hairline-soft)', borderRadius: '16px', padding: '12px 14px', display: 'flex', gap: 12, alignItems: 'center', cursor: 'pointer' }}
                        onClick={() => onNavigate('save-detail', { id: r._id })}>
-                    <div style={{ width: 44, height: 44, borderRadius: '50%', background: `${rMeta.accent}22`, color: rMeta.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>
+                    <div style={{ width: 44, height: 44, borderRadius: '50%', background: `${rMeta.accent}22`, color: rMeta.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 21, flexShrink: 0 }}>
                       {rMeta.icon}
                     </div>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: T.text, marginBottom: 2 }}>{r.title}</div>
-                      <div style={{ fontSize: 11, color: T.textMuted }}>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: T.text, marginBottom: 2 }}>{r.title}</div>
+                      <div style={{ fontSize: 12, color: T.textMuted }}>
                         {pct}% match · {rMeta.label}
                       </div>
                     </div>
-                    <span style={{ color: T.textMuted, fontSize: 18 }}>›</span>
+                    <span style={{ color: T.textMuted, fontSize: 19 }}>›</span>
                   </div>
                 );
               })}
@@ -823,7 +858,7 @@ export default function SaveDetail({ onNavigate, payload }) {
         <div style={{
           position: 'fixed', bottom: 96, left: '50%', transform: 'translateX(-50%)',
           background: T.text, color: T.bg, padding: '10px 18px', borderRadius: 999,
-          fontSize: 13, fontWeight: 500, boxShadow: '0 6px 20px rgba(0,0,0,0.4)', zIndex: 60,
+          fontSize: 14, fontWeight: 500, boxShadow: '0 6px 20px rgba(0,0,0,0.4)', zIndex: 60,
         }}>{toast}</div>
       )}
 
@@ -832,19 +867,19 @@ export default function SaveDetail({ onNavigate, payload }) {
              style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.65)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: 24 }}>
           <div onClick={(e) => e.stopPropagation()} style={{ background: 'var(--paper)', color: T.text, borderRadius: '20px', padding: 24, width: '100%', maxWidth: 320, border: '0.5px solid var(--hairline)' }}>
             <div style={{ width: 48, height: 48, borderRadius: '50%', background: '#fce8df', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
-              <span style={{ fontSize: 24, color: '#b85c28' }}>🗑</span>
+              <span style={{ fontSize: 25, color: '#b85c28' }}>🗑</span>
             </div>
-            <h3 style={{ fontSize: 17, textAlign: 'center', marginBottom: 6, fontWeight: 600, fontFamily: 'var(--font-display)' }}>Delete this save?</h3>
-            <p style={{ fontSize: 13, color: T.textMuted, textAlign: 'center', marginBottom: 16, lineHeight: 1.5 }}>
+            <h3 style={{ fontSize: 18, textAlign: 'center', marginBottom: 6, fontWeight: 600, fontFamily: 'var(--font-display)' }}>Delete this save?</h3>
+            <p style={{ fontSize: 14, color: T.textMuted, textAlign: 'center', marginBottom: 16, lineHeight: 1.5 }}>
               It will be removed from your feed and any collections. This can't be undone.
             </p>
-            {deleteError && <p style={{ color: T.redFg, fontSize: 13, textAlign: 'center', marginBottom: 8 }}>{deleteError}</p>}
+            {deleteError && <p style={{ color: T.redFg, fontSize: 14, textAlign: 'center', marginBottom: 8 }}>{deleteError}</p>}
             <button onClick={handleDelete} disabled={deleting}
-                    style={{ width: '100%', padding: '12px 0', background: '#b85c28', color: '#fff', border: 0, borderRadius: '12px', fontSize: 14, fontWeight: 600, cursor: 'pointer', marginBottom: 8 }}>
+                    style={{ width: '100%', padding: '12px 0', background: '#b85c28', color: '#fff', border: 0, borderRadius: '12px', fontSize: 15, fontWeight: 600, cursor: 'pointer', marginBottom: 8 }}>
               {deleting ? 'Deleting…' : 'Delete'}
             </button>
             <button onClick={() => setConfirmDelete(false)} disabled={deleting}
-                    style={{ width: '100%', padding: '12px 0', background: 'transparent', color: T.text, border: `0.5px solid var(--hairline)`, borderRadius: '12px', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+                    style={{ width: '100%', padding: '12px 0', background: 'transparent', color: T.text, border: `0.5px solid var(--hairline)`, borderRadius: '12px', fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>
               Cancel
             </button>
           </div>
@@ -859,8 +894,8 @@ export default function SaveDetail({ onNavigate, payload }) {
               <div style={{ width: 40, height: 3, background: 'var(--hairline)', borderRadius: '999px', margin: '0 auto 12px' }} />
             </div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-              <h3 style={{ fontSize: 18, fontWeight: 600, margin: 0, fontFamily: 'var(--font-display)' }}>Share this save</h3>
-              <button onClick={() => setShowShareSheet(false)} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', padding: 0, color: T.textMuted }}>✕</button>
+              <h3 style={{ fontSize: 19, fontWeight: 600, margin: 0, fontFamily: 'var(--font-display)' }}>Share this save</h3>
+              <button onClick={() => setShowShareSheet(false)} style={{ background: 'none', border: 'none', fontSize: 21, cursor: 'pointer', padding: 0, color: T.textMuted }}>✕</button>
             </div>
 
             {shareLoading ? (
@@ -868,39 +903,98 @@ export default function SaveDetail({ onNavigate, payload }) {
                 <p style={{ color: T.textMuted }}>Creating share link…</p>
               </div>
             ) : shareError ? (
-              <div style={{ background: T.redBg, color: T.redFg, padding: 12, borderRadius: '12px', marginBottom: 16, fontSize: 13 }}>
+              <div style={{ background: T.redBg, color: T.redFg, padding: 12, borderRadius: '12px', marginBottom: 16, fontSize: 14 }}>
                 {shareError}
               </div>
             ) : save?.shareId ? (
               <>
                 <div style={{ background: 'var(--paper)', padding: 14, borderRadius: '12px', marginBottom: 14, border: '0.5px solid var(--hairline)' }}>
-                  <p style={{ fontSize: 11, color: T.textFaint, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 8, margin: '0 0 8px' }}>Share URL</p>
-                  <div style={{ fontSize: 12, color: T.text, wordBreak: 'break-all', fontFamily: 'monospace', marginBottom: 12, padding: '8px', background: 'var(--forest-faint)', borderRadius: '8px' }}>
+                  <p style={{ fontSize: 12, color: T.textFaint, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 8, margin: '0 0 8px' }}>Share URL</p>
+                  <div style={{ fontSize: 13, color: T.text, wordBreak: 'break-all', fontFamily: 'monospace', marginBottom: 12, padding: '8px', background: 'var(--coral-faint)', borderRadius: '8px' }}>
                     {`${window.location.origin}/s/${save.shareId}`}
                   </div>
-                  <button onClick={handleCopyShareLink} style={{ width: '100%', padding: '12px 0', background: 'var(--forest)', color: '#fff', border: 0, borderRadius: '12px', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+                  <button onClick={handleCopyShareLink} style={{ width: '100%', padding: '12px 0', background: 'var(--coral)', color: '#fff', border: 0, borderRadius: '12px', fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>
                     Copy link
                   </button>
                 </div>
 
                 <div style={{ background: 'var(--paper)', padding: 14, borderRadius: '12px', marginBottom: 14, border: '0.5px solid var(--hairline)' }}>
-                  <p style={{ fontSize: 11, color: T.textFaint, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 8, margin: '0 0 8px' }}>Save preview</p>
+                  <p style={{ fontSize: 12, color: T.textFaint, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 8, margin: '0 0 8px' }}>Save preview</p>
                   <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                     {save.thumbnail && <SmartImage src={save.thumbnail} style={{ width: 60, height: 60, borderRadius: '12px', objectFit: 'cover', flexShrink: 0 }} />}
                     <div style={{ flex: 1 }}>
-                      <p style={{ fontSize: 13, fontWeight: 600, color: T.text, margin: '0 0 4px 0' }}>{save.title}</p>
-                      <p style={{ fontSize: 11, color: T.textMuted, margin: 0 }}>Public preview with OG meta tags</p>
+                      <p style={{ fontSize: 14, fontWeight: 600, color: T.text, margin: '0 0 4px 0' }}>{save.title}</p>
+                      <p style={{ fontSize: 12, color: T.textMuted, margin: 0 }}>Public preview with OG meta tags</p>
                     </div>
                   </div>
                 </div>
 
-                <button onClick={handleUnshare} style={{ width: '100%', padding: '12px 0', background: 'transparent', color: T.redFg, border: `0.5px solid ${T.redFg}`, borderRadius: '12px', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+                <button onClick={handleUnshare} style={{ width: '100%', padding: '12px 0', background: 'transparent', color: T.redFg, border: `0.5px solid ${T.redFg}`, borderRadius: '12px', fontSize: 15, fontWeight: 600, cursor: 'pointer' }}>
                   Stop sharing
                 </button>
               </>
             ) : null}
           </div>
         </div>
+      )}
+
+      {/* AI "Discover More" insights sheet (travel saves) */}
+      {showInsights && (
+        <>
+          <div className="ai-overlay" onClick={() => setShowInsights(false)} />
+          <div className="ai-sheet">
+            <div className="ai-perf" />
+            <div className="ai-handle" />
+            <button className="ai-close" onClick={() => setShowInsights(false)}>✕</button>
+            <div className="ai-head">
+              <div className="ai-hrow">
+                <div className="ai-icowrap">✨</div>
+                <div className="ai-title">More Like This</div>
+              </div>
+              <div className="ai-sub">
+                {insightsPlace ? `Based on travel guides & articles about ${insightsPlace}` : 'Based on travel guides & articles'}
+              </div>
+            </div>
+
+            {insightsLoading ? (
+              <div className="ai-state"><div className="ai-spinner" /><div>Searching the web &amp; summarizing…</div></div>
+            ) : insightsError ? (
+              <div className="ai-state">
+                <div style={{ fontSize: 22 }}>🔌</div>
+                <div>{insightsError}</div>
+                <button className="dm-btn" style={{ width: 'auto', padding: '8px 16px' }} onClick={() => { setInsights(null); setInsightsError(null); loadInsights(); }}>Try again</button>
+              </div>
+            ) : insights && insights.length > 0 ? (
+              <>
+                <div className="ai-body">
+                  {insights.map((it, i) => {
+                    const dom = it.source_domain || '';
+                    const colors = ['var(--teal)', 'var(--rust)', 'var(--mustard)', 'var(--brown)', 'var(--plum)'];
+                    const color = colors[(dom.charCodeAt(0) || 0) % colors.length];
+                    const letter = (dom[0] || '?').toUpperCase();
+                    return (
+                      <div className="ai-item" key={i}>
+                        <div className="ai-bullet"><div className="ai-dot" /><div className="ai-txt">{it.text}</div></div>
+                        {!dom ? (
+                          <span className="ai-src"><span className="ai-favicon" style={{ background: 'var(--teal)' }}>✦</span>Wanna&nbsp;Try AI</span>
+                        ) : it.url ? (
+                          <a className="ai-src" href={it.url} target="_blank" rel="noreferrer">
+                            <span className="ai-favicon" style={{ background: color }}>{letter}</span>{dom}
+                          </a>
+                        ) : (
+                          <span className="ai-src"><span className="ai-favicon" style={{ background: color }}>{letter}</span>{dom}</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="ai-footer">✨ AI-generated from web search · Results may vary</div>
+              </>
+            ) : (
+              <div className="ai-state"><div style={{ fontSize: 22 }}>🤷</div><div>No insights found for this place yet.</div></div>
+            )}
+          </div>
+        </>
       )}
     </div>
   );

@@ -145,6 +145,15 @@ const api = {
     return dedupedGet(`${API_BASE_URL}/saves/${id}`, { headers: authHeader() });
   },
 
+  // AI "Discover More" insights — generated on tap (travel saves), cached 24h.
+  async getInsights(id) {
+    const res = await fetch(`${API_BASE_URL}/saves/${id}/insights`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
+    });
+    return handle(res);
+  },
+
   async patchSave(id, patch) {
     const res = await fetch(`${API_BASE_URL}/saves/${id}`, {
       method: 'PATCH',
@@ -225,7 +234,7 @@ const api = {
     const url = new URL(`${API_BASE_URL}/saves/screenshot-bundle/${sessionId}/export-pdf`);
     const a = document.createElement('a');
     a.href = url.toString();
-    a.setAttribute('download', `trythis-summary-${Date.now()}.pdf`);
+    a.setAttribute('download', `wanna-try-summary-${Date.now()}.pdf`);
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -257,7 +266,7 @@ const api = {
   },
 
   // ---- Collections ----
-  async createCollection(name, description = '', icon = '📌', color = '#1B3A2F') {
+  async createCollection(name, description = '', icon = '📌', color = '#C24914') {
     const res = await fetch(`${API_BASE_URL}/collections`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...authHeader() },
