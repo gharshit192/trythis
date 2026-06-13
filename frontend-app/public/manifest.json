@@ -1,25 +1,26 @@
 {
   "short_name": "Wanna Try",
-  "name": "Wanna Try - See it. Save it. Try it.",
+  "name": "Wanna Try — See it. Save it. Try it.",
+  "description": "Save and organize the places, products, and recipes you discover on Instagram, YouTube, TikTok and more.",
   "icons": [
-    {
-      "src": "favicon.ico",
-      "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/x-icon"
-    },
     {
       "src": "logo192.png",
       "type": "image/png",
-      "sizes": "192x192"
+      "sizes": "192x192",
+      "purpose": "any maskable"
     },
     {
       "src": "logo512.png",
       "type": "image/png",
-      "sizes": "512x512"
+      "sizes": "512x512",
+      "purpose": "any maskable"
     }
   ],
+  "id": "/",
   "start_url": ".",
+  "scope": ".",
   "display": "standalone",
-  "theme_color": "#FF3A2D",
-  "background_color": "#F5F4F0"
+  "orientation": "portrait",
+  "theme_color": "#C24914",
+  "background_color": "#F5EFE0"
 }

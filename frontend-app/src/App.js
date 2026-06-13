@@ -3,6 +3,7 @@ import './theme.css';
 import api from './api';
 
 import BottomNav from './components/BottomNav';
+import InstallPrompt from './components/InstallPrompt';
 import Login from './screens/Login';
 import Signup from './screens/Signup';
 import HomeEmpty from './screens/HomeEmpty';
@@ -208,6 +209,9 @@ function App() {
         {/* Bottom Navigation - shown on main screens */}
         {hasBottomNav && <BottomNav currentScreen={currentScreen} onNavigate={navigate} />}
       </div>
+
+      {/* PWA install / Add-to-Home-Screen nudge (Android button · iOS instructions) */}
+      {hasBottomNav && <InstallPrompt />}
     </div>
   );
 }
