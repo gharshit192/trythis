@@ -1,5 +1,6 @@
 const Notification = require('../models/Notification');
 const User = require('../models/User');
+const Save = require('../models/Save');
 const emailService = require('./emailService');
 const logger = require('../utils/logger');
 
@@ -12,10 +13,24 @@ async function sendJobNotification(userId, payload) {
 
     // Determine notification content
     let title, notifMessage, notificationType;
+    const extraMeta = {};
 
     if (type === 'JOB_COMPLETED') {
+      // Pull the save's title/thumbnail so the notification is meaningful
+      // ("<title> is ready" + thumbnail) instead of a generic placeholder.
+      let saveTitle = null;
+      if (saveId) {
+        try {
+          const s = await Save.findById(saveId).select('title thumbnail').lean();
+          if (s) {
+            saveTitle = s.title || null;
+            if (s.thumbnail) extraMeta.thumbnail = s.thumbnail;
+          }
+        } catch { /* non-fatal — fall back to generic copy */ }
+      }
+      if (saveTitle) extraMeta.saveTitle = saveTitle;
       title = '✅ Upload ready!';
-      notifMessage = 'Your save is ready to view.';
+      notifMessage = saveTitle ? `"${saveTitle}" is ready to view.` : 'Your save is ready to view.';
       notificationType = 'upload_completed';
     } else if (type === 'JOB_FAILED') {
       title = '❌ Upload failed';
@@ -40,6 +55,7 @@ async function sendJobNotification(userId, payload) {
       metadata: {
         jobId: jobId.toString(),
         channel: 'in_app',
+        ...extraMeta,
       },
     });
 

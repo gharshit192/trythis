@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import api from '../api';
-import './Notifications.css';
 
 const timeAgo = (dateStr) => {
   if (!dateStr) return '';
@@ -31,8 +30,57 @@ const getSeasonIcon = (season) => {
   return 'ti-leaf';
 };
 
+const TYPE_STYLE = {
+  upload_completed: { bg: 'rgba(0,168,107,.12)', color: 'var(--cook)', icon: 'ti-bookmark-check' },
+  upload_failed: { bg: 'rgba(194,73,20,.1)', color: 'var(--coral)', icon: 'ti-alert-circle' },
+  price_drop: { bg: 'rgba(255,154,0,.12)', color: '#9a6800', icon: 'ti-trending-down' },
+  nearby_rediscovery: { bg: 'rgba(194,73,20,.12)', color: 'var(--coral)', icon: 'ti-map-pin' },
+  time_behavioral: { bg: 'rgba(0,102,255,.1)', color: 'var(--travel)', icon: 'ti-calendar-event' },
+  forgotten_intent: { bg: 'rgba(124,34,255,.1)', color: 'var(--shop)', icon: 'ti-clock-hour-4' },
+  seasonal: { bg: 'rgba(0,102,255,.1)', color: 'var(--travel)', icon: 'ti-cloud-rain' },
+  smart_collection: { bg: 'rgba(0,168,107,.12)', color: 'var(--cook)', icon: 'ti-layout-grid' },
+  default: { bg: 'rgba(176,174,167,.15)', color: 'var(--mute)', icon: 'ti-bell' },
+};
+
+// Emoji per type — always render (some tabler glyphs are missing in this build,
+// which left the icon tiles blank). Used as the tile glyph / thumbnail fallback.
+const TYPE_EMOJI = {
+  upload_completed: '✅',
+  upload_failed: '⚠️',
+  price_drop: '🏷️',
+  nearby_rediscovery: '📍',
+  time_behavioral: '🗓️',
+  forgotten_intent: '⏳',
+  seasonal: '🌦️',
+  smart_collection: '🗂️',
+  default: '🔔',
+};
+
+// Backend bakes an emoji into some titles (e.g. "✅ Upload ready!"). The icon
+// tile already carries the glyph, so strip a leading emoji to avoid doubling up.
+const stripLeadingEmoji = (s = '') => s.replace(/^[^\p{L}\p{N}]+/u, '').trim();
+
+const ACTION_STYLE = {
+  coral: { background: 'var(--coral)', color: '#fff' },
+  amber: { background: 'rgba(255,154,0,.15)', color: '#9a6800' },
+  purple: { background: 'rgba(124,34,255,.12)', color: 'var(--shop)' },
+  ghost: { background: 'var(--linen)', color: 'var(--slate)' },
+};
+
+function ActionButton({ variant, onClick, children }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{ ...ACTION_STYLE[variant], border: 'none', fontSize: 11, fontWeight: 700, padding: '5px 11px', borderRadius: 14, cursor: 'pointer' }}
+    >
+      {children}
+    </button>
+  );
+}
+
 const NotificationCard = ({
   notification,
+  save,
   onMarkRead,
   onDismiss,
   onNavigateToSave,
@@ -51,122 +99,70 @@ const NotificationCard = ({
     onDismiss(_id);
   };
 
-  const handleActionClick = (e) => {
-    e.stopPropagation();
-  };
-
   const handleViewSave = (e) => {
-    handleActionClick(e);
-    if (relatedSaveId) {
-      onNavigateToSave(relatedSaveId);
-    }
-  };
-
-  const handleBookNow = (e) => {
-    handleActionClick(e);
+    e.stopPropagation();
     if (relatedSaveId) {
       onNavigateToSave(relatedSaveId);
     }
   };
 
   const handleOpenInMaps = (e) => {
-    handleActionClick(e);
+    e.stopPropagation();
     const saveName = metadata?.saveName || 'location';
     const url = `https://maps.google.com/?q=${encodeURIComponent(saveName)}`;
     window.open(url, '_blank');
   };
 
   const handleTryAgain = (e) => {
-    handleActionClick(e);
+    e.stopPropagation();
     window.location.href = '/#/add-save';
   };
 
-  const handlePlanTrip = (e) => {
-    handleActionClick(e);
-    if (relatedSaveId) {
-      onNavigateToSave(relatedSaveId);
-    }
+  const handleNotInterested = (e) => {
+    e.stopPropagation();
   };
 
   const renderActions = () => {
     switch (type) {
       case 'upload_completed':
-        return (
-          <div className="notif-actions">
-            <button
-              className="action-btn btn-forest"
-              onClick={handleViewSave}
-            >
-              View save
-            </button>
-          </div>
-        );
+        return <ActionButton variant="coral" onClick={handleViewSave}>View save</ActionButton>;
 
       case 'upload_failed':
-        return (
-          <div className="notif-actions">
-            <button
-              className="action-btn btn-amber"
-              onClick={handleTryAgain}
-            >
-              Try again
-            </button>
-          </div>
-        );
+        return <ActionButton variant="amber" onClick={handleTryAgain}>Try again</ActionButton>;
 
       case 'price_drop':
         return (
-          <div className="notif-actions">
-            <button className="action-btn btn-amber" onClick={handleBookNow}>
-              Book now
-            </button>
-            <button className="action-btn btn-ghost" onClick={handleViewSave}>
-              View save
-            </button>
-          </div>
+          <>
+            <ActionButton variant="amber" onClick={handleViewSave}>Book now</ActionButton>
+            <ActionButton variant="ghost" onClick={handleViewSave}>View save</ActionButton>
+          </>
         );
 
       case 'nearby_rediscovery':
         return (
-          <div className="notif-actions">
-            <button className="action-btn btn-forest" onClick={handleOpenInMaps}>
-              Open in Maps
-            </button>
-            <button className="action-btn btn-ghost" onClick={handleViewSave}>
-              View save
-            </button>
-          </div>
+          <>
+            <ActionButton variant="coral" onClick={handleOpenInMaps}>Open in Maps</ActionButton>
+            <ActionButton variant="ghost" onClick={handleViewSave}>View save</ActionButton>
+          </>
         );
 
       case 'time_behavioral':
-        return (
-          <div className="notif-actions">
-            <button className="action-btn btn-forest" onClick={handlePlanTrip}>
-              Plan trip
-            </button>
-          </div>
-        );
+        return <ActionButton variant="coral" onClick={handleViewSave}>Plan trip</ActionButton>;
 
       case 'forgotten_intent':
         return (
-          <div className="notif-actions">
-            <button className="action-btn btn-purple" onClick={handleViewSave}>
-              View save
-            </button>
-            <button className="action-btn btn-ghost" onClick={handleActionClick}>
-              Not interested
-            </button>
-          </div>
+          <>
+            <ActionButton variant="purple" onClick={handleViewSave}>View save</ActionButton>
+            <ActionButton variant="ghost" onClick={handleNotInterested}>Not interested</ActionButton>
+          </>
         );
 
       case 'seasonal':
       case 'smart_collection':
         return (
-          <div className="notif-actions">
-            <button className="action-btn btn-forest" onClick={handleViewSave}>
-              {type === 'smart_collection' ? 'View collection' : 'View save'}
-            </button>
-          </div>
+          <ActionButton variant="coral" onClick={handleViewSave}>
+            {type === 'smart_collection' ? 'View collection' : 'View save'}
+          </ActionButton>
         );
 
       default:
@@ -174,132 +170,81 @@ const NotificationCard = ({
     }
   };
 
-  const getCardConfig = () => {
-    const configs = {
-      upload_completed: {
-        cardClass: 'upload-success-card',
-        iconBg: 'ico-success',
-        icon: 'ti-bookmark-check',
-      },
-      upload_failed: {
-        cardClass: 'failed-card',
-        iconBg: 'ico-failed',
-        icon: 'ti-alert-circle',
-      },
-      price_drop: {
-        cardClass: 'price-card',
-        iconBg: 'ico-price',
-        icon: 'ti-trending-down',
-      },
-      nearby_rediscovery: {
-        cardClass: 'nearby-card',
-        iconBg: 'ico-nearby',
-        icon: 'ti-map-pin',
-      },
-      time_behavioral: {
-        cardClass: 'weekend-card',
-        iconBg: 'ico-weekend',
-        icon: 'ti-calendar-event',
-      },
-      forgotten_intent: {
-        cardClass: 'resurface-card',
-        iconBg: 'ico-resurface',
-        icon: 'ti-clock-hour-4',
-      },
-      seasonal: {
-        cardClass: 'seasonal-card',
-        iconBg: 'ico-seasonal',
-        icon: 'ti-cloud-rain',
-      },
-      smart_collection: {
-        cardClass: 'smart-collection-card',
-        iconBg: 'ico-success',
-        icon: 'ti-layout-grid',
-      },
-    };
+  const style = TYPE_STYLE[type] || TYPE_STYLE.default;
+  const emoji = TYPE_EMOJI[type] || TYPE_EMOJI.default;
+  const actions = renderActions();
 
-    return configs[type] || {
-      cardClass: 'default-card',
-      iconBg: 'ico-success',
-      icon: 'ti-bell',
-    };
-  };
-
-  const config = getCardConfig();
+  // Use the related save (joined client-side) or the notification metadata
+  // (set at creation) to make generic upload notifications meaningful.
+  const saveName = save?.title || metadata?.saveTitle || null;
+  const thumb = save?.thumbnail || metadata?.thumbnail || null;
+  const headline = type === 'upload_completed' && saveName
+    ? saveName
+    : stripLeadingEmoji(title);
+  const subline = type === 'upload_completed'
+    ? (saveName ? 'Saved · ready to view' : stripLeadingEmoji(message))
+    : message;
 
   return (
-    <div
-      className={`notif-card ${config.cardClass} ${isUnread ? 'unread-card' : ''}`}
-      onClick={handleCardClick}
-    >
-      <div className={`notif-icon-wrap ${config.iconBg}`}>
-        <i className={`ti ${config.icon}`} aria-hidden="true" />
+    <div className={`nf-item ${isUnread ? 'nf-item-unread' : 'nf-read-item'}`} onClick={handleCardClick}>
+      {isUnread && (
+        <button className="nf-dismiss" onClick={handleDismissClick} aria-label="Dismiss notification" title="Dismiss">
+          <i className="ti ti-x" aria-hidden="true" />
+        </button>
+      )}
+
+      <div className="nf-ico" style={{ background: style.bg, color: style.color, overflow: 'hidden', position: 'relative' }}>
+        <span style={{ fontSize: 16, lineHeight: 1 }}>{emoji}</span>
+        {thumb && (
+          <img
+            src={thumb}
+            alt=""
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+            onError={(e) => { e.currentTarget.remove(); }}
+          />
+        )}
       </div>
 
-      <div className="notif-body">
-        <div className="notif-title">{title}</div>
-        <div className="notif-msg">{message}</div>
+      <div className="nf-body">
+        <div className="nf-iname">{headline}</div>
+        <div className="nf-isub">{subline}</div>
 
-        {/* Price badge for price_drop */}
         {type === 'price_drop' && metadata?.priceOld && metadata?.priceNew && (
-          <div className="price-badge">
-            <i className="ti ti-tag" aria-hidden="true" />
-            <span className="price-old">{formatPrice(metadata.priceOld)}</span>
-            <span style={{ color: 'var(--mute)' }}>→</span>
-            <span className="price-new">{formatPrice(metadata.priceNew)}</span>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: '#FEF0CC', color: '#7a5000', fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20, marginTop: 5 }}>
+            <span style={{ textDecoration: 'line-through', color: 'var(--mute)', fontWeight: 400 }}>{formatPrice(metadata.priceOld)}</span>
+            <span>→</span>
+            <span style={{ color: '#1b5e1f' }}>{formatPrice(metadata.priceNew)}</span>
           </div>
         )}
 
-        {/* Distance display for nearby_rediscovery */}
-        {type === 'nearby_rediscovery' && metadata?.distanceKm && (
-          <div style={{ fontSize: '13px', color: 'var(--slate)', marginTop: '6px' }}>
-            {metadata.distanceKm.toFixed(1)} km away
-          </div>
+        {type === 'nearby_rediscovery' && metadata?.distanceKm != null && (
+          <div style={{ fontSize: 11, color: 'var(--mute)', marginTop: 4 }}>{metadata.distanceKm.toFixed(1)} km away</div>
         )}
 
-        {/* Days old save for forgotten_intent */}
         {type === 'forgotten_intent' && metadata?.daysOldSave && (
-          <div style={{ fontSize: '13px', color: 'var(--slate)', marginTop: '6px' }}>
-            {metadata.daysOldSave} days ago
-          </div>
+          <div style={{ fontSize: 11, color: 'var(--mute)', marginTop: 4 }}>{metadata.daysOldSave} days ago</div>
         )}
 
-        {/* Save count chip for time_behavioral or seasonal */}
         {(type === 'time_behavioral' || type === 'seasonal') && metadata?.savedCount > 1 && (
-          <div className="save-chip">
-            <i className="ti ti-bookmark" aria-hidden="true" />
-            {metadata.savedCount} saved places
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'var(--coral-soft)', color: 'var(--coral)', fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20, marginTop: 5, marginRight: 5 }}>
+            <i className="ti ti-bookmark" aria-hidden="true" /> {metadata.savedCount} saved places
           </div>
         )}
 
-        {/* Season chip for seasonal */}
         {type === 'seasonal' && metadata?.season && (
-          <div className="save-chip">
-            <i className={`ti ${getSeasonIcon(metadata.season)}`} aria-hidden="true" />
-            {metadata.season} season
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'var(--coral-soft)', color: 'var(--coral)', fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20, marginTop: 5 }}>
+            <i className={`ti ${getSeasonIcon(metadata.season)}`} aria-hidden="true" /> {metadata.season} season
           </div>
         )}
 
-        {/* Actions */}
-        {renderActions()}
-      </div>
-
-      <div className="notif-right">
-        <span className="notif-time">{timeAgo(sentAt)}</span>
-        {/* Only show dismiss button for unread notifications */}
-        {isUnread && (
-          <button
-            className="dismiss-btn"
-            onClick={handleDismissClick}
-            aria-label="Dismiss notification"
-            title="Dismiss"
-          >
-            <i className="ti ti-x" aria-hidden="true" />
-          </button>
+        {actions && (
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
+            {actions}
+          </div>
         )}
       </div>
 
-      {isUnread && <div className="unread-dot" />}
+      <span className="nf-time">{timeAgo(sentAt)}</span>
     </div>
   );
 };
@@ -313,8 +258,23 @@ export default function Notifications({ onNavigate }) {
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [, setPagination] = useState(null);
+  const [savesById, setSavesById] = useState({});
 
   const PAGE_SIZE = 10;
+
+  // Join notifications to the user's saves so generic "Upload ready"
+  // notifications can show the real save title + thumbnail.
+  useEffect(() => {
+    api.getSaves()
+      .then((res) => {
+        if (res.status === 'success' && Array.isArray(res.data)) {
+          const map = {};
+          res.data.forEach((s) => { map[s._id] = s; });
+          setSavesById(map);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // Only load notifications when screen mounts (lazy load)
   useEffect(() => {
@@ -325,6 +285,7 @@ export default function Notifications({ onNavigate }) {
     if (screenMounted) {
       loadNotifications(0);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [screenMounted]);
 
   const loadNotifications = async (pageOffset) => {
@@ -370,7 +331,7 @@ export default function Notifications({ onNavigate }) {
       await api.markNotificationRead(id);
     } catch (err) {
       console.error('Failed to mark notification as read:', err);
-      loadNotifications();
+      loadNotifications(0);
     }
   };
 
@@ -380,7 +341,7 @@ export default function Notifications({ onNavigate }) {
       await api.dismissNotification(id);
     } catch (err) {
       console.error('Failed to dismiss notification:', err);
-      loadNotifications();
+      loadNotifications(0);
     }
   };
 
@@ -403,7 +364,7 @@ export default function Notifications({ onNavigate }) {
       );
     } catch (err) {
       console.error('Failed to mark all as read:', err);
-      loadNotifications();
+      loadNotifications(0);
     }
   };
 
@@ -433,116 +394,89 @@ export default function Notifications({ onNavigate }) {
 
   if (!loading && notifications.length === 0) {
     return (
-      <div className="phone-frame">
-        <div className="notifications-container">
-          <div className="topbar">
-            <button
-              className="back-btn"
-              onClick={() => onNavigate('home')}
-              aria-label="Go back"
-            >
-              <i className="ti ti-arrow-left" aria-hidden="true" />
-            </button>
-            <h1 className="topbar-title">Notifications</h1>
-            <span className="unread-pill all-read">All read</span>
-          </div>
-
-          <div className="notifications-empty">
-            <i className="ti ti-bell" aria-hidden="true" />
-            <h2>You're all caught up</h2>
-            <p>Smart reminders will appear here</p>
-          </div>
+      <div style={{ display: 'flex', flexDirection: 'column', width: '100%', flex: 1, overflowY: 'auto' }}>
+        <div className="nf-hdr">
+          <span className="nf-title">Notifications</span>
+        </div>
+        <div style={{ padding: '60px 20px', textAlign: 'center' }}>
+          <i className="ti ti-bell" style={{ fontSize: 48, color: 'var(--hairline-soft)', marginBottom: 16, display: 'block' }}></i>
+          <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink)', marginBottom: 4 }}>You're all caught up</div>
+          <div style={{ fontSize: 13, color: 'var(--mute)' }}>Smart reminders will appear here</div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="phone-frame">
-      <div className="notifications-container">
-        <div className="topbar sticky">
-          <button
-            className="back-btn"
-            onClick={() => onNavigate('home')}
-            aria-label="Go back"
-          >
-            <i className="ti ti-arrow-left" aria-hidden="true" />
-          </button>
-          <h1 className="topbar-title">Notifications</h1>
-          <span className={`unread-pill ${unreadCount === 0 ? 'all-read' : ''}`}>
-            {unreadCount > 0 ? `${unreadCount} new` : 'All read'}
-          </span>
-        </div>
-
+    <div style={{ display: 'flex', flexDirection: 'column', width: '100%', flex: 1, overflowY: 'auto' }}>
+      <div className="nf-hdr">
+        <span className="nf-title">Notifications</span>
         {unreadCount > 0 && (
-          <button className="mark-all-btn" onClick={handleMarkAllAsRead}>
-            <i className="ti ti-checks" aria-hidden="true" />
-            Mark all as read
-          </button>
-        )}
-
-        {loading ? (
-          <div className="notifications-loading">
-            <p>Loading…</p>
-          </div>
-        ) : error ? (
-          <div className="notifications-error">
-            <p>{error}</p>
-          </div>
-        ) : (
-          <div className="notifications-content">
-            {/* Smart Reminders Section */}
-            {smartReminders.length > 0 && (
-              <>
-                <div className="section-label">Smart reminders</div>
-                <div className="notif-list">
-                  {smartReminders.map((notif) => (
-                    <NotificationCard
-                      key={notif._id}
-                      notification={notif}
-                      onMarkRead={handleMarkRead}
-                      onDismiss={handleDismiss}
-                      onNavigateToSave={handleNavigateToSave}
-                    />
-                  ))}
-                </div>
-              </>
-            )}
-
-            {/* Uploads Section */}
-            {uploads.length > 0 && (
-              <>
-                <div className="section-label">Uploads</div>
-                <div className="notif-list">
-                  {uploads.map((notif) => (
-                    <NotificationCard
-                      key={notif._id}
-                      notification={notif}
-                      onMarkRead={handleMarkRead}
-                      onDismiss={handleDismiss}
-                      onNavigateToSave={handleNavigateToSave}
-                    />
-                  ))}
-                </div>
-              </>
-            )}
-
-            {/* Load More Button */}
-            {hasMore && (
-              <button
-                className="load-more-btn"
-                onClick={handleLoadMore}
-                disabled={loadingMore}
-              >
-                {loadingMore && <span className="load-more-spinner" />}
-                {loadingMore ? 'Loading...' : 'Load More'}
-              </button>
-            )}
-
-            <div className="section-end" />
-          </div>
+          <span className="nf-read" onClick={handleMarkAllAsRead}>Mark all read</span>
         )}
       </div>
+
+      {loading ? (
+        <div style={{ padding: '60px 20px', textAlign: 'center' }}>
+          <div style={{ fontSize: 15, color: 'var(--mute)' }}>Loading...</div>
+        </div>
+      ) : error ? (
+        <div style={{ padding: '20px' }}>
+          <p style={{ color: '#d33', fontSize: 14 }}>{error}</p>
+        </div>
+      ) : (
+        <>
+          {smartReminders.length > 0 && (
+            <>
+              <div className="nf-grp">Smart reminders</div>
+              <div className="nf-list">
+                {smartReminders.map((notif) => (
+                  <NotificationCard
+                    key={notif._id}
+                    notification={notif}
+                    save={savesById[notif.relatedSaveId]}
+                    onMarkRead={handleMarkRead}
+                    onDismiss={handleDismiss}
+                    onNavigateToSave={handleNavigateToSave}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+
+          {uploads.length > 0 && (
+            <>
+              <div className="nf-grp" style={{ marginTop: 12 }}>Uploads</div>
+              <div className="nf-list">
+                {uploads.map((notif) => (
+                  <NotificationCard
+                    key={notif._id}
+                    notification={notif}
+                    save={savesById[notif.relatedSaveId]}
+                    onMarkRead={handleMarkRead}
+                    onDismiss={handleDismiss}
+                    onNavigateToSave={handleNavigateToSave}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+
+          {hasMore && (
+            <div style={{ padding: '16px 20px 20px' }}>
+              <button
+                onClick={handleLoadMore}
+                disabled={loadingMore}
+                style={{ width: '100%', padding: '11px 14px', borderRadius: 12, background: 'var(--ink)', color: '#fff', border: 'none', fontSize: 13, fontWeight: 700, cursor: loadingMore ? 'default' : 'pointer', opacity: loadingMore ? 0.6 : 1 }}
+              >
+                {loadingMore ? 'Loading…' : 'Load more'}
+              </button>
+            </div>
+          )}
+
+          <div style={{ height: 20 }} />
+        </>
+      )}
     </div>
   );
 }
