@@ -126,33 +126,33 @@ export default function ScreenshotSummary({ sessionId, summary: initialSummary, 
       <div style={{ padding: '12px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '0.5px solid var(--colors-stroke-tertiary, #eee)' }}>
         <button
           onClick={() => onNavigate('home')}
-          style={{ width: 32, height: 32, background: 'var(--colors-surface-surface-1, #f5f5f5)', borderRadius: '50%', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 14 }}>
+          style={{ width: 32, height: 32, background: 'var(--colors-surface-surface-1, #f5f5f5)', borderRadius: '50%', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 15 }}>
           ←
         </button>
-        <span style={{ fontSize: 12, color: 'var(--colors-type-tertiary, #888)' }}>
+        <span style={{ fontSize: 13, color: 'var(--colors-type-tertiary, #888)' }}>
           {summary.totalScreenshots || 0} screenshots
         </span>
         <button
           onClick={handleShareImage}
-          style={{ width: 32, height: 32, background: 'var(--colors-surface-surface-1, #f5f5f5)', borderRadius: '50%', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 14 }}>
+          style={{ width: 32, height: 32, background: 'var(--colors-surface-surface-1, #f5f5f5)', borderRadius: '50%', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 15 }}>
           ⤴
         </button>
       </div>
 
       {/* Intro section */}
       <div style={{ padding: '16px 20px 12px' }}>
-        <h1 style={{ fontSize: 22, fontWeight: 600, margin: '0 0 4px', lineHeight: 1.3 }}>
+        <h1 style={{ fontSize: 23, fontWeight: 600, margin: '0 0 4px', lineHeight: 1.3 }}>
           Your screenshot dump,<br/>made sense of
         </h1>
-        <p style={{ fontSize: 12, color: 'var(--colors-type-tertiary, #888)', margin: 0 }}>
-          Sorted into {summary.categories?.length || 0} groups by TryThis · just now
+        <p style={{ fontSize: 13, color: 'var(--colors-type-tertiary, #888)', margin: 0 }}>
+          Sorted into {summary.categories?.length || 0} groups by Wanna Try · just now
         </p>
       </div>
 
       {/* AI Detection strip */}
-      <div style={{ background: 'linear-gradient(135deg, rgba(46, 107, 82, 0.08) 0%, var(--colors-surface-surface-1, #f5f5f5) 100%)', borderLeft: '2px solid var(--colors-brands-primary-main, #1B3A2F)', borderRadius: '0 12px 12px 0', padding: '10px 12px', margin: '8px 20px 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span style={{ fontSize: 14 }}>✨</span>
-        <p style={{ fontSize: 11, color: 'var(--colors-brands-primary-main, #1B3A2F)', lineHeight: 1.4, margin: 0 }}>
+      <div style={{ background: 'linear-gradient(135deg, rgba(46, 107, 82, 0.08) 0%, var(--colors-surface-surface-1, #f5f5f5) 100%)', borderLeft: '2px solid var(--colors-brands-primary-main, #C24914)', borderRadius: '0 12px 12px 0', padding: '10px 12px', margin: '8px 20px 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
+        <span style={{ fontSize: 15 }}>✨</span>
+        <p style={{ fontSize: 12, color: 'var(--colors-brands-primary-main, #C24914)', lineHeight: 1.4, margin: 0 }}>
           {summary.masterSummary?.oneLiner || 'AI analysis complete'}
         </p>
       </div>
@@ -162,24 +162,24 @@ export default function ScreenshotSummary({ sessionId, summary: initialSummary, 
         <button
           onClick={handleRegenerate}
           disabled={loading}
-          style={{ flex: '0 0 auto', padding: '8px 12px', fontSize: 11, borderRadius: 8, cursor: 'pointer', background: 'var(--colors-surface-surface-1, #f5f5f5)', border: '0.5px solid var(--colors-stroke-tertiary, #ddd)', opacity: loading ? 0.6 : 1 }}>
+          style={{ flex: '0 0 auto', padding: '8px 12px', fontSize: 12, borderRadius: 8, cursor: 'pointer', background: 'var(--colors-surface-surface-1, #f5f5f5)', border: '0.5px solid var(--colors-stroke-tertiary, #ddd)', opacity: loading ? 0.6 : 1 }}>
           ↺ Regenerate
         </button>
         <button
           onClick={() => setShowRefine(!showRefine)}
           disabled={loading}
-          style={{ flex: '0 0 auto', padding: '8px 12px', fontSize: 11, borderRadius: 8, cursor: 'pointer', background: 'var(--colors-surface-surface-1, #f5f5f5)', border: '0.5px solid var(--colors-stroke-tertiary, #ddd)', opacity: loading ? 0.6 : 1 }}>
+          style={{ flex: '0 0 auto', padding: '8px 12px', fontSize: 12, borderRadius: 8, cursor: 'pointer', background: 'var(--colors-surface-surface-1, #f5f5f5)', border: '0.5px solid var(--colors-stroke-tertiary, #ddd)', opacity: loading ? 0.6 : 1 }}>
           ✎ Refine
         </button>
         <button
           onClick={handleExportPdf}
           disabled={loading}
-          style={{ flex: '0 0 auto', padding: '8px 12px', fontSize: 11, borderRadius: 8, cursor: 'pointer', background: 'var(--colors-surface-surface-1, #f5f5f5)', border: '0.5px solid var(--colors-stroke-tertiary, #ddd)', opacity: loading ? 0.6 : 1 }}>
+          style={{ flex: '0 0 auto', padding: '8px 12px', fontSize: 12, borderRadius: 8, cursor: 'pointer', background: 'var(--colors-surface-surface-1, #f5f5f5)', border: '0.5px solid var(--colors-stroke-tertiary, #ddd)', opacity: loading ? 0.6 : 1 }}>
           📄 Export PDF
         </button>
         <button
           onClick={handleShareImage}
-          style={{ flex: '0 0 auto', padding: '8px 12px', fontSize: 11, borderRadius: 8, cursor: 'pointer', background: 'var(--colors-surface-surface-1, #f5f5f5)', border: '0.5px solid var(--colors-stroke-tertiary, #ddd)' }}>
+          style={{ flex: '0 0 auto', padding: '8px 12px', fontSize: 12, borderRadius: 8, cursor: 'pointer', background: 'var(--colors-surface-surface-1, #f5f5f5)', border: '0.5px solid var(--colors-stroke-tertiary, #ddd)' }}>
           📤 Share image
         </button>
       </div>
@@ -187,10 +187,10 @@ export default function ScreenshotSummary({ sessionId, summary: initialSummary, 
       {/* Master summary bullets */}
       {summary.masterSummary?.bullets && summary.masterSummary.bullets.length > 0 && (
         <div style={{ background: 'var(--colors-surface-surface, white)', border: '0.5px solid var(--colors-stroke-tertiary, #eee)', borderRadius: 14, padding: '12px 16px', margin: '0 20px 12px' }}>
-          <p style={{ fontSize: 11, fontWeight: 600, margin: '0 0 8px', color: 'var(--colors-type-primary, #1a1a1a)' }}>KEY POINTS</p>
+          <p style={{ fontSize: 12, fontWeight: 600, margin: '0 0 8px', color: 'var(--colors-type-primary, #1a1a1a)' }}>KEY POINTS</p>
           {summary.masterSummary.bullets.map((bullet, idx) => (
-            <div key={idx} style={{ display: 'flex', gap: 8, marginBottom: 6, fontSize: 11 }}>
-              <span style={{ color: 'var(--colors-brands-primary-main, #1B3A2F)', fontWeight: 600, flexShrink: 0 }}>•</span>
+            <div key={idx} style={{ display: 'flex', gap: 8, marginBottom: 6, fontSize: 12 }}>
+              <span style={{ color: 'var(--colors-brands-primary-main, #C24914)', fontWeight: 600, flexShrink: 0 }}>•</span>
               <span style={{ color: 'var(--colors-type-primary, #1a1a1a)', lineHeight: 1.4 }}>{bullet}</span>
             </div>
           ))}
@@ -205,14 +205,14 @@ export default function ScreenshotSummary({ sessionId, summary: initialSummary, 
             style={{ background: 'var(--colors-surface-surface, white)', border: '0.5px solid var(--colors-stroke-tertiary, #eee)', borderRadius: 14, padding: '12px 16px', margin: '0 20px 10px' }}>
             {/* Category header */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-              <div style={{ width: 32, height: 32, background: 'rgba(46, 107, 82, 0.1)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>
+              <div style={{ width: 32, height: 32, background: 'rgba(46, 107, 82, 0.1)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 17, flexShrink: 0 }}>
                 {getCategoryIcon(cat.name)}
               </div>
               <div style={{ flex: 1 }}>
-                <p style={{ fontSize: 13, fontWeight: 600, margin: 0, color: 'var(--colors-type-primary, #1a1a1a)' }}>
+                <p style={{ fontSize: 14, fontWeight: 600, margin: 0, color: 'var(--colors-type-primary, #1a1a1a)' }}>
                   {cat.name}
                 </p>
-                <p style={{ fontSize: 10, color: 'var(--colors-type-tertiary, #888)', margin: 0 }}>
+                <p style={{ fontSize: 11, color: 'var(--colors-type-tertiary, #888)', margin: 0 }}>
                   {cat.count} items
                 </p>
               </div>
@@ -220,7 +220,7 @@ export default function ScreenshotSummary({ sessionId, summary: initialSummary, 
 
             {/* Category summary */}
             {cat.summary && (
-              <p style={{ fontSize: 11, color: 'var(--colors-type-primary, #1a1a1a)', lineHeight: 1.4, fontStyle: 'italic', margin: '8px 0' }}>
+              <p style={{ fontSize: 12, color: 'var(--colors-type-primary, #1a1a1a)', lineHeight: 1.4, fontStyle: 'italic', margin: '8px 0' }}>
                 "{cat.summary}"
               </p>
             )}
@@ -230,12 +230,12 @@ export default function ScreenshotSummary({ sessionId, summary: initialSummary, 
               <div style={{ marginTop: 8 }}>
                 {cat.items.map((item, ii) => (
                   <div key={ii} style={{ marginBottom: 6 }}>
-                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '6px 0', fontSize: 11, color: 'var(--colors-type-primary, #1a1a1a)' }}>
-                      <div style={{ width: 5, height: 5, background: 'var(--colors-brands-primary-main, #1B3A2F)', borderRadius: '50%', flexShrink: 0, marginTop: 3 }} />
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '6px 0', fontSize: 12, color: 'var(--colors-type-primary, #1a1a1a)' }}>
+                      <div style={{ width: 5, height: 5, background: 'var(--colors-brands-primary-main, #C24914)', borderRadius: '50%', flexShrink: 0, marginTop: 3 }} />
                       <div style={{ flex: 1 }}>
                         <div style={{ fontWeight: 500 }}>{item.name}</div>
                         {item.details && (
-                          <div style={{ fontSize: 10, color: 'var(--colors-type-tertiary, #888)', marginTop: 2 }}>
+                          <div style={{ fontSize: 11, color: 'var(--colors-type-tertiary, #888)', marginTop: 2 }}>
                             {item.details}
                           </div>
                         )}
@@ -251,7 +251,7 @@ export default function ScreenshotSummary({ sessionId, summary: initialSummary, 
 
       {/* Error message */}
       {error && (
-        <div style={{ margin: '0 20px 12px', padding: 10, background: 'var(--colors-background-danger, #FEF2F2)', borderRadius: 8, fontSize: 11, color: 'var(--colors-type-danger, #A32D2D)' }}>
+        <div style={{ margin: '0 20px 12px', padding: 10, background: 'var(--colors-background-danger, #FEF2F2)', borderRadius: 8, fontSize: 12, color: 'var(--colors-type-danger, #A32D2D)' }}>
           {error}
         </div>
       )}
@@ -259,21 +259,21 @@ export default function ScreenshotSummary({ sessionId, summary: initialSummary, 
       {/* Refine input - inline */}
       {showRefine && (
         <div style={{ margin: '0 20px 12px', background: 'var(--colors-surface-surface-1, #f5f5f5)', borderRadius: 12, padding: 12, border: '0.5px solid var(--colors-stroke-tertiary, #eee)' }}>
-          <p style={{ fontSize: 10, fontWeight: 600, margin: '0 0 8px', color: 'var(--colors-type-tertiary, #888)' }}>REFINE WITH INSTRUCTIONS</p>
+          <p style={{ fontSize: 11, fontWeight: 600, margin: '0 0 8px', color: 'var(--colors-type-tertiary, #888)' }}>REFINE WITH INSTRUCTIONS</p>
           <textarea
             value={refineText}
             onChange={e => setRefineText(e.target.value)}
             placeholder='"Focus only on budget options under ₹2000/night"'
-            style={{ width: '100%', minHeight: 60, fontSize: 11, padding: 8, borderRadius: 8, border: '0.5px solid var(--colors-stroke-tertiary, #ddd)', resize: 'vertical', boxSizing: 'border-box' }}
+            style={{ width: '100%', minHeight: 60, fontSize: 12, padding: 8, borderRadius: 8, border: '0.5px solid var(--colors-stroke-tertiary, #ddd)', resize: 'vertical', boxSizing: 'border-box' }}
           />
           <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
-            <button onClick={() => setShowRefine(false)} style={{ flex: 1, padding: 8, fontSize: 11, borderRadius: 6, cursor: 'pointer', background: 'var(--colors-surface-surface, white)', border: '0.5px solid var(--colors-stroke-tertiary, #ddd)' }}>
+            <button onClick={() => setShowRefine(false)} style={{ flex: 1, padding: 8, fontSize: 12, borderRadius: 6, cursor: 'pointer', background: 'var(--colors-surface-surface, white)', border: '0.5px solid var(--colors-stroke-tertiary, #ddd)' }}>
               Cancel
             </button>
             <button
               onClick={handleRefine}
               disabled={loading || !refineText.trim()}
-              style={{ flex: 1, padding: 8, fontSize: 11, borderRadius: 6, cursor: 'pointer', background: 'var(--colors-brands-primary-main, #1B3A2F)', color: 'white', border: 'none', opacity: loading ? 0.6 : 1 }}>
+              style={{ flex: 1, padding: 8, fontSize: 12, borderRadius: 6, cursor: 'pointer', background: 'var(--colors-brands-primary-main, #C24914)', color: 'white', border: 'none', opacity: loading ? 0.6 : 1 }}>
               {loading && loadingAction === 'refine' ? 'Refining...' : 'Apply'}
             </button>
           </div>
@@ -285,7 +285,7 @@ export default function ScreenshotSummary({ sessionId, summary: initialSummary, 
         <button
           onClick={handleSave}
           disabled={loading || saved}
-          style={{ flex: 1, padding: '12px 0', background: saved ? 'var(--colors-brands-success-main, #2E6B52)' : 'var(--colors-brands-primary-main, #1B3A2F)', color: 'white', border: 'none', borderRadius: 12, fontSize: 12, fontWeight: 600, cursor: 'pointer', opacity: loading ? 0.6 : 1 }}>
+          style={{ flex: 1, padding: '12px 0', background: saved ? 'var(--colors-brands-success-main, #2E6B52)' : 'var(--colors-brands-primary-main, #C24914)', color: 'white', border: 'none', borderRadius: 12, fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: loading ? 0.6 : 1 }}>
           {saved ? '✓ Saved to collection' : loading && loadingAction === 'save' ? 'Saving...' : 'Save to collection'}
         </button>
       </div>

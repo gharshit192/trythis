@@ -1,54 +1,86 @@
+import SearchBar from '../components/SearchBar';
+
+const getGreeting = (userName) => {
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  return `${greeting}${userName ? `, ${userName}` : ''}`;
+};
+
 export default function HomeEmpty({ onNavigate }) {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
-  const firstName = user?.name?.split(' ')[0] || 'there';
-  const initials = user?.name?.substring(0, 2).toUpperCase() || '?';
+  const userName = user?.name?.split(' ')[0] || '';
 
   return (
-    <div style={{ background: 'var(--paper)', display: 'flex', flexDirection: 'column', width: '100%' }}>
-        <div style={{ padding: '12px 20px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', width: '100%', flex: 1, overflowY: 'auto' }}>
+      <div className="h-header">
+        <div className="h-greet">{getGreeting(userName)} 👋</div>
+        <div className="h-title">What do you<br />wanna try?</div>
+      </div>
+
+      <SearchBar onClick={() => onNavigate('search')} style={{ margin: '0 var(--pad-screen) 8px' }} />
+
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px 28px' }}>
+        <div className="emp-art">
+          <div className="emp-bk">
+            <div className="emp-line" style={{ top: 22, left: 10, right: 10 }}></div>
+            <div className="emp-line" style={{ top: 32, left: 10, width: 30 }}></div>
+            <div className="emp-line" style={{ top: 42, left: 10, right: 10 }}></div>
+          </div>
+          <div className="emp-sp" style={{ top: -6, right: 2 }}></div>
+          <div className="emp-sp" style={{ bottom: 10, right: -4, background: 'var(--coral)', width: 5, height: 5 }}></div>
+        </div>
+
+        <div className="emp-title">Nothing saved yet</div>
+        <div className="emp-sub">Share any Instagram reel to Wanna Try and we'll remember it for you.</div>
+
+        <button className="emp-cta" onClick={() => onNavigate('onboarding')}>See how it works</button>
+
+        <div className="emp-steps">
+          <div className="emp-step">
+            <div className="emp-snum">1</div>
+            <div className="emp-stxt">Share a reel from Instagram</div>
+          </div>
+          <div className="emp-arr">→</div>
+          <div className="emp-step">
+            <div className="emp-snum">2</div>
+            <div className="emp-stxt">AI reads and saves it</div>
+          </div>
+          <div className="emp-arr">→</div>
+          <div className="emp-step">
+            <div className="emp-snum">3</div>
+            <div className="emp-stxt">Find it when you need it</div>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ padding: '0 20px 24px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div onClick={() => onNavigate('add-save')}
+             style={{ background: 'var(--paper)', border: '0.5px solid var(--hairline)', borderRadius: 16, padding: 14, cursor: 'pointer', display: 'flex', gap: 12, alignItems: 'center' }}>
+          <div style={{ fontSize: 23, flexShrink: 0 }}>🔗</div>
           <div>
-            <p style={{ fontSize: '13px', color: 'var(--slate)' }}>Hello, {firstName}</p>
-            <h1 className="display" style={{ fontSize: '22px', marginTop: '2px' }}>Your saves</h1>
-          </div>
-          <div className="avatar">{initials}</div>
-        </div>
-
-        <div style={{ height: '44px', background: 'var(--linen)', borderRadius: '12px', display: 'flex', alignItems: 'center', padding: '0 14px', gap: '10px', margin: '0 20px 16px' }}>
-          <i className="ti ti-search" style={{ fontSize: '16px', color: 'var(--slate)' }}></i>
-          <span style={{ fontSize: '14px', color: 'var(--slate)', flex: 1 }}>Search saves, places, vibes…</span>
-        </div>
-
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 20px' }}>
-          <i className="ti ti-inbox" style={{ fontSize: '48px', color: 'var(--forest)', marginBottom: '16px' }}></i>
-          <h2 className="display" style={{ fontSize: '22px', marginBottom: '8px' }}>No saves yet</h2>
-          <p style={{ fontSize: '14px', color: 'var(--slate)', marginBottom: '32px' }}>Start saving things to try later</p>
-
-          <div style={{ width: '100%', maxWidth: '320px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div onClick={() => onNavigate('add-save')} style={{ background: 'white', border: '1px solid #d4d4d0', borderRadius: '12px', padding: '16px', cursor: 'pointer', display: 'flex', gap: '12px', alignItems: 'flex-start', transition: 'all 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.borderColor = '#1B3A2F'} onMouseLeave={(e) => e.currentTarget.style.borderColor = '#d4d4d0'}>
-              <div style={{ fontSize: '24px', flexShrink: 0 }}>🔗</div>
-              <div style={{ textAlign: 'left' }}>
-                <p style={{ fontSize: '14px', fontWeight: 500, color: '#000', margin: '0 0 4px 0' }}>Save from web</p>
-                <p style={{ fontSize: '12px', color: '#888', margin: 0 }}>Paste a URL or use our browser extension</p>
-              </div>
-            </div>
-
-            <div onClick={() => onNavigate('add-save')} style={{ background: 'white', border: '1px solid #d4d4d0', borderRadius: '12px', padding: '16px', cursor: 'pointer', display: 'flex', gap: '12px', alignItems: 'flex-start', transition: 'all 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.borderColor = '#1B3A2F'} onMouseLeave={(e) => e.currentTarget.style.borderColor = '#d4d4d0'}>
-              <div style={{ fontSize: '24px', flexShrink: 0 }}>📸</div>
-              <div style={{ textAlign: 'left' }}>
-                <p style={{ fontSize: '14px', fontWeight: 500, color: '#000', margin: '0 0 4px 0' }}>Screenshot</p>
-                <p style={{ fontSize: '12px', color: '#888', margin: 0 }}>Capture and save images from your device</p>
-              </div>
-            </div>
-
-            <div onClick={() => onNavigate('add-save')} style={{ background: 'white', border: '1px solid #d4d4d0', borderRadius: '12px', padding: '16px', cursor: 'pointer', display: 'flex', gap: '12px', alignItems: 'flex-start', transition: 'all 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.borderColor = '#1B3A2F'} onMouseLeave={(e) => e.currentTarget.style.borderColor = '#d4d4d0'}>
-              <div style={{ fontSize: '24px', flexShrink: 0 }}>✍️</div>
-              <div style={{ textAlign: 'left' }}>
-                <p style={{ fontSize: '14px', fontWeight: 500, color: '#000', margin: '0 0 4px 0' }}>Add manually</p>
-                <p style={{ fontSize: '12px', color: '#888', margin: 0 }}>Create a save with your own notes</p>
-              </div>
-            </div>
+            <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--ink)', margin: '0 0 2px' }}>Save from web</p>
+            <p style={{ fontSize: 12, color: 'var(--mute)', margin: 0 }}>Paste a URL or use our browser extension</p>
           </div>
         </div>
+
+        <div onClick={() => onNavigate('add-save')}
+             style={{ background: 'var(--paper)', border: '0.5px solid var(--hairline)', borderRadius: 16, padding: 14, cursor: 'pointer', display: 'flex', gap: 12, alignItems: 'center' }}>
+          <div style={{ fontSize: 23, flexShrink: 0 }}>📸</div>
+          <div>
+            <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--ink)', margin: '0 0 2px' }}>Screenshot</p>
+            <p style={{ fontSize: 12, color: 'var(--mute)', margin: 0 }}>Capture and save images from your device</p>
+          </div>
+        </div>
+
+        <div onClick={() => onNavigate('add-save')}
+             style={{ background: 'var(--paper)', border: '0.5px solid var(--hairline)', borderRadius: 16, padding: 14, cursor: 'pointer', display: 'flex', gap: 12, alignItems: 'center' }}>
+          <div style={{ fontSize: 23, flexShrink: 0 }}>✍️</div>
+          <div>
+            <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--ink)', margin: '0 0 2px' }}>Add manually</p>
+            <p style={{ fontSize: 12, color: 'var(--mute)', margin: 0 }}>Create a save with your own notes</p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

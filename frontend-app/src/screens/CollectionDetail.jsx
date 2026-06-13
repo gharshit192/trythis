@@ -92,17 +92,17 @@ export default function CollectionDetail({ onNavigate, payload }) {
     <div className="phone-frame">
       <div style={{ background: 'var(--paper)', flex: 1, display: 'flex', flexDirection: 'column' }}>
         <div style={{ padding: '16px 20px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <i className="ti ti-arrow-left" style={{ fontSize: '20px', cursor: 'pointer' }} onClick={() => onNavigate(backTo)}></i>
-          <h1 className="display" style={{ fontSize: '18px' }}>{collection?.name || 'Collection'}</h1>
+          <i className="ti ti-arrow-left" style={{ fontSize: '21px', cursor: 'pointer' }} onClick={() => onNavigate(backTo)}></i>
+          <h1 className="display" style={{ fontSize: '19px' }}>{collection?.name || 'Collection'}</h1>
           {!collection?.isAuto && (
-            <i className="ti ti-pencil" style={{ fontSize: '18px', cursor: 'pointer', color: 'var(--forest)' }} onClick={openEdit}></i>
+            <i className="ti ti-pencil" style={{ fontSize: '19px', cursor: 'pointer', color: 'var(--coral)' }} onClick={openEdit}></i>
           )}
           {collection?.isAuto && <span style={{ width: 20 }} />}
         </div>
-        <div style={{ background: 'linear-gradient(135deg, var(--forest-soft) 0%, var(--forest) 100%)', borderRadius: '12px', height: '120px', margin: '12px 20px 16px', display: 'flex', alignItems: 'flex-end', padding: '16px' }}>
+        <div style={{ background: 'linear-gradient(135deg, var(--coral-soft) 0%, var(--coral) 100%)', borderRadius: '12px', height: '120px', margin: '12px 20px 16px', display: 'flex', alignItems: 'flex-end', padding: '16px' }}>
           <div>
-            <p style={{ fontSize: '14px', fontWeight: '500' }}>{collection?.name}</p>
-            <p style={{ fontSize: '12px', opacity: 0.8 }}>{saves.length} items saved</p>
+            <p style={{ fontSize: '15px', fontWeight: '500' }}>{collection?.name}</p>
+            <p style={{ fontSize: '13px', opacity: 0.8 }}>{saves.length} items saved</p>
           </div>
         </div>
         <div style={{ padding: '0 20px 80px' }}>
@@ -114,11 +114,11 @@ export default function CollectionDetail({ onNavigate, payload }) {
                 <div key={s._id || s} className="card" style={{ position: 'relative' }}>
                   <div style={{ height: '80px', background: 'var(--dune)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
                        onClick={() => onNavigate('save-detail', { id: s._id || s })}>
-                    {s.image ? <img src={s.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <i className="ti ti-bookmark" style={{ fontSize: 24, color: 'var(--forest)' }}></i>}
+                    {s.image ? <img src={s.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <i className="ti ti-bookmark" style={{ fontSize: 25, color: 'var(--coral)' }}></i>}
                   </div>
                   <div style={{ padding: '8px 10px' }}>
-                    <p style={{ fontSize: '12px', fontWeight: '500' }}>{s.title || 'Save'}</p>
-                    <button onClick={() => handleRemove(s._id || s)} style={{ background: 'transparent', border: 'none', color: 'var(--error,#d33)', cursor: 'pointer', fontSize: 11, padding: 0, marginTop: 4 }}>Remove</button>
+                    <p style={{ fontSize: '13px', fontWeight: '500' }}>{s.title || 'Save'}</p>
+                    <button onClick={() => handleRemove(s._id || s)} style={{ background: 'transparent', border: 'none', color: 'var(--error,#d33)', cursor: 'pointer', fontSize: 12, padding: 0, marginTop: 4 }}>Remove</button>
                   </div>
                 </div>
               ))}
@@ -132,8 +132,8 @@ export default function CollectionDetail({ onNavigate, payload }) {
             style={{ position: 'absolute', inset: 0, background: 'rgba(14,14,12,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: 24 }}
           >
             <div onClick={(e) => e.stopPropagation()} style={{ background: 'var(--paper)', borderRadius: 16, padding: 20, width: '100%', maxWidth: 320, boxShadow: '0 8px 24px rgba(0,0,0,0.18)' }}>
-              <h3 className="display" style={{ fontSize: 18, marginBottom: 6 }}>Edit collection</h3>
-              <p style={{ fontSize: 12, color: 'var(--slate)', marginBottom: 14 }}>Update name, icon, or description.</p>
+              <h3 className="display" style={{ fontSize: 19, marginBottom: 6 }}>Edit collection</h3>
+              <p style={{ fontSize: 13, color: 'var(--slate)', marginBottom: 14 }}>Update name, icon, or description.</p>
 
               <p className="label">Icon</p>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
@@ -145,9 +145,9 @@ export default function CollectionDetail({ onNavigate, payload }) {
                     disabled={saving}
                     style={{
                       width: 34, height: 34, borderRadius: 8,
-                      background: editIcon === ic ? 'var(--forest-faint)' : 'var(--linen)',
-                      border: editIcon === ic ? '1px solid var(--forest)' : '0.5px solid var(--hairline)',
-                      fontSize: 18, cursor: 'pointer',
+                      background: editIcon === ic ? 'var(--coral-faint)' : 'var(--linen)',
+                      border: editIcon === ic ? '1px solid var(--coral)' : '0.5px solid var(--hairline)',
+                      fontSize: 19, cursor: 'pointer',
                     }}
                   >
                     {ic}
@@ -177,7 +177,7 @@ export default function CollectionDetail({ onNavigate, payload }) {
                 style={{ marginBottom: 12 }}
               />
 
-              {editError && <p style={{ color: 'var(--error,#d33)', fontSize: 13, marginBottom: 8 }}>{editError}</p>}
+              {editError && <p style={{ color: 'var(--error,#d33)', fontSize: 14, marginBottom: 8 }}>{editError}</p>}
 
               <button className="btn-primary" disabled={saving} onClick={handleSaveEdit}>
                 {saving ? 'Saving…' : 'Save'}
@@ -186,7 +186,7 @@ export default function CollectionDetail({ onNavigate, payload }) {
               <button
                 onClick={handleDelete}
                 disabled={saving}
-                style={{ width: '100%', marginTop: 16, padding: '10px', background: 'transparent', border: '1px solid var(--error,#d33)', borderRadius: 10, color: 'var(--error,#d33)', fontSize: 13, cursor: 'pointer' }}
+                style={{ width: '100%', marginTop: 16, padding: '10px', background: 'transparent', border: '1px solid var(--error,#d33)', borderRadius: 10, color: 'var(--error,#d33)', fontSize: 14, cursor: 'pointer' }}
               >
                 Delete collection
               </button>

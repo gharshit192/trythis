@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Wanna Try — Vintage Scrapbook (14 Screens)</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Work+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --paper:#F5EFE0; --card:#FFFDF8; --ink:#2B2420; --ink-muted:#A08C6E;
+  --rust:#C24914; --teal:#1F6F5C; --mustard:#C99425; --brown:#8B5E3C; --plum:#6B5B95;
+  --border:rgba(43,36,32,.14); --disp:'DM Serif Display',serif; --body:'Work Sans',sans-serif;
+}
+body{font-family:var(--body);background:#0A0A0A;color:#fff;padding:52px 28px 100px}
+
+.pg-brand{text-align:center;margin-bottom:60px}
+.pg-logo{display:inline-flex;align-items:center;gap:14px;margin-bottom:10px}
+.pg-ico{width:52px;height:52px;background:var(--rust);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 8px 24px rgba(194,73,20,.4);transform:rotate(-4deg)}
+.pg-name{font-family:var(--disp);font-size:36px;color:#fff}
+.pg-tag{font-size:11px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:#3A3A3A}
+
+.pg-section{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#2E2E2E;margin:52px 0 24px;text-align:center}
+
+.row{display:flex;gap:28px;justify-content:center;flex-wrap:wrap}
+.col{display:flex;flex-direction:column;align-items:center;gap:14px}
+.lbl{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#333}
+
+.ph{width:290px;height:620px;border-radius:46px;border:8px solid #1C1C1C;
+  box-shadow:0 0 0 1px #262626,0 50px 120px rgba(0,0,0,.65),0 20px 50px rgba(0,0,0,.28);
+  overflow:hidden;position:relative;font-family:var(--body);flex-shrink:0}
+.scr{position:absolute;inset:0;display:flex;flex-direction:column;overflow:hidden}
+
+/* Paper texture base */
+.paper{background-color:var(--paper);background-image:radial-gradient(circle,rgba(43,36,32,.045) 1px,transparent 1px);background-size:14px 14px}
+
+/* Status bar */
+.sb{display:flex;justify-content:space-between;align-items:center;padding:12px 22px 6px;background:var(--paper);position:relative;z-index:5;font-size:12px;font-weight:600;color:var(--ink)}
+.sb-w{background:transparent;position:absolute;top:0;left:0;right:0;z-index:20;color:#fff}
+.sb-w span{color:rgba(255,255,255,.92)}
+
+/* Photo gradients - sepia tones */
+.pg-cafe{background:linear-gradient(135deg,#F0D4AE,var(--rust))}
+.pg-hotel{background:linear-gradient(135deg,#B8D4C9,var(--teal))}
+.pg-recipe{background:linear-gradient(135deg,#F5E2A8,var(--mustard))}
+.pg-shop{background:linear-gradient(135deg,#DCC4AC,var(--brown))}
+.pg-learn{background:linear-gradient(135deg,#D2C7E8,var(--plum))}
+
+/* Postage stamp badge */
+.stamp{position:absolute;width:30px;height:30px;border-radius:50%;border:2px dashed rgba(255,255,255,.75);background:rgba(43,36,32,.22);display:flex;align-items:center;justify-content:center;font-size:13px;z-index:2}
+.stamp-tr{top:7px;right:7px;transform:rotate(8deg)}
+.stamp-tl{top:7px;left:7px;transform:rotate(-6deg)}
+
+/* Ticket tag (category label for list rows) */
+.ttag{display:inline-flex;align-items:center;gap:4px;padding:3px 9px 3px 9px;font-size:9px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:#fff;border-radius:3px;border-left:2px dashed rgba(255,255,255,.55)}
+
+/* Washi tape decoration */
+.tape{position:absolute;height:16px;background:rgba(194,73,20,.32);box-shadow:0 1px 4px rgba(0,0,0,.08);z-index:3}
+.tape::before,.tape::after{content:'';position:absolute;top:0;bottom:0;width:1px;background:repeating-linear-gradient(to bottom,transparent,transparent 3px,rgba(255,255,255,.4) 3px,rgba(255,255,255,.4) 4px)}
+
+/* Card */
+.card{background:var(--card);border:1px solid var(--border);border-radius:8px}
+
+/* Bottom nav */
+.bnav{position:absolute;bottom:0;left:0;right:0;background:var(--card);border-top:1px dashed var(--border);display:flex;justify-content:space-around;align-items:center;padding:11px 0 18px;z-index:10}
+.ni{display:flex;flex-direction:column;align-items:center;gap:3px}
+.ni span:first-child{font-size:16px}
+.nl{font-size:8px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:#C4B8A6}
+.nl-a{color:var(--rust)}
+.nadd{width:40px;height:40px;background:var(--rust);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff;margin-top:-10px;box-shadow:0 4px 14px rgba(194,73,20,.4);border:2px dashed rgba(255,255,255,.5)}
+
+/* Buttons */
+.btn-p{background:var(--rust);color:#FBF8F2;border-radius:5px;padding:12px;text-align:center;font-size:13px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;display:flex;align-items:center;justify-content:center;gap:7px}
+.btn-s{background:transparent;border:1.5px solid var(--ink);color:var(--ink);border-radius:5px;padding:11px;text-align:center;font-size:12px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;display:flex;align-items:center;justify-content:center;gap:6px}
+
+/* Dotted divider */
+.dline{flex:1;height:0;border-top:1.5px dashed var(--border)}
+
+/* ════════════ S1 — ONBOARDING ════════════ */
+.s-ob{align-items:center;justify-content:center;padding:40px 28px 30px;text-align:center}
+.ob-skip{position:absolute;top:44px;right:22px;font-size:10px;letter-spacing:2px;text-transform:uppercase;font-weight:700;color:var(--ink-muted)}
+.ob-emo{font-size:60px;margin-bottom:24px;position:relative;line-height:1}
+.ob-head{font-family:var(--disp);font-size:26px;color:var(--ink);margin-bottom:12px;line-height:1.2}
+.ob-sub{font-size:12px;color:var(--ink-muted);line-height:1.7;max-width:210px}
+.ob-dots{display:flex;gap:6px;margin-top:30px}
+.ob-dot{width:7px;height:7px;border-radius:50%;background:var(--border)}
+.ob-dot-a{background:var(--rust);width:20px;border-radius:3px}
+.ob-btn{margin-top:22px;width:100%}
+
+/* ════════════ S2 — LOGIN ════════════ */
+.s-login{align-items:center;justify-content:center;padding:40px 24px 36px}
+.login-ico{width:60px;height:60px;background:var(--rust);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:14px;box-shadow:0 8px 24px rgba(194,73,20,.3);transform:rotate(-4deg);border:2px dashed rgba(255,255,255,.5)}
+.login-name{font-family:var(--disp);font-size:30px;color:var(--ink);margin-bottom:6px}
+.login-tag{font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--ink-muted);margin-bottom:42px}
+.login-btn{width:100%;padding:13px;border-radius:5px;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px}
+.login-g{background:var(--card);color:var(--ink);border:1.5px solid var(--border)}
+.login-a{background:var(--ink);color:var(--paper)}
+.login-fine{font-size:10px;color:var(--ink-muted);text-align:center;margin-top:24px;line-height:1.6;max-width:220px}
+
+/* ════════════ S3 — HOME ════════════ */
+.h-header{padding:6px 20px 8px}
+.h-greet{font-size:10px;color:var(--ink-muted);font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:5px}
+.h-title{font-family:var(--disp);font-size:26px;color:var(--ink);line-height:1.25}
+.h-search{margin:12px 20px 0;background:var(--card);border:1.5px dashed var(--rust);border-radius:4px;padding:10px 13px;display:flex;align-items:center;gap:8px}
+.h-search span:first-child{font-size:12px}.h-search-ph{font-size:11px;color:var(--ink-muted);font-weight:500}
+.h-cats{display:flex;gap:7px;padding:12px 20px 0;overflow-x:auto;scrollbar-width:none}
+.h-cats::-webkit-scrollbar{display:none}
+.h-cat{flex-shrink:0;padding:6px 13px;border-radius:20px;font-size:10px;font-weight:700}
+.h-cat-a{background:var(--ink);color:var(--paper)}.h-cat-i{background:transparent;border:1.5px solid var(--border);color:var(--ink-muted)}
+.h-row{display:flex;justify-content:space-between;align-items:center;padding:14px 20px 8px;gap:10px}
+.h-sec{font-family:var(--disp);font-size:15px;color:var(--ink);white-space:nowrap}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:11px;padding:0 20px}
+.sc{overflow:hidden;position:relative}
+.sc-img{height:74px;position:relative}
+.sc-body{padding:8px 9px 10px}
+.sc-name{font-size:11px;font-weight:700;color:var(--ink);line-height:1.3;margin-bottom:5px}
+
+/* ════════════ S4 — CATEGORY VIEW ════════════ */
+.cv-nav{display:flex;align-items:center;justify-content:space-between;padding:6px 20px 4px}
+.cv-back{font-size:18px;color:var(--ink);font-weight:700}
+.cv-title{font-family:var(--disp);font-size:17px;color:var(--ink)}
+.cv-more{font-size:18px;color:var(--ink-muted)}
+.cv-stats{padding:0 20px 8px;font-size:11px;color:var(--ink-muted);font-weight:500}
+.cv-filters{display:flex;gap:7px;padding:0 20px 10px;overflow-x:auto;scrollbar-width:none}
+.cv-filters::-webkit-scrollbar{display:none}
+.cv-f{flex-shrink:0;padding:6px 12px;border-radius:20px;font-size:10px;font-weight:700}
+.cv-f-a{background:var(--ink);color:var(--paper)}.cv-f-i{background:transparent;border:1.5px solid var(--border);color:var(--ink-muted)}
+.cv-list{display:flex;flex-direction:column;gap:8px;padding:0 20px;overflow:hidden}
+.cv-item{padding:9px;display:flex;gap:10px;align-items:center;position:relative}
+.cv-thumb{width:52px;height:52px;border-radius:5px;flex-shrink:0}
+.cv-info{flex:1;min-width:0}
+.cv-iname{font-size:12px;font-weight:700;color:var(--ink);margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cv-isub{font-size:10px;color:var(--ink-muted);margin-bottom:4px}
+.cv-dist{font-size:11px;font-weight:800;color:var(--rust);flex-shrink:0;font-family:var(--disp)}
+
+/* ════════════ S5 — NEARBY ════════════ */
+.nr-fr{display:flex;gap:8px;padding:0 20px 10px;align-items:center}
+.nr-pill{background:var(--rust);color:#fff;font-size:10px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;padding:6px 12px;border-radius:3px}
+.nr-rad{background:transparent;border:1.5px solid var(--border);color:var(--ink);font-size:10px;font-weight:700;padding:6px 10px;border-radius:3px}
+.map-box{margin:0 20px 12px;height:100px;background:#DDE9E5;border-radius:6px;position:relative;overflow:hidden;border:1.5px dashed var(--teal)}
+.map-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(31,111,92,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(31,111,92,.08) 1px,transparent 1px);background-size:18px 18px}
+.mr-h{position:absolute;height:3px;background:rgba(255,255,255,.85);border-radius:2px}
+.mr-v{position:absolute;width:3px;background:rgba(255,255,255,.85);border-radius:2px}
+.mpin{position:absolute;width:24px;height:24px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.18);z-index:2;border:1.5px dashed rgba(255,255,255,.6)}
+.mpin-i{width:8px;height:8px;background:#fff;border-radius:50%;transform:rotate(45deg)}
+.myou{position:absolute;width:13px;height:13px;background:var(--teal);border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 4px rgba(31,111,92,.18);z-index:3}
+.nr-cnt{padding:0 20px 6px;font-size:10px;font-weight:800;color:var(--ink-muted);text-transform:uppercase;letter-spacing:1px}
+.nr-list{display:flex;flex-direction:column;gap:7px;padding:0 20px}
+.nr-item{padding:9px 11px;display:flex;align-items:center;gap:9px}
+.nr-th{width:38px;height:38px;border-radius:5px;flex-shrink:0}
+.nr-info{flex:1;min-width:0}
+.nr-nm{font-size:12px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px}
+.nr-sub{font-size:10px;color:var(--ink-muted);font-weight:500}
+.nr-d{font-size:11px;font-weight:800;color:var(--rust);flex-shrink:0;font-family:var(--disp)}
+.nr-df{color:var(--ink-muted)}
+
+/* ════════════ S6 — SAVE DETAIL ════════════ */
+.det-hero{height:174px;position:relative;flex-shrink:0}
+.det-ov{position:absolute;inset:0;background:linear-gradient(to bottom,rgba(43,36,32,.05),rgba(43,36,32,.45))}
+.det-hn{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;padding:40px 16px 0;z-index:5}
+.det-back{width:31px;height:31px;background:rgba(255,255,255,.94);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--ink);border:1.5px dashed rgba(43,36,32,.3)}
+.det-acts{display:flex;gap:6px}
+.det-act{width:31px;height:31px;background:rgba(255,255,255,.94);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;border:1.5px dashed rgba(43,36,32,.3)}
+.det-tape{top:0;right:40px;width:70px;transform:rotate(8deg)}
+.det-body{flex:1;padding:14px 18px;display:flex;flex-direction:column;gap:9px;overflow:hidden;position:relative}
+.det-row{display:flex;align-items:center;gap:8px}
+.det-age{font-size:10px;color:var(--ink-muted);font-weight:600}
+.det-title{font-family:var(--disp);font-size:23px;color:var(--ink);line-height:1.2}
+.det-loc{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--ink-muted);font-weight:500}
+.det-desc{font-size:12px;color:#56493D;line-height:1.65}
+.det-note{background:rgba(201,148,37,.1);border-left:2.5px dashed var(--mustard);border-radius:0 4px 4px 0;padding:8px 10px;font-size:11px;color:#7A6840;font-style:italic}
+.det-spacer{margin-top:auto}
+
+/* ════════════ S7 — QUICK SAVE ════════════ */
+.qs-feed{flex:1;padding:42px 18px 0;opacity:.25;filter:blur(1.5px)}
+.qs-fb{margin-bottom:10px;background:#D8CBB4;border-radius:5px}
+.qs-sheet{position:absolute;bottom:0;left:0;right:0;background:var(--card);border-radius:18px 18px 0 0;padding:17px 19px 28px;box-shadow:0 -8px 40px rgba(0,0,0,.13);z-index:10;border-top:1.5px dashed var(--border)}
+.qs-perf{position:absolute;top:-7px;left:0;right:0;height:14px;background:repeating-linear-gradient(to right,transparent,transparent 10px,#0A0A0A 10px,#0A0A0A 12px);background-size:24px 14px;border-radius:50%}
+.qs-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:6px auto 15px}
+.qs-sr{display:flex;align-items:center;gap:8px;margin-bottom:13px}
+.qs-check{width:28px;height:28px;background:var(--teal);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;flex-shrink:0;border:2px dashed rgba(255,255,255,.5)}
+.qs-st{font-family:var(--disp);font-size:17px;color:var(--ink)}
+.qs-card{background:var(--paper);border:1px dashed var(--border);border-radius:6px;padding:10px;display:flex;gap:9px;align-items:flex-start;margin-bottom:14px}
+.qs-th{width:42px;height:42px;border-radius:5px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px}
+.qs-info{flex:1;min-width:0}
+.qs-pn{font-size:12px;font-weight:700;color:var(--ink);margin-bottom:4px}
+.qs-ex{font-size:10px;color:var(--ink-muted);line-height:1.6}
+.qs-btns{display:flex;gap:9px}
+
+/* ════════════ S8 — SEARCH ════════════ */
+.srch-bar-active{margin:6px 18px 0;background:var(--card);border-radius:4px;padding:10px 13px;display:flex;align-items:center;gap:7px;border:1.5px dashed var(--rust)}
+.srch-q{font-size:12px;font-weight:600;color:var(--ink);flex:1}
+.srch-x{font-size:14px;color:var(--ink-muted)}
+.srch-sec{padding:12px 20px 6px;font-size:10px;font-weight:800;color:var(--ink-muted);text-transform:uppercase;letter-spacing:1.5px}
+.srch-chips{display:flex;flex-wrap:wrap;gap:7px;padding:0 20px 12px}
+.srch-chip{background:transparent;border:1.5px solid var(--border);color:var(--ink-muted);font-size:11px;font-weight:600;padding:5px 11px;border-radius:20px;display:flex;align-items:center;gap:5px}
+.srch-results{display:flex;flex-direction:column;gap:1px;padding:0 20px}
+.srch-cat-hdr{font-family:var(--disp);font-size:12px;color:var(--ink);padding:9px 0 5px;display:flex;align-items:center;gap:8px}
+.srch-item{padding:9px 11px;display:flex;align-items:center;gap:9px;margin-bottom:6px}
+.srch-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;border:1.5px dashed rgba(255,255,255,.7)}
+.srch-iname{font-size:12px;font-weight:700;color:var(--ink);margin-bottom:1px}
+.srch-isub{font-size:10px;color:var(--ink-muted);font-weight:500}
+
+/* ════════════ S9 — ALL SAVES ════════════ */
+.sv-hdr{display:flex;justify-content:space-between;align-items:center;padding:6px 20px 2px}
+.sv-title{font-family:var(--disp);font-size:24px;color:var(--ink)}
+.sv-sort{font-size:18px;color:var(--ink-muted)}
+.sv-stats{padding:2px 20px 10px;font-size:11px;color:var(--ink-muted);font-weight:500}
+.sv-cats{display:flex;flex-direction:column;gap:7px;padding:0 20px}
+.sv-citem{padding:11px 13px;display:flex;align-items:center;gap:10px;position:relative;overflow:hidden}
+.sv-caccent{position:absolute;left:0;top:0;bottom:0;width:4px}
+.sv-cico{font-size:20px;flex-shrink:0;margin-left:4px}
+.sv-cinfo{flex:1}
+.sv-cname{font-family:var(--disp);font-size:14px;color:var(--ink)}
+.sv-ccount{font-size:10px;color:var(--ink-muted);font-weight:500;text-transform:uppercase;letter-spacing:.5px}
+.sv-carr{font-size:16px;color:var(--ink-muted)}
+.sv-recent{padding:14px 20px 6px;font-family:var(--disp);font-size:14px;color:var(--ink)}
+.sv-minigrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 20px}
+.sv-mc{overflow:hidden;position:relative}
+.sv-mc-img{height:58px}
+.sv-mc-name{font-size:10px;font-weight:700;color:var(--ink);padding:5px 8px 7px;line-height:1.3}
+
+/* ════════════ S10 — TRIP PLANNING ════════════ */
+.tp-hdr{padding:6px 20px 4px}
+.tp-title{font-family:var(--disp);font-size:24px;color:var(--ink);margin-bottom:4px}
+.tp-sub{font-size:11px;color:var(--ink-muted);font-weight:500}
+.tp-search{margin:10px 20px 0;background:var(--card);border-radius:4px;padding:10px 13px;display:flex;align-items:center;gap:7px;border:1.5px dashed var(--border)}
+.tp-sph{font-size:11px;color:var(--ink-muted);font-weight:500}
+.tp-chips-lbl{padding:12px 20px 6px;font-size:10px;font-weight:800;color:var(--ink-muted);text-transform:uppercase;letter-spacing:1.5px}
+.tp-chips{display:flex;gap:7px;padding:0 20px;overflow-x:auto;scrollbar-width:none}
+.tp-chips::-webkit-scrollbar{display:none}
+.tp-chip{flex-shrink:0;background:var(--card);border:1.5px solid var(--border);color:var(--ink);font-size:11px;font-weight:700;padding:7px 14px;border-radius:20px}
+.tp-chip-sel{background:var(--rust);border-color:var(--rust);color:#fff}
+.tp-city-hdr{display:flex;justify-content:space-between;align-items:center;padding:14px 20px 8px}
+.tp-city-title{font-family:var(--disp);font-size:16px;color:var(--ink)}
+.tp-city-cnt{background:rgba(194,73,20,.1);color:var(--rust);font-size:10px;font-weight:800;padding:3px 9px;border-radius:3px;letter-spacing:.5px}
+.tp-group{margin-bottom:8px;padding:0 20px}
+.tp-ghdr{font-size:10px;font-weight:800;color:var(--ink-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px}
+.tp-gcard{padding:9px 11px;display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.tp-gth{width:36px;height:36px;border-radius:5px;flex-shrink:0}
+.tp-gname{font-size:11px;font-weight:700;color:var(--ink);margin-bottom:1px}
+.tp-gloc{font-size:10px;color:var(--ink-muted)}
+.tp-see{font-size:11px;color:var(--rust);font-weight:700;text-align:center;padding:4px 0;text-transform:uppercase;letter-spacing:.5px}
+
+/* ════════════ S11 — FULL MAP ════════════ */
+.map-top{position:absolute;top:0;left:0;right:0;z-index:10;padding:42px 14px 8px;display:flex;gap:8px;align-items:center}
+.map-inp{flex:1;background:rgba(253,250,243,.96);border-radius:4px;padding:9px 12px;font-size:11px;color:var(--ink-muted);font-weight:500;border:1.5px dashed var(--rust)}
+.map-flt{width:36px;height:36px;background:rgba(253,250,243,.96);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;border:1.5px solid var(--border)}
+.map-cats{position:absolute;top:88px;left:0;right:0;z-index:10;display:flex;gap:7px;padding:0 14px;overflow-x:auto;scrollbar-width:none}
+.map-cats::-webkit-scrollbar{display:none}
+.map-cat{flex-shrink:0;padding:5px 11px;border-radius:20px;font-size:11px;font-weight:700;background:rgba(253,250,243,.95);color:var(--ink);border:1px solid var(--border)}
+.map-cat-a{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.big-map{position:absolute;top:0;bottom:218px;left:0;right:0;background:#E3ECE8;overflow:hidden}
+.bmap-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(31,111,92,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(31,111,92,.06) 1px,transparent 1px);background-size:22px 22px}
+.bmap-block{position:absolute;background:rgba(180,200,190,.55);border-radius:3px}
+.bmap-park{position:absolute;background:rgba(201,148,37,.18);border-radius:4px;border:1px dashed rgba(201,148,37,.3)}
+.bmap-rh{position:absolute;height:4px;background:rgba(253,250,243,.85);border-radius:2px}
+.bmap-rv{position:absolute;width:4px;background:rgba(253,250,243,.85);border-radius:2px}
+.map-bs{position:absolute;bottom:0;left:0;right:0;background:var(--card);border-radius:16px 16px 0 0;padding:14px 18px 28px;box-shadow:0 -6px 30px rgba(0,0,0,.1);z-index:10;border-top:1.5px dashed var(--border)}
+.map-bs-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.map-bs-title{font-family:var(--disp);font-size:15px;color:var(--ink)}
+.map-bs-count{font-size:10px;color:var(--ink-muted);font-weight:500}
+.map-hcards{display:flex;gap:9px;overflow-x:auto;scrollbar-width:none}
+.map-hcards::-webkit-scrollbar{display:none}
+.map-hcard{flex-shrink:0;width:118px;overflow:hidden}
+.map-hcard-img{height:60px}
+.map-hcard-body{padding:6px 8px 8px}
+.map-hcard-name{font-size:10px;font-weight:700;color:var(--ink);line-height:1.3;margin-bottom:4px}
+
+/* ════════════ S12 — PROFILE ════════════ */
+.pf-hdr{display:flex;align-items:center;justify-content:space-between;padding:6px 20px 8px}
+.pf-htitle{font-family:var(--disp);font-size:18px;color:var(--ink)}
+.pf-hico{font-size:18px;color:var(--ink-muted)}
+.pf-av{display:flex;flex-direction:column;align-items:center;padding:6px 20px 12px}
+.pf-circle{width:64px;height:64px;background:var(--rust);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--disp);font-size:26px;color:#fff;margin-bottom:9px;border:2.5px dashed rgba(255,255,255,.55)}
+.pf-name{font-family:var(--disp);font-size:18px;color:var(--ink);margin-bottom:2px}
+.pf-email{font-size:11px;color:var(--ink-muted)}
+.pf-stats{display:flex;margin:8px 20px 12px;border-radius:6px;overflow:hidden}
+.pf-stat{flex:1;text-align:center;padding:11px 8px;border-right:1px dashed var(--border)}
+.pf-stat:last-child{border-right:none}
+.pf-snum{font-family:var(--disp);font-size:20px;color:var(--ink)}
+.pf-slbl{font-size:9px;font-weight:700;color:var(--ink-muted);text-transform:uppercase;letter-spacing:1px}
+.pf-section{margin:0 20px 8px}
+.pf-sitems{overflow:hidden}
+.pf-item{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;border-bottom:1px dashed var(--border)}
+.pf-item:last-child{border-bottom:none}
+.pf-iname{font-size:12px;font-weight:600;color:var(--ink)}
+.pf-ival{font-size:11px;color:var(--ink-muted);font-weight:500}
+.pf-logout{text-align:center;padding:14px 20px 0;font-size:12px;font-weight:800;color:var(--rust);text-transform:uppercase;letter-spacing:1px}
+
+/* ════════════ S13 — NOTIFICATIONS ════════════ */
+.nf-hdr{display:flex;align-items:center;justify-content:space-between;padding:6px 20px 8px}
+.nf-title{font-family:var(--disp);font-size:18px;color:var(--ink)}
+.nf-read{font-size:11px;color:var(--rust);font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.nf-grp{padding:0 20px 4px;font-size:10px;font-weight:800;color:var(--ink-muted);text-transform:uppercase;letter-spacing:1.5px}
+.nf-list{display:flex;flex-direction:column;gap:7px;padding:6px 20px 0}
+.nf-item{padding:10px 12px;display:flex;gap:9px;align-items:flex-start;position:relative}
+.nf-item-unread{border-left:2.5px dashed var(--rust);padding-left:9px}
+.nf-udot{position:absolute;top:10px;right:11px;width:7px;height:7px;background:var(--rust);border-radius:50%}
+.nf-ico{width:34px;height:34px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;border:1.5px dashed rgba(43,36,32,.2)}
+.nf-body{flex:1;min-width:0;padding-right:14px}
+.nf-iname{font-size:12px;font-weight:700;color:var(--ink);margin-bottom:2px}
+.nf-isub{font-size:10px;color:var(--ink-muted);line-height:1.4}
+.nf-time{position:absolute;bottom:8px;right:11px;font-size:9px;color:var(--ink-muted)}
+.nf-read-item{opacity:.5}
+
+/* ════════════ S14 — EMPTY STATE ════════════ */
+.s-empty{align-items:center;justify-content:center;padding:32px 28px}
+.emp-art{width:90px;height:90px;position:relative;margin-bottom:24px;display:flex;align-items:center;justify-content:center}
+.emp-stamp{width:90px;height:90px;border-radius:50%;border:3px dashed var(--rust);display:flex;align-items:center;justify-content:center;font-size:34px;transform:rotate(-6deg);position:relative}
+.emp-tape1{top:-8px;right:-12px;width:50px;transform:rotate(35deg)}
+.emp-tape2{bottom:-6px;left:-14px;width:46px;transform:rotate(-30deg);background:rgba(31,111,92,.3)}
+.emp-title{font-family:var(--disp);font-size:23px;color:var(--ink);text-align:center;margin-bottom:10px}
+.emp-sub{font-size:12px;color:var(--ink-muted);text-align:center;line-height:1.7;max-width:220px;margin-bottom:22px}
+.emp-cta{padding:11px 26px}
+.emp-steps{display:flex;align-items:flex-start;gap:0;width:100%;margin-top:28px}
+.emp-step{flex:1;text-align:center;padding:0 4px}
+.emp-snum{width:24px;height:24px;background:transparent;border:1.5px dashed var(--rust);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--disp);font-size:12px;color:var(--rust);margin:0 auto 6px}
+.emp-stxt{font-size:9px;color:var(--ink-muted);line-height:1.5;font-weight:500}
+.emp-arr{padding-top:13px;color:var(--ink-muted);font-size:13px}
+</style>
+</head>
+<body>
+
+<div class="pg-brand">
+  <div class="pg-logo">
+    <div class="pg-ico">🔖</div>
+    <div class="pg-name">Wanna Try</div>
+  </div>
+  <div class="pg-tag">Vintage Scrapbook · wannatry.in</div>
+</div>
+
+<!-- ROW 1: ONBOARDING & AUTH -->
+<div class="pg-section">01 — Onboarding & Auth</div>
+<div class="row">
+
+  <!-- S1: ONBOARDING -->
+  <div class="col">
+    <div class="ph">
+      <div class="sb paper"><span>9:41</span><span>●●● 🔋</span></div>
+      <div class="scr s-ob paper" style="top:36px">
+        <div class="ob-skip">Skip</div>
+        <div class="ob-emo">
+          📱
+          <div class="tape" style="width:54px;top:-6px;left:50%;transform:translateX(-50%) rotate(-5deg);background:rgba(31,111,92,.3)"></div>
+        </div>
+        <div class="ob-head">See it on Instagram</div>
+        <div class="ob-sub">Scroll past something you love? Save it in one tap — like clipping it for your scrapbook.</div>
+        <div class="ob-dots">
+          <div class="ob-dot ob-dot-a"></div>
+          <div class="ob-dot"></div>
+          <div class="ob-dot"></div>
+        </div>
+        <div class="btn-p ob-btn">Next →</div>
+      </div>
+    </div>
+    <div class="lbl">Onboarding</div>
+  </div>
+
+  <!-- S2: LOGIN -->
+  <div class="col">
+    <div class="ph">
+      <div class="sb paper"><span>9:41</span><span>●●● 🔋</span></div>
+      <div class="scr s-login paper" style="top:36px">
+        <div class="login-ico">🔖</div>
+        <div class="login-name">Wanna Try</div>
+        <div class="login-tag">See it · Save it · Try it</div>
+        <div class="login-btn login-g" style="width:100%">
+          <span style="font-weight:800;font-size:15px;color:#C24914">G</span>
+          <span>Continue with Google</span>
+        </div>
+        <div class="login-btn login-a" style="width:100%">
+          <span style="font-size:15px"></span>
+          <span>Continue with Apple</span>
+        </div>
+        <div class="login-fine">By continuing you agree to our Terms & Privacy Policy</div>
+      </div>
+    </div>
+    <div class="lbl">Login</div>
+  </div>
+
+  <!-- S14: EMPTY STATE -->
+  <div class="col">
+    <div class="ph">
+      <div class="sb paper"><span>9:41</span><span>●●● 🔋</span></div>
+      <div class="scr s-empty paper" style="top:36px">
+        <div class="emp-art">
+          <div class="emp-stamp">🔖
+            <div class="tape emp-tape1"></div>
+            <div class="tape emp-tape2"></div>
+          </div>
+        </div>
+        <div class="emp-title">Nothing saved yet</div>
+        <div class="emp-sub">Share any Instagram reel to Wanna Try — we'll file it away so you can find it later.</div>
+        <div class="btn-s emp-cta">See How It Works</div>
+        <div class="emp-steps">
+          <div class="emp-step">
+            <div class="emp-snum">1</div>
+            <div class="emp-stxt">Share a reel from Instagram</div>
+          </div>
+          <div class="emp-arr">···</div>
+          <div class="emp-step">
+            <div class="emp-snum">2</div>
+            <div class="emp-stxt">AI reads and files it</div>
+          </div>
+          <div class="emp-arr">···</div>
+          <div class="emp-step">
+            <div class="emp-snum">3</div>
+            <div class="emp-stxt">Find it when you need it</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="lbl">Empty State</div>
+  </div>
+
+</div>
+
+<!-- ROW 2: CORE FLOW -->
+<div class="pg-section">02 — Core Save Flow</div>
+<div class="row">
+
+  <!-- S3: HOME -->
+  <div class="col">
+    <div class="ph">
+      <div class="sb paper"><span>9:41</span><span>●●● 🔋</span></div>
+      <div class="scr paper" style="top:36px">
+        <div class="h-header">
+          <div class="h-greet">Good Afternoon</div>
+          <div class="h-title">What do you<br>wanna try?</div>
+        </div>
+        <div class="h-search"><span>🔍</span><span class="h-search-ph">Search your saves...</span></div>
+        <div class="h-cats">
+          <div class="h-cat h-cat-a">All</div>
+          <div class="h-cat h-cat-i">Eat</div>
+          <div class="h-cat h-cat-i">Travel</div>
+          <div class="h-cat h-cat-i">Shop</div>
+          <div class="h-cat h-cat-i">Cook</div>
+        </div>
+        <div class="h-row"><span class="h-sec">Saved Recently</span><div class="dline"></div></div>
+        <div class="grid2">
+          <div class="sc card"><div class="sc-img pg-cafe"><div class="stamp stamp-tr">🍽️</div></div><div class="sc-body"><div class="sc-name">Perch Wine & Coffee Bar</div><span class="ttag" style="background:var(--rust)">Eat</span></div></div>
+          <div class="sc card"><div class="sc-img pg-hotel"><div class="stamp stamp-tr">✈️</div></div><div class="sc-body"><div class="sc-name">Taj Coral Reef, Andaman</div><span class="ttag" style="background:var(--teal)">Travel</span></div></div>
+          <div class="sc card"><div class="sc-img pg-recipe"><div class="stamp stamp-tr">👨‍🍳</div></div><div class="sc-body"><div class="sc-name">Viral Spicy Tteokbokki</div><span class="ttag" style="background:var(--mustard)">Cook</span></div></div>
+          <div class="sc card"><div class="sc-img pg-shop"><div class="stamp stamp-tr">🛍️</div></div><div class="sc-body"><div class="sc-name">Minimal Leather Wallet</div><span class="ttag" style="background:var(--brown)">Shop</span></div></div>
+        </div>
+      </div>
+      <div class="bnav"><div class="ni"><span>🏠</span><span class="nl nl-a">Home</span></div><div class="ni"><span>📍</span><span class="nl">Nearby</span></div><div class="nadd">＋</div><div class="ni"><span>📁</span><span class="nl">Saves</span></div><div class="ni"><span>👤</span><span class="nl">Me</span></div></div>
+    </div>
+    <div class="lbl">Home</div>
+  </div>
+
+  <!-- S6: SAVE DETAIL -->
+  <div class="col">
+    <div class="ph">
+      <div class="sb sb-w"><span>9:41</span><span>●●● 🔋</span></div>
+      <div class="scr paper">
+        <div class="det-hero pg-cafe">
+          <div class="det-ov"></div>
+          <div class="tape det-tape"></div>
+          <div class="det-hn">
+            <div class="det-back">←</div>
+            <div class="det-acts"><div class="det-act">↗</div><div class="det-act">⋯</div></div>
+          </div>
+          <div class="stamp stamp-tl" style="background:rgba(245,239,224,.85);border-color:var(--rust);color:var(--rust)">🍽️</div>
+        </div>
+        <div class="det-body">
+          <div class="det-row"><span class="ttag" style="background:var(--rust)">Eat & Drink</span><span class="det-age">Saved 2 days ago</span></div>
+          <div class="det-title">Perch Wine &<br>Coffee Bar</div>
+          <div class="det-loc">📍 <span>Khan Market, New Delhi</span></div>
+          <div class="det-desc">Rooftop café known for natural wines and all-day brunch. Stunning views. Book ahead on weekends.</div>
+          <div class="det-note">"Perfect Sunday brunch spot!"</div>
+          <div class="det-spacer"></div>
+          <div class="btn-p"><span style="font-size:14px">🍽️</span><span>Book on Zomato →</span></div>
+          <div class="btn-s"><span style="font-size:12px">📍</span><span>Get Directions</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="lbl">Save Detail</div>
+  </div>
+
+  <!-- S7: QUICK SAVE -->
+  <div class="col">
+    <div class="ph">
+      <div class="sb paper"><span>9:41</span><span>●●● 🔋</span></div>
+      <div class="scr paper" style="top:36px">
+        <div class="qs-feed">
+          <div class="qs-fb" style="height:32px"></div>
+          <div class="qs-fb" style="height:110px;opacity:.8"></div>
+          <div class="qs-fb" style="height:24px;width:65%"></div>
+          <div class="qs-fb" style="height:24px;width:80%"></div>
+        </div>
+        <div style="position:absolute;top:52px;left:18px;right:18px;height:128px;border-radius:6px;opacity:.45;border:1.5px dashed var(--rust)" class="pg-cafe"></div>
+        <div class="qs-sheet">
+          <div class="qs-perf"></div>
+          <div class="qs-handle"></div>
+          <div class="qs-sr"><div class="qs-check">✓</div><div class="qs-st">Saved to Wanna Try!</div></div>
+          <div class="qs-card">
+            <div class="qs-th pg-cafe">☕</div>
+            <div class="qs-info">
+              <div class="qs-pn">Perch Wine & Coffee Bar</div>
+              <div style="margin-bottom:5px"><span class="ttag" style="background:var(--rust);font-size:8px">Eat & Drink</span></div>
+              <div class="qs-ex">Rooftop café · Khan Market · Natural wines, brunch</div>
+            </div>
+          </div>
+          <div class="qs-btns"><div class="btn-p" style="flex:1">View Save</div><div class="btn-s" style="flex:1">Done</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="lbl">Quick Save</div>
+  </div>
+
+  <!-- S8: SEARCH -->
+  <div class="col">
+    <div class="ph">
+      <div class="sb paper"><span>9:41</span><span>●●● 🔋</span></div>
+      <div class="scr paper" style="top:36px">
+        <div class="srch-bar-active"><span>🔍</span><span class="srch-q">cafe</span><span class="srch-x">✕</span></div>
+        <div class="srch-sec">Recent Searches</div>
+        <div class="srch-chips">
+          <div class="srch-chip">Andaman hotels <span style="color:var(--ink-muted)">✕</span></div>
+          <div class="srch-chip">recipes <span style="color:var(--ink-muted)">✕</span></div>
+          <div class="srch-chip">Goa <span style="color:var(--ink-muted)">✕</span></div>
+        </div>
+        <div class="srch-sec">Results</div>
+        <div class="srch-results">
+          <div class="srch-cat-hdr">🍽️ Eat & Drink</div>
+          <div class="srch-item card">
+            <div class="srch-dot" style="background:var(--rust)"></div>
+            <div><div class="srch-iname">Perch Wine & Coffee Bar</div><div class="srch-isub">Eat & Drink · Khan Market, Delhi</div></div>
+          </div>
+          <div class="srch-item card">
+            <div class="srch-dot" style="background:var(--rust)"></div>
+            <div><div class="srch-iname">Blue Tokai Roasters</div><div class="srch-isub">Eat & Drink · Lodhi Road, Delhi</div></div>
+          </div>
+          <div class="srch-cat-hdr">✈️ Travel</div>
+          <div class="srch-item card">
+            <div class="srch-dot" style="background:var(--teal)"></div>
+            <div><div class="srch-iname">Café del Mar, Goa</div><div class="srch-isub">Travel · North Goa</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="lbl">Search</div>
+  </div>
+
+</div>
+
+<!-- ROW 3: BROWSE & LOCATION -->
+<div class="pg-section">03 — Browse & Location</div>
+<div class="row">
+
+  <!-- S4: CATEGORY VIEW -->
+  <div class="col">
+    <div class="ph">
+      <div class="sb paper"><span>9:41</span><span>●●● 🔋</span></div>
+      <div class="scr paper" style="top:36px">
+        <div class="cv-nav"><span class="cv-back">←</span><span class="cv-title">Eat & Drink</span><span class="cv-more">⋯</span></div>
+        <div class="cv-stats">24 saves · 3 nearby</div>
+        <div class="cv-filters">
+          <div class="cv-f cv-f-a">All</div>
+          <div class="cv-f cv-f-i">Near Me</div>
+          <div class="cv-f cv-f-i">Recent</div>
+          <div class="cv-f cv-f-i">Visited</div>
+        </div>
+        <div class="cv-list">
+          <div class="cv-item card"><div class="cv-thumb pg-cafe"></div><div class="cv-info"><div class="cv-iname">Perch Wine & Coffee Bar</div><div class="cv-isub">📍 Khan Market, Delhi</div><span class="ttag" style="background:var(--rust);font-size:8px">Eat</span></div><div class="cv-dist">0.8 km</div></div>
+          <div class="cv-item card"><div class="cv-thumb pg-recipe"></div><div class="cv-info"><div class="cv-iname">Blue Tokai Roasters</div><div class="cv-isub">📍 Lodhi Road, Delhi</div><span class="ttag" style="background:var(--rust);font-size:8px">Eat</span></div><div class="cv-dist">1.4 km</div></div>
+          <div class="cv-item card" style="opacity:.7"><div class="cv-thumb" style="background:linear-gradient(135deg,#E8D4BC,var(--rust))"></div><div class="cv-info"><div class="cv-iname">Cafe Lota, Pragati Maidan</div><div class="cv-isub">📍 Pragati Maidan, Delhi</div><span class="ttag" style="background:var(--rust);font-size:8px">Eat</span></div><div class="cv-dist" style="color:var(--ink-muted)">3.1 km</div></div>
+          <div class="cv-item card" style="opacity:.7"><div class="cv-thumb" style="background:linear-gradient(135deg,#E0D4E8,var(--plum))"></div><div class="cv-info"><div class="cv-iname">The Piano Man Jazz Club</div><div class="cv-isub">📍 Safdarjung, Delhi</div><span class="ttag" style="background:var(--rust);font-size:8px">Eat</span></div><div class="cv-dist" style="color:var(--ink-muted)">4.2 km</div></div>
+        </div>
+      </div>
+      <div class="bnav"><div class="ni"><span>🏠</span><span class="nl">Home</span></div><div class="ni"><span>📍</span><span class="nl">Nearby</span></div><div class="nadd">＋</div><div class="ni"><span>📁</span><span class="nl">Saves</span></div><div class="ni"><span>👤</span><span class="nl">Me</span></div></div>
+    </div>
+    <div class="lbl">Category View</div>
+  </div>
+
+  <!-- S5: NEARBY -->
+  <div class="col">
+    <div class="ph">
+      <div class="sb paper"><span>9:41</span><span>●●● 🔋</span></div>
+      <div class="scr paper" style="top:36px">
+        <div class="cv-nav"><span class="cv-back">←</span><span class="cv-title">Eat & Drink</span><span class="cv-more">⋯</span></div>
+        <div class="nr-fr"><div class="nr-pill">📍 Near Me ON</div><div class="nr-rad">2 km ▾</div></div>
+        <div class="map-box">
+          <div class="map-grid"></div>
+          <div class="mr-h" style="top:37%;left:0;right:0"></div>
+          <div class="mr-h" style="top:64%;left:0;right:0;height:2px;opacity:.6"></div>
+          <div class="mr-v" style="left:38%;top:0;bottom:0"></div>
+          <div class="mr-v" style="left:67%;top:0;bottom:0;width:2px;opacity:.6"></div>
+          <div class="mpin" style="background:var(--rust);top:22%;left:28%"><div class="mpin-i"></div></div>
+          <div class="mpin" style="background:var(--rust);top:50%;left:54%"><div class="mpin-i"></div></div>
+          <div class="mpin" style="background:var(--rust);top:18%;left:66%;opacity:.6"><div class="mpin-i"></div></div>
+          <div class="myou" style="top:40%;left:42%"></div>
+        </div>
+        <div class="nr-cnt">3 Places Nearby</div>
+        <div class="nr-list">
+          <div class="nr-item card"><div class="nr-th pg-cafe"></div><div class="nr-info"><div class="nr-nm">Perch Wine & Coffee Bar</div><div class="nr-sub">Khan Market · 2 days ago</div></div><div class="nr-d">0.8 km</div></div>
+          <div class="nr-item card"><div class="nr-th pg-recipe"></div><div class="nr-info"><div class="nr-nm">Blue Tokai Roasters</div><div class="nr-sub">Lodhi Road · 5 days ago</div></div><div class="nr-d">1.4 km</div></div>
+          <div class="nr-item card" style="opacity:.65"><div class="nr-th" style="background:linear-gradient(135deg,#E8D4BC,var(--rust))"></div><div class="nr-info"><div class="nr-nm">Cafe Lota</div><div class="nr-sub">Pragati Maidan · 1 week ago</div></div><div class="nr-d nr-df">3.1 km</div></div>
+        </div>
+      </div>
+      <div class="bnav"><div class="ni"><span>🏠</span><span class="nl">Home</span></div><div class="ni"><span>📍</span><span class="nl nl-a">Nearby</span></div><div class="nadd">＋</div><div class="ni"><span>📁</span><span class="nl">Saves</span></div><div class="ni"><span>👤</span><span class="nl">Me</span></div></div>
+    </div>
+    <div class="lbl">Nearby</div>
+  </div>
+
+  <!-- S11: FULL MAP -->
+  <div class="col">
+    <div class="ph">
+      <div class="scr paper">
+        <div class="big-map">
+          <div class="bmap-grid"></div>
+          <div class="bmap-block" style="top:20%;left:10%;width:45px;height:35px"></div>
+          <div class="bmap-block" style="top:35%;left:55%;width:38px;height:28px"></div>
+          <div class="bmap-block" style="top:55%;left:20%;width:52px;height:40px"></div>
+          <div class="bmap-block" style="top:25%;left:72%;width:30px;height:44px"></div>
+          <div class="bmap-park" style="top:42%;left:35%;width:55px;height:42px"></div>
+          <div class="bmap-rh" style="top:32%;left:0;right:0"></div>
+          <div class="bmap-rh" style="top:60%;left:0;right:0;height:3px;opacity:.7"></div>
+          <div class="bmap-rv" style="left:42%;top:0;bottom:0"></div>
+          <div class="bmap-rv" style="left:70%;top:0;bottom:0;width:3px;opacity:.7"></div>
+          <div class="mpin" style="background:var(--rust);top:18%;left:22%"><div class="mpin-i"></div></div>
+          <div class="mpin" style="background:var(--rust);top:44%;left:56%"><div class="mpin-i"></div></div>
+          <div class="mpin" style="background:var(--teal);top:28%;left:68%"><div class="mpin-i"></div></div>
+          <div class="mpin" style="background:var(--brown);top:62%;left:18%"><div class="mpin-i"></div></div>
+          <div class="myou" style="top:50%;left:44%"></div>
+        </div>
+        <div class="map-top">
+          <div class="map-inp">🔍 Search saved places...</div>
+          <div class="map-flt">⚙️</div>
+        </div>
+        <div class="map-cats">
+          <div class="map-cat map-cat-a">All</div>
+          <div class="map-cat">🍽️</div>
+          <div class="map-cat">✈️</div>
+          <div class="map-cat">🛍️</div>
+          <div class="map-cat">👨‍🍳</div>
+        </div>
+        <div class="map-bs">
+          <div class="qs-handle"></div>
+          <div class="map-bs-hdr"><span class="map-bs-title">8 Saves Nearby</span><span class="map-bs-count">Tap a pin to preview</span></div>
+          <div class="map-hcards">
+            <div class="map-hcard card"><div class="map-hcard-img pg-cafe"></div><div class="map-hcard-body"><div class="map-hcard-name">Perch Wine & Coffee</div><span class="ttag" style="background:var(--rust);font-size:8px">🍽️</span></div></div>
+            <div class="map-hcard card"><div class="map-hcard-img pg-hotel"></div><div class="map-hcard-body"><div class="map-hcard-name">Taj Coral Reef</div><span class="ttag" style="background:var(--teal);font-size:8px">✈️</span></div></div>
+            <div class="map-hcard card"><div class="map-hcard-img pg-shop"></div><div class="map-hcard-body"><div class="map-hcard-name">Fabindia Store</div><span class="ttag" style="background:var(--brown);font-size:8px">🛍️</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="lbl">Full Map</div>
+  </div>
+
+  <!-- S10: TRIP PLANNING -->
+  <div class="col">
+    <div class="ph">
+      <div class="sb paper"><span>9:41</span><span>●●● 🔋</span></div>
+      <div class="scr paper" style="top:36px">
+        <div class="tp-hdr">
+          <div class="tp-title">Planning a trip?</div>
+          <div class="tp-sub">See your saves by destination</div>
+        </div>
+        <div class="tp-search"><span>🔍</span><span class="tp-sph">Where are you going?</span></div>
+        <div class="tp-chips-lbl">Recent Destinations</div>
+        <div class="tp-chips">
+          <div class="tp-chip tp-chip-sel">Goa ✓</div>
+          <div class="tp-chip">Andaman</div>
+          <div class="tp-chip">Jaipur</div>
+          <div class="tp-chip">Manali</div>
+        </div>
+        <div class="tp-city-hdr">
+          <span class="tp-city-title">Your Goa Saves</span>
+          <span class="tp-city-cnt">6 saves</span>
+        </div>
+        <div class="tp-group">
+          <div class="tp-ghdr">🍽️ Eat & Drink · 3 saves</div>
+          <div class="tp-gcard card"><div class="tp-gth pg-cafe"></div><div><div class="tp-gname">Cafe del Mar</div><div class="tp-gloc">📍 North Goa</div></div></div>
+          <div class="tp-gcard card"><div class="tp-gth" style="background:linear-gradient(135deg,#E8D4BC,var(--rust))"></div><div><div class="tp-gname">Thalassa Greek</div><div class="tp-gloc">📍 Vagator, Goa</div></div></div>
+          <div class="tp-see">See All 3 →</div>
+        </div>
+        <div class="tp-group">
+          <div class="tp-ghdr">✈️ Travel & Stay · 2 saves</div>
+          <div class="tp-gcard card"><div class="tp-gth pg-hotel"></div><div><div class="tp-gname">W Goa Resort</div><div class="tp-gloc">📍 Vagator Beach</div></div></div>
+        </div>
+      </div>
+      <div class="bnav"><div class="ni"><span>🏠</span><span class="nl">Home</span></div><div class="ni"><span>📍</span><span class="nl">Nearby</span></div><div class="nadd">＋</div><div class="ni"><span>📁</span><span class="nl nl-a">Saves</span></div><div class="ni"><span>👤</span><span class="nl">Me</span></div></div>
+    </div>
+    <div class="lbl">Trip Planning</div>
+  </div>
+
+</div>
+
+<!-- ROW 4: COLLECTIONS & PROFILE -->
+<div class="pg-section">04 — Collections & Profile</div>
+<div class="row">
+
+  <!-- S9: ALL SAVES -->
+  <div class="col">
+    <div class="ph">
+      <div class="sb paper"><span>9:41</span><span>●●● 🔋</span></div>
+      <div class="scr paper" style="top:36px">
+        <div class="sv-hdr"><span class="sv-title">Your Saves</span><span class="sv-sort">↕</span></div>
+        <div class="sv-stats">47 saves · 5 categories</div>
+        <div class="sv-cats">
+          <div class="sv-citem card"><div class="sv-caccent" style="background:var(--rust)"></div><span class="sv-cico">🍽️</span><div class="sv-cinfo"><div class="sv-cname">Eat & Drink</div><div class="sv-ccount">24 saves</div></div><span class="sv-carr">›</span></div>
+          <div class="sv-citem card"><div class="sv-caccent" style="background:var(--teal)"></div><span class="sv-cico">✈️</span><div class="sv-cinfo"><div class="sv-cname">Travel & Stay</div><div class="sv-ccount">11 saves</div></div><span class="sv-carr">›</span></div>
+          <div class="sv-citem card"><div class="sv-caccent" style="background:var(--brown)"></div><span class="sv-cico">🛍️</span><div class="sv-cinfo"><div class="sv-cname">Shop</div><div class="sv-ccount">7 saves</div></div><span class="sv-carr">›</span></div>
+          <div class="sv-citem card"><div class="sv-caccent" style="background:var(--mustard)"></div><span class="sv-cico">👨‍🍳</span><div class="sv-cinfo"><div class="sv-cname">Cook</div><div class="sv-ccount">5 saves</div></div><span class="sv-carr">›</span></div>
+        </div>
+        <div class="sv-recent">Recently Saved</div>
+        <div class="sv-minigrid">
+          <div class="sv-mc card"><div class="sv-mc-img pg-cafe"></div><div class="sv-mc-name">Perch Wine & Coffee</div></div>
+          <div class="sv-mc card"><div class="sv-mc-img pg-hotel"></div><div class="sv-mc-name">Taj Coral Reef</div></div>
+        </div>
+      </div>
+      <div class="bnav"><div class="ni"><span>🏠</span><span class="nl">Home</span></div><div class="ni"><span>📍</span><span class="nl">Nearby</span></div><div class="nadd">＋</div><div class="ni"><span>📁</span><span class="nl nl-a">Saves</span></div><div class="ni"><span>👤</span><span class="nl">Me</span></div></div>
+    </div>
+    <div class="lbl">All Saves</div>
+  </div>
+
+  <!-- S12: PROFILE -->
+  <div class="col">
+    <div class="ph">
+      <div class="sb paper"><span>9:41</span><span>●●● 🔋</span></div>
+      <div class="scr paper" style="top:36px">
+        <div class="pf-hdr"><span class="pf-htitle">Profile</span><span class="pf-hico">⚙️</span></div>
+        <div class="pf-av">
+          <div class="pf-circle">H</div>
+          <div class="pf-name">Harshit</div>
+          <div class="pf-email">harshit@email.com</div>
+        </div>
+        <div class="pf-stats card">
+          <div class="pf-stat"><div class="pf-snum">47</div><div class="pf-slbl">Saves</div></div>
+          <div class="pf-stat"><div class="pf-snum">5</div><div class="pf-slbl">Categories</div></div>
+          <div class="pf-stat"><div class="pf-snum">3</div><div class="pf-slbl">Trips</div></div>
+        </div>
+        <div class="pf-section">
+          <div class="pf-sitems card">
+            <div class="pf-item"><span class="pf-iname">🔔 Notifications</span><span style="font-size:11px;color:var(--teal);font-weight:700">On</span></div>
+            <div class="pf-item"><span class="pf-iname">📍 Nearby Radius</span><span class="pf-ival">2 km ›</span></div>
+            <div class="pf-item"><span class="pf-iname">🗂️ Categories</span><span class="pf-ival">5 active ›</span></div>
+            <div class="pf-item"><span class="pf-iname">💬 Help & Feedback</span><span class="pf-ival">↗</span></div>
+            <div class="pf-item"><span class="pf-iname">ℹ️ About Wanna Try</span><span class="pf-ival">v1.0 ›</span></div>
+          </div>
+        </div>
+        <div class="pf-logout">Log Out</div>
+      </div>
+      <div class="bnav"><div class="ni"><span>🏠</span><span class="nl">Home</span></div><div class="ni"><span>📍</span><span class="nl">Nearby</span></div><div class="nadd">＋</div><div class="ni"><span>📁</span><span class="nl">Saves</span></div><div class="ni"><span>👤</span><span class="nl nl-a">Me</span></div></div>
+    </div>
+    <div class="lbl">Profile</div>
+  </div>
+
+  <!-- S13: NOTIFICATIONS -->
+  <div class="col">
+    <div class="ph">
+      <div class="sb paper"><span>9:41</span><span>●●● 🔋</span></div>
+      <div class="scr paper" style="top:36px">
+        <div class="nf-hdr"><span class="nf-title">Notifications</span><span class="nf-read">Mark All Read</span></div>
+        <div class="nf-grp">Today</div>
+        <div class="nf-list">
+          <div class="nf-item card nf-item-unread">
+            <div class="nf-udot"></div>
+            <div class="nf-ico" style="background:rgba(194,73,20,.1)">📍</div>
+            <div class="nf-body">
+              <div class="nf-iname">You're near Perch Wine Bar</div>
+              <div class="nf-isub">0.8 km away · Saved 2 days ago · Eat & Drink</div>
+            </div>
+            <div class="nf-time">now</div>
+          </div>
+          <div class="nf-item card nf-item-unread">
+            <div class="nf-udot"></div>
+            <div class="nf-ico" style="background:rgba(31,111,92,.1)">🗓️</div>
+            <div class="nf-body">
+              <div class="nf-iname">Planning a Goa trip?</div>
+              <div class="nf-isub">You have 6 saves waiting for Goa</div>
+            </div>
+            <div class="nf-time">1h</div>
+          </div>
+        </div>
+        <div class="nf-grp" style="margin-top:12px">This Week</div>
+        <div class="nf-list">
+          <div class="nf-item card nf-read-item">
+            <div class="nf-ico" style="background:rgba(201,148,37,.1)">✨</div>
+            <div class="nf-body">
+              <div class="nf-iname">5 new saves this week</div>
+              <div class="nf-isub">Cafes, 2 travel spots, 1 recipe added</div>
+            </div>
+            <div class="nf-time">2d</div>
+          </div>
+          <div class="nf-item card nf-read-item">
+            <div class="nf-ico" style="background:rgba(139,94,60,.1)">👨‍🍳</div>
+            <div class="nf-body">
+              <div class="nf-iname">Weekend cooking idea</div>
+              <div class="nf-isub">You saved Viral Tteokbokki 5 days ago</div>
+            </div>
+            <div class="nf-time">5d</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="lbl">Notifications</div>
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<div style="text-align:center;margin-top:80px">
+  <div style="font-family:'DM Serif Display',serif;font-size:24px;color:#E8E0D0;letter-spacing:1px;margin-bottom:8px">14 Screens · wannatry.in</div>
+  <div style="font-size:11px;color:#1E1E1E;letter-spacing:3px;text-transform:uppercase">See it · Save it · Try it</div>
+</div>
+
+</body>
+</html>

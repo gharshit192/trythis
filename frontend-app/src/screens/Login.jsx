@@ -95,18 +95,18 @@ export default function Login({ onNavigate }) {
     <div className="phone-frame">
       <div style={{ padding: '48px 28px 32px', flex: 1, display: 'flex', flexDirection: 'column', background: 'var(--paper)' }}>
         <div style={{ textAlign: 'center', marginBottom: '36px', marginTop: '24px' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '56px', height: '56px', background: 'var(--forest)', borderRadius: '16px', marginBottom: '14px' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '56px', height: '56px', background: 'var(--coral)', borderRadius: '16px', marginBottom: '14px' }}>
             <i className="ti ti-bookmark" style={{ fontSize: '28px', color: 'var(--linen)' }}></i>
           </div>
-          <p className="display" style={{ fontSize: '24px', marginBottom: '4px' }}>TryThis</p>
-          <p style={{ fontSize: '13px', color: 'var(--slate)', marginTop: '4px', fontStyle: 'italic' }}>Save it. Find it. Try it.</p>
+          <p className="display" style={{ fontSize: '25px', marginBottom: '4px' }}>Wanna Try</p>
+          <p style={{ fontSize: '14px', color: 'var(--slate)', marginTop: '4px', fontStyle: 'italic' }}>See it · Save it · Try it</p>
         </div>
 
         {mode === 'login' && (
           <>
             <div style={{ marginBottom: '24px' }}>
               <h1 className="display" style={{ fontSize: '28px', marginBottom: '6px' }}>Welcome back</h1>
-              <p style={{ fontSize: '14px', color: 'var(--slate)' }}>Sign in to pick up where you left off.</p>
+              <p style={{ fontSize: '15px', color: 'var(--slate)' }}>Sign in to pick up where you left off.</p>
             </div>
 
             <p className="label">Email</p>
@@ -114,18 +114,18 @@ export default function Login({ onNavigate }) {
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '6px' }}>
               <span className="label" style={{ marginBottom: '0' }}>Password</span>
-              <button type="button" onClick={goForgot} disabled={loading} style={{ background: 'transparent', border: 'none', padding: 0, fontSize: '13px', color: 'var(--amber-link, var(--forest))', fontWeight: '500', cursor: 'pointer' }}>Forgot?</button>
+              <button type="button" onClick={goForgot} disabled={loading} style={{ background: 'transparent', border: 'none', padding: 0, fontSize: '14px', color: 'var(--amber-link, var(--coral))', fontWeight: '500', cursor: 'pointer' }}>Forgot?</button>
             </div>
             <input type="password" className="input" style={{ marginBottom: '20px' }} placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} disabled={loading} />
 
-            {info  && <div style={{ color: 'var(--forest)', marginBottom: '10px', fontSize: '13px' }}>{info}</div>}
-            {error && <div style={{ color: 'var(--error,#d33)', marginBottom: '10px', fontSize: '13px' }}>{error}</div>}
+            {info  && <div style={{ color: 'var(--coral)', marginBottom: '10px', fontSize: '14px' }}>{info}</div>}
+            {error && <div style={{ color: 'var(--error,#d33)', marginBottom: '10px', fontSize: '14px' }}>{error}</div>}
 
             <button className="btn-primary" onClick={handleLogin} disabled={loading}>
               {loading ? 'Signing in…' : 'Sign in'}
             </button>
 
-            <p style={{ textAlign: 'center', marginTop: 'auto', paddingTop: '32px', fontSize: '14px', color: 'var(--slate)' }}>
+            <p style={{ textAlign: 'center', marginTop: 'auto', paddingTop: '32px', fontSize: '15px', color: 'var(--slate)' }}>
               New here? <span style={{ color: 'var(--ink)', fontWeight: '500', cursor: 'pointer' }} onClick={() => onNavigate('signup')}>Create an account</span>
             </p>
           </>
@@ -134,14 +134,14 @@ export default function Login({ onNavigate }) {
         {mode === 'forgot' && (
           <>
             <div style={{ marginBottom: '20px' }}>
-              <h1 className="display" style={{ fontSize: '24px', marginBottom: '6px' }}>Forgot password?</h1>
-              <p style={{ fontSize: '13px', color: 'var(--slate)' }}>Enter your email and we'll send a 6-digit code to reset it.</p>
+              <h1 className="display" style={{ fontSize: '25px', marginBottom: '6px' }}>Forgot password?</h1>
+              <p style={{ fontSize: '14px', color: 'var(--slate)' }}>Enter your email and we'll send a 6-digit code to reset it.</p>
             </div>
 
             <p className="label">Email</p>
             <input type="email" className="input" style={{ marginBottom: '16px' }} placeholder="you@example.com" value={resetEmail} onChange={(e) => setResetEmail(e.target.value)} disabled={loading} />
 
-            {error && <div style={{ color: 'var(--error,#d33)', marginBottom: '10px', fontSize: '13px' }}>{error}</div>}
+            {error && <div style={{ color: 'var(--error,#d33)', marginBottom: '10px', fontSize: '14px' }}>{error}</div>}
 
             <button className="btn-primary" onClick={handleForgotSubmit} disabled={loading}>
               {loading ? 'Sending…' : 'Send code'}
@@ -155,15 +155,15 @@ export default function Login({ onNavigate }) {
         {mode === 'reset' && (
           <>
             <div style={{ marginBottom: '20px' }}>
-              <h1 className="display" style={{ fontSize: '24px', marginBottom: '6px' }}>Enter the code</h1>
-              <p style={{ fontSize: '13px', color: 'var(--slate)' }}>
+              <h1 className="display" style={{ fontSize: '25px', marginBottom: '6px' }}>Enter the code</h1>
+              <p style={{ fontSize: '14px', color: 'var(--slate)' }}>
                 We sent a 6-digit code to <strong>{resetEmail}</strong>. Codes expire in 15 minutes.
               </p>
             </div>
 
             {devOtp && process.env.NODE_ENV !== 'production' && (
-              <div style={{ background: 'var(--linen)', borderRadius: 8, padding: '8px 10px', marginBottom: 14, fontSize: 12, color: 'var(--slate)' }}>
-                <strong>Dev mode:</strong> code is <code style={{ fontFamily: 'monospace', color: 'var(--forest)' }}>{devOtp}</code>
+              <div style={{ background: 'var(--linen)', borderRadius: 8, padding: '8px 10px', marginBottom: 14, fontSize: 13, color: 'var(--slate)' }}>
+                <strong>Dev mode:</strong> code is <code style={{ fontFamily: 'monospace', color: 'var(--coral)' }}>{devOtp}</code>
               </div>
             )}
 
@@ -176,7 +176,7 @@ export default function Login({ onNavigate }) {
             <p className="label">Confirm password</p>
             <input type="password" className="input" style={{ marginBottom: 16 }} placeholder="Re-enter new password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} disabled={loading} />
 
-            {error && <div style={{ color: 'var(--error,#d33)', marginBottom: '10px', fontSize: '13px' }}>{error}</div>}
+            {error && <div style={{ color: 'var(--error,#d33)', marginBottom: '10px', fontSize: '14px' }}>{error}</div>}
 
             <button className="btn-primary" onClick={handleResetSubmit} disabled={loading}>
               {loading ? 'Updating…' : 'Reset password'}

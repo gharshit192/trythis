@@ -24,6 +24,13 @@ const getCategoryEmoji = (cat) => {
 
 const catMeta = (cat) => CATEGORY_META[cat] || { bg: 'linear-gradient(135deg,#4a3db0,#2d1f8a)', icon: 'ti-bookmark' };
 
+// Pre-auth dark intro carousel (matches mockup S1)
+const INTRO_SLIDES = [
+  { emoji: ['📱', '🔖'], head: 'See it on Instagram', sub: 'Scroll past something you love? Save it in one tap.' },
+  { emoji: ['🤖', '✨'], head: 'AI figures it out', sub: 'We read the reel and pull out the place, recipe, or product — no typing needed.' },
+  { emoji: ['🔔', '📍'], head: 'Get reminded at the right time', sub: "Nearby a saved spot, or a free weekend coming up — we'll nudge you." },
+];
+
 function ProgressDots({ active }) {
   return (
     <div style={{ display: 'flex', gap: 4, justifyContent: 'center', marginTop: 'auto', paddingBottom: 16 }}>
@@ -32,7 +39,7 @@ function ProgressDots({ active }) {
           width: i === active ? 16 : 6,
           height: 6,
           borderRadius: i === active ? 3 : '50%',
-          background: i === active ? 'var(--forest)' : 'var(--hairline)',
+          background: i === active ? 'var(--coral)' : 'var(--hairline)',
           transition: 'all 0.2s',
         }} />
       ))}
@@ -41,7 +48,9 @@ function ProgressDots({ active }) {
 }
 
 export default function Onboarding({ onNavigate }) {
-  const [step, setStep] = useState(0);
+  const isAuthed = !!localStorage.getItem('auth_token');
+  const [step, setStep] = useState(isAuthed ? 1 : 0);
+  const [slide, setSlide] = useState(0);
   const [savedItem, setSavedItem] = useState(null);
   const [linkUrl, setLinkUrl] = useState('');
   const [linkLoading, setLinkLoading] = useState(false);
@@ -118,11 +127,11 @@ export default function Onboarding({ onNavigate }) {
     return (
       <div style={{ padding: '20px 16px 16px', display: 'flex', flexDirection: 'column', flex: 1, background: 'var(--linen)', overflowY: 'auto' }}>
         <div style={{ textAlign: 'center', marginBottom: 14 }}>
-          <div style={{ width: 40, height: 40, background: 'var(--forest-soft)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 8px' }}>
-            <i className="ti ti-check" style={{ color: 'var(--forest)', fontSize: 20 }} />
+          <div style={{ width: 40, height: 40, background: 'var(--coral-soft)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 8px' }}>
+            <i className="ti ti-check" style={{ color: 'var(--coral)', fontSize: 21 }} />
           </div>
-          <div style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 600, color: 'var(--ink)' }}>Saved!</div>
-          <div style={{ fontSize: 11, color: 'var(--slate)', marginTop: 3 }}>Here's what we extracted</div>
+          <div style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 600, color: 'var(--ink)' }}>Saved!</div>
+          <div style={{ fontSize: 12, color: 'var(--slate)', marginTop: 3 }}>Here's what we extracted</div>
         </div>
 
         <div style={{ background: 'var(--paper)', border: '0.5px solid var(--hairline)', borderRadius: 12, overflow: 'hidden', marginBottom: 10 }}>
@@ -131,21 +140,21 @@ export default function Onboarding({ onNavigate }) {
           </div>
           <div style={{ padding: '10px 12px' }}>
             <div style={{ display: 'flex', gap: 4, marginBottom: 5, flexWrap: 'wrap', alignItems: 'center' }}>
-              <span style={{ display: 'inline-flex', alignItems: 'center', background: 'var(--forest-soft)', color: 'var(--forest)', fontSize: 10, fontWeight: 600, padding: '3px 8px', borderRadius: 20 }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', background: 'var(--coral-soft)', color: 'var(--coral)', fontSize: 11, fontWeight: 600, padding: '3px 8px', borderRadius: 20 }}>
                 {cat.charAt(0).toUpperCase() + cat.slice(1)}
               </span>
               {(location || duration) && (
-                <span style={{ fontSize: 10, color: 'var(--mute)' }}>
+                <span style={{ fontSize: 11, color: 'var(--mute)' }}>
                   {[location, duration].filter(Boolean).join(' · ')}
                 </span>
               )}
             </div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)', marginBottom: 4 }}>{savedItem.title}</div>
-            <div style={{ fontSize: 11, color: 'var(--slate)', lineHeight: 1.5, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)', marginBottom: 4 }}>{savedItem.title}</div>
+            <div style={{ fontSize: 12, color: 'var(--slate)', lineHeight: 1.5, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
               {savedItem.aiAnalysis?.summary || savedItem.description || ''}
             </div>
-            <div style={{ background: 'var(--forest)', color: '#fff', fontSize: 10, borderRadius: 8, padding: '6px 8px', marginTop: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
-              <i className="ti ti-sparkles" style={{ fontSize: 11 }} />
+            <div style={{ background: 'var(--coral)', color: '#fff', fontSize: 11, borderRadius: 8, padding: '6px 8px', marginTop: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
+              <i className="ti ti-sparkles" style={{ fontSize: 12 }} />
               {hint}
             </div>
           </div>
@@ -153,13 +162,13 @@ export default function Onboarding({ onNavigate }) {
 
         <button
           onClick={handleComplete}
-          style={{ width: '100%', padding: '10px 14px', borderRadius: 10, background: 'var(--forest)', color: '#fff', border: 'none', fontSize: 12, fontWeight: 600, cursor: 'pointer', marginBottom: 6 }}
+          style={{ width: '100%', padding: '10px 14px', borderRadius: 10, background: 'var(--coral)', color: '#fff', border: 'none', fontSize: 13, fontWeight: 600, cursor: 'pointer', marginBottom: 6 }}
         >
           Go to my saves
         </button>
         <button
           onClick={() => { setSavedItem(null); setStep(2); }}
-          style={{ width: '100%', padding: '9px 14px', borderRadius: 10, background: 'none', border: '0.5px solid var(--hairline)', fontSize: 12, fontWeight: 500, color: 'var(--slate)', cursor: 'pointer' }}
+          style={{ width: '100%', padding: '9px 14px', borderRadius: 10, background: 'none', border: '0.5px solid var(--hairline)', fontSize: 13, fontWeight: 500, color: 'var(--slate)', cursor: 'pointer' }}
         >
           Save another
         </button>
@@ -167,39 +176,31 @@ export default function Onboarding({ onNavigate }) {
     );
   }
 
-  // ── Step 0: Welcome ──────────────────────────────────────────────────────────
-  if (step === 0) {
-    const isAuthed = !!localStorage.getItem('auth_token');
+  // ── Pre-auth: dark intro carousel (mockup S1) ────────────────────────────────
+  if (!isAuthed) {
+    const isLast = slide === INTRO_SLIDES.length - 1;
+    const s = INTRO_SLIDES[slide];
     return (
-      <div style={{ padding: '24px 16px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', flex: 1, background: 'var(--linen)' }}>
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ width: 52, height: 52, background: 'var(--forest)', borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
-            <i className="ti ti-bookmark" style={{ color: '#fff', fontSize: 24 }} />
-          </div>
-          <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 600, color: 'var(--ink)', marginBottom: 8, lineHeight: 1.2 }}>
-            Stop saving.<br />Start doing.
-          </div>
-          <div style={{ fontSize: 14, color: 'var(--slate)', lineHeight: 1.6, marginBottom: 20, maxWidth: 260 }}>
-            TryThis remembers what you intend to do — and reminds you at the right moment.
-          </div>
+      <div className="ob-screen">
+        {!isLast && (
+          <button className="ob-skip" onClick={() => setSlide(INTRO_SLIDES.length - 1)}>Skip</button>
+        )}
+        <div className="ob-emo">{s.emoji[0]}<br />{s.emoji[1]}</div>
+        <div className="ob-head">{s.head}</div>
+        <div className="ob-sub">{s.sub}</div>
+        <div className="ob-dots">
+          {INTRO_SLIDES.map((_, i) => (
+            <div key={i} className={`ob-dot ${i === slide ? 'ob-dot-a' : ''}`} />
+          ))}
         </div>
-        <div style={{ width: '100%' }}>
-          <button
-            onClick={() => isAuthed ? setStep(1) : onNavigate('signup')}
-            style={{ width: '100%', padding: '10px 14px', borderRadius: 10, background: 'var(--forest)', color: '#fff', border: 'none', fontSize: 12, fontWeight: 600, cursor: 'pointer', marginBottom: 6 }}
-          >
-            Get started
-          </button>
-          {!isAuthed && (
-            <button
-              onClick={() => onNavigate('login')}
-              style={{ width: '100%', padding: '9px 14px', borderRadius: 10, background: 'none', border: '0.5px solid var(--hairline)', fontSize: 12, fontWeight: 500, color: 'var(--slate)', cursor: 'pointer' }}
-            >
-              I already have an account
-            </button>
-          )}
-        </div>
-        <ProgressDots active={0} />
+        {isLast ? (
+          <>
+            <button className="ob-btn" onClick={() => onNavigate('signup')}>Get started</button>
+            <button className="ob-btn-outline" onClick={() => onNavigate('login')}>I already have an account</button>
+          </>
+        ) : (
+          <button className="ob-btn" onClick={() => setSlide(slide + 1)}>Next →</button>
+        )}
       </div>
     );
   }
@@ -222,26 +223,26 @@ export default function Onboarding({ onNavigate }) {
     ];
     return (
       <div style={{ padding: '20px 14px 16px', display: 'flex', flexDirection: 'column', flex: 1, background: 'var(--linen)' }}>
-        <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600, color: 'var(--ink)', marginBottom: 4 }}>
+        <div style={{ fontFamily: 'var(--font-display)', fontSize: 21, fontWeight: 600, color: 'var(--ink)', marginBottom: 4 }}>
           Here's how it works
         </div>
-        <div style={{ fontSize: 11, color: 'var(--mute)', marginBottom: 16 }}>3 simple steps</div>
+        <div style={{ fontSize: 12, color: 'var(--mute)', marginBottom: 16 }}>3 simple steps</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, flex: 1 }}>
           {howSteps.map((s, i) => (
             <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-              <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'var(--forest)', color: '#fff', fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'var(--coral)', color: '#fff', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 {i + 1}
               </div>
               <div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)', marginBottom: 2 }}>{s.title}</div>
-                <div style={{ fontSize: 11, color: 'var(--slate)', lineHeight: 1.5 }}>{s.sub}</div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)', marginBottom: 2 }}>{s.title}</div>
+                <div style={{ fontSize: 12, color: 'var(--slate)', lineHeight: 1.5 }}>{s.sub}</div>
               </div>
             </div>
           ))}
         </div>
         <button
           onClick={() => setStep(2)}
-          style={{ width: '100%', padding: '10px 14px', borderRadius: 10, background: 'var(--forest)', color: '#fff', border: 'none', fontSize: 12, fontWeight: 600, cursor: 'pointer', marginTop: 16 }}
+          style={{ width: '100%', padding: '10px 14px', borderRadius: 10, background: 'var(--coral)', color: '#fff', border: 'none', fontSize: 13, fontWeight: 600, cursor: 'pointer', marginTop: 16 }}
         >
           Sounds good
         </button>
@@ -253,10 +254,10 @@ export default function Onboarding({ onNavigate }) {
   // ── Step 2: First save ───────────────────────────────────────────────────────
   return (
     <div style={{ padding: '20px 14px 16px', display: 'flex', flexDirection: 'column', flex: 1, background: 'var(--linen)', overflowY: 'auto' }}>
-      <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600, color: 'var(--ink)', marginBottom: 4 }}>
+      <div style={{ fontFamily: 'var(--font-display)', fontSize: 21, fontWeight: 600, color: 'var(--ink)', marginBottom: 4 }}>
         Try a quick example
       </div>
-      <div style={{ fontSize: 11, color: 'var(--mute)', marginBottom: 14 }}>See how TryThis works in one tap</div>
+      <div style={{ fontSize: 12, color: 'var(--mute)', marginBottom: 14 }}>See how Wanna Try works in one tap</div>
 
       {/* Template saves */}
       {templates.length > 0 ? (
@@ -276,12 +277,12 @@ export default function Onboarding({ onNavigate }) {
                 cursor: copyingId ? 'wait' : 'pointer',
               }}
             >
-              <span style={{ fontSize: 18, flexShrink: 0 }}>{getCategoryEmoji(t.category)}</span>
+              <span style={{ fontSize: 19, flexShrink: 0 }}>{getCategoryEmoji(t.category)}</span>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink)', marginBottom: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink)', marginBottom: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {t.title}
                 </div>
-                <div style={{ fontSize: 10, color: 'var(--mute)' }}>
+                <div style={{ fontSize: 11, color: 'var(--mute)' }}>
                   {t.category ? t.category.charAt(0).toUpperCase() + t.category.slice(1) : 'Save'} · Sample save
                 </div>
               </div>
@@ -289,9 +290,9 @@ export default function Onboarding({ onNavigate }) {
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                background: 'var(--forest-soft)',
-                color: 'var(--forest)',
-                fontSize: 10,
+                background: 'var(--coral-soft)',
+                color: 'var(--coral)',
+                fontSize: 11,
                 fontWeight: 600,
                 padding: '4px 10px',
                 borderRadius: 20,
@@ -305,7 +306,7 @@ export default function Onboarding({ onNavigate }) {
           ))}
         </div>
       ) : (
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--mute)', fontSize: 12 }}>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--mute)', fontSize: 13 }}>
           Loading examples…
         </div>
       )}
@@ -318,7 +319,7 @@ export default function Onboarding({ onNavigate }) {
           borderRadius: 10,
           background: 'none',
           border: 'none',
-          fontSize: 12,
+          fontSize: 13,
           color: 'var(--mute)',
           cursor: 'pointer',
           marginTop: 'auto',
