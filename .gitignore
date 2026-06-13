@@ -51,3 +51,6 @@ temp/
 # User uploads (videos muxed by mediaProcessor, screenshot originals)
 backend/uploads/*
 !backend/uploads/.gitkeep
+
+# Runtime upload artifacts written at repo root by the screenshot pipeline
+/uploads/

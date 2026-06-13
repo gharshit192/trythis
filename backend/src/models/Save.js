@@ -193,6 +193,18 @@ const intentItemSchema = new mongoose.Schema({
   // AI enrichment
   aiAnalysis: aiAnalysisSchema,
 
+  // "Discover More" AI insights cache (Brave Search + Claude), 24h TTL.
+  // Populated on-demand by POST /saves/:id/insights (travel saves).
+  insights: {
+    data: [{
+      text: String,
+      source_domain: String,
+      url: String,
+      _id: false,
+    }],
+    generatedAt: { type: Date, default: null },
+  },
+
   // Pipeline
   processingStatus: {
     type: String,

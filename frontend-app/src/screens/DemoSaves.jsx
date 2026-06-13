@@ -27,9 +27,9 @@ const demoSaves = [
 
 const getCategoryColor = (category) => {
   const map = {
-    cafe: { bg: '#FAEEDA', color: '#854F0B' },
-    travel: { bg: '#E1F5EE', color: '#0F6E56' },
-    shopping: { bg: '#EEEDFE', color: '#534AB7' }
+    cafe: { bg: 'rgba(194,73,20,0.1)', color: '#C24914' },
+    travel: { bg: 'rgba(0,102,255,0.1)', color: '#0066FF' },
+    shopping: { bg: 'rgba(124,34,255,0.1)', color: '#7C22FF' }
   };
   return map[category] || { bg: '#F1EFE8', color: '#5F5E5A' };
 };
@@ -72,8 +72,8 @@ export default function DemoSaves({ onNavigate }) {
       <div style={{ background: 'white', minHeight: '100vh', paddingBottom: 20 }}>
         {/* Header */}
         <div style={{ padding: '20px 20px 16px', textAlign: 'center', borderBottom: '0.5px solid #eee' }}>
-          <h1 style={{ fontSize: 18, fontWeight: 600, margin: '0 0 6px' }}>This is TryThis</h1>
-          <p style={{ fontSize: 13, color: '#888', margin: 0 }}>See what we can do with your saves</p>
+          <h1 style={{ fontSize: 19, fontWeight: 600, margin: '0 0 6px' }}>This is Wanna Try</h1>
+          <p style={{ fontSize: 14, color: '#888', margin: 0 }}>See what we can do with your saves</p>
         </div>
 
         {/* Demo saves — interactive list */}
@@ -100,17 +100,17 @@ export default function DemoSaves({ onNavigate }) {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: 24,
+                    fontSize: 25,
                     flexShrink: 0
                   }}
                 >
                   {save.thumbnail}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 500, color: '#1a1a1a', marginBottom: 3 }}>
+                  <div style={{ fontSize: 14, fontWeight: 500, color: '#1a1a1a', marginBottom: 3 }}>
                     {save.title}
                   </div>
-                  <div style={{ fontSize: 11, color: '#888' }}>
+                  <div style={{ fontSize: 12, color: '#888' }}>
                     {save.badge}
                   </div>
                 </div>
@@ -121,7 +121,7 @@ export default function DemoSaves({ onNavigate }) {
 
         {/* CTA section */}
         <div style={{ padding: '20px 20px 0' }}>
-          <p style={{ fontSize: 13, fontWeight: 500, marginBottom: 10, color: '#1a1a1a', margin: '0 0 12px' }}>
+          <p style={{ fontSize: 14, fontWeight: 500, marginBottom: 10, color: '#1a1a1a', margin: '0 0 12px' }}>
             Now add your first one
           </p>
           <input
@@ -133,7 +133,7 @@ export default function DemoSaves({ onNavigate }) {
             style={{
               width: '100%',
               padding: '12px',
-              fontSize: 14,
+              fontSize: 15,
               border: '0.5px solid #ddd',
               borderRadius: 8,
               boxSizing: 'border-box',
@@ -143,7 +143,7 @@ export default function DemoSaves({ onNavigate }) {
           />
 
           {error && (
-            <div style={{ fontSize: 12, color: '#d33', marginBottom: 12 }}>
+            <div style={{ fontSize: 13, color: '#d33', marginBottom: 12 }}>
               {error}
             </div>
           )}
@@ -155,11 +155,11 @@ export default function DemoSaves({ onNavigate }) {
               style={{
                 flex: 1,
                 padding: '12px',
-                background: 'var(--forest, #1B3A2F)',
+                background: 'var(--coral, #C24914)',
                 color: 'white',
                 border: 'none',
                 borderRadius: 8,
-                fontSize: 14,
+                fontSize: 15,
                 fontWeight: 500,
                 cursor: 'pointer',
                 opacity: saving ? 0.6 : 1
@@ -177,7 +177,7 @@ export default function DemoSaves({ onNavigate }) {
                 color: '#1a1a1a',
                 border: '0.5px solid #ddd',
                 borderRadius: 8,
-                fontSize: 14,
+                fontSize: 15,
                 fontWeight: 500,
                 cursor: 'pointer',
                 opacity: saving ? 0.6 : 1

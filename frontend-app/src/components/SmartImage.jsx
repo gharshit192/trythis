@@ -38,7 +38,7 @@ export default function SmartImage({ saveId, src, alt = '', style, className, fa
 
   if (!currentSrc || failed) {
     return fallback || (
-      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--dune)', color: 'var(--slate)', fontSize: 24, ...style }} className={className}>
+      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--dune)', color: 'var(--slate)', fontSize: 25, ...style }} className={className}>
         🖼️
       </div>
     );

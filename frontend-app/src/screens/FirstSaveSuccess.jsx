@@ -1,116 +1,142 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import api from '../api';
+import { getCategoryMeta } from '../categoryMeta';
 
 export default function FirstSaveSuccess({ onNavigate, payload }) {
   const [step, setStep] = useState(0);
-  const [isProcessing, setIsProcessing] = useState(true);
+  const [save, setSave] = useState(null);
+  const [ready, setReady] = useState(false);
+  const pollsRef = useRef(0);
   const steps = ['Reading your save…', 'Figuring out what it is…', 'Organising it for you…'];
 
+  // Step animation while we wait for save data
   useEffect(() => {
-    if (step < steps.length) {
-      const timer = setTimeout(() => setStep(step + 1), 1200);
-      return () => clearTimeout(timer);
-    } else if (step === steps.length) {
-      const timer = setTimeout(() => setIsProcessing(false), 2000);
-      return () => clearTimeout(timer);
+    if (ready) return;
+    const timer = setTimeout(() => setStep((s) => (s + 1) % steps.length), 1200);
+    return () => clearTimeout(timer);
+  }, [step, ready, steps.length]);
+
+  // Resolve the save behind this confirmation: either we already have a saveId
+  // (synchronous create), or we have a jobId and need to poll until the
+  // background processor attaches a result save.
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadSave = async (id) => {
+      try {
+        const res = await api.getSaveById(id);
+        if (!cancelled && res.status === 'success') {
+          setSave(res.data);
+          setReady(true);
+        }
+      } catch {}
+    };
+
+    if (payload?.saveId) {
+      loadSave(payload.saveId);
+      return () => { cancelled = true; };
     }
-  }, [step, steps.length]);
+
+    if (!payload?.jobId) {
+      // Nothing to resolve — just show a generic confirmation.
+      const timer = setTimeout(() => { if (!cancelled) setReady(true); }, 1800);
+      return () => { cancelled = true; clearTimeout(timer); };
+    }
+
+    const poll = async () => {
+      try {
+        const job = await api.getJobStatus(payload.jobId);
+        if (cancelled) return;
+        if (job?.result?.saveId) {
+          await loadSave(job.result.saveId);
+          return;
+        }
+        pollsRef.current += 1;
+        if (pollsRef.current >= 6) {
+          setReady(true);
+          return;
+        }
+        setTimeout(poll, 1500);
+      } catch {
+        if (!cancelled) setReady(true);
+      }
+    };
+    poll();
+
+    return () => { cancelled = true; };
+  }, [payload?.saveId, payload?.jobId]);
+
+  const goDone = () => {
+    if (payload?.nextScreen) onNavigate(payload.nextScreen);
+    else onNavigate('home');
+  };
+
+  const goView = () => {
+    if (save?._id) onNavigate('save-detail', { id: save._id });
+    else goDone();
+  };
+
+  const meta = getCategoryMeta(save?.category);
+  const stillProcessing = save?.processingStatus === 'processing';
 
   return (
     <div className="phone-frame">
-      <div style={{ background: 'white', minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '20px' }}>
-        {isProcessing ? (
-          // Processing animation with steps
-          <div style={{ textAlign: 'center' }}>
-            <div
-              style={{
-                width: 60,
-                height: 60,
-                background: 'var(--forest, #1B3A2F)',
-                borderRadius: 16,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                margin: '0 auto 20px',
-                animation: 'spin 1s linear infinite'
-              }}
-            >
-              <i className="ti ti-loader" style={{ fontSize: 32, color: 'white' }}></i>
-            </div>
-            {step < steps.length ? (
-              <>
-                <p style={{ fontSize: 14, color: '#1a1a1a', marginBottom: 8 }}>
-                  {steps[step]}
-                </p>
-                <p style={{ fontSize: 12, color: '#888' }}>
-                  {step + 1} of {steps.length}
-                </p>
-              </>
-            ) : (
-              <>
-                <p style={{ fontSize: 14, color: '#1a1a1a', marginBottom: 8 }}>
-                  Almost done…
-                </p>
-                <p style={{ fontSize: 12, color: '#888' }}>
-                  Finalizing your save
-                </p>
-              </>
-            )}
-          </div>
-        ) : (
-          // Success card
-          <div style={{ width: '100%', maxWidth: 320 }}>
-            <div style={{ textAlign: 'center', marginBottom: 24 }}>
+      <div style={{ background: 'var(--linen)', minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
+        <div className="qs-sheet">
+          <div className="qs-handle"></div>
+
+          {!ready ? (
+            <div style={{ textAlign: 'center', padding: '12px 0' }}>
               <div
                 style={{
-                  width: 64,
-                  height: 64,
-                  background: '#E1F5EE',
-                  borderRadius: 16,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  margin: '0 auto 16px'
+                  width: 48, height: 48, background: 'var(--coral)', borderRadius: 14,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  margin: '0 auto 16px', animation: 'qs-spin 1s linear infinite',
                 }}
               >
-                <i className="ti ti-check" style={{ fontSize: 32, color: '#0F6E56' }}></i>
+                <i className="ti ti-loader" style={{ fontSize: 25, color: '#fff' }}></i>
               </div>
-              <h2 style={{ fontSize: 22, fontWeight: 600, margin: '0 0 8px' }}>
-                {payload?.isFirstSave ? 'First save done!' : 'All set!'}
-              </h2>
-              <p style={{ fontSize: 14, color: '#888', margin: 0 }}>
-                {payload?.isFirstSave
-                  ? "We'll remind you about this at the right time."
-                  : 'Your save is ready to go'}
-              </p>
+              <div className="qs-st" style={{ marginBottom: 6 }}>{steps[step]}</div>
+              <div className="qs-ex">{step + 1} of {steps.length}</div>
             </div>
+          ) : (
+            <>
+              <div className="qs-sr">
+                <div className="qs-check">✓</div>
+                <div className="qs-st">Saved to Wanna Try!</div>
+              </div>
 
-            <button
-              onClick={() => {
-                if (payload?.nextScreen) {
-                  onNavigate(payload.nextScreen);
-                } else {
-                  onNavigate('home');
-                }
-              }}
-              style={{
-                width: '100%',
-                padding: '12px',
-                background: 'var(--forest, #1B3A2F)',
-                color: 'white',
-                border: 'none',
-                borderRadius: 8,
-                fontSize: 14,
-                fontWeight: 500,
-                cursor: 'pointer'
-              }}
-            >
-              Continue
-            </button>
-          </div>
-        )}
+              <div className="qs-card">
+                {save?.thumbnail ? (
+                  <div className="qs-th" style={{ backgroundImage: `url(${save.thumbnail})` }} />
+                ) : (
+                  <div className={`qs-th ${meta.gradientClass}`}>
+                    <i className={`ti ${meta.icon}`}></i>
+                  </div>
+                )}
+                <div className="qs-info">
+                  <div className="qs-pn">{save?.title || 'Your save'}</div>
+                  <div style={{ marginBottom: 4 }}>
+                    <span className={`chip ${meta.chipClass}`} style={{ fontSize: 10 }}>{meta.emoji} {meta.label}</span>
+                  </div>
+                  <div className="qs-ex">
+                    {stillProcessing
+                      ? "We're still figuring out the details — check back soon."
+                      : (save?.aiAnalysis?.summary || save?.description || 'Saved for later.')}
+                  </div>
+                </div>
+              </div>
+
+              <div className="qs-btns">
+                <button className="qs-bp" onClick={goView}>View Save</button>
+                <button className="qs-bs" onClick={goDone}>Done</button>
+              </div>
+            </>
+          )}
+        </div>
 
         <style>{`
-          @keyframes spin {
+          @keyframes qs-spin {
             from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
           }

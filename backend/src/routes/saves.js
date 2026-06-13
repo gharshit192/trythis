@@ -21,6 +21,7 @@ const screenshotPipeline = require('../services/screenshotPipeline');
 const screenshotBundle = require('../services/screenshotBundle');
 const autoCollectionEngine = require('../services/autoCollectionEngine');
 const thumbnailCache = require('../services/thumbnailCache');
+const insightsEngine = require('../services/insightsEngine');
 const typeToCategory = require('../utils/structuredTypeToCategory');
 const { classifyByDomainFull } = require('../services/extractionEngine/domainClassifier');
 const { classifyUrl } = require('../services/urlClassifier');
@@ -740,7 +741,7 @@ router.post('/screenshot-bundle',
 
       const filePaths = pipelineResult.screenshots.map(s => {
         const filename = path.basename(s.url);
-        return path.join(screenshotPipeline.FULL_DIR, filename);
+        return path.join(screenshotPipeline.__dirs.FULL_DIR, filename);
       });
 
       const sessionId = uuidv4();
@@ -1220,6 +1221,35 @@ router.get('/:id/export-pdf', validateObjectId('id'), async (req, res) => {
     if (!res.headersSent) {
       res.status(500).json({ status: 'error', error: { code: 'EXPORT_ERROR', message: error.message } });
     }
+  }
+});
+
+// ─── AI "Discover More" insights (Brave Search + Claude), 24h cache ──────────
+// POST /saves/:id/insights — generated on-demand (frontend calls this on tap,
+// for travel saves only). Cached on the save doc for 24h to avoid re-searching.
+router.post('/:id/insights', async (req, res) => {
+  try {
+    const save = await Save.findById(req.params.id);
+    if (!save || save.userId.toString() !== req.user.id) {
+      return res.status(404).json({ status: 'error', error: { code: 'NOT_FOUND', message: 'Save not found' } });
+    }
+
+    const cachedAt = save.insights?.generatedAt ? new Date(save.insights.generatedAt).getTime() : 0;
+    const isFresh = cachedAt && (Date.now() - cachedAt < 24 * 60 * 60 * 1000);
+    if (isFresh && Array.isArray(save.insights.data) && save.insights.data.length > 0) {
+      return res.json({ status: 'success', data: save.insights.data, cached: true, generatedAt: save.insights.generatedAt });
+    }
+
+    const data = await insightsEngine.generateInsights(save);
+    save.insights = { data, generatedAt: new Date() };
+    await save.save();
+
+    res.json({ status: 'success', data, cached: false, generatedAt: save.insights.generatedAt });
+  } catch (err) {
+    const code = err.code || 'INSIGHTS_ERROR';
+    const httpStatus = code === 'NO_SEARCH_KEY' ? 503 : code === 'NO_QUERY' ? 422 : 500;
+    logger.error(`insights failed for ${req.params.id}: ${err.message}`);
+    res.status(httpStatus).json({ status: 'error', error: { code, message: err.message } });
   }
 });
 

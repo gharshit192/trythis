@@ -19,7 +19,7 @@ import Notifications from './screens/Notifications';
 import ScreenshotSummary from './screens/ScreenshotSummary';
 import TripCollection from './screens/TripCollection';
 import ShoppingWishlist from './screens/ShoppingWishlist';
-import FoodNearby from './screens/FoodNearby';
+import Nearby from './screens/Nearby';
 import CollectionDetail from './screens/CollectionDetail';
 import DemoSaves from './screens/DemoSaves';
 import FirstSaveSuccess from './screens/FirstSaveSuccess';
@@ -119,7 +119,7 @@ function App() {
     }
 
     // Check if trying to access protected screen without auth
-    const protectedScreens = ['home', 'save-detail', 'savedList', 'search', 'collections', 'profile', 'notifications'];
+    const protectedScreens = ['home', 'save-detail', 'savedList', 'search', 'collections', 'profile', 'notifications', 'nearby'];
     if (protectedScreens.includes(screen) && !localStorage.getItem('auth_token')) {
       setCurrentScreen('login');
       return;
@@ -143,18 +143,20 @@ function App() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: '#FFFFFF'
+        background: 'var(--paper)'
       }}>
         <div style={{
           width: 56,
           height: 56,
-          borderRadius: 16,
-          background: '#1B3A2F',
+          borderRadius: 6,
+          background: 'var(--rust)',
+          transform: 'rotate(-4deg)',
+          border: '2px dashed rgba(255,255,255,.5)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center'
         }}>
-          <span style={{ fontSize: 24, color: 'white', fontWeight: 600 }}>T</span>
+          <span style={{ fontSize: 26 }}>🔖</span>
         </div>
       </div>
     );
@@ -179,17 +181,17 @@ function App() {
     'collection-detail': <CollectionDetail {...props} />,
     'trip-collection': <TripCollection {...props} />,
     'shopping-wishlist': <ShoppingWishlist {...props} />,
-    'food-nearby': <FoodNearby {...props} />,
+    'nearby': <Nearby {...props} nearbySaves={nearbySaves} />,
     'search': <Search {...props} />,
     'notifications': <Notifications {...props} />,
     'profile': <Profile {...props} />,
   };
 
   // Screens that should show the bottom nav
-  const hasBottomNav = ['home', 'home-empty', 'search', 'collections', 'profile', 'saved-list', 'save-detail', 'notifications'].includes(currentScreen);
+  const hasBottomNav = ['home', 'home-empty', 'nearby', 'search', 'collections', 'profile', 'saved-list', 'save-detail', 'notifications'].includes(currentScreen);
 
   return (
-    <div style={{ minHeight: '100vh', width: '100%', display: 'flex', justifyContent: 'center', background: 'var(--paper)' }}>
+    <div style={{ minHeight: '100vh', width: '100%', display: 'flex', justifyContent: 'center', background: 'transparent' }}>
       <div style={{
         width: '100%',
         maxWidth: 430,

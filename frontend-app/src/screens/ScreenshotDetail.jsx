@@ -4,7 +4,7 @@ import SmartImage from '../components/SmartImage';
 
 const T = {
   bg: 'var(--paper)',
-  bgInner: 'var(--forest-faint)',
+  bgInner: 'var(--coral-faint)',
   border: 'var(--hairline)',
   text: 'var(--ink)',
   textMuted: 'var(--slate)',
@@ -230,7 +230,7 @@ export default function ScreenshotDetail({ save, onNavigate }) {
                 background: 'rgba(255,255,255,0.18)',
                 border: 0,
                 color: '#fff',
-                fontSize: 18,
+                fontSize: 19,
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
@@ -248,7 +248,7 @@ export default function ScreenshotDetail({ save, onNavigate }) {
                 background: 'rgba(255,255,255,0.18)',
                 border: 0,
                 color: '#fff',
-                fontSize: 16,
+                fontSize: 17,
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
@@ -283,7 +283,7 @@ export default function ScreenshotDetail({ save, onNavigate }) {
                 color: T.text,
                 padding: '5px 12px',
                 borderRadius: 16,
-                fontSize: 13,
+                fontSize: 14,
                 fontWeight: 600,
               }}
             >
@@ -297,7 +297,7 @@ export default function ScreenshotDetail({ save, onNavigate }) {
           {/* Title */}
           <h1
             style={{
-              fontSize: 24,
+              fontSize: 25,
               fontWeight: 700,
               marginBottom: 12,
               color: T.text,
@@ -311,7 +311,7 @@ export default function ScreenshotDetail({ save, onNavigate }) {
           {safeSummary && (
             <p
               style={{
-                fontSize: 14,
+                fontSize: 15,
                 lineHeight: 1.6,
                 color: T.textMuted,
                 marginBottom: 16,
@@ -326,7 +326,7 @@ export default function ScreenshotDetail({ save, onNavigate }) {
             {save?.updatedAt && (
               <span
                 style={{
-                  fontSize: 12,
+                  fontSize: 13,
                   padding: '6px 10px',
                   borderRadius: 12,
                   background: T.bgInner,
@@ -339,7 +339,7 @@ export default function ScreenshotDetail({ save, onNavigate }) {
             {save?.processingStages?.metadata?.completed && (
               <span
                 style={{
-                  fontSize: 12,
+                  fontSize: 13,
                   padding: '6px 10px',
                   borderRadius: 12,
                   background: T.greenBg,
@@ -364,7 +364,7 @@ export default function ScreenshotDetail({ save, onNavigate }) {
             >
               <h3
                 style={{
-                  fontSize: 13,
+                  fontSize: 14,
                   fontWeight: 600,
                   marginBottom: 8,
                   color: T.text,
@@ -376,7 +376,7 @@ export default function ScreenshotDetail({ save, onNavigate }) {
                 <div
                   key={key}
                   style={{
-                    fontSize: 12,
+                    fontSize: 13,
                     marginBottom: 6,
                     display: 'flex',
                     justifyContent: 'space-between',
@@ -396,7 +396,7 @@ export default function ScreenshotDetail({ save, onNavigate }) {
             <div style={{ marginBottom: 16 }}>
               <h3
                 style={{
-                  fontSize: 13,
+                  fontSize: 14,
                   fontWeight: 600,
                   marginBottom: 8,
                   color: T.text,
@@ -409,7 +409,7 @@ export default function ScreenshotDetail({ save, onNavigate }) {
                   <span
                     key={tag}
                     style={{
-                      fontSize: 12,
+                      fontSize: 13,
                       padding: '4px 10px',
                       borderRadius: 12,
                       background: T.bgInner,
@@ -429,7 +429,7 @@ export default function ScreenshotDetail({ save, onNavigate }) {
             <div style={{ marginBottom: 16 }}>
               <h3
                 style={{
-                  fontSize: 13,
+                  fontSize: 14,
                   fontWeight: 600,
                   marginBottom: 8,
                   color: T.text,
@@ -442,13 +442,13 @@ export default function ScreenshotDetail({ save, onNavigate }) {
                   <li
                     key={i}
                     style={{
-                      fontSize: 13,
+                      fontSize: 14,
                       lineHeight: 1.6,
                       marginBottom: 6,
                       listStyleType: 'disc',
                     }}
                   >
-                    <span style={{ color: 'var(--forest)' }}>●</span> {point}
+                    <span style={{ color: 'var(--coral)' }}>●</span> {point}
                   </li>
                 ))}
               </ul>
@@ -460,7 +460,7 @@ export default function ScreenshotDetail({ save, onNavigate }) {
             <div style={{ marginBottom: 16 }}>
               <h3
                 style={{
-                  fontSize: 13,
+                  fontSize: 14,
                   fontWeight: 600,
                   marginBottom: 8,
                   color: T.text,
@@ -529,7 +529,7 @@ export default function ScreenshotDetail({ save, onNavigate }) {
           >
             <h3
               style={{
-                fontSize: 13,
+                fontSize: 14,
                 fontWeight: 600,
                 marginBottom: 8,
                 color: T.text,
@@ -539,7 +539,7 @@ export default function ScreenshotDetail({ save, onNavigate }) {
             </h3>
             {!aggregateData ? (
               <>
-                <p style={{ fontSize: 12, color: T.textMuted, marginBottom: 10, lineHeight: 1.5 }}>
+                <p style={{ fontSize: 13, color: T.textMuted, marginBottom: 10, lineHeight: 1.5 }}>
                   {relatedScreenshots.length > 0
                     ? 'Combine all related screenshots into a single analysis'
                     : 'No related screenshots to aggregate'}
@@ -547,7 +547,7 @@ export default function ScreenshotDetail({ save, onNavigate }) {
                 <button
                   onClick={handleAggregate}
                   disabled={aggregating || relatedScreenshots.length === 0}
-                  style={{ padding: '8px 12px', fontSize: 12, borderRadius: 6, background: 'var(--forest)', color: '#fff', border: 0, cursor: aggregating ? 'not-allowed' : 'pointer', opacity: aggregating || relatedScreenshots.length === 0 ? 0.6 : 1 }}
+                  style={{ padding: '8px 12px', fontSize: 13, borderRadius: 6, background: 'var(--coral)', color: '#fff', border: 0, cursor: aggregating ? 'not-allowed' : 'pointer', opacity: aggregating || relatedScreenshots.length === 0 ? 0.6 : 1 }}
                 >
                   {aggregating ? 'Aggregating...' : 'Aggregate'}
                 </button>
@@ -556,7 +556,7 @@ export default function ScreenshotDetail({ save, onNavigate }) {
               <>
                 {/* Summary */}
                 {aggregateData.summary && (
-                  <p style={{ fontSize: 12, color: T.text, lineHeight: 1.6, marginBottom: 14 }}>
+                  <p style={{ fontSize: 13, color: T.text, lineHeight: 1.6, marginBottom: 14 }}>
                     {aggregateData.summary}
                   </p>
                 )}
@@ -564,14 +564,14 @@ export default function ScreenshotDetail({ save, onNavigate }) {
                 {/* Highlights */}
                 {aggregateData.highlights?.length > 0 && (
                   <div style={{ marginBottom: 14 }}>
-                    <p style={{ fontSize: 11, fontWeight: 600, color: T.textMuted, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    <p style={{ fontSize: 12, fontWeight: 600, color: T.textMuted, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                       Key Highlights
                     </p>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                       {aggregateData.highlights.map((h, i) => (
                         <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-                          <span style={{ color: 'var(--forest)', fontWeight: 700, flexShrink: 0, marginTop: 1 }}>•</span>
-                          <span style={{ fontSize: 12, color: T.text, lineHeight: 1.5 }}>{h}</span>
+                          <span style={{ color: 'var(--coral)', fontWeight: 700, flexShrink: 0, marginTop: 1 }}>•</span>
+                          <span style={{ fontSize: 13, color: T.text, lineHeight: 1.5 }}>{h}</span>
                         </div>
                       ))}
                     </div>
@@ -581,18 +581,18 @@ export default function ScreenshotDetail({ save, onNavigate }) {
                 {/* Themes */}
                 {aggregateData.themes?.length > 0 && (
                   <div style={{ marginBottom: 14 }}>
-                    <p style={{ fontSize: 11, fontWeight: 600, color: T.textMuted, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    <p style={{ fontSize: 12, fontWeight: 600, color: T.textMuted, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                       Themes
                     </p>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                       {aggregateData.themes.map((theme, i) => (
                         <div key={i} style={{ background: T.bg, borderRadius: 8, padding: '8px 10px', border: `1px solid ${T.border}` }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                            <span style={{ fontSize: 14 }}>{theme.icon}</span>
-                            <span style={{ fontSize: 12, fontWeight: 600, color: T.text }}>{theme.title}</span>
+                            <span style={{ fontSize: 15 }}>{theme.icon}</span>
+                            <span style={{ fontSize: 13, fontWeight: 600, color: T.text }}>{theme.title}</span>
                           </div>
                           {theme.points?.map((pt, j) => (
-                            <div key={j} style={{ fontSize: 11, color: T.textMuted, lineHeight: 1.5, paddingLeft: 20 }}>· {pt}</div>
+                            <div key={j} style={{ fontSize: 12, color: T.textMuted, lineHeight: 1.5, paddingLeft: 20 }}>· {pt}</div>
                           ))}
                         </div>
                       ))}
@@ -603,7 +603,7 @@ export default function ScreenshotDetail({ save, onNavigate }) {
                 {/* Actions */}
                 {aggregateData.actions?.length > 0 && (
                   <div style={{ marginBottom: 14 }}>
-                    <p style={{ fontSize: 11, fontWeight: 600, color: T.textMuted, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    <p style={{ fontSize: 12, fontWeight: 600, color: T.textMuted, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                       Next Steps
                     </p>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -611,12 +611,12 @@ export default function ScreenshotDetail({ save, onNavigate }) {
                         const priorityColor = a.priority === 'high' ? '#c0392b' : a.priority === 'medium' ? '#e67e22' : '#7f8c8d';
                         return (
                           <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', padding: '8px 10px', background: T.bg, borderRadius: 8, border: `1px solid ${T.border}` }}>
-                            <span style={{ fontSize: 9, fontWeight: 700, color: '#fff', background: priorityColor, borderRadius: 4, padding: '2px 5px', flexShrink: 0, marginTop: 2, textTransform: 'uppercase' }}>
+                            <span style={{ fontSize: 10, fontWeight: 700, color: '#fff', background: priorityColor, borderRadius: 4, padding: '2px 5px', flexShrink: 0, marginTop: 2, textTransform: 'uppercase' }}>
                               {a.priority}
                             </span>
                             <div>
-                              <p style={{ fontSize: 12, fontWeight: 600, color: T.text, marginBottom: 2 }}>{a.action}</p>
-                              {a.reason && <p style={{ fontSize: 11, color: T.textMuted, lineHeight: 1.4 }}>{a.reason}</p>}
+                              <p style={{ fontSize: 13, fontWeight: 600, color: T.text, marginBottom: 2 }}>{a.action}</p>
+                              {a.reason && <p style={{ fontSize: 12, color: T.textMuted, lineHeight: 1.4 }}>{a.reason}</p>}
                             </div>
                           </div>
                         );
@@ -628,20 +628,20 @@ export default function ScreenshotDetail({ save, onNavigate }) {
                 {/* Comparison */}
                 {aggregateData.comparison && (
                   <div style={{ marginBottom: 14 }}>
-                    <p style={{ fontSize: 11, fontWeight: 600, color: T.textMuted, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    <p style={{ fontSize: 12, fontWeight: 600, color: T.textMuted, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                       Comparison
                     </p>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                       <div style={{ background: '#eafaf1', borderRadius: 8, padding: 8 }}>
-                        <p style={{ fontSize: 10, fontWeight: 700, color: '#1e8449', marginBottom: 4 }}>SIMILARITIES</p>
+                        <p style={{ fontSize: 11, fontWeight: 700, color: '#1e8449', marginBottom: 4 }}>SIMILARITIES</p>
                         {aggregateData.comparison.similarities?.map((s, i) => (
-                          <p key={i} style={{ fontSize: 11, color: '#1a5e2a', lineHeight: 1.4, marginBottom: 3 }}>· {s}</p>
+                          <p key={i} style={{ fontSize: 12, color: '#1a5e2a', lineHeight: 1.4, marginBottom: 3 }}>· {s}</p>
                         ))}
                       </div>
                       <div style={{ background: '#fef9e7', borderRadius: 8, padding: 8 }}>
-                        <p style={{ fontSize: 10, fontWeight: 700, color: '#9a7d0a', marginBottom: 4 }}>DIFFERENCES</p>
+                        <p style={{ fontSize: 11, fontWeight: 700, color: '#9a7d0a', marginBottom: 4 }}>DIFFERENCES</p>
                         {aggregateData.comparison.differences?.map((d, i) => (
-                          <p key={i} style={{ fontSize: 11, color: '#7e6302', lineHeight: 1.4, marginBottom: 3 }}>· {d}</p>
+                          <p key={i} style={{ fontSize: 12, color: '#7e6302', lineHeight: 1.4, marginBottom: 3 }}>· {d}</p>
                         ))}
                       </div>
                     </div>
@@ -652,7 +652,7 @@ export default function ScreenshotDetail({ save, onNavigate }) {
                 {aggregateData.tags?.length > 0 && (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 12 }}>
                     {aggregateData.tags.map((tag, i) => (
-                      <span key={i} style={{ fontSize: 10, background: T.bgInner, color: T.textMuted, borderRadius: 4, padding: '2px 7px', border: `1px solid ${T.border}` }}>
+                      <span key={i} style={{ fontSize: 11, background: T.bgInner, color: T.textMuted, borderRadius: 4, padding: '2px 7px', border: `1px solid ${T.border}` }}>
                         #{tag}
                       </span>
                     ))}
@@ -661,14 +661,14 @@ export default function ScreenshotDetail({ save, onNavigate }) {
 
                 <button
                   onClick={handleExportPdf}
-                  style={{ marginTop: 4, padding: '8px 12px', fontSize: 12, borderRadius: 6, background: 'var(--forest)', color: '#fff', border: 0, cursor: 'pointer', width: '100%' }}
+                  style={{ marginTop: 4, padding: '8px 12px', fontSize: 13, borderRadius: 6, background: 'var(--coral)', color: '#fff', border: 0, cursor: 'pointer', width: '100%' }}
                 >
                   📄 Export as PDF
                 </button>
               </>
             )}
             {aggregateError && (
-              <p style={{ fontSize: 12, color: T.redFg, marginTop: 8 }}>{aggregateError}</p>
+              <p style={{ fontSize: 13, color: T.redFg, marginTop: 8 }}>{aggregateError}</p>
             )}
           </div>
 
@@ -677,7 +677,7 @@ export default function ScreenshotDetail({ save, onNavigate }) {
             <div style={{ marginBottom: 16 }}>
               <h3
                 style={{
-                  fontSize: 13,
+                  fontSize: 14,
                   fontWeight: 600,
                   marginBottom: 8,
                   color: T.text,
@@ -700,7 +700,7 @@ export default function ScreenshotDetail({ save, onNavigate }) {
                   >
                     <p
                       style={{
-                        fontSize: 13,
+                        fontSize: 14,
                         fontWeight: 500,
                         color: T.text,
                         marginBottom: 4,
@@ -708,7 +708,7 @@ export default function ScreenshotDetail({ save, onNavigate }) {
                     >
                       {rec.title}
                     </p>
-                    <p style={{ fontSize: 11, color: T.textMuted }}>
+                    <p style={{ fontSize: 12, color: T.textMuted }}>
                       {rec.category || 'general'}
                     </p>
                   </div>
@@ -739,7 +739,7 @@ export default function ScreenshotDetail({ save, onNavigate }) {
             flex: 1,
             padding: '12px',
             borderRadius: 8,
-            fontSize: 13,
+            fontSize: 14,
             fontWeight: 600,
             border: `1px solid ${T.border}`,
             background: T.bg,
@@ -755,10 +755,10 @@ export default function ScreenshotDetail({ save, onNavigate }) {
             flex: 1,
             padding: '12px',
             borderRadius: 8,
-            fontSize: 13,
+            fontSize: 14,
             fontWeight: 600,
             border: 0,
-            background: 'var(--forest)',
+            background: 'var(--coral)',
             color: '#fff',
             cursor: 'pointer',
           }}
@@ -794,12 +794,12 @@ export default function ScreenshotDetail({ save, onNavigate }) {
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>Delete</h2>
-            <p style={{ fontSize: 13, color: T.textMuted, marginBottom: 16 }}>
+            <h2 style={{ fontSize: 17, fontWeight: 600, marginBottom: 8 }}>Delete</h2>
+            <p style={{ fontSize: 14, color: T.textMuted, marginBottom: 16 }}>
               Are you sure you want to delete this screenshot?
             </p>
             {deleteError && (
-              <p style={{ fontSize: 12, color: T.redFg, marginBottom: 12 }}>
+              <p style={{ fontSize: 13, color: T.redFg, marginBottom: 12 }}>
                 {deleteError}
               </p>
             )}
@@ -815,7 +815,7 @@ export default function ScreenshotDetail({ save, onNavigate }) {
                   background: T.bg,
                   color: T.text,
                   cursor: deleting ? 'not-allowed' : 'pointer',
-                  fontSize: 12,
+                  fontSize: 13,
                   fontWeight: 600,
                 }}
               >
@@ -832,7 +832,7 @@ export default function ScreenshotDetail({ save, onNavigate }) {
                   background: T.redFg,
                   color: '#fff',
                   cursor: deleting ? 'not-allowed' : 'pointer',
-                  fontSize: 12,
+                  fontSize: 13,
                   fontWeight: 600,
                   opacity: deleting ? 0.6 : 1,
                 }}
@@ -870,9 +870,9 @@ export default function ScreenshotDetail({ save, onNavigate }) {
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 style={{ fontSize: 16, fontWeight: 600, marginBottom: 12 }}>Share</h2>
+            <h2 style={{ fontSize: 17, fontWeight: 600, marginBottom: 12 }}>Share</h2>
             {shareError && (
-              <p style={{ fontSize: 12, color: T.redFg, marginBottom: 12 }}>
+              <p style={{ fontSize: 13, color: T.redFg, marginBottom: 12 }}>
                 {shareError}
               </p>
             )}
@@ -884,7 +884,7 @@ export default function ScreenshotDetail({ save, onNavigate }) {
                     borderRadius: 8,
                     background: T.bgInner,
                     marginBottom: 12,
-                    fontSize: 12,
+                    fontSize: 13,
                     fontFamily: 'monospace',
                     wordBreak: 'break-all',
                     color: T.text,
@@ -899,10 +899,10 @@ export default function ScreenshotDetail({ save, onNavigate }) {
                     padding: '10px',
                     borderRadius: 6,
                     border: 0,
-                    background: 'var(--forest)',
+                    background: 'var(--coral)',
                     color: '#fff',
                     cursor: 'pointer',
-                    fontSize: 13,
+                    fontSize: 14,
                     fontWeight: 600,
                     marginBottom: 8,
                   }}
@@ -919,10 +919,10 @@ export default function ScreenshotDetail({ save, onNavigate }) {
                   padding: '10px',
                   borderRadius: 6,
                   border: 0,
-                  background: 'var(--forest)',
+                  background: 'var(--coral)',
                   color: '#fff',
                   cursor: shareLoading ? 'not-allowed' : 'pointer',
-                  fontSize: 13,
+                  fontSize: 14,
                   fontWeight: 600,
                   opacity: shareLoading ? 0.6 : 1,
                 }}
@@ -940,7 +940,7 @@ export default function ScreenshotDetail({ save, onNavigate }) {
                 background: T.bg,
                 color: T.text,
                 cursor: 'pointer',
-                fontSize: 13,
+                fontSize: 14,
                 fontWeight: 600,
                 marginTop: 8,
               }}
@@ -963,7 +963,7 @@ export default function ScreenshotDetail({ save, onNavigate }) {
             color: T.bg,
             padding: '10px 16px',
             borderRadius: 8,
-            fontSize: 13,
+            fontSize: 14,
             zIndex: 2000,
           }}
         >

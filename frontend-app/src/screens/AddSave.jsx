@@ -31,29 +31,29 @@ export default function AddSave({ onNavigate }) {
 function ModePicker({ onPick, onCancel }) {
   return (
     <>
-      <h2 className="display" style={{ fontSize: '20px', marginBottom: '4px' }}>Add a save</h2>
-      <p style={{ fontSize: '13px', color: 'var(--slate)', marginBottom: '16px' }}>What are you saving?</p>
+      <h2 className="display" style={{ fontSize: '21px', marginBottom: '4px' }}>Add a save</h2>
+      <p style={{ fontSize: '14px', color: 'var(--slate)', marginBottom: '16px' }}>What are you saving?</p>
 
       <button onClick={() => onPick('link')} className="add-tile" style={tile}>
         <div style={tileIcon}>
-          <i className="ti ti-link" style={{ fontSize: 20, color: 'var(--linen)' }}></i>
+          <i className="ti ti-link" style={{ fontSize: 21, color: 'var(--linen)' }}></i>
         </div>
         <div style={{ flex: 1, textAlign: 'left' }}>
-          <p style={{ fontSize: 15, fontWeight: 500 }}>Paste a link</p>
-          <p style={{ fontSize: 12, color: 'var(--slate)', marginTop: 2 }}>Instagram, YouTube, TikTok, web</p>
+          <p style={{ fontSize: 16, fontWeight: 500 }}>Paste a link</p>
+          <p style={{ fontSize: 13, color: 'var(--slate)', marginTop: 2 }}>Instagram, YouTube, TikTok, web</p>
         </div>
-        <i className="ti ti-chevron-right" style={{ fontSize: 16, color: 'var(--mute)' }}></i>
+        <i className="ti ti-chevron-right" style={{ fontSize: 17, color: 'var(--mute)' }}></i>
       </button>
 
       <button onClick={() => onPick('photos')} className="add-tile" style={{ ...tile, marginTop: 8 }}>
         <div style={{ ...tileIcon, background: 'var(--paper)', border: '0.5px solid var(--hairline)' }}>
-          <i className="ti ti-photo" style={{ fontSize: 20, color: 'var(--forest)' }}></i>
+          <i className="ti ti-photo" style={{ fontSize: 21, color: 'var(--coral)' }}></i>
         </div>
         <div style={{ flex: 1, textAlign: 'left' }}>
-          <p style={{ fontSize: 15, fontWeight: 500 }}>Upload photos</p>
-          <p style={{ fontSize: 12, color: 'var(--slate)', marginTop: 2 }}>Screenshots, recipe pics, menus — OCR + AI</p>
+          <p style={{ fontSize: 16, fontWeight: 500 }}>Upload photos</p>
+          <p style={{ fontSize: 13, color: 'var(--slate)', marginTop: 2 }}>Screenshots, recipe pics, menus — OCR + AI</p>
         </div>
-        <i className="ti ti-chevron-right" style={{ fontSize: 16, color: 'var(--mute)' }}></i>
+        <i className="ti ti-chevron-right" style={{ fontSize: 17, color: 'var(--mute)' }}></i>
       </button>
 
       <button className="btn-secondary" style={{ marginTop: 20 }} onClick={onCancel}>Cancel</button>
@@ -88,7 +88,7 @@ function LinkFlow({ collections, onBack, onNavigate }) {
 
     try {
       // Submit link for async processing
-      await api.submitLink(url.trim());
+      const result = await api.submitLink(url.trim());
 
       // Show "submitted" state
       setProcessingStep(1);
@@ -96,9 +96,7 @@ function LinkFlow({ collections, onBack, onNavigate }) {
         setSaving(false);
         setUrl('');
         setProcessingStep(0);
-        // Show a confirmation and navigate back
-        alert(`Submitted! Your link is being processed. You can continue uploading while you wait.`);
-        onNavigate('home');
+        onNavigate('firstSaveSuccess', { jobId: result?.jobId, isFirstSave: false, nextScreen: 'home' });
       }, 1200);
     } catch (err) {
       setSaving(false);
@@ -126,18 +124,18 @@ function LinkFlow({ collections, onBack, onNavigate }) {
             width: 56,
             height: 56,
             borderRadius: 28,
-            background: '#E1F5EE',
+            background: '#E0F7EE',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             marginBottom: 24
           }}>
-            <span style={{ fontSize: 24 }}>
+            <span style={{ fontSize: 25 }}>
               {processingStep === 1 ? '✓' : '⟳'}
             </span>
           </div>
           <p style={{
-            fontSize: 18,
+            fontSize: 19,
             fontWeight: 500,
             textAlign: 'center',
             color: '#1A1A1A',
@@ -146,7 +144,7 @@ function LinkFlow({ collections, onBack, onNavigate }) {
           }}>
             {PROCESSING_STEPS[processingStep]}
           </p>
-          <p style={{ fontSize: 13, color: '#888', textAlign: 'center' }}>
+          <p style={{ fontSize: 14, color: '#888', textAlign: 'center' }}>
             {processingStep < 4 ? 'This takes just a few seconds' : 'Navigating...'}
           </p>
         </div>
@@ -165,7 +163,7 @@ function LinkFlow({ collections, onBack, onNavigate }) {
 
       <CollectionsPicker collections={manualCollections} selectedIds={selectedCollectionIds} onToggle={toggleCollection} disabled={saving} />
 
-      {error && <p style={{ color: 'var(--error,#d33)', fontSize: 13, marginBottom: 8 }}>{error}</p>}
+      {error && <p style={{ color: 'var(--error,#d33)', fontSize: 14, marginBottom: 8 }}>{error}</p>}
       <button className="btn-primary" disabled={saving} onClick={handleSave}>{saving ? 'Saving…' : 'Save & Extract'}</button>
     </>
   );
@@ -220,7 +218,7 @@ function PhotosFlow({ collections, onBack, onNavigate }) {
     setProcessingStep(0);
 
     try {
-      await api.submitScreenshotBundle(files.map((f) => f.file));
+      const result = await api.submitScreenshotBundle(files.map((f) => f.file));
 
       setProcessingStep(1);
       files.forEach((x) => URL.revokeObjectURL(x.previewUrl));
@@ -228,8 +226,7 @@ function PhotosFlow({ collections, onBack, onNavigate }) {
         setUploading(false);
         setFiles([]);
         setProcessingStep(0);
-        alert(`${files.length} screenshot(s) submitted as one entry! Processing in background...`);
-        onNavigate('home');
+        onNavigate('firstSaveSuccess', { jobId: result?.jobId, isFirstSave: false, nextScreen: 'home' });
       }, 1200);
     } catch (err) {
       setUploading(false);
@@ -258,18 +255,18 @@ function PhotosFlow({ collections, onBack, onNavigate }) {
             width: 56,
             height: 56,
             borderRadius: 28,
-            background: '#E1F5EE',
+            background: '#E0F7EE',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             marginBottom: 24
           }}>
-            <span style={{ fontSize: 24 }}>
+            <span style={{ fontSize: 25 }}>
               {processingStep === 1 ? '✓' : '⟳'}
             </span>
           </div>
           <p style={{
-            fontSize: 18,
+            fontSize: 19,
             fontWeight: 500,
             textAlign: 'center',
             color: '#1A1A1A',
@@ -278,7 +275,7 @@ function PhotosFlow({ collections, onBack, onNavigate }) {
           }}>
             {PROCESSING_STEPS[processingStep]}
           </p>
-          <p style={{ fontSize: 13, color: '#888', textAlign: 'center' }}>
+          <p style={{ fontSize: 14, color: '#888', textAlign: 'center' }}>
             {processingStep === 0 ? 'Uploading...' : 'Navigating...'}
           </p>
         </div>
@@ -292,14 +289,14 @@ function PhotosFlow({ collections, onBack, onNavigate }) {
         onDragLeave={() => setDragging(false)}
         onDrop={onDrop}
         style={{
-          border: `1px dashed ${dragging ? 'var(--forest)' : 'var(--sand)'}`,
-          background: dragging ? 'var(--forest-faint)' : 'var(--paper)',
+          border: `1px dashed ${dragging ? 'var(--coral)' : 'var(--sand)'}`,
+          background: dragging ? 'var(--coral-faint)' : 'var(--paper)',
           borderRadius: 12, padding: '24px 14px', textAlign: 'center', cursor: 'pointer', marginBottom: 12,
         }}
       >
-        <i className="ti ti-upload" style={{ fontSize: 24, color: 'var(--forest)' }}></i>
-        <p style={{ fontSize: 13, marginTop: 6 }}>{files.length === 0 ? 'Click or drop images here' : `${files.length} image${files.length === 1 ? '' : 's'} selected — add more`}</p>
-        <p style={{ fontSize: 11, color: 'var(--slate)', marginTop: 4 }}>PNG, JPG or WebP · up to 10 files · 10 MB each</p>
+        <i className="ti ti-upload" style={{ fontSize: 25, color: 'var(--coral)' }}></i>
+        <p style={{ fontSize: 14, marginTop: 6 }}>{files.length === 0 ? 'Click or drop images here' : `${files.length} image${files.length === 1 ? '' : 's'} selected — add more`}</p>
+        <p style={{ fontSize: 12, color: 'var(--slate)', marginTop: 4 }}>PNG, JPG or WebP · up to 10 files · 10 MB each</p>
         <input ref={inputRef} type="file" accept="image/png,image/jpeg,image/webp" multiple style={{ display: 'none' }} onChange={(e) => addFiles(Array.from(e.target.files || []))} disabled={uploading} />
       </div>
 
@@ -311,10 +308,10 @@ function PhotosFlow({ collections, onBack, onNavigate }) {
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); removeAt(i); }}
-                disabled={uploading || bundleLoading}
-                style={{ position: 'absolute', top: 4, right: 4, width: 24, height: 24, borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,0.7)', color: '#fff', fontSize: 14, cursor: 'pointer', fontWeight: 'bold' }}
+                disabled={uploading}
+                style={{ position: 'absolute', top: 4, right: 4, width: 24, height: 24, borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,0.7)', color: '#fff', fontSize: 15, cursor: 'pointer', fontWeight: 'bold' }}
               >×</button>
-              <span style={{ position: 'absolute', bottom: 4, left: 4, background: 'rgba(0,0,0,0.7)', color: '#fff', fontSize: 10, padding: '2px 6px', borderRadius: 3, fontWeight: 500 }}>{i + 1}</span>
+              <span style={{ position: 'absolute', bottom: 4, left: 4, background: 'rgba(0,0,0,0.7)', color: '#fff', fontSize: 11, padding: '2px 6px', borderRadius: 3, fontWeight: 500 }}>{i + 1}</span>
             </div>
           ))}
         </div>
@@ -335,9 +332,9 @@ function PhotosFlow({ collections, onBack, onNavigate }) {
               return (
                 <button key={c._id} type="button" onClick={() => setSelectedCollectionId(selected ? null : c._id)} disabled={uploading}
                   style={{
-                    background: selected ? 'var(--forest)' : 'var(--linen)',
-                    color: selected ? 'var(--linen)' : 'var(--forest)',
-                    border: '0.5px solid var(--hairline)', borderRadius: 16, fontSize: 12, padding: '5px 11px', cursor: 'pointer',
+                    background: selected ? 'var(--coral)' : 'var(--linen)',
+                    color: selected ? 'var(--linen)' : 'var(--coral)',
+                    border: '0.5px solid var(--hairline)', borderRadius: 16, fontSize: 13, padding: '5px 11px', cursor: 'pointer',
                   }}>{c.icon ? `${c.icon} ` : ''}{c.name}</button>
               );
             })}
@@ -345,9 +342,9 @@ function PhotosFlow({ collections, onBack, onNavigate }) {
         </>
       )}
 
-      <p style={{ fontSize: 11, color: 'var(--slate)', marginBottom: 8 }}>📅 Original images auto-purge after 2 working days. Thumbnails kept forever.</p>
+      <p style={{ fontSize: 12, color: 'var(--slate)', marginBottom: 8 }}>📅 Original images auto-purge after 2 working days. Thumbnails kept forever.</p>
 
-      {error && <p style={{ color: 'var(--error,#d33)', fontSize: 13, marginBottom: 8 }}>{error}</p>}
+      {error && <p style={{ color: 'var(--error,#d33)', fontSize: 14, marginBottom: 8 }}>{error}</p>}
       <button className="btn-primary" disabled={uploading || files.length === 0} onClick={handleUpload}>
         {uploading ? `Uploading ${files.length} image${files.length === 1 ? '' : 's'}…` : `Extract & save${files.length ? ` (${files.length})` : ''}`}
       </button>
@@ -360,9 +357,9 @@ function FlowHeader({ title, onBack }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
       <button type="button" onClick={onBack} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 4, marginRight: 8 }}>
-        <i className="ti ti-arrow-left" style={{ fontSize: 18 }}></i>
+        <i className="ti ti-arrow-left" style={{ fontSize: 19 }}></i>
       </button>
-      <h2 className="display" style={{ fontSize: 18 }}>{title}</h2>
+      <h2 className="display" style={{ fontSize: 19 }}>{title}</h2>
     </div>
   );
 }
@@ -378,9 +375,9 @@ function CollectionsPicker({ collections, selectedIds, onToggle, disabled }) {
           return (
             <button key={c._id} type="button" onClick={() => onToggle(c._id)} disabled={disabled}
               style={{
-                background: selected ? 'var(--forest)' : 'var(--linen)',
-                color: selected ? 'var(--linen)' : 'var(--forest)',
-                border: '0.5px solid var(--hairline)', borderRadius: 16, fontSize: 12, padding: '5px 11px', cursor: 'pointer',
+                background: selected ? 'var(--coral)' : 'var(--linen)',
+                color: selected ? 'var(--linen)' : 'var(--coral)',
+                border: '0.5px solid var(--hairline)', borderRadius: 16, fontSize: 13, padding: '5px 11px', cursor: 'pointer',
               }}>{c.icon ? `${c.icon} ` : ''}{c.name}</button>
           );
         })}
@@ -396,6 +393,6 @@ const tile = {
   border: 'none', textAlign: 'left',
 };
 const tileIcon = {
-  width: 40, height: 40, borderRadius: 10, background: 'var(--forest)',
+  width: 40, height: 40, borderRadius: 10, background: 'var(--coral)',
   display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
 };
