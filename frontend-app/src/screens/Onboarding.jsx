@@ -26,7 +26,7 @@ const catMeta = (cat) => CATEGORY_META[cat] || { bg: 'linear-gradient(135deg,#4a
 
 // Pre-auth dark intro carousel (matches mockup S1)
 const INTRO_SLIDES = [
-  { emoji: ['📱', '🔖'], head: 'See it on Instagram', sub: 'Scroll past something you love? Save it in one tap.' },
+  { emoji: ['📱', '🔖'], head: 'See it anywhere', sub: 'Reels, videos, links — from Instagram, YouTube, TikTok and more. Save it in one tap.' },
   { emoji: ['🤖', '✨'], head: 'AI figures it out', sub: 'We read the reel and pull out the place, recipe, or product — no typing needed.' },
   { emoji: ['🔔', '📍'], head: 'Get reminded at the right time', sub: "Nearby a saved spot, or a free weekend coming up — we'll nudge you." },
 ];
