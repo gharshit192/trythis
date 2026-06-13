@@ -1,5 +1,6 @@
 const logger = require('../../utils/logger');
 const { extractByCategoryWrapper, CATEGORIES } = require('./categories');
+const { parseLocation } = require('./utils/parsers');
 
 const EXTRACTION_LAYERS = {
   HEURISTICS: 'heuristics',
@@ -192,9 +193,74 @@ const classifyCategory = (content) => {
   };
 };
 
+// ── Title / description helpers ───────────────────────────────────────────────
+// Platform-supplied titles that carry no real signal — treat these as "no title"
+// so callers fall back to a description- or URL-derived title instead.
+const GENERIC_TITLE = /^(instagram|reels?|video|watch|shorts?|tiktok|youtube|youtube shorts|home|untitled|post|photo|login|sign in|page not found|reel)$/i;
+
+const cleanTitle = (t) => (t || '')
+  .toString()
+  .replace(/\s+/g, ' ')
+  // strip trailing "• Instagram" / "- YouTube" platform suffixes
+  .replace(/\s*[•|·\-–—]\s*(instagram|tiktok|youtube|facebook|pinterest)\b.*$/i, '')
+  .trim();
+
+// pickTitle(title, description) → a human-readable title, or null when nothing
+// usable is available. Prefers a real `title`; otherwise derives one from the
+// first meaningful sentence/line of the description (hashtags/mentions stripped).
+const pickTitle = (title, description) => {
+  const t = cleanTitle(title);
+  if (t && t.length >= 3 && !GENERIC_TITLE.test(t)) {
+    return t.length > 90 ? `${t.slice(0, 90).trim()}…` : t;
+  }
+  const desc = (description || '').toString().replace(/\s+/g, ' ').trim();
+  if (desc) {
+    const firstLine = desc
+      .split(/[.!?\n]/)[0]
+      .replace(/[#@][\w.]+/g, '')   // drop hashtags / @mentions
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (firstLine.length >= 3) {
+      return firstLine.length > 80 ? `${firstLine.slice(0, 80).trim()}…` : firstLine;
+    }
+  }
+  return null;
+};
+
+// parseDescription(description) → light structured hints used by the heuristic
+// fallback (when Claude is unavailable): { location, hours, closedDays, metro }.
+const parseDescription = (description) => {
+  const text = (description || '').toString();
+  const loc = parseLocation(text); // { city, state, raw } | null
+  const location = loc ? { name: null, city: loc.city || null, state: loc.state || null } : null;
+
+  // Opening hours e.g. "Open 8am-10pm", "10:00 - 22:00", "9 AM to 6 PM"
+  let hours = null;
+  const hoursMatch = text.match(/\b(\d{1,2}(?::\d{2})?\s*(?:am|pm)?\s*(?:-|–|—|to)\s*\d{1,2}(?::\d{2})?\s*(?:am|pm))\b/i);
+  if (hoursMatch) hours = hoursMatch[1].replace(/\s+/g, ' ').trim();
+
+  // Closed days e.g. "Closed on Monday", "Closed: Mon, Tue"
+  const closedDays = [];
+  const closedMatch = text.match(/closed(?:\s+on)?[:\s]+([A-Za-z,&\s]+?)(?:[.!\n]|$)/i);
+  if (closedMatch) {
+    const days = closedMatch[1].match(/\b(mon|tue|wed|thu|fri|sat|sun)[a-z]*\b/gi);
+    if (days) closedDays.push(...new Set(days.map((d) => d.slice(0, 3).replace(/^./, (c) => c.toUpperCase()))));
+  }
+
+  // Nearest metro station e.g. "Khan Market metro", "Metro: Hauz Khas"
+  let metro = null;
+  const metroMatch = text.match(/([A-Z][A-Za-z]+(?:\s+[A-Z][A-Za-z]+)*)\s+metro(?:\s+station)?\b/)
+    || text.match(/\bmetro[:\s]+([A-Z][A-Za-z ]+?)(?:[.!,\n]|$)/i);
+  if (metroMatch) metro = metroMatch[1].trim();
+
+  return { location, hours, closedDays, metro };
+};
+
 module.exports = {
   extractEntities,
   classifyCategory,
+  pickTitle,
+  parseDescription,
   EXTRACTION_LAYERS,
   HEURISTIC_CONFIDENCE_THRESHOLD,
   __test__: { heuristics, embeddings, llm, safeHostname },
