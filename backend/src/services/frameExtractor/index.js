@@ -107,6 +107,23 @@ const ocrFrameWithClaude = async (framePath) => {
   }
 };
 
+// Run fn over items with bounded concurrency, preserving order. Lets the
+// slow per-frame Claude Vision OCR run in parallel (was sequential → ~85s for
+// 16 garbled frames; ~6-wide brings that down to ~15-25s).
+const mapLimit = async (items, limit, fn) => {
+  const results = new Array(items.length);
+  let next = 0;
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (next < items.length) {
+      const i = next;
+      next += 1;
+      results[i] = await fn(items[i], i);
+    }
+  });
+  await Promise.all(workers);
+  return results;
+};
+
 const extractAndOcrFrames = async (mp4Path, { count = 4, durationSeconds, langs = 'eng' } = {}) => {
   if (!mp4Path || !fs.existsSync(mp4Path)) {
     throw new Error('mp4Path missing or not on disk');
@@ -120,19 +137,17 @@ const extractAndOcrFrames = async (mp4Path, { count = 4, durationSeconds, langs 
     const frames = await extractFrames(mp4Path, count, durationSeconds || 30, work);
     if (frames.length === 0) return { mergedText: '', perFrame: [] };
 
-    const perFrame = [];
-    for (let i = 0; i < frames.length; i++) {
-      let text = await ocrFrame(frames[i], effectiveLangs);
-
-      // If tesseract output is garbled, try Claude Vision
+    // Process frames in parallel (bounded) — the per-frame Claude Vision OCR
+    // dominates runtime, so this is the single biggest speedup for video saves.
+    const perFrame = await mapLimit(frames, 6, async (frame, i) => {
+      let text = await ocrFrame(frame, effectiveLangs);
       if (looksGarbled(text)) {
         logger.debug(`frameExtractor: frame ${i + 1} looks garbled (tesseract), trying Claude Vision`);
-        const claudeText = await ocrFrameWithClaude(frames[i]);
+        const claudeText = await ocrFrameWithClaude(frame);
         if (claudeText) text = claudeText;
       }
-
-      perFrame.push({ index: i, text });
-    }
+      return { index: i, text };
+    });
 
     const lines = [];
     let lastText = null;

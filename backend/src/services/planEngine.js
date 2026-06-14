@@ -72,7 +72,6 @@ Break it into individual destinations. Return ONLY valid JSON, no prose:
       "domestic": boolean,       // true if reachable by train/bus from ${origin || 'the origin'} (same country)
       "flightApprox": string,    // rough round-trip flight cost from ${origin || 'a metro'} in INR, e.g. "₹12,000–20,000", or "" if unsure
       "hotelApprox": string,     // rough hotel price per night in INR, e.g. "₹2,000–8,000", or ""
-      "itinerary": string[],     // 2-3 concrete things to do (<=110 chars each)
       "explore": string[]        // 2-3 nearby areas worth a side trip (<=50 chars each)
     }
   ]
@@ -90,7 +89,6 @@ Rules: 1-5 destinations. If the save names one place, return one. Prices are app
     domestic: !!d.domestic,
     flightApprox: String(d.flightApprox || '').trim(),
     hotelApprox: String(d.hotelApprox || '').trim(),
-    itinerary: (d.itinerary || []).slice(0, 3).map((s) => String(s).slice(0, 160)).filter(Boolean),
     explore: (d.explore || []).slice(0, 3).map((s) => String(s).slice(0, 80)).filter(Boolean),
   })).filter((d) => d.city);
 };
@@ -121,7 +119,6 @@ const generatePlan = async (save, origin) => {
     domestic: d.domestic,
     flightApprox: d.flightApprox,
     hotelApprox: d.hotelApprox,
-    itinerary: d.itinerary,
     explore: d.explore,
     ...buildDestLinks(origin, d),
   }));

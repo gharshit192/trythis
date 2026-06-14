@@ -1093,15 +1093,6 @@ export default function SaveDetail({ onNavigate, payload }) {
                       ))}
                     </div>
 
-                    {d.itinerary?.length > 0 && (
-                      <>
-                        <div className="plan-h" style={{ marginTop: 9 }}>🗺️ Things to do</div>
-                        {d.itinerary.map((it, i) => (
-                          <div className="ai-bullet" key={i} style={{ marginBottom: 6 }}><div className="ai-dot" style={{ background: 'var(--rust)' }} /><div className="ai-txt">{it}</div></div>
-                        ))}
-                      </>
-                    )}
-
                     {d.explore?.length > 0 && (
                       <>
                         <div className="plan-h" style={{ marginTop: 6 }}>Explore nearby</div>

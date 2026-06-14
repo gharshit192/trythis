@@ -565,7 +565,16 @@ const processSave = async (saveId) => {
       // a Hindi voiceover usually means Hindi text overlays too.
       // We probe duration from the mp4 directly (no save.duration field anymore).
       let frameOcr = '';
-      if (mp4Ready) {
+      // Frame OCR is the slowest stage (per-frame Claude Vision, ~1-2 min) and
+      // mostly adds low-value garbled text when we already have a transcript.
+      // Skip it when the transcript is rich; still run it for visual-only reels.
+      const transcriptRich = englishClean && englishClean.trim().length >= 180;
+      if (mp4Ready && transcriptRich) {
+        logger.info(`[mediaProcessor ${saveId}] frame OCR skipped — transcript already rich (${englishClean.length} chars)`);
+        await Save.findByIdAndUpdate(saveId, {
+          'processingStages.frameOCR': { completed: true, error: null, completedAt: new Date() },
+        });
+      } else if (mp4Ready) {
         try {
           const dur = await probeDurationSeconds(mp4Path);
           const res = await frameExtractor.extractAndOcrFrames(mp4Path, {
