@@ -40,7 +40,8 @@ const evaluate = async (userId, context = {}, userPersona = {}) => {
       vars: {
         dayName,
         count: saves.length,
-        title: featured.title
+        title: featured.title,
+        category: featured.category,
       },
       userId
     });

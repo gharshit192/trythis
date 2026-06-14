@@ -1,12 +1,17 @@
 // backend/src/services/notificationMessageService.js
-// Generates unique notification messages using Groq (free)
-// Falls back to curated templates if Groq is unavailable
+// Generates unique, contextual notification messages with an LLM
+// (Groq → Claude), falling back to curated templates if both are unavailable.
 
 const Groq = require('groq-sdk');
+const Anthropic = require('@anthropic-ai/sdk');
 const logger = require('../utils/logger');
 
 const groq = process.env.GROQ_API_KEY
   ? new Groq({ apiKey: process.env.GROQ_API_KEY })
+  : null;
+
+const anthropic = process.env.ANTHROPIC_API_KEY
+  ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
   : null;
 
 // ── FALLBACK TEMPLATES ──────────────────────────────────────────────────────
@@ -149,13 +154,11 @@ const pickTemplate = (type, vars = {}) => {
   };
 };
 
-// ── GROQ GENERATION ──────────────────────────────────────────────────────────
-const generateWithGroq = async ({ type, saveTitle, destination, vars, recentBodies }) => {
-  if (!groq) return null;
-
+// ── LLM PROMPT ────────────────────────────────────────────────────────────────
+const buildLLMPrompt = ({ type, saveTitle, destination, vars = {}, recentBodies = [] }) => {
   const contextMap = {
     resurface:        `Remind user about a save they forgot. Save: "${saveTitle}". Saved ${vars.daysAgo || '?'} days ago.`,
-    weekend_reminder: `Weekend reminder. User has ${vars.count || 'several'} unvisited saves. Featured: "${saveTitle}".`,
+    weekend_reminder: `It's the weekend. User has ${vars.count || 'several'} unvisited saves. Featured save: "${saveTitle}"${vars.category ? ` (${vars.category})` : ''}${destination && destination !== 'nearby' ? ` in ${destination}` : ''}.`,
     flight_price_drop:`Flights to ${destination} dropped to ₹${vars.price || '?'}. User has ${vars.count || 1} ${destination} saves.`,
     hotel_discount:   `Hotels in ${destination} at ${vars.discount || '?'}% off, from ₹${vars.price || '?'}/night.`,
     cultural_event:   `${vars.eventName || 'An event'} in ${destination} on ${vars.date || 'soon'}. User saved ${destination} content.`,
@@ -166,44 +169,60 @@ const generateWithGroq = async ({ type, saveTitle, destination, vars, recentBodi
     travel_himachal:  `User has ${vars.count || 1} Himachal saves. Featured: "${saveTitle}".`,
     travel_generic:   `User has ${vars.count || 1} ${destination} saves. Featured: "${saveTitle}".`,
   };
-
   const context = contextMap[type] || `Context: "${saveTitle}" saved by user.`;
-
   const avoidText = recentBodies?.length
-    ? `\n\nDo NOT use phrasing similar to:\n${recentBodies.slice(0,4).map((b,i) => `${i+1}. "${b}"`).join('\n')}`
+    ? `\n\nDo NOT reuse phrasing similar to:\n${recentBodies.slice(0, 4).map((b, i) => `${i + 1}. "${b}"`).join('\n')}`
     : '';
 
-  const prompt = `You write short notification messages for TryThis, a save-and-rediscover app.
+  return `You write short notification messages for Wanna Try, a save-and-rediscover app.
 
 ${context}
 
 Write a notification body (2 sentences max, 30 words max total).
 Rules:
 - Sound like a smart friend texting, not marketing copy
-- Reference something specific from the context
+- Reference the specific save by name and why it's relevant right now
 - End with a gentle nudge or question
 - Warm and conversational tone
 - No hashtags, no emoji
-- No exclamation marks more than once
+- At most one exclamation mark
 ${avoidText}
 
 Return ONLY the notification body text. No quotes. No explanation.`;
+};
 
+const isUsableBody = (text) => !!text && text.length > 10 && text.length < 180;
+
+// ── LLM GENERATION (Groq → Claude) ───────────────────────────────────────────
+const generateWithGroq = async (args) => {
+  if (!groq) return null;
   try {
     const response = await groq.chat.completions.create({
       model: 'llama-3.1-8b-instant',
-      max_tokens: 60,
+      max_tokens: 70,
       temperature: 0.85,
-      messages: [{ role: 'user', content: prompt }]
+      messages: [{ role: 'user', content: buildLLMPrompt(args) }],
     });
-
     const text = response.choices[0]?.message?.content?.trim();
-    if (text && text.length > 10 && text.length < 150) {
-      return text;
-    }
-    return null;
+    return isUsableBody(text) ? text : null;
   } catch (err) {
     logger.warn(`[notificationMessageService] Groq failed: ${err.message}`);
+    return null;
+  }
+};
+
+const generateWithClaude = async (args) => {
+  if (!anthropic) return null;
+  try {
+    const msg = await anthropic.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 90,
+      messages: [{ role: 'user', content: buildLLMPrompt(args) }],
+    });
+    const text = msg?.content?.[0]?.text?.trim().replace(/^["']|["']$/g, '');
+    return isUsableBody(text) ? text : null;
+  } catch (err) {
+    logger.warn(`[notificationMessageService] Claude failed: ${err.message}`);
     return null;
   }
 };
@@ -223,16 +242,16 @@ const getMessage = async ({ type, saveTitle, destination, vars = {}, userId }) =
     } catch {}
   }
 
-  // Try Groq first — free and fast
-  const groqBody = await generateWithGroq({ type, saveTitle, destination, vars, recentBodies });
+  // Smart body: Groq (free/fast) → Claude (reliable) → curated template.
+  const args = { type, saveTitle, destination, vars, recentBodies };
+  const body = await generateWithGroq(args) || await generateWithClaude(args);
 
-  if (groqBody) {
-    // Get title from template (Groq just generates body)
-    const fallback = pickTemplate(type, vars);
-    return { title: fallback.title, body: groqBody };
+  if (body) {
+    // Title still comes from the curated template; the LLM writes the body.
+    const tpl = pickTemplate(type, vars);
+    return { title: tpl.title, body };
   }
 
-  // Fall back to curated templates
   logger.info(`[notificationMessageService] using template fallback for type=${type}`);
   return pickTemplate(type, vars);
 };
