@@ -416,12 +416,28 @@ router.patch('/location', authMiddleware, async (req, res) => {
       });
     }
 
+    // Resolve a human city name (used as the trip-planning origin) when the
+    // client only sent coords — free reverse-geocode, no API key.
+    let resolvedCity = city || null;
+    if (!resolvedCity) {
+      try {
+        const geo = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`);
+        if (geo.ok) {
+          const g = await geo.json();
+          resolvedCity = g.city || g.locality || g.principalSubdivision || null;
+        }
+      } catch (e) {
+        logger.warn(`reverse-geocode failed: ${e.message}`);
+      }
+    }
+
     await User.findByIdAndUpdate(req.user.id, {
       locationEnabled: true,
-      location: { lat, lng, city: city || null, updatedAt: new Date() }
+      ...(resolvedCity ? { city: resolvedCity } : {}),
+      location: { lat, lng, city: resolvedCity, updatedAt: new Date() }
     });
 
-    res.json({ status: 'success', message: 'Location updated' });
+    res.json({ status: 'success', message: 'Location updated', city: resolvedCity });
   } catch (err) {
     logger.error(`❌ Location update error: ${err.message}`);
     res.status(500).json({ status: 'error', error: { code: 'INTERNAL', message: err.message } });

@@ -20,7 +20,11 @@ export default function Login({ onNavigate }) {
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
+    setInfo('');
     setLoading(true);
+    // The backend sleeps on the free tier; first request can take ~30-50s to
+    // wake. Reassure the user instead of looking frozen.
+    const wakeTimer = setTimeout(() => setInfo('Waking up the server — first load can take a moment…'), 4000);
     try {
       const result = await api.login(email, password);
       if (result.status === 'success') onNavigate('home');
@@ -28,6 +32,8 @@ export default function Login({ onNavigate }) {
     } catch (err) {
       setError('Connection error. Please try again.');
     } finally {
+      clearTimeout(wakeTimer);
+      setInfo('');
       setLoading(false);
     }
   };
