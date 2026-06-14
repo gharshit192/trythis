@@ -34,6 +34,9 @@ const DOMAIN_RULES = [
   [/(swiggy|dineout|eazydiner)\.[^/]+/i, 'restaurants'],
   [/(archanaskitchen|hebbarskitchen|tarladalal|vegrecipesofindia|sanjeevkapoor|nishamadhulika)\./i, 'recipes'],
   [/instagram\.com\/(yourfoodlab|sanjyotkeer|epic_meals_bysarita|gharsegalitak)/i, 'recipes'],
+  // Food publications — keep recipe/cooking articles out of the keyword
+  // classifier (where "…at Home" wrongly matched home-decor).
+  [/(food\.ndtv\.com|foodnetwork\.com|bbcgoodfood\.com|seriouseats\.com|allrecipes\.com|cookpad\.com)/i, 'recipes'],
   [/instagram\.com\/cafesof/i, 'cafes'],
   // Hotels (BEFORE generic travel rule)
   [/airbnb\.[^/]+\/s\/experiences/i, 'experiences'],

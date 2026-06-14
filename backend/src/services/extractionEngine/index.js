@@ -19,7 +19,7 @@ const EXTRACTOR_KEYWORDS = {
   hotels: ['hotel', 'accommodation', 'stay', 'resort', 'lodging', 'rooms', 'inn', 'guest house', 'airbnb', 'booking'],
   shopping: ['product', 'buy', 'shop', 'purchase', 'deal', 'sale', 'store', 'cart', 'price', 'order'],
   fashion: ['clothing', 'dress', 'wear', 'apparel', 'style', 'designer', 'outfit', 'fashion', 'wardrobe', 'brand'],
-  'home-decor': ['furniture', 'decor', 'home', 'interior', 'design', 'decoration', 'table', 'sofa', 'cabinet', 'lighting'],
+  'home-decor': ['furniture', 'home decor', 'interior', 'home interior', 'decoration', 'sofa', 'cabinet', 'lighting', 'upholstery'],
   tech: ['tech', 'gadget', 'device', 'electronic', 'laptop', 'phone', 'keyboard', 'headphone', 'computer', 'software'],
   learning: ['course', 'learn', 'tutorial', 'class', 'education', 'skill', 'training', 'certificate', 'lesson', 'instructor'],
   recipes: ['recipe', 'cooking', 'cook', 'dish', 'ingredient', 'food', 'prepare', 'bake', 'cuisine', 'kitchen'],
