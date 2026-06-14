@@ -53,6 +53,12 @@ const TYPE_EMOJI = {
   forgotten_intent: '⏳',
   seasonal: '🌦️',
   smart_collection: '🗂️',
+  weekend_reminder: '🎒',
+  resurface: '🔁',
+  travel_intelligence: '✈️',
+  cultural_event: '🎉',
+  weather_good: '☀️',
+  weather_aware: '🌦️',
   default: '🔔',
 };
 
@@ -376,21 +382,11 @@ export default function Notifications({ onNavigate }) {
     (n) => n.status === 'sent' || n.status === 'pending'
   ).length;
 
-  const smartReminders = notifications.filter(
-    (n) =>
-      [
-        'price_drop',
-        'nearby_rediscovery',
-        'time_behavioral',
-        'seasonal',
-        'forgotten_intent',
-        'smart_collection',
-      ].includes(n.type)
-  );
-
-  const uploads = notifications.filter(
-    (n) => ['upload_completed', 'upload_failed'].includes(n.type)
-  );
+  const UPLOAD_TYPES = ['upload_completed', 'upload_failed'];
+  // Everything that isn't an upload is a "smart reminder" — covers all current
+  // and future trigger types (weekend_reminder, resurface, travel_*, weather_*…).
+  const smartReminders = notifications.filter((n) => !UPLOAD_TYPES.includes(n.type));
+  const uploads = notifications.filter((n) => UPLOAD_TYPES.includes(n.type));
 
   if (!loading && notifications.length === 0) {
     return (

@@ -5,10 +5,11 @@ const logger = require('../../../utils/logger');
 
 const evaluate = async (userId, context = {}, userPersona = {}) => {
   try {
-    const day = new Date().getDay();
-    if (day !== 5 && day !== 6) return [];
+    // Honour a simulated day from the test endpoint; otherwise use the real day.
+    const day = context.dayOfWeek ?? new Date().getDay();
+    if (day !== 6 && day !== 0) return []; // Saturday (6) or Sunday (0)
 
-    const dayName = day === 5 ? 'Friday' : 'Saturday';
+    const dayName = day === 6 ? 'Saturday' : 'Sunday';
 
     // Find non-travel saves (cafes, restaurants, products, events)
     const saves = await Save.find({

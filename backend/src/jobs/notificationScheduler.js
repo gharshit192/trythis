@@ -15,9 +15,24 @@ const {
   sendNotification,
 } = require('../services/notificationEngine');
 
-const SCHEDULE = process.env.NOTIFICATION_CRON || '0 9 * * *'; // Daily at 9am
+// Cron fires daily at 9am; shouldRunToday() gates whether we actually send,
+// so the effective cadence is: every weekend (Sat/Sun) + every 3rd day.
+const SCHEDULE = process.env.NOTIFICATION_CRON || '0 9 * * *';
 
-const runOnce = async ({ now = new Date() } = {}) => {
+// Send on Saturday/Sunday, or every 3rd day of the year otherwise.
+const shouldRunToday = (now = new Date()) => {
+  const day = now.getDay();
+  if (day === 0 || day === 6) return true; // weekend
+  const startOfYear = new Date(now.getFullYear(), 0, 0);
+  const dayOfYear = Math.floor((now - startOfYear) / 86400000);
+  return dayOfYear % 3 === 0; // every 3 days
+};
+
+const runOnce = async ({ now = new Date(), force = false } = {}) => {
+  if (!force && !shouldRunToday(now)) {
+    logger.info(`notificationScheduler: skip — not a send day (${now.toDateString()})`);
+    return { skipped: true, totalEvaluated: 0, totalCreated: 0, totalSent: 0, totalFailed: 0 };
+  }
   try {
     const users = await User.find({ status: 'active' }).select('_id timezone');
     logger.info(`notificationScheduler: evaluating ${users.length} users`);

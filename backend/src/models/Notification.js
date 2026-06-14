@@ -10,28 +10,20 @@ const notificationSchema = new mongoose.Schema(
     },
 
     type: {
+      // Open string (no enum): triggers emit dynamic/extensible types such as
+      // weekend_reminder, resurface, travel_intelligence, cultural_event,
+      // weather_good and travel_<destination>. A strict enum silently dropped
+      // these with a validation error on save, so those smart notifications
+      // never reached users. Producers are the controlled trigger modules.
       type: String,
-      enum: [
-        'nearby_rediscovery',
-        'trend_based',
-        'price_drop',
-        'seasonal',
-        'memory_based',
-        'goal_completion',
-        'weather_aware',
-        'time_behavioral',
-        'forgotten_intent',
-        'smart_collection',
-        'upload_completed',
-        'upload_failed',
-      ],
       required: true,
       index: true,
     },
 
     category: {
+      // Open string too — triggers pass the source save's category (cafe,
+      // events, home-decor, recipe, …), which the old 5-value enum rejected.
       type: String,
-      enum: ['food', 'travel', 'shopping', 'experience', 'general'],
       index: true,
     },
 
