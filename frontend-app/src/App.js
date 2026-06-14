@@ -202,7 +202,7 @@ function App() {
         overflow: 'hidden'
       }}>
         {/* Screen Content */}
-        <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', overscrollBehaviorX: 'none', display: 'flex', flexDirection: 'column' }}>
           {screenMap[currentScreen] || screenMap['login']}
         </div>
 

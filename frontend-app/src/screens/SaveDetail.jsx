@@ -427,7 +427,10 @@ export default function SaveDetail({ onNavigate, payload }) {
   const rawTranscript = save?.aiAnalysis?.transcription?.text || '';
   const transcriptLang = save?.aiAnalysis?.transcription?.detectedLanguage;
   const transcriptIsBad = rawTranscript && looksHallucinated(rawTranscript);
-  const transcript = transcriptIsBad ? '' : rawTranscript;
+  // Hide machine-translated transcripts (e.g. Hindi → English) for now — only
+  // show transcripts that were originally English. Summary/key points still show.
+  const isTranslated = transcriptLang && transcriptLang !== 'en';
+  const transcript = (transcriptIsBad || isTranslated) ? '' : rawTranscript;
 
   // Apply hallucination guard to title + summary too (UI safety net).
   const safeTitle = save?.title && !looksHallucinated(save.title) ? save.title : 'Untitled save';
