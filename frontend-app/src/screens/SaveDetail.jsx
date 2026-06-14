@@ -252,6 +252,10 @@ export default function SaveDetail({ onNavigate, payload }) {
   const [insights, setInsights] = useState(null);
   const [insightsLoading, setInsightsLoading] = useState(false);
   const [insightsError, setInsightsError] = useState(null);
+  const [showPlan, setShowPlan] = useState(false);
+  const [plan, setPlan] = useState(null);
+  const [planLoading, setPlanLoading] = useState(false);
+  const [planError, setPlanError] = useState(null);
   const showToast = (msg) => {
     setToast(msg);
     setTimeout(() => setToast(null), 2200);
@@ -274,6 +278,31 @@ export default function SaveDetail({ onNavigate, payload }) {
       setInsightsError('Connection error. Please try again.');
     } finally {
       setInsightsLoading(false);
+    }
+  };
+
+  // Fetch a full trip plan on tap (travel saves) — transport + stays + itinerary.
+  const loadPlan = async () => {
+    setShowPlan(true);
+    if (plan || planLoading) return;
+    setPlanLoading(true);
+    setPlanError(null);
+    try {
+      let origin = '';
+      try {
+        const u = JSON.parse(localStorage.getItem('user') || '{}');
+        origin = u?.city || u?.location?.city || '';
+      } catch {}
+      const res = await api.getPlan(id, origin);
+      if (res.status === 'success' && res.data) {
+        setPlan(res.data);
+      } else {
+        setPlanError(res.error?.message || 'Could not build a plan.');
+      }
+    } catch {
+      setPlanError('Connection error. Please try again.');
+    } finally {
+      setPlanLoading(false);
     }
   };
 
@@ -591,6 +620,16 @@ export default function SaveDetail({ onNavigate, payload }) {
                 </div>
               </div>
               <button className="dm-btn" onClick={loadInsights}>✨ Find Similar &amp; Guides →</button>
+            </div>
+
+            <div className="dm-card" style={{ borderColor: 'var(--rust)', marginTop: 8 }}>
+              <div className="dm-row">
+                <div className="dm-ico" style={{ borderColor: 'var(--rust)', background: 'rgba(194,73,20,.08)' }}>🧭</div>
+                <div className="dm-text">
+                  <b>Plan the trip</b>{insightsPlace ? <> to <b>{insightsPlace}</b></> : ''} — flights, trains, buses, stays &amp; an itinerary
+                </div>
+              </div>
+              <button className="dm-btn" style={{ background: 'var(--rust)' }} onClick={loadPlan}>🧭 Plan this trip →</button>
             </div>
           </div>
         )}
@@ -995,6 +1034,83 @@ export default function SaveDetail({ onNavigate, payload }) {
               </>
             ) : (
               <div className="ai-state"><div style={{ fontSize: 22 }}>🤷</div><div>No insights found for this place yet.</div></div>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* "Plan this trip" sheet (travel saves) */}
+      {showPlan && (
+        <>
+          <div className="ai-overlay" onClick={() => setShowPlan(false)} />
+          <div className="ai-sheet">
+            <div className="ai-perf" />
+            <div className="ai-handle" />
+            <button className="ai-close" onClick={() => setShowPlan(false)}>✕</button>
+            <div className="ai-head">
+              <div className="ai-hrow">
+                <div className="ai-icowrap" style={{ borderColor: 'var(--rust)', background: 'rgba(194,73,20,.08)' }}>🧭</div>
+                <div className="ai-title">Plan this trip</div>
+              </div>
+              <div className="ai-sub">
+                {plan ? `${plan.origin ? plan.origin + ' → ' : ''}${plan.destination}` : 'Getting there, stays & an itinerary'}
+              </div>
+            </div>
+
+            {planLoading ? (
+              <div className="ai-state"><div className="ai-spinner" style={{ borderColor: 'var(--rust)' }} /><div>Building your trip plan…</div></div>
+            ) : planError ? (
+              <div className="ai-state">
+                <div style={{ fontSize: 22 }}>🔌</div>
+                <div>{planError}</div>
+                <button className="dm-btn" style={{ width: 'auto', padding: '8px 16px', background: 'var(--rust)' }} onClick={() => { setPlan(null); setPlanError(null); loadPlan(); }}>Try again</button>
+              </div>
+            ) : plan ? (
+              <div className="ai-body">
+                {plan.gettingThere?.length > 0 && (
+                  <div className="plan-sec">
+                    <div className="plan-h">🚆 Getting there{plan.origin ? ` from ${plan.origin}` : ''}</div>
+                    <div className="plan-links">
+                      {plan.gettingThere.map((g, i) => (
+                        <a key={i} className="plan-link" href={g.url} target="_blank" rel="noreferrer">
+                          <span className="plan-mode">{g.mode}</span>{g.provider}<span className="plan-arrow">↗</span>
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {plan.stays?.length > 0 && (
+                  <div className="plan-sec">
+                    <div className="plan-h">🏨 Where to stay</div>
+                    <div className="plan-links">
+                      {plan.stays.map((s, i) => (
+                        <a key={i} className="plan-link" href={s.url} target="_blank" rel="noreferrer">
+                          <span className="plan-mode">{s.tier}</span>{s.provider}<span className="plan-arrow">↗</span>
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {plan.itinerary?.length > 0 && (
+                  <div className="plan-sec">
+                    <div className="plan-h">🗺️ Itinerary</div>
+                    {plan.itinerary.map((it, i) => (
+                      <div className="ai-bullet" key={i} style={{ marginBottom: 7 }}><div className="ai-dot" style={{ background: 'var(--rust)' }} /><div className="ai-txt">{it}</div></div>
+                    ))}
+                  </div>
+                )}
+                {plan.explore?.length > 0 && (
+                  <div className="plan-sec">
+                    <div className="plan-h">📍 Explore nearby</div>
+                    <div className="plan-chips">
+                      {plan.explore.map((e, i) => <span className="plan-chip" key={i}>{e}</span>)}
+                    </div>
+                  </div>
+                )}
+                <div className="ai-footer">Search &amp; booking links · prices &amp; availability shown on each site</div>
+              </div>
+            ) : (
+              <div className="ai-state"><div style={{ fontSize: 22 }}>🤷</div><div>Couldn't build a plan for this save.</div></div>
             )}
           </div>
         </>

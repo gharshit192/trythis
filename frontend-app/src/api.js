@@ -154,6 +154,16 @@ const api = {
     return handle(res);
   },
 
+  // "Plan this trip" — transport + stays + itinerary for travel saves.
+  async getPlan(id, origin) {
+    const res = await fetch(`${API_BASE_URL}/saves/${id}/plan`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
+      body: JSON.stringify({ origin: origin || '' }),
+    });
+    return handle(res);
+  },
+
   async patchSave(id, patch) {
     const res = await fetch(`${API_BASE_URL}/saves/${id}`, {
       method: 'PATCH',

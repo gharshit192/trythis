@@ -943,6 +943,16 @@ body {
 .ai-spinner { width: 26px; height: 26px; border: 2.5px dashed var(--teal); border-radius: 50%; animation: ai-spin 1.1s linear infinite; }
 @keyframes ai-spin { to { transform: rotate(360deg); } }
 
+/* "Plan this trip" sheet sections */
+.plan-sec { display: flex; flex-direction: column; gap: 7px; }
+.plan-h { font-family: var(--font-display); font-weight: 400; font-size: 13px; color: var(--ink); }
+.plan-links { display: flex; flex-direction: column; gap: 6px; }
+.plan-link { display: flex; align-items: center; gap: 8px; padding: 9px 11px; background: var(--card); border: 1px solid var(--border); border-radius: var(--r-lg); font-size: 12px; font-weight: 700; color: var(--ink); text-decoration: none; }
+.plan-mode { display: inline-flex; align-items: center; padding: 2px 7px; font-size: 9px; font-weight: 800; letter-spacing: .3px; text-transform: uppercase; color: var(--rust); border: 1.5px dashed var(--rust); border-radius: 3px; flex-shrink: 0; }
+.plan-arrow { margin-left: auto; color: var(--ink-muted); font-size: 13px; }
+.plan-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.plan-chip { font-size: 10.5px; font-weight: 600; color: var(--ink); background: var(--paper); border: 1px dashed var(--border); border-radius: 20px; padding: 4px 10px; }
+
 /* ════════════ Install / Add-to-Home-Screen nudge (PWA) ════════════ */
 .ip-wrap { position: fixed; left: 50%; transform: translateX(-50%); bottom: 14px; width: calc(100% - 24px); max-width: 406px; z-index: 70; animation: ip-rise 0.25s ease; }
 @keyframes ip-rise { from { transform: translate(-50%, 16px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }

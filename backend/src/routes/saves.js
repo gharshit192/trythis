@@ -22,6 +22,7 @@ const screenshotBundle = require('../services/screenshotBundle');
 const autoCollectionEngine = require('../services/autoCollectionEngine');
 const thumbnailCache = require('../services/thumbnailCache');
 const insightsEngine = require('../services/insightsEngine');
+const planEngine = require('../services/planEngine');
 const typeToCategory = require('../utils/structuredTypeToCategory');
 const { classifyByDomainFull } = require('../services/extractionEngine/domainClassifier');
 const { classifyUrl } = require('../services/urlClassifier');
@@ -1249,6 +1250,31 @@ router.post('/:id/insights', async (req, res) => {
     const code = err.code || 'INSIGHTS_ERROR';
     const httpStatus = code === 'NO_SEARCH_KEY' ? 503 : code === 'NO_QUERY' ? 422 : 500;
     logger.error(`insights failed for ${req.params.id}: ${err.message}`);
+    res.status(httpStatus).json({ status: 'error', error: { code, message: err.message } });
+  }
+});
+
+// ─── "Plan this trip" — transport + stays + itinerary for travel saves ───────
+// POST /saves/:id/plan  body: { origin? }  (origin city; falls back to profile)
+router.post('/:id/plan', async (req, res) => {
+  try {
+    const save = await Save.findById(req.params.id);
+    if (!save || save.userId.toString() !== req.user.id) {
+      return res.status(404).json({ status: 'error', error: { code: 'NOT_FOUND', message: 'Save not found' } });
+    }
+
+    let origin = (req.body?.origin || '').trim();
+    if (!origin) {
+      const user = await User.findById(req.user.id).select('city location').lean().catch(() => null);
+      origin = user?.city || user?.location?.city || '';
+    }
+
+    const data = await planEngine.generatePlan(save, origin);
+    res.json({ status: 'success', data });
+  } catch (err) {
+    const code = err.code || 'PLAN_ERROR';
+    const httpStatus = code === 'NO_DESTINATION' ? 422 : 500;
+    logger.error(`plan failed for ${req.params.id}: ${err.message}`);
     res.status(httpStatus).json({ status: 'error', error: { code, message: err.message } });
   }
 });
