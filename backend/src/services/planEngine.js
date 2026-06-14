@@ -34,15 +34,19 @@ const buildDestLinks = (origin, dest) => {
   const city = (dest.city || dest.name || '').trim();
   const cEnc = enc(city);
 
+  // Show trains/buses for any India destination (RedBus/Paytm/IRCTC are
+  // India-only) OR anything Claude flagged as overland-reachable from origin.
+  const inIndia = /india/i.test(dest.country || '') || dest.domestic;
+
   const gettingThere = [
     // Single clear destination → Google Flights prefills both ends.
     { mode: 'Flights', provider: 'Google Flights', approx: dest.flightApprox || '', url: `https://www.google.com/travel/flights?q=${enc(`Flights from ${o || 'me'} to ${city}`)}` },
   ];
-  // Trains/buses only make sense overland (domestic from origin).
-  if (dest.domestic && o) {
-    gettingThere.push({ mode: 'Trains', provider: 'Search trains', approx: '', url: gsearch(`trains from ${o} to ${city}`) });
-    gettingThere.push({ mode: 'Bus', provider: 'RedBus', approx: '', url: `https://www.redbus.in/bus-tickets/${dash(o)}-to-${dash(city)}` });
-    gettingThere.push({ mode: 'Bus', provider: 'Paytm', approx: '', url: gsearch(`Paytm bus tickets ${o} to ${city}`) });
+  if (inIndia) {
+    gettingThere.push({ mode: 'Trains', provider: 'Search trains', approx: '', url: gsearch(`trains from ${o || 'my city'} to ${city}`) });
+    // RedBus uses an origin-to-dest slug when we know the origin; else search the city.
+    gettingThere.push({ mode: 'Bus', provider: 'RedBus', approx: '', url: o ? `https://www.redbus.in/bus-tickets/${dash(o)}-to-${dash(city)}` : `https://www.redbus.in/bus-tickets/${dash(city)}` });
+    gettingThere.push({ mode: 'Bus', provider: 'Paytm', approx: '', url: gsearch(`Paytm bus tickets ${o ? o + ' to ' : ''}${city}`) });
   }
 
   const stays = [
@@ -64,6 +68,7 @@ Break it into individual destinations. Return ONLY valid JSON, no prose:
     {
       "name": string,            // label, e.g. "Bangkok, Thailand"
       "city": string,            // single main city/hub for booking flights+hotels, e.g. "Bangkok"
+      "country": string,         // destination country, e.g. "India" or "Thailand"
       "domestic": boolean,       // true if reachable by train/bus from ${origin || 'the origin'} (same country)
       "flightApprox": string,    // rough round-trip flight cost from ${origin || 'a metro'} in INR, e.g. "₹12,000–20,000", or "" if unsure
       "hotelApprox": string,     // rough hotel price per night in INR, e.g. "₹2,000–8,000", or ""
@@ -81,6 +86,7 @@ Rules: 1-5 destinations. If the save names one place, return one. Prices are app
   return (parsed.destinations || []).slice(0, 5).map((d) => ({
     name: String(d.name || d.city || '').trim(),
     city: String(d.city || d.name || '').trim(),
+    country: String(d.country || '').trim(),
     domestic: !!d.domestic,
     flightApprox: String(d.flightApprox || '').trim(),
     hotelApprox: String(d.hotelApprox || '').trim(),
