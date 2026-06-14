@@ -1053,7 +1053,7 @@ export default function SaveDetail({ onNavigate, payload }) {
                 <div className="ai-title">Plan this trip</div>
               </div>
               <div className="ai-sub">
-                {plan ? `${plan.origin ? plan.origin + ' → ' : ''}${plan.destination}` : 'Getting there, stays & an itinerary'}
+                {plan ? `${plan.origin ? plan.origin + ' → ' : ''}${plan.destinationRaw}` : 'Getting there, stays & an itinerary'}
               </div>
             </div>
 
@@ -1067,47 +1067,52 @@ export default function SaveDetail({ onNavigate, payload }) {
               </div>
             ) : plan ? (
               <div className="ai-body">
-                {plan.gettingThere?.length > 0 && (
-                  <div className="plan-sec">
+                {(plan.destinations || []).map((d, di) => (
+                  <div className="plan-dest" key={di}>
+                    <div className="plan-dest-name">📍 {d.name}</div>
+
                     <div className="plan-h">🚆 Getting there{plan.origin ? ` from ${plan.origin}` : ''}</div>
                     <div className="plan-links">
-                      {plan.gettingThere.map((g, i) => (
+                      {d.gettingThere.map((g, i) => (
                         <a key={i} className="plan-link" href={g.url} target="_blank" rel="noreferrer">
-                          <span className="plan-mode">{g.mode}</span>{g.provider}<span className="plan-arrow">↗</span>
+                          <span className="plan-mode">{g.mode}</span>{g.provider}
+                          {g.approx ? <span className="plan-price">{g.approx}</span> : null}
+                          <span className="plan-arrow">↗</span>
                         </a>
                       ))}
                     </div>
-                  </div>
-                )}
-                {plan.stays?.length > 0 && (
-                  <div className="plan-sec">
-                    <div className="plan-h">🏨 Where to stay</div>
+
+                    <div className="plan-h" style={{ marginTop: 9 }}>🏨 Where to stay</div>
                     <div className="plan-links">
-                      {plan.stays.map((s, i) => (
+                      {d.stays.map((s, i) => (
                         <a key={i} className="plan-link" href={s.url} target="_blank" rel="noreferrer">
-                          <span className="plan-mode">{s.tier}</span>{s.provider}<span className="plan-arrow">↗</span>
+                          <span className="plan-mode">{s.tier}</span>{s.provider}
+                          {s.approx ? <span className="plan-price">{s.approx}/nt</span> : null}
+                          <span className="plan-arrow">↗</span>
                         </a>
                       ))}
                     </div>
+
+                    {d.itinerary?.length > 0 && (
+                      <>
+                        <div className="plan-h" style={{ marginTop: 9 }}>🗺️ Things to do</div>
+                        {d.itinerary.map((it, i) => (
+                          <div className="ai-bullet" key={i} style={{ marginBottom: 6 }}><div className="ai-dot" style={{ background: 'var(--rust)' }} /><div className="ai-txt">{it}</div></div>
+                        ))}
+                      </>
+                    )}
+
+                    {d.explore?.length > 0 && (
+                      <>
+                        <div className="plan-h" style={{ marginTop: 6 }}>Explore nearby</div>
+                        <div className="plan-chips">
+                          {d.explore.map((e, i) => <span className="plan-chip" key={i}>{e}</span>)}
+                        </div>
+                      </>
+                    )}
                   </div>
-                )}
-                {plan.itinerary?.length > 0 && (
-                  <div className="plan-sec">
-                    <div className="plan-h">🗺️ Itinerary</div>
-                    {plan.itinerary.map((it, i) => (
-                      <div className="ai-bullet" key={i} style={{ marginBottom: 7 }}><div className="ai-dot" style={{ background: 'var(--rust)' }} /><div className="ai-txt">{it}</div></div>
-                    ))}
-                  </div>
-                )}
-                {plan.explore?.length > 0 && (
-                  <div className="plan-sec">
-                    <div className="plan-h">📍 Explore nearby</div>
-                    <div className="plan-chips">
-                      {plan.explore.map((e, i) => <span className="plan-chip" key={i}>{e}</span>)}
-                    </div>
-                  </div>
-                )}
-                <div className="ai-footer">Search &amp; booking links · prices &amp; availability shown on each site</div>
+                ))}
+                <div className="ai-footer">Search &amp; booking links · prices are approximate — live prices on each site</div>
               </div>
             ) : (
               <div className="ai-state"><div style={{ fontSize: 22 }}>🤷</div><div>Couldn't build a plan for this save.</div></div>

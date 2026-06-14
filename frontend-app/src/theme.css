@@ -952,6 +952,12 @@ body {
 .plan-arrow { margin-left: auto; color: var(--ink-muted); font-size: 13px; }
 .plan-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .plan-chip { font-size: 10.5px; font-weight: 600; color: var(--ink); background: var(--paper); border: 1px dashed var(--border); border-radius: 20px; padding: 4px 10px; }
+/* Per-destination block */
+.plan-dest { display: flex; flex-direction: column; gap: 7px; padding-bottom: 14px; margin-bottom: 14px; border-bottom: 1.5px dashed var(--border); }
+.plan-dest:last-of-type { border-bottom: none; margin-bottom: 0; }
+.plan-dest-name { font-family: var(--font-display); font-weight: 400; font-size: 16px; color: var(--ink); }
+.plan-price { margin-left: auto; font-size: 10.5px; font-weight: 800; color: var(--teal); white-space: nowrap; }
+.plan-price + .plan-arrow { margin-left: 6px; }
 
 /* ════════════ Install / Add-to-Home-Screen nudge (PWA) ════════════ */
 .ip-wrap { position: fixed; left: 50%; transform: translateX(-50%); bottom: 14px; width: calc(100% - 24px); max-width: 406px; z-index: 70; animation: ip-rise 0.25s ease; }

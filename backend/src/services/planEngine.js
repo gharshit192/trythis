@@ -1,9 +1,13 @@
-// Travel "Plan this trip" engine — turns a travel save into actionable plans:
-// transport (flights/trains/buses) from the user's city → destination, hotel
-// stays (budget → premium), an AI itinerary, and nearby areas to explore.
+// Travel "Plan this trip" engine. Turns a travel save into a per-destination
+// plan: transport (flights/trains/buses) from the user's city → each
+// destination, hotel stays, approximate prices, and an itinerary.
 //
-// Booking deep links use each provider's public search-URL format. Affiliate
-// tags are appended from env vars when present (empty by default).
+// A multi-destination save ("Thailand, Dubai, Maldives") is split into separate
+// destinations so each booking link prefills a single, valid city — and trains/
+// buses only show for destinations reachable overland from the origin.
+//
+// Booking deep links use public search-URL formats; affiliate tags are appended
+// from env vars when present (empty by default).
 
 const Anthropic = require('@anthropic-ai/sdk');
 const logger = require('../utils/logger');
@@ -13,81 +17,110 @@ const MODEL = 'claude-haiku-4-5-20251001';
 
 const enc = (s) => encodeURIComponent(String(s || '').trim());
 const dash = (s) => String(s || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+const gsearch = (q) => `https://www.google.com/search?q=${enc(q)}`;
 
-// Optional affiliate params (set in env to monetise). Empty = plain links.
 const bookingAid = process.env.BOOKING_AFFILIATE_AID ? `&aid=${process.env.BOOKING_AFFILIATE_AID}` : '';
 const mmtAffl = process.env.MMT_AFFILIATE_ID ? `&affiliate=${process.env.MMT_AFFILIATE_ID}` : '';
 
-// Derive the best destination + origin labels from a save.
 const planDestination = (save) => {
   const sd = save?.aiAnalysis?.structuredData || {};
   const loc = save?.extractedLocation || {};
   return sd.itinerary?.destination || sd.place?.city || loc.city || loc.country || save?.title || '';
 };
 
-// Build provider deep links. Unreliable provider formats fall back to a Google
-// search so every link always lands somewhere useful.
-const buildLinks = (origin, destination) => {
+// Build provider deep links for ONE destination city (single, valid → prefills).
+const buildDestLinks = (origin, dest) => {
   const o = (origin || '').trim();
-  const d = (destination || '').trim();
-  const dEnc = enc(d);
-  const gsearch = (q) => `https://www.google.com/search?q=${enc(q)}`;
+  const city = (dest.city || dest.name || '').trim();
+  const cEnc = enc(city);
 
-  const gettingThere = [];
-  if (d) {
-    // Flights — Google Flights handles the origin→dest query reliably.
-    gettingThere.push({ mode: 'Flights', provider: 'Google Flights', url: `https://www.google.com/travel/flights?q=${enc(`flights from ${o || 'me'} to ${d}`)}` });
-    // Trains — Google search surfaces IRCTC/ixigo/RailYatri options reliably.
-    gettingThere.push({ mode: 'Trains', provider: 'Search trains', url: gsearch(`trains from ${o} to ${d}`) });
-    // Buses — RedBus has a clean city-pair slug; Paytm via search.
-    if (o && d) {
-      gettingThere.push({ mode: 'Bus', provider: 'RedBus', url: `https://www.redbus.in/bus-tickets/${dash(o)}-to-${dash(d)}` });
-      gettingThere.push({ mode: 'Bus', provider: 'Paytm', url: gsearch(`Paytm bus tickets ${o} to ${d}`) });
-    }
+  const gettingThere = [
+    // Single clear destination → Google Flights prefills both ends.
+    { mode: 'Flights', provider: 'Google Flights', approx: dest.flightApprox || '', url: `https://www.google.com/travel/flights?q=${enc(`Flights from ${o || 'me'} to ${city}`)}` },
+  ];
+  // Trains/buses only make sense overland (domestic from origin).
+  if (dest.domestic && o) {
+    gettingThere.push({ mode: 'Trains', provider: 'Search trains', approx: '', url: gsearch(`trains from ${o} to ${city}`) });
+    gettingThere.push({ mode: 'Bus', provider: 'RedBus', approx: '', url: `https://www.redbus.in/bus-tickets/${dash(o)}-to-${dash(city)}` });
+    gettingThere.push({ mode: 'Bus', provider: 'Paytm', approx: '', url: gsearch(`Paytm bus tickets ${o} to ${city}`) });
   }
 
-  const stays = d ? [
-    { provider: 'Booking.com', tier: 'All budgets', url: `https://www.booking.com/searchresults.html?ss=${dEnc}${bookingAid}` },
-    { provider: 'MakeMyTrip', tier: 'Hotels & resorts', url: `https://www.makemytrip.com/hotels/hotel-listing/?searchText=${dEnc}${mmtAffl}` },
-    { provider: 'Agoda', tier: 'Budget → premium', url: `https://www.agoda.com/search?q=${dEnc}` },
-  ] : [];
+  const stays = [
+    { provider: 'Booking.com', tier: 'All budgets', approx: dest.hotelApprox || '', url: `https://www.booking.com/searchresults.html?ss=${cEnc}${bookingAid}` },
+    { provider: 'MakeMyTrip', tier: 'Hotels & resorts', approx: '', url: `https://www.makemytrip.com/hotels/hotel-listing/?searchText=${cEnc}${mmtAffl}` },
+    { provider: 'Agoda', tier: 'Budget → premium', approx: '', url: `https://www.agoda.com/search?q=${cEnc}` },
+  ];
 
   return { gettingThere, stays };
 };
 
-// AI: a short itinerary + nearby areas to explore for the destination.
-const generateItinerary = async (destination) => {
-  const prompt = `For a traveler going to "${destination}", return ONLY valid JSON:\n`
-    + `{"itinerary": string[3-4], "explore": string[3-4]}\n`
-    + `- itinerary: a punchy day-by-day or thematic plan (each item <= 110 chars, concrete: what to see/do).\n`
-    + `- explore: nearby places/areas worth a side trip (each <= 60 chars, name + 2-4 word hook).\n`
-    + `No prose, no markdown.`;
-  try {
-    const msg = await client.messages.create({ model: MODEL, max_tokens: 600, messages: [{ role: 'user', content: prompt }] });
-    const raw = msg?.content?.[0]?.text || '';
-    const m = raw.match(/\{[\s\S]*\}/);
-    const parsed = JSON.parse(m ? m[0] : raw);
-    return {
-      itinerary: (parsed.itinerary || []).slice(0, 4).map((s) => String(s).slice(0, 160)).filter(Boolean),
-      explore: (parsed.explore || []).slice(0, 4).map((s) => String(s).slice(0, 90)).filter(Boolean),
-    };
-  } catch (e) {
-    logger.warn(`[planEngine] itinerary failed: ${e.message}`);
-    return { itinerary: [], explore: [] };
-  }
+// One Claude call → per-destination breakdown with cities, domestic flag,
+// approximate INR prices, itinerary and nearby areas.
+const breakdownTrip = async (origin, destinationRaw) => {
+  const prompt = `A traveler${origin ? ` based in ${origin}` : ''} saved a trip to: "${destinationRaw}".
+Break it into individual destinations. Return ONLY valid JSON, no prose:
+{
+  "destinations": [
+    {
+      "name": string,            // label, e.g. "Bangkok, Thailand"
+      "city": string,            // single main city/hub for booking flights+hotels, e.g. "Bangkok"
+      "domestic": boolean,       // true if reachable by train/bus from ${origin || 'the origin'} (same country)
+      "flightApprox": string,    // rough round-trip flight cost from ${origin || 'a metro'} in INR, e.g. "₹12,000–20,000", or "" if unsure
+      "hotelApprox": string,     // rough hotel price per night in INR, e.g. "₹2,000–8,000", or ""
+      "itinerary": string[],     // 2-3 concrete things to do (<=110 chars each)
+      "explore": string[]        // 2-3 nearby areas worth a side trip (<=50 chars each)
+    }
+  ]
+}
+Rules: 1-5 destinations. If the save names one place, return one. Prices are approximate INR ranges. No markdown.`;
+
+  const msg = await client.messages.create({ model: MODEL, max_tokens: 1100, messages: [{ role: 'user', content: prompt }] });
+  const raw = msg?.content?.[0]?.text || '';
+  const m = raw.match(/\{[\s\S]*\}/);
+  const parsed = JSON.parse(m ? m[0] : raw);
+  return (parsed.destinations || []).slice(0, 5).map((d) => ({
+    name: String(d.name || d.city || '').trim(),
+    city: String(d.city || d.name || '').trim(),
+    domestic: !!d.domestic,
+    flightApprox: String(d.flightApprox || '').trim(),
+    hotelApprox: String(d.hotelApprox || '').trim(),
+    itinerary: (d.itinerary || []).slice(0, 3).map((s) => String(s).slice(0, 160)).filter(Boolean),
+    explore: (d.explore || []).slice(0, 3).map((s) => String(s).slice(0, 80)).filter(Boolean),
+  })).filter((d) => d.city);
 };
 
-// generatePlan(save, origin) → full plan object.
+// generatePlan(save, origin) → { origin, destinations: [{ ...links, prices, itinerary }] }
 const generatePlan = async (save, origin) => {
-  const destination = planDestination(save);
-  if (!destination) {
+  const destinationRaw = planDestination(save);
+  if (!destinationRaw) {
     const err = new Error('No destination found on this save to plan a trip.');
     err.code = 'NO_DESTINATION';
     throw err;
   }
-  const links = buildLinks(origin, destination);
-  const { itinerary, explore } = await generateItinerary(destination);
-  return { origin: origin || null, destination, ...links, itinerary, explore };
+
+  let breakdown;
+  try {
+    breakdown = await breakdownTrip(origin, destinationRaw);
+  } catch (e) {
+    logger.warn(`[planEngine] breakdown failed, using raw destination: ${e.message}`);
+    breakdown = [{ name: destinationRaw, city: destinationRaw, domestic: false, flightApprox: '', hotelApprox: '', itinerary: [], explore: [] }];
+  }
+  if (!breakdown.length) {
+    breakdown = [{ name: destinationRaw, city: destinationRaw, domestic: false, flightApprox: '', hotelApprox: '', itinerary: [], explore: [] }];
+  }
+
+  const destinations = breakdown.map((d) => ({
+    name: d.name,
+    city: d.city,
+    domestic: d.domestic,
+    flightApprox: d.flightApprox,
+    hotelApprox: d.hotelApprox,
+    itinerary: d.itinerary,
+    explore: d.explore,
+    ...buildDestLinks(origin, d),
+  }));
+
+  return { origin: origin || null, destinationRaw, destinations };
 };
 
-module.exports = { generatePlan, planDestination, buildLinks };
+module.exports = { generatePlan, planDestination, buildDestLinks };
