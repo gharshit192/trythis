@@ -52,9 +52,6 @@ export default function Onboarding({ onNavigate }) {
   const [step, setStep] = useState(isAuthed ? 1 : 0);
   const [slide, setSlide] = useState(0);
   const [savedItem, setSavedItem] = useState(null);
-  const [linkUrl, setLinkUrl] = useState('');
-  const [linkLoading, setLinkLoading] = useState(false);
-  const [linkError, setLinkError] = useState('');
   const [templates, setTemplates] = useState([]);
   const [copyingId, setCopyingId] = useState(null);
 
@@ -65,26 +62,6 @@ export default function Onboarding({ onNavigate }) {
       }).catch(() => {});
     }
   }, [step]);
-
-  const handleLinkSave = async () => {
-    if (!linkUrl.trim()) return;
-    setLinkLoading(true);
-    setLinkError('');
-    try {
-      const res = await api.createSave({ url: linkUrl.trim() });
-      if (res.status === 'success') {
-        setSavedItem(res.data);
-      } else if (res.error?.message?.toLowerCase().includes('unauthorized')) {
-        onNavigate('signup');
-      } else {
-        setLinkError(res.error?.message || 'Failed to save link');
-      }
-    } catch {
-      setLinkError('Connection error. Please try again.');
-    } finally {
-      setLinkLoading(false);
-    }
-  };
 
   const handleTemplateCopy = async (template) => {
     if (copyingId) return;
