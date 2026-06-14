@@ -98,8 +98,47 @@ const summarize = async (placeLabel, results) => {
     .filter((b) => b.text);
 };
 
-// ── Free fallback: Wikivoyage + Wikipedia (no API key needed) ────────────────
-// Wikivoyage is a free travel-guide wiki — ideal for destination insights.
+// ── Primary free provider: DuckDuckGo (no API key) ───────────────────────────
+// Returns REAL travel-guide links (tripadvisor, thrillophilia, lonelyplanet,
+// karnatakatourism, …) — far more useful than encyclopedia pages.
+const BROWSER_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36';
+const stripTags = (s = '') => s.replace(/<[^>]+>/g, '');
+const decodeEntities = (s = '') => s
+  .replace(/&amp;/g, '&').replace(/&#x27;/g, "'").replace(/&#39;/g, "'")
+  .replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+  .replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
+// Drop search-engine/ad domains so only real content sources surface.
+const JUNK_DOMAIN = /(^|\.)(duckduckgo\.com|bing\.com|google\.|youtube\.com|facebook\.com|amazon\.|ad\.|ads\.)/i;
+
+const ddgSearch = async (query, count = 6) => {
+  const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`;
+  const res = await fetch(url, { headers: { 'User-Agent': BROWSER_UA, Accept: 'text/html' } });
+  if (!res.ok) throw new InsightsError('SEARCH_FAILED', `DuckDuckGo ${res.status}`);
+  const html = await res.text();
+
+  const titles = [...html.matchAll(/<a[^>]*class="result__a"[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/g)];
+  const snippets = [...html.matchAll(/<a[^>]*class="result__snippet"[^>]*>([\s\S]*?)<\/a>/g)]
+    .map((m) => decodeEntities(stripTags(m[1])));
+
+  const out = [];
+  for (let i = 0; i < titles.length && out.length < count; i += 1) {
+    let href = titles[i][1];
+    const ud = href.match(/[?&]uddg=([^&]+)/);
+    if (ud) href = decodeURIComponent(ud[1]);
+    if (!/^https?:\/\//.test(href)) continue;
+    const dom = domainOf(href);
+    if (!dom || JUNK_DOMAIN.test(dom)) continue;
+    out.push({
+      title: decodeEntities(stripTags(titles[i][2])),
+      url: href,
+      source_domain: dom,
+      description: snippets[i] || '',
+    });
+  }
+  return out;
+};
+
+// ── Last-ditch free fallback: Wikivoyage + Wikipedia (no API key needed) ─────
 const WIKI_UA = 'WannaTry/1.0 (insights; contact: support@wannatry.in)';
 
 const wikiExtract = async (host, term) => {
@@ -161,24 +200,35 @@ const claudeKnowledgeInsights = async (placeLabel) => {
 };
 
 // generateInsights(save) → [{ text, source_domain, url }] (up to 4)
-// Provider chain: Brave (if key) → Wikivoyage/Wikipedia (free) → Claude knowledge.
+// Provider chain: Brave (if key) → DuckDuckGo (free, real travel links) →
+// Wikivoyage/Wikipedia (free) → Claude knowledge.
 const generateInsights = async (save) => {
   const query = buildQuery(save);
   if (!query) throw new InsightsError('NO_QUERY', 'Not enough location info on this save to search.');
 
-  logger.info(`[insights] query="${query}" save=${save._id}`);
+  // Travel-focused query so results are guides/things-to-do/stays, not encyclopedia.
+  const searchQuery = `${query} travel guide things to do where to stay`;
+  logger.info(`[insights] query="${searchQuery}" save=${save._id}`);
 
   let results = [];
   if (process.env.BRAVE_SEARCH_API_KEY) {
     try {
-      results = await braveSearch(query, 5);
+      results = await braveSearch(searchQuery, 5);
     } catch (e) {
-      logger.warn(`[insights] Brave failed, falling back to free providers: ${e.message}`);
+      logger.warn(`[insights] Brave failed: ${e.message}`);
     }
   }
 
   if (!results.length) {
-    results = await wikiSearch(query);
+    try {
+      results = await ddgSearch(searchQuery, 6);
+    } catch (e) {
+      logger.warn(`[insights] DuckDuckGo failed: ${e.message}`);
+    }
+  }
+
+  if (!results.length) {
+    results = await wikiSearch(query); // encyclopedic last resort
   }
 
   if (results.length) {
