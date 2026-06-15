@@ -167,8 +167,17 @@ const extractEntities = async (content, detectedCategory = null) => {
   }
 };
 
+// Generic engagement hashtags carry no topical signal but pollute keyword
+// matching (e.g. "#explore" → travel, "#trending" noise). Strip hashtags and
+// @mentions before classifying.
+const NOISE_HASHTAGS = new Set(['explore', 'fyp', 'foryou', 'foryoupage', 'explorepage', 'trending', 'viral', 'reels', 'reel', 'instagram', 'instagood', 'love', 'follow', 'like', 'share', 'video']);
+const stripNoise = (text) => text
+  .replace(/#(\w+)/g, (m, tag) => (NOISE_HASHTAGS.has(tag.toLowerCase()) ? ' ' : ` ${tag} `))
+  .replace(/@[\w.]+/g, ' ');
+
 const classifyCategory = (content) => {
-  const text = typeof content === 'string' ? content : (content?.title || '') + ' ' + (content?.description || '');
+  const raw = typeof content === 'string' ? content : (content?.title || '') + ' ' + (content?.description || '');
+  const text = stripNoise(raw);
   const lower = text.toLowerCase();
 
   let bestMatch = null;

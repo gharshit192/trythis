@@ -31,10 +31,15 @@ const buildQuery = (save) => {
   const itin = sd.itinerary || {};
   const loc = save?.extractedLocation || {};
 
-  const name = place.name || itin.destination || loc.name || save?.title || '';
+  // Only use a REAL place/destination. Never fall back to the save title — for
+  // Instagram reels the title is the creator's handle ("Video by <handle>"),
+  // and searching that surfaces the person's profile/followers/email (privacy).
+  const name = place.name || itin.destination || loc.name || place.city || loc.city || loc.country || '';
   const where = [place.city || loc.city, place.country || loc.country]
     .filter(Boolean)
     .join(', ');
+
+  if (!name) return ''; // no destination → caller returns NO_QUERY, no insights
 
   const parts = [name];
   if (where && !name.toLowerCase().includes(where.toLowerCase())) parts.push(where);

@@ -25,7 +25,8 @@ const mmtAffl = process.env.MMT_AFFILIATE_ID ? `&affiliate=${process.env.MMT_AFF
 const planDestination = (save) => {
   const sd = save?.aiAnalysis?.structuredData || {};
   const loc = save?.extractedLocation || {};
-  return sd.itinerary?.destination || sd.place?.city || loc.city || loc.country || save?.title || '';
+  // Real destination only — never the save title (a creator handle for reels).
+  return sd.itinerary?.destination || sd.place?.city || sd.place?.name || loc.city || loc.country || '';
 };
 
 // Build provider deep links for ONE destination city (single, valid → prefills).

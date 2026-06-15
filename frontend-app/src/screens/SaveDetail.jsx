@@ -608,8 +608,9 @@ export default function SaveDetail({ onNavigate, payload }) {
           </div>
         )}
 
-        {/* Discover More — AI insights, travel saves only */}
-        {bucket?.key === 'travel' && (
+        {/* Discover More — only when there's a REAL destination (not just a
+            handle/title), so we never search the creator's personal profile. */}
+        {bucket?.key === 'travel' && insightsPlace && (
           <div className="dm-sec">
             <div className="dm-hdr"><span className="dm-title">✨ Discover More</span><div className="dline"></div></div>
             <div className="dm-card">
