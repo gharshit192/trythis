@@ -54,8 +54,10 @@ app.use('/saves', savesRoutes);
 app.use('/collections', collectionsRoutes);
 app.use('/search', searchRoutes);
 app.use('/recommendations', recommendationsRoutes);
+// notificationTestRoutes first: its /notifications/run is secret-protected and
+// must bypass the user-auth middleware in notificationsRoutes.
+app.use('/notifications', notificationTestRoutes);  // /notifications/run + /test/*
 app.use('/notifications', notificationsRoutes);
-app.use('/notifications', notificationTestRoutes);  // test endpoints at /notifications/test/*
 app.use('/uploads', uploadsRoutes);
 app.use('/admin', adminRoutes);
 app.use('/s', shareRoutes);

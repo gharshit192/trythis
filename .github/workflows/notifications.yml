@@ -1,0 +1,27 @@
+name: Run smart notifications (3x/day)
+
+# Triggers the notification scheduler three times a day via the secret-protected
+# /notifications/run endpoint. This is reliable even on Render's free tier (the
+# request wakes the service and runs the job) — unlike the in-process cron, which
+# can't fire while the service is asleep.
+#
+# Setup: add a repo secret CRON_SECRET that matches the backend's CRON_SECRET env.
+# Times are UTC; these ≈ 9am / 2pm / 8pm IST.
+
+on:
+  schedule:
+    - cron: '30 3 * * *'   # ~9:00 IST
+    - cron: '30 8 * * *'   # ~14:00 IST
+    - cron: '30 14 * * *'  # ~20:00 IST
+  workflow_dispatch: {}
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger notification run
+        run: |
+          curl -sS -m 120 -X POST \
+            -H "x-cron-secret: ${{ secrets.CRON_SECRET }}" \
+            -o /dev/null -w "run: %{http_code} in %{time_total}s\n" \
+            https://trythis-am0j.onrender.com/notifications/run || true

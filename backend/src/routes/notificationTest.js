@@ -7,6 +7,27 @@ const authMiddleware = require('../middleware/auth');
 const logger = require('../utils/logger');
 const realtimeNotificationTrigger = require('../services/realtimeNotificationTrigger');
 
+// External-cron trigger (NO user auth — shared-secret instead). Lets an uptime
+// cron (cron-job.org / GitHub Action) run the notification scheduler 3x/day even
+// on Render's free tier, where the in-process cron can't fire while asleep — the
+// request both wakes the service and runs the job.
+//   POST /notifications/run   header: x-cron-secret: <CRON_SECRET>
+router.post('/run', async (req, res) => {
+  const secret = process.env.CRON_SECRET;
+  if (!secret || req.get('x-cron-secret') !== secret) {
+    return res.status(403).json({ status: 'error', error: { code: 'FORBIDDEN', message: 'invalid or missing cron secret' } });
+  }
+  try {
+    const scheduler = require('../jobs/notificationScheduler');
+    const result = await scheduler.runOnce({ force: true });
+    logger.info(`[notificationTest] external run → ${JSON.stringify(result)}`);
+    res.json({ status: 'success', data: result });
+  } catch (err) {
+    logger.error(`[notificationTest] /run failed: ${err.message}`);
+    res.status(500).json({ status: 'error', error: { code: 'RUN_FAILED', message: err.message } });
+  }
+});
+
 router.use(authMiddleware);
 
 /**

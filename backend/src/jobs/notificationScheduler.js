@@ -15,26 +15,17 @@ const {
   sendNotification,
 } = require('../services/notificationEngine');
 
-// Cron fires daily at 9am; shouldRunToday() gates whether we actually send,
-// so the effective cadence is: every weekend (Sat/Sun) + every 3rd day.
-const SCHEDULE = process.env.NOTIFICATION_CRON || '0 9 * * *';
-
-// Send on Saturday/Sunday, or every 3rd day of the year otherwise.
-const shouldRunToday = (now = new Date()) => {
-  const day = now.getDay();
-  if (day === 0 || day === 6) return true; // weekend
-  const startOfYear = new Date(now.getFullYear(), 0, 0);
-  const dayOfYear = Math.floor((now - startOfYear) / 86400000);
-  return dayOfYear % 3 === 0; // every 3 days
-};
+// Fire three times a day. Actual per-user frequency is still governed by the
+// engine's cooldown + daily budget, so this won't spam — it just gives the
+// triggers (weekend, nearby, forgotten-intent, seasonal…) more chances to fire.
+const SCHEDULE = process.env.NOTIFICATION_CRON || '0 9,14,20 * * *'; // 9am, 2pm, 8pm
 
 const runOnce = async ({ now = new Date(), force = false } = {}) => {
-  if (!force && !shouldRunToday(now)) {
-    logger.info(`notificationScheduler: skip — not a send day (${now.toDateString()})`);
-    return { skipped: true, totalEvaluated: 0, totalCreated: 0, totalSent: 0, totalFailed: 0 };
-  }
   try {
-    const users = await User.find({ status: 'active' }).select('_id timezone');
+    // User has no "status" field — the old { status: 'active' } matched zero
+    // users, so the scheduler never ran for anyone. Evaluate everyone who hasn't
+    // turned notifications off.
+    const users = await User.find({ notificationsEnabled: { $ne: false } }).select('_id timezone');
     logger.info(`notificationScheduler: evaluating ${users.length} users`);
 
     let totalEvaluated = 0;
@@ -44,9 +35,11 @@ const runOnce = async ({ now = new Date(), force = false } = {}) => {
 
     for (const user of users) {
       try {
-        // Evaluate triggers for this user
+        // Evaluate triggers for this user. Default to IST (+330) — users are
+        // India-based and timezoneOffset isn't stored, so a 0/UTC default made
+        // quiet-hours treat IST daytime as night and suppressed everything.
         const candidates = await evaluateNotifications(user._id, {
-          userTimezoneOffsetMinutes: user.timezoneOffset || 0,
+          userTimezoneOffsetMinutes: user.timezoneOffset ?? 330,
           quietHoursEnabled: true,
         });
 
