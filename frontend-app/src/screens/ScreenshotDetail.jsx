@@ -74,6 +74,7 @@ export default function ScreenshotDetail({ save, onNavigate }) {
         }
       })
       .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [save?._id]);
 
   const handleDelete = async () => {
