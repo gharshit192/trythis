@@ -8,28 +8,28 @@
    ════════════════════════════════════════════════════ */
 
 :root {
-  /* Vintage scrapbook palette */
-  --paper: #F5EFE0;          /* textured app background */
-  --card: #FFFDF8;           /* card / surface background */
-  --ink: #2B2420;            /* primary text */
-  --ink-muted: #A08C6E;      /* secondary / placeholder text */
-  --border: rgba(43, 36, 32, 0.14);
-  --rust: #C24914;           /* Eat & Drink / primary CTA */
-  --teal: #1F6F5C;           /* Travel & Stay */
+  /* Deep-teal palette on clean white surfaces */
+  --paper: #F7F7F7;          /* app background (clean, near-white) */
+  --card: #FFFFFF;           /* card / surface background (white) */
+  --ink: #1A1A1A;            /* primary text */
+  --ink-muted: #6B7280;      /* secondary / placeholder text */
+  --border: rgba(0, 0, 0, 0.10);
+  --rust: #0E7C7B;           /* primary CTA / accent (deep teal) */
+  --teal: #0E7C7B;           /* Travel & Stay */
   --mustard: #C99425;        /* Cook / Recipes */
   --brown: #8B5E3C;          /* Shop */
   --plum: #6B5B95;           /* Learn */
 
   /* Legacy aliases — keep existing screens/inline styles working.
-     These now resolve to vintage equivalents so the rebrand cascades. */
+     These resolve to the teal palette so the rebrand cascades app-wide. */
   --coral: var(--rust);
-  --coral-soft: rgba(194, 73, 20, 0.10);
-  --coral-faint: rgba(194, 73, 20, 0.06);
-  --slate: #56493D;
+  --coral-soft: rgba(14, 124, 123, 0.10);
+  --coral-faint: rgba(14, 124, 123, 0.06);
+  --slate: #475569;
   --mute: var(--ink-muted);
   --linen: var(--paper);
   --hairline: var(--border);
-  --hairline-soft: rgba(43, 36, 32, 0.08);
+  --hairline-soft: rgba(0, 0, 0, 0.06);
   --travel: var(--teal);
   --shop: var(--brown);
   --cook: var(--mustard);
@@ -73,17 +73,13 @@ body {
   font-family: var(--font-body);
   color: var(--ink);
   background-color: var(--paper);
-  background-image: radial-gradient(circle, rgba(43, 36, 32, 0.045) 1px, transparent 1px);
-  background-size: 14px 14px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Paper-texture helper (matches .paper in the mockup) */
+/* Clean surface helper (dot texture removed for the white theme) */
 .paper {
   background-color: var(--paper);
-  background-image: radial-gradient(circle, rgba(43, 36, 32, 0.045) 1px, transparent 1px);
-  background-size: 14px 14px;
 }
 
 /* Phone frame */
@@ -251,7 +247,7 @@ body {
   align-items: center;
   justify-content: center;
   margin-top: -10px;
-  box-shadow: 0 4px 14px rgba(194, 73, 20, 0.4);
+  box-shadow: 0 4px 14px rgba(14, 124, 123, 0.4);
   border: 2px dashed rgba(255, 255, 255, 0.5);
   cursor: pointer;
   flex-shrink: 0;
@@ -319,7 +315,7 @@ body {
 .tape {
   position: absolute;
   height: 16px;
-  background: rgba(194, 73, 20, 0.32);
+  background: rgba(14, 124, 123, 0.32);
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
   z-index: 3;
 }
@@ -800,7 +796,7 @@ body {
 .ob-btn-outline { margin-top: 10px; width: 100%; background: transparent; color: var(--ink); border: 1.5px solid var(--ink); border-radius: var(--r-md); padding: 11px; text-align: center; font-size: 12px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; cursor: pointer; }
 
 /* Login */
-.login-ico { width: 60px; height: 60px; background: var(--rust); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 26px; margin-bottom: 14px; box-shadow: 0 8px 24px rgba(194, 73, 20, 0.3); transform: rotate(-4deg); border: 2px dashed rgba(255, 255, 255, 0.5); }
+.login-ico { width: 60px; height: 60px; background: var(--rust); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 26px; margin-bottom: 14px; box-shadow: 0 8px 24px rgba(14, 124, 123, 0.3); transform: rotate(-4deg); border: 2px dashed rgba(255, 255, 255, 0.5); }
 .login-name { font-family: var(--font-display); font-weight: 400; font-size: 30px; color: var(--ink); margin-bottom: 6px; }
 .login-tag { font-size: 11px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--ink-muted); margin-bottom: 42px; }
 .login-btn { width: 100%; padding: 13px; border-radius: var(--r-md); font-size: 12px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px; cursor: pointer; }
@@ -898,7 +894,7 @@ body {
 .tp-chip-sel { background: var(--rust); border-color: var(--rust); color: #fff; }
 .tp-city-hdr { display: flex; justify-content: space-between; align-items: center; padding: 14px 20px 8px; }
 .tp-city-title { font-family: var(--font-display); font-weight: 400; font-size: 16px; color: var(--ink); }
-.tp-city-cnt { background: rgba(194, 73, 20, 0.1); color: var(--rust); font-size: 10px; font-weight: 800; padding: 3px 9px; border-radius: 3px; letter-spacing: 0.5px; }
+.tp-city-cnt { background: rgba(14, 124, 123, 0.1); color: var(--rust); font-size: 10px; font-weight: 800; padding: 3px 9px; border-radius: 3px; letter-spacing: 0.5px; }
 .tp-group { margin-bottom: 8px; padding: 0 20px; }
 .tp-ghdr { font-size: 10px; font-weight: 800; color: var(--ink-muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 1px; }
 .tp-gcard { background: var(--card); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 9px 11px; display: flex; align-items: center; gap: 8px; margin-bottom: 5px; cursor: pointer; }

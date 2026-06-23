@@ -27,7 +27,7 @@ const demoSaves = [
 
 const getCategoryColor = (category) => {
   const map = {
-    cafe: { bg: 'rgba(194,73,20,0.1)', color: '#C24914' },
+    cafe: { bg: 'rgba(14,124,123,0.1)', color: '#0E7C7B' },
     travel: { bg: 'rgba(0,102,255,0.1)', color: '#0066FF' },
     shopping: { bg: 'rgba(124,34,255,0.1)', color: '#7C22FF' }
   };
@@ -155,7 +155,7 @@ export default function DemoSaves({ onNavigate }) {
               style={{
                 flex: 1,
                 padding: '12px',
-                background: 'var(--coral, #C24914)',
+                background: 'var(--coral, #0E7C7B)',
                 color: 'white',
                 border: 'none',
                 borderRadius: 8,

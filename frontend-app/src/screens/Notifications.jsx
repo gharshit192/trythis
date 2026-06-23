@@ -32,9 +32,9 @@ const getSeasonIcon = (season) => {
 
 const TYPE_STYLE = {
   upload_completed: { bg: 'rgba(0,168,107,.12)', color: 'var(--cook)', icon: 'ti-bookmark-check' },
-  upload_failed: { bg: 'rgba(194,73,20,.1)', color: 'var(--coral)', icon: 'ti-alert-circle' },
+  upload_failed: { bg: 'rgba(14,124,123,.1)', color: 'var(--coral)', icon: 'ti-alert-circle' },
   price_drop: { bg: 'rgba(255,154,0,.12)', color: '#9a6800', icon: 'ti-trending-down' },
-  nearby_rediscovery: { bg: 'rgba(194,73,20,.12)', color: 'var(--coral)', icon: 'ti-map-pin' },
+  nearby_rediscovery: { bg: 'rgba(14,124,123,.12)', color: 'var(--coral)', icon: 'ti-map-pin' },
   time_behavioral: { bg: 'rgba(0,102,255,.1)', color: 'var(--travel)', icon: 'ti-calendar-event' },
   forgotten_intent: { bg: 'rgba(124,34,255,.1)', color: 'var(--shop)', icon: 'ti-clock-hour-4' },
   seasonal: { bg: 'rgba(0,102,255,.1)', color: 'var(--travel)', icon: 'ti-cloud-rain' },

@@ -955,8 +955,8 @@ export default function SaveDetail({ onNavigate, payload }) {
         <div onClick={() => !deleting && setConfirmDelete(false)}
              style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.65)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: 24 }}>
           <div onClick={(e) => e.stopPropagation()} style={{ background: 'var(--paper)', color: T.text, borderRadius: '20px', padding: 24, width: '100%', maxWidth: 320, border: '0.5px solid var(--hairline)' }}>
-            <div style={{ width: 48, height: 48, borderRadius: '50%', background: '#fce8df', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
-              <span style={{ fontSize: 25, color: '#b85c28' }}>🗑</span>
+            <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(211,51,51,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
+              <span style={{ fontSize: 25, color: '#d9534f' }}>🗑</span>
             </div>
             <h3 style={{ fontSize: 18, textAlign: 'center', marginBottom: 6, fontWeight: 600, fontFamily: 'var(--font-display)' }}>Delete this save?</h3>
             <p style={{ fontSize: 14, color: T.textMuted, textAlign: 'center', marginBottom: 16, lineHeight: 1.5 }}>
@@ -964,7 +964,7 @@ export default function SaveDetail({ onNavigate, payload }) {
             </p>
             {deleteError && <p style={{ color: T.redFg, fontSize: 14, textAlign: 'center', marginBottom: 8 }}>{deleteError}</p>}
             <button onClick={handleDelete} disabled={deleting}
-                    style={{ width: '100%', padding: '12px 0', background: '#b85c28', color: '#fff', border: 0, borderRadius: '12px', fontSize: 15, fontWeight: 600, cursor: 'pointer', marginBottom: 8 }}>
+                    style={{ width: '100%', padding: '12px 0', background: '#d9534f', color: '#fff', border: 0, borderRadius: '12px', fontSize: 15, fontWeight: 600, cursor: 'pointer', marginBottom: 8 }}>
               {deleting ? 'Deleting…' : 'Delete'}
             </button>
             <button onClick={() => setConfirmDelete(false)} disabled={deleting}
@@ -1096,7 +1096,7 @@ export default function SaveDetail({ onNavigate, payload }) {
             <button className="ai-close" onClick={() => setShowPlan(false)}>✕</button>
             <div className="ai-head">
               <div className="ai-hrow">
-                <div className="ai-icowrap" style={{ borderColor: 'var(--rust)', background: 'rgba(194,73,20,.08)' }}>🧭</div>
+                <div className="ai-icowrap" style={{ borderColor: 'var(--rust)', background: 'rgba(14,124,123,.08)' }}>🧭</div>
                 <div className="ai-title">Plan this trip</div>
               </div>
               <div className="ai-sub">

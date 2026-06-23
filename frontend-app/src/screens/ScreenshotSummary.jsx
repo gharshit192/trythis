@@ -150,9 +150,9 @@ export default function ScreenshotSummary({ sessionId, summary: initialSummary, 
       </div>
 
       {/* AI Detection strip */}
-      <div style={{ background: 'linear-gradient(135deg, rgba(46, 107, 82, 0.08) 0%, var(--colors-surface-surface-1, #f5f5f5) 100%)', borderLeft: '2px solid var(--colors-brands-primary-main, #C24914)', borderRadius: '0 12px 12px 0', padding: '10px 12px', margin: '8px 20px 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div style={{ background: 'linear-gradient(135deg, rgba(46, 107, 82, 0.08) 0%, var(--colors-surface-surface-1, #f5f5f5) 100%)', borderLeft: '2px solid var(--colors-brands-primary-main, #0E7C7B)', borderRadius: '0 12px 12px 0', padding: '10px 12px', margin: '8px 20px 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
         <span style={{ fontSize: 15 }}>✨</span>
-        <p style={{ fontSize: 12, color: 'var(--colors-brands-primary-main, #C24914)', lineHeight: 1.4, margin: 0 }}>
+        <p style={{ fontSize: 12, color: 'var(--colors-brands-primary-main, #0E7C7B)', lineHeight: 1.4, margin: 0 }}>
           {summary.masterSummary?.oneLiner || 'AI analysis complete'}
         </p>
       </div>
@@ -190,7 +190,7 @@ export default function ScreenshotSummary({ sessionId, summary: initialSummary, 
           <p style={{ fontSize: 12, fontWeight: 600, margin: '0 0 8px', color: 'var(--colors-type-primary, #1a1a1a)' }}>KEY POINTS</p>
           {summary.masterSummary.bullets.map((bullet, idx) => (
             <div key={idx} style={{ display: 'flex', gap: 8, marginBottom: 6, fontSize: 12 }}>
-              <span style={{ color: 'var(--colors-brands-primary-main, #C24914)', fontWeight: 600, flexShrink: 0 }}>•</span>
+              <span style={{ color: 'var(--colors-brands-primary-main, #0E7C7B)', fontWeight: 600, flexShrink: 0 }}>•</span>
               <span style={{ color: 'var(--colors-type-primary, #1a1a1a)', lineHeight: 1.4 }}>{bullet}</span>
             </div>
           ))}
@@ -231,7 +231,7 @@ export default function ScreenshotSummary({ sessionId, summary: initialSummary, 
                 {cat.items.map((item, ii) => (
                   <div key={ii} style={{ marginBottom: 6 }}>
                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '6px 0', fontSize: 12, color: 'var(--colors-type-primary, #1a1a1a)' }}>
-                      <div style={{ width: 5, height: 5, background: 'var(--colors-brands-primary-main, #C24914)', borderRadius: '50%', flexShrink: 0, marginTop: 3 }} />
+                      <div style={{ width: 5, height: 5, background: 'var(--colors-brands-primary-main, #0E7C7B)', borderRadius: '50%', flexShrink: 0, marginTop: 3 }} />
                       <div style={{ flex: 1 }}>
                         <div style={{ fontWeight: 500 }}>{item.name}</div>
                         {item.details && (
@@ -273,7 +273,7 @@ export default function ScreenshotSummary({ sessionId, summary: initialSummary, 
             <button
               onClick={handleRefine}
               disabled={loading || !refineText.trim()}
-              style={{ flex: 1, padding: 8, fontSize: 12, borderRadius: 6, cursor: 'pointer', background: 'var(--colors-brands-primary-main, #C24914)', color: 'white', border: 'none', opacity: loading ? 0.6 : 1 }}>
+              style={{ flex: 1, padding: 8, fontSize: 12, borderRadius: 6, cursor: 'pointer', background: 'var(--colors-brands-primary-main, #0E7C7B)', color: 'white', border: 'none', opacity: loading ? 0.6 : 1 }}>
               {loading && loadingAction === 'refine' ? 'Refining...' : 'Apply'}
             </button>
           </div>
@@ -285,7 +285,7 @@ export default function ScreenshotSummary({ sessionId, summary: initialSummary, 
         <button
           onClick={handleSave}
           disabled={loading || saved}
-          style={{ flex: 1, padding: '12px 0', background: saved ? 'var(--colors-brands-success-main, #2E6B52)' : 'var(--colors-brands-primary-main, #C24914)', color: 'white', border: 'none', borderRadius: 12, fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: loading ? 0.6 : 1 }}>
+          style={{ flex: 1, padding: '12px 0', background: saved ? 'var(--colors-brands-success-main, #2E6B52)' : 'var(--colors-brands-primary-main, #0E7C7B)', color: 'white', border: 'none', borderRadius: 12, fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: loading ? 0.6 : 1 }}>
           {saved ? '✓ Saved to collection' : loading && loadingAction === 'save' ? 'Saving...' : 'Save to collection'}
         </button>
       </div>

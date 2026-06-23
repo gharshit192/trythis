@@ -283,7 +283,7 @@ const api = {
   },
 
   // ---- Collections ----
-  async createCollection(name, description = '', icon = '📌', color = '#C24914') {
+  async createCollection(name, description = '', icon = '📌', color = '#0E7C7B') {
     const res = await fetch(`${API_BASE_URL}/collections`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...authHeader() },
