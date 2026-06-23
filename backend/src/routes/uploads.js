@@ -6,6 +6,7 @@ const router = express.Router();
 const UploadJob = require('../models/UploadJob');
 const authMiddleware = require('../middleware/auth');
 const validateObjectId = require('../middleware/validateObjectId');
+const notificationService = require('../services/notificationService');
 const logger = require('../utils/logger');
 
 // Multer config: screenshot uploads to temp dir
@@ -94,6 +95,9 @@ router.post('/', upload.single('file'), async (req, res) => {
     job.resultSaveId = tempSave._id;
     await job.save();
 
+    // In-app "processing started" notification (fire-and-forget).
+    notificationService.sendJobNotification(userId, { type: 'JOB_QUEUED', jobId: job._id, saveId: tempSave._id }).catch(() => {});
+
     // Return 202 Accepted immediately
     return res.status(202).json({
       status: 'success',
@@ -107,6 +111,77 @@ router.post('/', upload.single('file'), async (req, res) => {
     });
   } catch (err) {
     logger.error(`[UploadJob] POST /uploads error: ${err.message}`);
+    return res.status(500).json({
+      status: 'error',
+      error: { code: 'UPLOAD_ERROR', message: err.message },
+    });
+  }
+});
+
+// POST /uploads/bundle — multiple screenshots at once.
+// Creates one PENDING job + temp "processing" Save per file; the upload worker
+// picks them up and notifies on completion. (Frontend: submitScreenshotBundle.)
+router.post('/bundle', upload.array('files', 10), async (req, res) => {
+  try {
+    const userId = req.user.id;
+    if (!req.files || !req.files.length) {
+      return res.status(400).json({
+        status: 'error',
+        error: { code: 'NO_FILES', message: 'files are required for a bundle upload' },
+      });
+    }
+
+    const userTitle = (req.body.title || '').trim();
+    const Save = require('../models/Save');
+    const jobs = [];
+    let idx = 0;
+    for (const file of req.files) {
+      idx += 1;
+      // Use the user-provided title when given (number them if multiple files).
+      const saveTitle = userTitle
+        ? (req.files.length > 1 ? `${userTitle} (${idx})` : userTitle)
+        : (file.originalname || 'Processing...');
+      const job = await UploadJob.create({
+        userId,
+        type: 'SCREENSHOT',
+        fileReference: file.path,
+        originalFilename: file.originalname,
+        status: 'PENDING',
+      });
+      const tempSave = await Save.create({
+        userId,
+        title: saveTitle,
+        description: '',
+        url: null,
+        source: 'screenshot',
+        contentType: 'image',
+        processingStatus: 'processing',
+        status: 'active',
+        metadata: { jobId: job._id.toString() },
+      });
+      job.resultSaveId = tempSave._id;
+      await job.save();
+      jobs.push({ jobId: job._id.toString(), saveId: tempSave._id.toString(), status: job.status });
+      logger.info(`[UploadJob] Created bundle job ${job._id} for user ${userId} (SCREENSHOT: ${file.originalname})`);
+    }
+
+    // One "processing started" notification for the batch (fire-and-forget).
+    notificationService.sendJobNotification(userId, {
+      type: 'JOB_QUEUED',
+      jobId: jobs[0].jobId,
+      message: `${jobs.length} photo${jobs.length > 1 ? 's are' : ' is'} being processed — we'll notify you when ready.`,
+    }).catch(() => {});
+
+    return res.status(202).json({
+      status: 'success',
+      data: {
+        jobs,
+        count: jobs.length,
+        message: `${jobs.length} upload${jobs.length > 1 ? 's' : ''} in progress. We'll notify you once ready — you can keep using the app.`,
+      },
+    });
+  } catch (err) {
+    logger.error(`[UploadJob] POST /uploads/bundle error: ${err.message}`);
     return res.status(500).json({
       status: 'error',
       error: { code: 'UPLOAD_ERROR', message: err.message },

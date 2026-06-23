@@ -468,9 +468,10 @@ const api = {
     return data?.data || data;
   },
 
-  async submitScreenshotBundle(files) {
+  async submitScreenshotBundle(files, title = '') {
     const fd = new FormData();
     files.forEach((file) => fd.append('files', file));
+    if (title) fd.append('title', title);
     const res = await fetch(`${API_BASE_URL}/uploads/bundle`, {
       method: 'POST',
       headers: authHeader(),

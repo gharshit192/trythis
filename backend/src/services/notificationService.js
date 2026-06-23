@@ -36,6 +36,10 @@ async function sendJobNotification(userId, payload) {
       title = '❌ Upload failed';
       notifMessage = message || 'We had trouble processing your upload. Please try again.';
       notificationType = 'upload_failed';
+    } else if (type === 'JOB_QUEUED') {
+      title = '⏳ Processing…';
+      notifMessage = message || 'We\'re processing your upload — we\'ll notify you when it\'s ready.';
+      notificationType = 'upload_processing';
     } else {
       throw new Error(`Unknown notification type: ${type}`);
     }
@@ -47,7 +51,7 @@ async function sendJobNotification(userId, payload) {
       title,
       message: notifMessage,
       relatedSaveId: saveId || null,
-      priority: type === 'JOB_COMPLETED' ? 'medium' : 'high',
+      priority: type === 'JOB_COMPLETED' ? 'medium' : type === 'JOB_QUEUED' ? 'low' : 'high',
       relevanceScore: 0.8,
       status: 'sent',
       deliveryMethod: 'in_app',

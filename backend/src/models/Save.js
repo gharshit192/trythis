@@ -89,8 +89,12 @@ const aiAnalysisSchema = new mongoose.Schema({
   keyPoints: [String],
   structuredData: {
     type: {
+      // Open string — NOT an enum. Video saves use a fixed set (recipe/product/
+      // itinerary/event/place/article/listing/other), but the screenshot analyzer
+      // emits many more (study_notes, job_posting, checklist, …). A strict enum
+      // made save.save() throw on those docs — breaking delete, aggregate, and any
+      // update. Validate downstream in code, not in the schema.
       type: String,
-      enum: ['recipe', 'product', 'itinerary', 'event', 'place', 'article', 'listing', 'other'],
     },
     recipe: recipeSchema,
     product: productSchema,

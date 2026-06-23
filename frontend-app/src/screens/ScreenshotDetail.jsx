@@ -134,13 +134,17 @@ export default function ScreenshotDetail({ save, onNavigate }) {
     setAggregateError(null);
 
     try {
-      // Fetch all related screenshots to get their analysis
+      // Only aggregate screenshots that are actually RELATED to this one — same
+      // category (e.g. two job postings), not every screenshot the user ever saved.
+      // Otherwise unrelated notes/checklists get mixed into the comparison.
       const allSaves = (await api.getSaves()).data || [];
       const relatedScreens = allSaves.filter(
-        (s) => (s.contentType === 'image' || s.source === 'screenshot') && s._id !== save._id
-      );
+        (s) => s._id !== save._id
+          && (s.contentType === 'image' || s.source === 'screenshot')
+          && s.category === save.category
+      ).slice(0, 6);
 
-      // Build analysis text from current + related screenshots
+      // Build analysis text from current + related (same-category) screenshots
       const analyses = [save, ...relatedScreens]
         .map((s) => {
           const title = s.title || '';

@@ -57,9 +57,9 @@ const parseJsonSafely = (text) => {
     try {
       return JSON.parse(cleaned);
     } catch {
-      // Last resort: extract JSON object or array using regex
-      // Use non-greedy quantifier to match shortest valid JSON, not first-to-last
-      const match = cleaned.match(/(\{[\s\S]*?\}|\[[\s\S]*?\])/);
+      // Last resort: extract the outermost JSON object/array. Greedy so nested
+      // objects (themes/actions/comparison) aren't truncated at the first brace.
+      const match = cleaned.match(/(\{[\s\S]*\}|\[[\s\S]*\])/);
       if (match) {
         try {
           return JSON.parse(match[1]);

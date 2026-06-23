@@ -218,7 +218,7 @@ function PhotosFlow({ collections, onBack, onNavigate }) {
     setProcessingStep(0);
 
     try {
-      const result = await api.submitScreenshotBundle(files.map((f) => f.file));
+      const result = await api.submitScreenshotBundle(files.map((f) => f.file), title.trim());
 
       setProcessingStep(1);
       files.forEach((x) => URL.revokeObjectURL(x.previewUrl));
