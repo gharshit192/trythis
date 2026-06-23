@@ -122,6 +122,13 @@ const api = {
     return handle(res);
   },
 
+  async getMe() {
+    const res = await fetch(`${API_BASE_URL}/auth/me`, {
+      headers: authHeader(),
+    });
+    return handle(res);
+  },
+
   logout() {
     localStorage.removeItem('auth_token');
     localStorage.removeItem('user');
@@ -390,6 +397,27 @@ const api = {
     const res = await fetch(`${API_BASE_URL}/saves/nearby?lat=${lat}&lng=${lng}&radiusMetres=${radiusMetres}`, {
       headers: authHeader(),
     });
+    return handle(res);
+  },
+
+  // ---- Places ----
+  async getPlace(id) {
+    const res = await fetch(`${API_BASE_URL}/places/${id}`);
+    return handle(res);
+  },
+
+  async getPlaceSimilar(id) {
+    const res = await fetch(`${API_BASE_URL}/places/${id}/similar`);
+    return handle(res);
+  },
+
+  async getTrendingPlaces(limit = 10) {
+    const res = await fetch(`${API_BASE_URL}/places/trending?limit=${limit}`);
+    return handle(res);
+  },
+
+  async getNearbyPlaces(lat, lng, radiusMetres = 5000) {
+    const res = await fetch(`${API_BASE_URL}/places/nearby?lat=${lat}&lng=${lng}&radiusMetres=${radiusMetres}`);
     return handle(res);
   },
 

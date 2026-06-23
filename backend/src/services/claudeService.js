@@ -322,7 +322,7 @@ Rules:
   const result = await withRetry(async () => {
     const message = await client.messages.create({
       model: 'claude-sonnet-4-6',
-      max_tokens: 1024,
+      max_tokens: 2500,
       system: SYSTEM_PROMPT,
       messages: [{ role: 'user', content: `Analyze these screenshots:\n\n${analysisText}` }],
     });

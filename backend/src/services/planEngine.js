@@ -73,11 +73,14 @@ Break it into individual destinations. Return ONLY valid JSON, no prose:
       "domestic": boolean,       // true if reachable by train/bus from ${origin || 'the origin'} (same country)
       "flightApprox": string,    // rough round-trip flight cost from ${origin || 'a metro'} in INR, e.g. "₹12,000–20,000", or "" if unsure
       "hotelApprox": string,     // rough hotel price per night in INR, e.g. "₹2,000–8,000", or ""
-      "explore": string[]        // 2-3 nearby areas worth a side trip (<=50 chars each)
+      "explore": string[],       // 2-3 nearby areas worth a side trip (<=50 chars each)
+      "hotels": [                // 4-5 real, well-known stays travelers actually book here
+        { "name": string, "area": string, "tier": "Budget"|"Mid"|"Luxury", "approx": string /* INR per night, e.g. "₹2,500" */ }
+      ]
     }
   ]
 }
-Rules: 1-5 destinations. If the save names one place, return one. Prices are approximate INR ranges. No markdown.`;
+Rules: 1-5 destinations. If the save names one place, return one. Give 4-5 REAL, well-known hotels per destination (actually existing properties, not generic). Prices are approximate INR ranges. No markdown.`;
 
   const msg = await client.messages.create({ model: MODEL, max_tokens: 1100, messages: [{ role: 'user', content: prompt }] });
   const raw = msg?.content?.[0]?.text || '';
@@ -91,6 +94,12 @@ Rules: 1-5 destinations. If the save names one place, return one. Prices are app
     flightApprox: String(d.flightApprox || '').trim(),
     hotelApprox: String(d.hotelApprox || '').trim(),
     explore: (d.explore || []).slice(0, 3).map((s) => String(s).slice(0, 80)).filter(Boolean),
+    hotels: (d.hotels || []).slice(0, 5).map((h) => ({
+      name: String(h.name || '').slice(0, 60).trim(),
+      area: String(h.area || '').slice(0, 40).trim(),
+      tier: String(h.tier || '').slice(0, 12).trim(),
+      approx: String(h.approx || '').slice(0, 20).trim(),
+    })).filter((h) => h.name),
   })).filter((d) => d.city);
 };
 
@@ -121,6 +130,11 @@ const generatePlan = async (save, origin) => {
     flightApprox: d.flightApprox,
     hotelApprox: d.hotelApprox,
     explore: d.explore,
+    // Named hotels (showcase) — each deep-links to that hotel's Booking search.
+    hotels: (d.hotels || []).map((h) => ({
+      ...h,
+      url: `https://www.booking.com/searchresults.html?ss=${enc(`${h.name} ${d.city}`)}${bookingAid}`,
+    })),
     ...buildDestLinks(origin, d),
   }));
 

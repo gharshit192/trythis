@@ -159,7 +159,6 @@ const ActionBar = ({ save, onIntent, onOpenSource, onShare }) => {
   // Trip planning: travel/experience categories OR an itinerary OR a non-store place
   const isTripContext = itinerary || (place && ['travel', 'experience'].includes(cat));
   if (isTripContext) {
-    buttons.push({ key: 'plan',  label: 'Plan trip', sublabel: 'Coming soon', iconBg: 'var(--coral-soft)', iconColor: 'var(--coral)', onClick: () => onIntent('planned'), kind: 'secondary' });
     buttons.push({ key: 'stays', label: 'Find stays', sublabel: 'Search hotels', iconBg: '#daeaf8', iconColor: '#1a5f8a', href: `https://www.google.com/travel/hotels?q=${encodeURIComponent(itinerary?.destination || place?.name || cat)}`, kind: 'secondary' });
   }
 
@@ -263,7 +262,7 @@ export default function SaveDetail({ onNavigate, payload }) {
 
   // Fetch AI "Discover More" insights on tap (travel saves). Cached server-side 24h.
   const loadInsights = async () => {
-    setShowInsights(true);
+    // Renders inline under Key points — no modal sheet to close.
     if (insights || insightsLoading) return; // already loaded / loading
     setInsightsLoading(true);
     setInsightsError(null);
@@ -438,6 +437,12 @@ export default function SaveDetail({ onNavigate, payload }) {
   const place = sd.place;
   const meta = catMeta(save?.category);
   const bucket = getCategoryMeta(save?.category);
+  // Pinpoint coordinates for the embedded map (free OpenStreetMap — no API key).
+  const coords = (() => {
+    const lat = save?.extractedLocation?.lat ?? place?.coordinates?.lat;
+    const lng = save?.extractedLocation?.lng ?? place?.coordinates?.lng;
+    return (typeof lat === 'number' && typeof lng === 'number') ? { lat, lng } : null;
+  })();
   // Human label for the Discover More CTA (city / destination / country).
   const insightsPlace = save?.extractedLocation?.city
     || sd?.place?.city
@@ -612,7 +617,7 @@ export default function SaveDetail({ onNavigate, payload }) {
             handle/title), so we never search the creator's personal profile. */}
         {bucket?.key === 'travel' && insightsPlace && (
           <div className="dm-sec">
-            <div className="dm-hdr"><span className="dm-title">✨ Discover More</span><div className="dline"></div></div>
+            <div className="dm-hdr"><span className="dm-title">✨ Wanna Try Vibes</span><div className="dline"></div></div>
             <div className="dm-card">
               <div className="dm-row">
                 <div className="dm-ico">🔎</div>
@@ -620,23 +625,35 @@ export default function SaveDetail({ onNavigate, payload }) {
                   See <b>similar stays</b> and <b>travel guides</b>{insightsPlace ? <> for <b>{insightsPlace}</b></> : ''}
                 </div>
               </div>
-              <button className="dm-btn" onClick={loadInsights}>✨ Find Similar &amp; Guides →</button>
-            </div>
-
-            <div className="dm-card" style={{ borderColor: 'var(--rust)', marginTop: 8 }}>
-              <div className="dm-row">
-                <div className="dm-ico" style={{ borderColor: 'var(--rust)', background: 'rgba(194,73,20,.08)' }}>🧭</div>
-                <div className="dm-text">
-                  <b>Plan the trip</b>{insightsPlace ? <> to <b>{insightsPlace}</b></> : ''} — flights, trains, buses, stays &amp; an itinerary
-                </div>
-              </div>
-              <button className="dm-btn" style={{ background: 'var(--rust)' }} onClick={loadPlan}>🧭 Plan this trip →</button>
+              <button className="dm-btn" onClick={loadInsights} disabled={insightsLoading}>{insightsLoading ? 'Finding vibes…' : '✨ Wanna Try Vibes →'}</button>
             </div>
           </div>
         )}
         </div>
 
         <div style={{ padding: '0 18px' }}>
+
+        {/* Pinpoint location map (free OpenStreetMap embed — no API key) */}
+        {coords && (
+          <div style={{ borderRadius: 16, overflow: 'hidden', border: '0.5px solid var(--hairline-soft)', marginBottom: 12 }}>
+            <iframe
+              title="Location map"
+              width="100%"
+              height="170"
+              style={{ border: 0, display: 'block' }}
+              loading="lazy"
+              src={`https://www.openstreetmap.org/export/embed.html?bbox=${coords.lng - 0.03}%2C${coords.lat - 0.03}%2C${coords.lng + 0.03}%2C${coords.lat + 0.03}&layer=mapnik&marker=${coords.lat}%2C${coords.lng}`}
+            />
+            <a
+              href={`https://www.google.com/maps/search/?api=1&query=${coords.lat},${coords.lng}`}
+              target="_blank"
+              rel="noreferrer"
+              style={{ display: 'block', padding: '9px 12px', fontSize: 13, color: 'var(--amber-link)', fontWeight: 600, background: 'var(--paper)', textDecoration: 'none' }}
+            >
+              📍 {insightsPlace ? insightsPlace + ' · ' : ''}Open in Maps →
+            </a>
+          </div>
+        )}
 
         {/* Key points — concrete bullets distilled from caption/OCR/transcript.
             Shown especially valuable when transcript is missing/hallucinated. */}
@@ -651,6 +668,28 @@ export default function SaveDetail({ onNavigate, payload }) {
                 </li>
               ))}
             </ul>
+          </div>
+        )}
+
+        {/* Wanna Try Vibes — inline web results appended near key points (no modal) */}
+        {(insightsLoading || insightsError || (insights && insights.length > 0)) && (
+          <div style={{ background: 'var(--paper)', border: '0.5px solid var(--hairline-soft)', borderRadius: '16px', padding: '14px 16px', marginBottom: 12 }}>
+            <SectionLabel>✨ Wanna Try Vibes</SectionLabel>
+            {insightsLoading && <div style={{ fontSize: 14, color: T.textMuted }}>Finding vibes for you…</div>}
+            {insightsError && <div style={{ fontSize: 14, color: T.textMuted }}>{insightsError}</div>}
+            {insights && insights.length > 0 && (
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                {insights.map((it, i, arr) => (
+                  <li key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start', paddingBottom: i < arr.length - 1 ? 10 : 0, marginBottom: i < arr.length - 1 ? 10 : 0, borderBottom: i < arr.length - 1 ? '0.5px solid var(--hairline-soft)' : 'none' }}>
+                    <span style={{ flexShrink: 0, width: 6, height: 6, borderRadius: '50%', background: 'var(--coral)', marginTop: 8 }} />
+                    <span style={{ fontSize: 14, lineHeight: 1.5, color: T.text }}>
+                      {it.text || (typeof it === 'string' ? it : '')}
+                      {it.url ? <> <a href={it.url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--amber-link)', fontWeight: 600 }}>{it.source_domain || 'source'}</a></> : null}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         )}
 
@@ -856,6 +895,13 @@ export default function SaveDetail({ onNavigate, payload }) {
               </p>
             )}
           </div>
+        )}
+
+        {/* Plan trip — sits below the content; opens trip details on tap */}
+        {bucket?.key === 'travel' && insightsPlace && (
+          <button className="dm-btn" style={{ background: 'var(--rust)', width: '100%', marginBottom: 14 }} onClick={loadPlan} disabled={planLoading}>
+            {planLoading ? 'Building your plan…' : '🧭 Plan this trip →'}
+          </button>
         )}
 
         {/* Action bar */}
@@ -1085,14 +1131,22 @@ export default function SaveDetail({ onNavigate, payload }) {
 
                     <div className="plan-h" style={{ marginTop: 9 }}>🏨 Where to stay</div>
                     <div className="plan-links">
-                      {d.stays.map((s, i) => (
+                      {(d.hotels && d.hotels.length ? d.hotels : d.stays).map((s, i) => (
                         <a key={i} className="plan-link" href={s.url} target="_blank" rel="noreferrer">
-                          <span className="plan-mode">{s.tier}</span>{s.provider}
-                          {s.approx ? <span className="plan-price">{s.approx}/nt</span> : null}
+                          {s.tier ? <span className="plan-mode">{s.tier}</span> : null}
+                          {s.name || s.provider}{s.area ? ` · ${s.area}` : ''}
+                          {s.approx ? <span className="plan-price">{s.approx}{s.name ? '/nt' : '/nt'}</span> : null}
                           <span className="plan-arrow">↗</span>
                         </a>
                       ))}
                     </div>
+                    {d.hotels && d.hotels.length ? (
+                      <div style={{ fontSize: 12, color: 'var(--ink-muted)', marginTop: 6 }}>
+                        Compare on {d.stays.map((s, i) => (
+                          <span key={i}><a href={s.url} target="_blank" rel="noreferrer" style={{ color: 'var(--amber-link)', fontWeight: 600 }}>{s.provider}</a>{i < d.stays.length - 1 ? ' · ' : ''}</span>
+                        ))}
+                      </div>
+                    ) : null}
 
                     {d.explore?.length > 0 && (
                       <>

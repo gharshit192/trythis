@@ -23,6 +23,7 @@ const autoCollectionEngine = require('../services/autoCollectionEngine');
 const thumbnailCache = require('../services/thumbnailCache');
 const insightsEngine = require('../services/insightsEngine');
 const planEngine = require('../services/planEngine');
+const placeResolver = require('../services/placeResolver');
 const typeToCategory = require('../utils/structuredTypeToCategory');
 const { classifyByDomainFull } = require('../services/extractionEngine/domainClassifier');
 const { classifyUrl } = require('../services/urlClassifier');
@@ -315,6 +316,12 @@ router.post('/', validateSaveInput, async (req, res) => {
       save.processingStatus = 'processing';
       await save.save();
       mediaProcessor.enqueue(save._id.toString());
+      try {
+        await placeResolver.resolvePlaceForSave(save);
+        await save.save();
+      } catch (e) {
+        logger.warn(`Place resolution on create failed: ${e.message}`);
+      }
     } else {
       // Screenshots or no URL: mark as done (handled by screenshotPipeline separately)
       save.processingStatus = 'done';
@@ -360,6 +367,54 @@ router.get('/', async (req, res) => {
       status: 'error',
       error: { code: 'FETCH_ERROR', message: error.message },
     });
+  }
+});
+
+// GET /nearby — Fetch saves near user's current location.
+// MUST be declared before `/:id`, otherwise "nearby" is treated as an :id and
+// validateObjectId rejects it with 400.
+router.get('/nearby', authMiddleware, async (req, res) => {
+  try {
+    const { lat, lng, radiusMetres = 1000 } = req.query;
+
+    if (!lat || !lng) {
+      return res.status(400).json({
+        status: 'error',
+        error: { code: 'MISSING_LOCATION', message: 'lat and lng query params required' }
+      });
+    }
+
+    const userLat = parseFloat(lat);
+    const userLng = parseFloat(lng);
+    const radius  = parseInt(radiusMetres) || 1000;
+
+    // Fetch saves that have location data
+    const saves = await Save.find({
+      userId: req.user.id,
+      status: 'active',
+      'extractedLocation.lat': { $ne: null }
+    }).select('title category thumbnail extractedLocation aiAnalysis tags createdAt');
+
+    // Calculate distance using Haversine formula and filter
+    const nearby = saves
+      .map(save => {
+        const lat2 = save.extractedLocation.lat;
+        const lng2 = save.extractedLocation.lng;
+        const R = 6371000; // Earth's radius in meters
+        const dLat = (lat2 - userLat) * Math.PI / 180;
+        const dLng = (lng2 - userLng) * Math.PI / 180;
+        const a = Math.sin(dLat/2)**2 +
+                  Math.cos(userLat*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
+        const distanceMetres = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return { ...save.toObject(), distanceMetres: Math.round(distanceMetres) };
+      })
+      .filter(s => s.distanceMetres <= radius)
+      .sort((a, b) => a.distanceMetres - b.distanceMetres);
+
+    res.json({ status: 'success', saves: nearby, count: nearby.length });
+  } catch (err) {
+    logger.error(`Nearby saves error: ${err.message}`);
+    res.status(500).json({ status: 'error', error: { code: 'INTERNAL', message: err.message } });
   }
 });
 
@@ -986,51 +1041,8 @@ router.post('/bulk/import', async (req, res) => {
   }
 });
 
-// GET /nearby — Fetch saves near user's current location
-router.get('/nearby', authMiddleware, async (req, res) => {
-  try {
-    const { lat, lng, radiusMetres = 1000 } = req.query;
-
-    if (!lat || !lng) {
-      return res.status(400).json({
-        status: 'error',
-        error: { code: 'MISSING_LOCATION', message: 'lat and lng query params required' }
-      });
-    }
-
-    const userLat = parseFloat(lat);
-    const userLng = parseFloat(lng);
-    const radius  = parseInt(radiusMetres) || 1000;
-
-    // Fetch saves that have location data
-    const saves = await Save.find({
-      userId: req.user.id,
-      status: 'active',
-      'extractedLocation.lat': { $ne: null }
-    }).select('title category thumbnail extractedLocation aiAnalysis tags createdAt');
-
-    // Calculate distance using Haversine formula and filter
-    const nearby = saves
-      .map(save => {
-        const lat2 = save.extractedLocation.lat;
-        const lng2 = save.extractedLocation.lng;
-        const R = 6371000; // Earth's radius in meters
-        const dLat = (lat2 - userLat) * Math.PI / 180;
-        const dLng = (lng2 - userLng) * Math.PI / 180;
-        const a = Math.sin(dLat/2)**2 +
-                  Math.cos(userLat*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
-        const distanceMetres = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-        return { ...save.toObject(), distanceMetres: Math.round(distanceMetres) };
-      })
-      .filter(s => s.distanceMetres <= radius)
-      .sort((a, b) => a.distanceMetres - b.distanceMetres);
-
-    res.json({ status: 'success', saves: nearby, count: nearby.length });
-  } catch (err) {
-    logger.error(`Nearby saves error: ${err.message}`);
-    res.status(500).json({ status: 'error', error: { code: 'INTERNAL', message: err.message } });
-  }
-});
+// (GET /nearby relocated above the `/:id` route to avoid Express route shadowing —
+//  see the definition right after `GET /`.)
 
 // POST /:id/aggregate-analysis — Aggregate and analyze multiple screenshots
 router.post('/:id/aggregate-analysis', validateObjectId('id'), async (req, res) => {
@@ -1052,12 +1064,32 @@ router.post('/:id/aggregate-analysis', validateObjectId('id'), async (req, res) 
       });
     }
 
+    // Reuse the cached aggregate unless the client explicitly asks to refresh —
+    // so revisiting the screenshot doesn't re-run (and re-charge) the analysis.
+    if (save.aiAnalysis?.aggregateAnalysis && !req.body.refresh) {
+      return res.json({ status: 'success', data: save.aiAnalysis.aggregateAnalysis, cached: true });
+    }
+
     const claudeService = require('../services/claudeService');
     const aggregated = await claudeService.aggregateAnalyses(analysisText);
+    if (!aggregated) {
+      return res.status(502).json({ status: 'error', error: { code: 'AGGREGATE_FAILED', message: 'Analysis failed to generate — please try again.' } });
+    }
+
+    // Persist via an update operator (not doc.save()) so we DON'T re-validate the
+    // whole document — some screenshots carry a structuredData.type outside the
+    // video enum (e.g. "job_posting"), which would fail full-doc validation.
+    // The field is declared Mixed in the schema, so $set writes it correctly.
+    await Save.updateOne({ _id: req.params.id }, { $set: { 'aiAnalysis.aggregateAnalysis': aggregated } });
+
+    // Verify it actually persisted and log loudly.
+    const check = await Save.findById(req.params.id).select('aiAnalysis.aggregateAnalysis').lean();
+    logger.info(`[aggregate] persisted=${!!check?.aiAnalysis?.aggregateAnalysis} save=${req.params.id}`);
 
     res.json({
       status: 'success',
       data: aggregated,
+      cached: false,
     });
   } catch (error) {
     logger.error(`Aggregate analysis error: ${error.message}`);
@@ -1121,6 +1153,87 @@ router.get('/:id/export-pdf', validateObjectId('id'), async (req, res) => {
     if (summary) {
       doc.moveDown(0.6);
       doc.fontSize(12).font('Helvetica').fillColor('#222222').text(summary, { align: 'left', lineGap: 2 });
+    }
+
+    // ── AGGREGATE ANALYSIS (multi-screenshot comparison) ──
+    const agg = ai.aggregateAnalysis;
+    if (agg) {
+      if (agg.summary || agg.combinedSummary) {
+        section('Aggregate Summary');
+        doc.fontSize(11).font('Helvetica').fillColor('#222222').text(agg.summary || agg.combinedSummary, { lineGap: 2 });
+      }
+      if (Array.isArray(agg.highlights) && agg.highlights.length) {
+        section('Highlights');
+        agg.highlights.forEach(bullet);
+      }
+      if (Array.isArray(agg.themes) && agg.themes.length) {
+        section('Themes');
+        agg.themes.forEach((t) => {
+          // Drop the emoji icon — pdfkit's Helvetica can't render emoji (shows garbage).
+          doc.fontSize(12).font('Helvetica-Bold').fillColor(ACCENT).text(`${t.title || 'Theme'}`.trim());
+          (t.points || []).forEach(bullet);
+          doc.moveDown(0.25);
+        });
+      }
+      if (Array.isArray(agg.actions) && agg.actions.length) {
+        section('Recommended Actions');
+        agg.actions.forEach((a) => {
+          doc.fontSize(11).font('Helvetica-Bold').fillColor('#000').text(`[${String(a.priority || '').toUpperCase()}] ${a.action || ''}`);
+          if (a.reason) doc.fontSize(10).font('Helvetica').fillColor('#444').text(a.reason, { indent: 12, lineGap: 2 });
+          doc.moveDown(0.2);
+        });
+      }
+      if (agg.comparison) {
+        section('Comparison');
+        if (Array.isArray(agg.comparison.similarities) && agg.comparison.similarities.length) {
+          doc.fontSize(12).font('Helvetica-Bold').fillColor(ACCENT).text('Similarities');
+          agg.comparison.similarities.forEach(bullet);
+        }
+        if (Array.isArray(agg.comparison.differences) && agg.comparison.differences.length) {
+          doc.moveDown(0.3);
+          doc.fontSize(12).font('Helvetica-Bold').fillColor(ACCENT).text('Differences');
+          agg.comparison.differences.forEach(bullet);
+        }
+      }
+      if (Array.isArray(agg.tags) && agg.tags.length) {
+        section('Tags');
+        doc.fontSize(10).font('Helvetica').fillColor(MUTED).text(agg.tags.join(' • '));
+      }
+    }
+
+    // Screenshot bundle exports store the rich payload under aiAnalysis.screenshotAnalysis.data.
+    // Render that first so bundle PDFs are not reduced to a title-only page.
+    const bundle = ai.screenshotAnalysis?.type === 'bundle' ? ai.screenshotAnalysis.data : null;
+    if (bundle) {
+      if (bundle.masterSummary?.oneLiner) {
+        section('Bundle Summary');
+        doc.fontSize(11).font('Helvetica').fillColor('#222222').text(bundle.masterSummary.oneLiner, { lineGap: 2 });
+        if (Array.isArray(bundle.masterSummary.bullets) && bundle.masterSummary.bullets.length) {
+          doc.moveDown(0.4);
+          bundle.masterSummary.bullets.forEach(bullet);
+        }
+        if (bundle.masterSummary?.budgetRange) {
+          doc.moveDown(0.4);
+          doc.fontSize(11).font('Helvetica').fillColor('#000').text(`Budget range: ${bundle.masterSummary.budgetRange}`);
+        }
+        if (bundle.masterSummary?.bestPick) {
+          doc.fontSize(11).font('Helvetica').fillColor('#000').text(`Top pick: ${bundle.masterSummary.bestPick}`);
+        }
+      }
+
+      if (Array.isArray(bundle.categories) && bundle.categories.length) {
+        section('Categories');
+        bundle.categories.forEach((cat) => {
+          doc.fontSize(12).font('Helvetica-Bold').fillColor(ACCENT).text(`${cat.emoji || ''} ${cat.name || 'Category'}${typeof cat.count === 'number' ? ` (${cat.count})` : ''}`.trim());
+          (cat.items || []).forEach((item) => {
+            doc.fontSize(11).font('Helvetica-Bold').fillColor('#000').text(item.name || 'Item');
+            if (item.details) doc.fontSize(10).font('Helvetica').fillColor('#444').text(item.details, { indent: 10, lineGap: 2 });
+            if (Array.isArray(item.tags) && item.tags.length) doc.fontSize(9).font('Helvetica').fillColor(MUTED).text(item.tags.join(' • '), { indent: 10 });
+            doc.moveDown(0.35);
+          });
+          doc.moveDown(0.25);
+        });
+      }
     }
 
     // ── KEY POINTS (highlighted) ──
@@ -1206,14 +1319,32 @@ router.get('/:id/export-pdf', validateObjectId('id'), async (req, res) => {
       doc.fontSize(11).font('Helvetica').fillColor(MUTED).text(save.tags.map((t) => `#${t}`).join('  '));
     }
 
-    // ── FOOTER ──
-    const pageCount = doc.bufferedPageRange().count;
-    for (let i = 0; i < pageCount; i++) {
+    // ── WATERMARK + FOOTER (on every page) ──
+    const range = doc.bufferedPageRange(); // { start, count }
+    const footTitle = String(save.title || '').replace(/[^\x20-\x7E]/g, '').slice(0, 60);
+    for (let i = range.start; i < range.start + range.count; i++) {
       doc.switchToPage(i);
-      doc.fontSize(8).fillColor(MUTED).text(
-        `TryThis export  •  ${save.title}  •  Page ${i + 1} of ${pageCount}`,
-        50, doc.page.height - 30, { align: 'center' }
+
+      // Faint diagonal "Wanna Try" watermark (drawn translucent so it sits behind text).
+      doc.save();
+      doc.rotate(-45, { origin: [doc.page.width / 2, doc.page.height / 2] });
+      doc.fontSize(70).font('Helvetica-Bold').fillColor(ACCENT).opacity(0.05).text(
+        'Wanna Try', 0, doc.page.height / 2 - 40,
+        { width: doc.page.width, align: 'center', lineBreak: false }
       );
+      doc.restore();
+      doc.opacity(1);
+
+      // Zero the bottom margin while writing in the footer band — otherwise pdfkit
+      // treats it as overflow and appends blank pages. lineBreak:false keeps it 1 line.
+      const prevBottom = doc.page.margins.bottom;
+      doc.page.margins.bottom = 0;
+      doc.fontSize(8).font('Helvetica').fillColor(MUTED).text(
+        `Wanna Try Summarize Export  •  ${footTitle}  •  Page ${i + 1} of ${range.count}`,
+        50, doc.page.height - 30,
+        { align: 'center', width: doc.page.width - 100, lineBreak: false }
+      );
+      doc.page.margins.bottom = prevBottom;
     }
 
     doc.end();

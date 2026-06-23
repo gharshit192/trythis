@@ -41,7 +41,7 @@ export default function ScreenshotDetail({ save, onNavigate }) {
   const [toast, setToast] = useState(null);
   const [aggregating, setAggregating] = useState(false);
   const [aggregateError, setAggregateError] = useState(null);
-  const [aggregateData, setAggregateData] = useState(null);
+  const [aggregateData, setAggregateData] = useState(save?.aiAnalysis?.aggregateAnalysis || null);
 
   const showToast = (msg) => {
     setToast(msg);
@@ -50,6 +50,9 @@ export default function ScreenshotDetail({ save, onNavigate }) {
 
   useEffect(() => {
     if (!save?._id) return;
+
+    // Load any previously-saved aggregate analysis (so it doesn't reset/re-run on revisit)
+    setAggregateData(save?.aiAnalysis?.aggregateAnalysis || null);
 
     // Fetch related screenshots (up to 6, excluding current)
     api.getSaves()

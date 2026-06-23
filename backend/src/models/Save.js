@@ -104,6 +104,10 @@ const aiAnalysisSchema = new mongoose.Schema({
   // forcing it into the video-shaped `structuredData` discriminated union.
   // Consumed by SaveDetail when contentType === 'image'.
   screenshotAnalysis: mongoose.Schema.Types.Mixed,
+  // Cached multi-screenshot aggregate analysis (summary, highlights, themes,
+  // actions, comparison). Persisted by POST /saves/:id/aggregate-analysis so it
+  // survives navigation and feeds the PDF export — no need to re-run.
+  aggregateAnalysis: mongoose.Schema.Types.Mixed,
   // Free-form provenance/quality flags surfaced to the UI:
   //   { buyUrlStripped: true } → render the red "buy link removed" shield
   //   (extensible — add more flags as we tighten guards)
@@ -279,6 +283,9 @@ const intentItemSchema = new mongoose.Schema({
   },
 
   isTemplate: { type: Boolean, default: false },
+
+  // Place reference for travel destinations
+  placeId: { type: mongoose.Schema.Types.ObjectId, ref: 'Place', default: null, index: true },
 
   // Location data for nearby feature
   extractedLocation: {

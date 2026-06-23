@@ -27,7 +27,7 @@ import FirstSaveSuccess from './screens/FirstSaveSuccess';
 
 function App() {
   const [authChecked, setAuthChecked] = useState(false);
-  const [currentScreen, setCurrentScreen] = useState('onboarding');
+  const [currentScreen, setCurrentScreen] = useState('login');
   const [payload, setPayload] = useState(null);
   const [saves, setSaves] = useState([]);
   const [nearbySaves, setNearbySaves] = useState([]);
@@ -72,52 +72,36 @@ function App() {
         // Record app session for D7 retention analytics
         api.ping().catch(() => {});
 
-        // New users who haven't completed onboarding go there first
-        if (parsedUser.onboarding?.completed === false) {
-          setCurrentScreen('onboarding');
-        } else {
-          // Load saves for SavedList
-          api.getSaves().then(result => {
-            if (result.status === 'success') {
-              setSaves(result.data);
-              // Go to last screen or home if user has saves
-              if (lastScreen && ['home', 'collections', 'profile', 'search', 'notifications'].includes(lastScreen)) {
-                setCurrentScreen(lastScreen);
-              } else {
-                setCurrentScreen(result.data.length > 0 ? 'home' : 'home-empty');
-              }
-              // Request location permission after saves are loaded
-              requestAndStoreLocation();
+        // Onboarding flow disabled — authenticated users go straight to the app.
+        // (parsedUser kept referenced to avoid unused-var lint)
+        void parsedUser;
+        api.getSaves().then(result => {
+          if (result.status === 'success') {
+            setSaves(result.data);
+            // Go to last screen or home if user has saves
+            if (lastScreen && ['home', 'collections', 'profile', 'search', 'notifications'].includes(lastScreen)) {
+              setCurrentScreen(lastScreen);
+            } else {
+              setCurrentScreen(result.data.length > 0 ? 'home' : 'home-empty');
             }
-          }).catch(() => {});
-        }
+            // Request location permission after saves are loaded
+            requestAndStoreLocation();
+          }
+        }).catch(() => {});
       } catch {
         // Corrupted storage — clear and restart
         localStorage.clear();
-        setCurrentScreen('onboarding');
+        setCurrentScreen('login');
       }
     } else {
-      setCurrentScreen('onboarding');
+      setCurrentScreen('login');
     }
     setAuthChecked(true);
   }, []);
 
   // navigate(screen) or navigate(screen, payload)
   const navigate = (screen, nextPayload = null) => {
-    // After login/signup, redirect to onboarding if user hasn't completed it
-    if (screen === 'home' || screen === 'home-empty' || screen === 'demoSaves') {
-      try {
-        const stored = localStorage.getItem('user');
-        if (stored) {
-          const u = JSON.parse(stored);
-          if (u.onboarding?.completed === false) {
-            setPayload(null);
-            setCurrentScreen('onboarding');
-            return;
-          }
-        }
-      } catch {}
-    }
+    // Onboarding flow disabled — no forced redirect after login/signup.
 
     // Check if trying to access protected screen without auth
     const protectedScreens = ['home', 'save-detail', 'savedList', 'search', 'collections', 'profile', 'notifications', 'nearby'];
