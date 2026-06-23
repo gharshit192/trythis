@@ -1,0 +1,308 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+.wrap{display:flex;gap:16px;justify-content:center;padding:12px 0;flex-wrap:wrap;}
+.phone{width:196px;background:#E8E8E8;border-radius:36px;padding:10px;border:1px solid #D0D0D0;flex-shrink:0;}
+.screen{background:#F7F7F7;border-radius:26px;overflow:hidden;height:480px;overflow-y:auto;scrollbar-width:none;}
+.screen::-webkit-scrollbar{display:none;}
+.lbl{text-align:center;font-size:11px;color:var(--color-text-secondary);margin-top:8px;font-weight:500;}
+
+/* HOME */
+.hdr{background:#FFF;padding:16px 14px 10px;}
+.hdr-top{display:flex;justify-content:space-between;align-items:center;}
+.logo{font-size:16px;font-weight:500;color:#111;letter-spacing:-0.4px;}
+.logo em{color:#2EC4A0;font-style:normal;}
+.hdr-right{display:flex;align-items:center;gap:8px;}
+.icon-btn{width:30px;height:30px;border-radius:50%;background:#F5F5F5;display:flex;align-items:center;justify-content:center;}
+.avatar{width:30px;height:30px;border-radius:50%;background:#2EC4A0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500;color:#003D30;}
+.greeting{font-size:9px;color:#AAA;margin-top:10px;}
+.hdr-title{font-size:20px;font-weight:500;color:#111;margin-top:2px;line-height:1.2;}
+.search{margin:10px 14px;background:#F5F5F5;border-radius:12px;padding:9px 12px;display:flex;align-items:center;gap:8px;}
+.search span{font-size:9px;color:#BBB;}
+.chips{display:flex;gap:5px;padding:8px 14px;overflow-x:auto;scrollbar-width:none;background:#FFF;}
+.chips::-webkit-scrollbar{display:none;}
+.chip{font-size:8px;padding:5px 12px;border-radius:20px;white-space:nowrap;font-weight:500;flex-shrink:0;}
+.chip.on{background:#111;color:#FFF;}
+.chip.off{background:#F0F0F0;color:#888;}
+.alert{margin:10px 14px 0;background:#F0FBF8;border:1px solid #B8EDE2;border-radius:12px;padding:10px 12px;display:flex;align-items:center;gap:10px;}
+.alert-dot{width:26px;height:26px;border-radius:50%;background:#2EC4A0;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.alert-title{font-size:9px;font-weight:500;color:#111;}
+.alert-sub{font-size:8px;color:#2EC4A0;margin-top:1px;}
+.sec{padding:14px 14px 8px;display:flex;justify-content:space-between;align-items:center;}
+.sec-title{font-size:10px;font-weight:500;color:#111;}
+.sec-link{font-size:8px;color:#2EC4A0;}
+.trending-scroll{display:flex;gap:8px;padding:0 14px 14px;overflow-x:auto;scrollbar-width:none;}
+.trending-scroll::-webkit-scrollbar{display:none;}
+.t-card{min-width:100px;background:#FFF;border-radius:12px;border:1px solid #EFEFEF;overflow:hidden;flex-shrink:0;}
+.t-img{height:60px;display:flex;align-items:center;justify-content:center;position:relative;}
+.t-img-1{background:#E8F5F1;}.t-img-2{background:#FEF3E8;}.t-img-3{background:#EEF0FA;}.t-img-4{background:#FEF0F5;}
+.t-saves{position:absolute;bottom:4px;right:5px;font-size:6px;background:rgba(0,0,0,0.15);color:#FFF;padding:1px 5px;border-radius:10px;}
+.t-body{padding:6px 8px 7px;}
+.t-name{font-size:9px;font-weight:500;color:#111;}
+.t-loc{font-size:7px;color:#AAA;margin-top:1px;}
+.feed-card{margin:0 14px 8px;background:#FFF;border-radius:16px;border:1px solid #EFEFEF;overflow:hidden;}
+.fc-img{height:88px;display:flex;align-items:flex-end;padding:8px;position:relative;}
+.fc-img-1{background:#E8F5F1;}.fc-img-2{background:#FEF3E8;}.fc-img-3{background:#EEF0FA;}
+.badge{font-size:7px;padding:3px 8px;border-radius:4px;font-weight:500;}
+.b-travel{background:#2EC4A0;color:#003D30;}.b-cafe{background:#F0A050;color:#3A1800;}.b-product{background:#E07090;color:#1A0010;}
+.fc-body{padding:10px 12px 11px;}
+.fc-name{font-size:12px;font-weight:500;color:#111;}
+.fc-loc{font-size:8px;color:#AAA;margin-top:2px;display:flex;align-items:center;gap:3px;}
+.fc-row{display:flex;justify-content:space-between;align-items:center;margin-top:6px;}
+.fc-rating{font-size:8px;color:#2EC4A0;font-weight:500;}
+.fc-meta{display:flex;align-items:center;gap:6px;}
+.fc-time{font-size:7px;color:#CCC;}
+.fc-plan{font-size:7px;padding:3px 8px;border-radius:4px;background:#F5F5F5;color:#888;}
+.two-col{display:flex;gap:8px;margin:0 14px 8px;}
+.sc{flex:1;background:#FFF;border:1px solid #EFEFEF;border-radius:12px;overflow:hidden;}
+.sc-img{height:50px;display:flex;align-items:center;justify-content:center;}
+.sc-img-a{background:#FEF3E8;}.sc-img-b{background:#E8F5F1;}
+.sc-body{padding:6px 8px 8px;}
+.sc-name{font-size:9px;font-weight:500;color:#111;}
+.sc-type{font-size:7px;color:#AAA;margin-top:1px;}
+.sc-rating{font-size:7px;color:#2EC4A0;margin-top:2px;}
+.bnav{background:#FFF;border-top:1px solid #F0F0F0;display:flex;justify-content:space-around;align-items:center;padding:8px 0 10px;}
+.nav-item{display:flex;flex-direction:column;align-items:center;gap:2px;}
+.nav-item span{font-size:6px;color:#CCC;}
+.nav-item.active span{color:#2EC4A0;}
+.nav-item.active i{color:#2EC4A0 !important;}
+
+/* DETAIL */
+.hero{height:130px;background:#E8F5F1;position:relative;display:flex;flex-direction:column;justify-content:space-between;padding:10px;}
+.back{width:28px;height:28px;border-radius:50%;background:#FFF;display:flex;align-items:center;justify-content:center;border:1px solid #EEE;z-index:1;}
+.hero-bottom{display:flex;justify-content:space-between;align-items:flex-end;z-index:1;}
+.hero-cat{font-size:7px;padding:3px 9px;border-radius:4px;background:#2EC4A0;color:#003D30;font-weight:500;}
+.hero-src{font-size:7px;padding:3px 8px;border-radius:4px;background:rgba(0,0,0,0.1);color:#555;display:flex;align-items:center;gap:3px;}
+.title-block{background:#FFF;padding:12px 14px 10px;}
+.det-title{font-size:16px;font-weight:500;color:#111;}
+.det-sub{font-size:8px;color:#AAA;margin-top:3px;display:flex;align-items:center;gap:5px;}
+.det-rating{color:#2EC4A0;font-weight:500;}
+.tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px;}
+.tag{font-size:7px;padding:3px 9px;border-radius:20px;background:#F5F5F5;color:#666;}
+.actions{display:flex;gap:6px;margin-top:10px;}
+.btn-main{flex:1;background:#111;border-radius:10px;padding:9px 0;text-align:center;font-size:9px;font-weight:500;color:#FFF;}
+.btn-icon{width:34px;height:34px;background:#F5F5F5;border-radius:10px;display:flex;align-items:center;justify-content:center;}
+.card{margin:8px 14px 0;background:#FFF;border-radius:14px;border:1px solid #EFEFEF;overflow:hidden;}
+.card-hdr{padding:10px 12px 0;display:flex;align-items:center;gap:6px;}
+.card-hdr-title{font-size:9px;font-weight:500;color:#111;}
+.card-body{padding:8px 12px 12px;}
+.chips-row{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;}
+.vibe{font-size:7px;padding:3px 9px;border-radius:20px;background:#F0FBF8;color:#1A7A64;border:1px solid #B8EDE2;}
+.ai-text{font-size:8px;color:#555;line-height:1.6;}
+.highlight-item{display:flex;align-items:flex-start;gap:7px;padding:5px 0;}
+.highlight-item+.highlight-item{border-top:1px solid #F5F5F5;margin-top:3px;padding-top:8px;}
+.h-dot{width:5px;height:5px;border-radius:50%;background:#2EC4A0;margin-top:4px;flex-shrink:0;}
+.h-text{font-size:8px;color:#555;line-height:1.5;}
+.map-placeholder{height:80px;background:#E8F5F1;display:flex;align-items:center;justify-content:center;position:relative;}
+.map-pin-dot{width:12px;height:12px;border-radius:50%;background:#2EC4A0;border:2px solid #FFF;}
+.map-label{position:absolute;bottom:8px;left:10px;font-size:7px;color:#1A7A64;background:rgba(255,255,255,0.9);padding:2px 6px;border-radius:4px;}
+.review{padding:8px 12px;border-bottom:1px solid #F5F5F5;}
+.review:last-child{border-bottom:none;}
+.rev-top{display:flex;justify-content:space-between;align-items:center;}
+.rev-name{font-size:8px;font-weight:500;color:#111;}
+.rev-stars{font-size:8px;color:#2EC4A0;}
+.rev-text{font-size:7px;color:#888;line-height:1.5;margin-top:3px;}
+.see-more{padding:6px 12px 10px;font-size:8px;color:#2EC4A0;display:flex;align-items:center;gap:3px;}
+.info-row{padding:8px 12px;display:flex;align-items:center;justify-content:space-between;}
+.info-left{display:flex;align-items:center;gap:7px;}
+.info-label{font-size:8px;color:#555;}
+.info-ext{width:22px;height:22px;background:#F0FBF8;border-radius:6px;display:flex;align-items:center;justify-content:center;}
+.nearby-scroll{display:flex;gap:7px;padding:8px 12px 12px;overflow-x:auto;scrollbar-width:none;}
+.nearby-scroll::-webkit-scrollbar{display:none;}
+.nb{min-width:72px;background:#F7F7F7;border:1px solid #EFEFEF;border-radius:10px;overflow:hidden;flex-shrink:0;}
+.nb-img{height:44px;display:flex;align-items:center;justify-content:center;}
+.nb-a{background:#E8F5F1;}.nb-b{background:#EEF0FA;}.nb-c{background:#FEF3E8;}.nb-d{background:#FEF0F5;}
+.nb-name{padding:4px 6px 5px;font-size:7px;color:#666;line-height:1.3;}
+.nb-loc{font-size:6px;color:#AAA;}
+</style>
+
+<div class="wrap">
+  <!-- HOME -->
+  <div>
+    <div class="phone">
+      <div class="screen">
+        <div class="hdr">
+          <div class="hdr-top">
+            <div class="logo">wanna<em>try</em></div>
+            <div class="hdr-right">
+              <div class="icon-btn"><i class="ti ti-bell" style="font-size:13px;color:#AAA;" aria-hidden="true"></i></div>
+              <div class="avatar">H</div>
+            </div>
+          </div>
+          <div class="greeting">Good morning, Harshit</div>
+          <div class="hdr-title">What are you<br>saving today?</div>
+        </div>
+        <div class="search">
+          <i class="ti ti-search" style="font-size:12px;color:#CCC;" aria-hidden="true"></i>
+          <span>Search cafés, trips, recipes…</span>
+        </div>
+        <div class="chips">
+          <div class="chip on">All</div>
+          <div class="chip off">Travel</div>
+          <div class="chip off">Cafés</div>
+          <div class="chip off">Recipes</div>
+          <div class="chip off">Products</div>
+        </div>
+        <div class="alert">
+          <div class="alert-dot"><i class="ti ti-map-pin" style="font-size:12px;color:#003D30;" aria-hidden="true"></i></div>
+          <div>
+            <div class="alert-title">Blue Tokai is 0.8km away</div>
+            <div class="alert-sub">You saved it last week — visit today?</div>
+          </div>
+        </div>
+        <div class="sec"><div class="sec-title">Trending spots</div><div class="sec-link">See all</div></div>
+        <div class="trending-scroll">
+          <div class="t-card"><div class="t-img t-img-1"><i class="ti ti-mountain" style="font-size:22px;color:#2EC4A0;opacity:0.5;" aria-hidden="true"></i><div class="t-saves">142 saves</div></div><div class="t-body"><div class="t-name">Cherrapunji</div><div class="t-loc">Meghalaya</div></div></div>
+          <div class="t-card"><div class="t-img t-img-2"><i class="ti ti-beach" style="font-size:22px;color:#F0A050;opacity:0.5;" aria-hidden="true"></i><div class="t-saves">98 saves</div></div><div class="t-body"><div class="t-name">Goa</div><div class="t-loc">North Goa</div></div></div>
+          <div class="t-card"><div class="t-img t-img-3"><i class="ti ti-building" style="font-size:22px;color:#8080D0;opacity:0.5;" aria-hidden="true"></i><div class="t-saves">76 saves</div></div><div class="t-body"><div class="t-name">Jaipur</div><div class="t-loc">Rajasthan</div></div></div>
+          <div class="t-card"><div class="t-img t-img-4"><i class="ti ti-trees" style="font-size:22px;color:#E07090;opacity:0.5;" aria-hidden="true"></i><div class="t-saves">61 saves</div></div><div class="t-body"><div class="t-name">Coorg</div><div class="t-loc">Karnataka</div></div></div>
+        </div>
+        <div class="sec"><div class="sec-title">Recently saved</div><div class="sec-link">View all</div></div>
+        <div class="feed-card">
+          <div class="fc-img fc-img-1"><i class="ti ti-mountain" style="font-size:32px;color:#2EC4A0;opacity:0.15;position:absolute;right:12px;top:50%;transform:translateY(-50%);" aria-hidden="true"></i><span class="badge b-travel">Travel</span></div>
+          <div class="fc-body">
+            <div class="fc-name">Cherrapunji, Meghalaya</div>
+            <div class="fc-loc"><i class="ti ti-map-pin" style="font-size:8px;" aria-hidden="true"></i> Meghalaya, India</div>
+            <div class="fc-row"><span class="fc-rating">★ 4.7</span><div class="fc-meta"><span class="fc-plan">Plan trip</span><span class="fc-time">2h ago</span></div></div>
+          </div>
+        </div>
+        <div class="two-col">
+          <div class="sc"><div class="sc-img sc-img-a"><i class="ti ti-coffee" style="font-size:20px;color:#E8922A;opacity:0.6;" aria-hidden="true"></i></div><div class="sc-body"><div class="sc-name">Blue Tokai</div><div class="sc-type">Café · Hauz Khas</div><div class="sc-rating">★ 4.5</div></div></div>
+          <div class="sc"><div class="sc-img sc-img-b"><i class="ti ti-chef-hat" style="font-size:20px;color:#2EC4A0;opacity:0.6;" aria-hidden="true"></i></div><div class="sc-body"><div class="sc-name">Dal Makhani</div><div class="sc-type">Recipe</div><div class="sc-rating">★ 4.8</div></div></div>
+        </div>
+        <div class="feed-card">
+          <div class="fc-img fc-img-2"><i class="ti ti-shopping-bag" style="font-size:32px;color:#F0A050;opacity:0.15;position:absolute;right:12px;top:50%;transform:translateY(-50%);" aria-hidden="true"></i><span class="badge b-product">Product</span></div>
+          <div class="fc-body">
+            <div class="fc-name">Noise ColorFit Pro 5</div>
+            <div class="fc-loc"><i class="ti ti-tag" style="font-size:8px;" aria-hidden="true"></i> ₹4,999 · Amazon</div>
+            <div class="fc-row"><span class="fc-rating">★ 4.3</span><div class="fc-meta"><span class="fc-plan">Buy now</span><span class="fc-time">Yesterday</span></div></div>
+          </div>
+        </div>
+        <div style="height:8px;"></div>
+        <div class="bnav">
+          <div class="nav-item active"><i class="ti ti-home" style="font-size:16px;color:#2EC4A0;" aria-hidden="true"></i><span>Home</span></div>
+          <div class="nav-item"><i class="ti ti-bookmark" style="font-size:16px;color:#CCC;" aria-hidden="true"></i><span>Saved</span></div>
+          <div class="nav-item"><i class="ti ti-map" style="font-size:16px;color:#CCC;" aria-hidden="true"></i><span>Explore</span></div>
+          <div class="nav-item"><i class="ti ti-message" style="font-size:16px;color:#CCC;" aria-hidden="true"></i><span>Assistant</span></div>
+          <div class="nav-item"><i class="ti ti-user" style="font-size:16px;color:#CCC;" aria-hidden="true"></i><span>Profile</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="lbl">HomeFeed</div>
+  </div>
+
+  <!-- SAVE DETAIL -->
+  <div>
+    <div class="phone">
+      <div class="screen">
+        <div class="hero">
+          <i class="ti ti-mountain" style="font-size:80px;color:#2EC4A0;opacity:0.12;position:absolute;right:-10px;bottom:-10px;" aria-hidden="true"></i>
+          <div class="back"><i class="ti ti-arrow-left" style="font-size:11px;color:#333;" aria-hidden="true"></i></div>
+          <div class="hero-bottom">
+            <div class="hero-cat">Tourist Attraction</div>
+            <div class="hero-src"><i class="ti ti-brand-instagram" style="font-size:8px;" aria-hidden="true"></i> 1 reel</div>
+          </div>
+        </div>
+        <div class="title-block">
+          <div class="det-title">Wei Sawdong Falls</div>
+          <div class="det-sub"><i class="ti ti-map-pin" style="font-size:8px;" aria-hidden="true"></i> Cherrapunji, Meghalaya &nbsp;·&nbsp; <span class="det-rating">★ 4.7</span></div>
+          <div class="tags">
+            <span class="tag">Hidden gem</span>
+            <span class="tag">Nature escape</span>
+            <span class="tag">Trekking</span>
+            <span class="tag">Instagrammable</span>
+            <span class="tag">Waterfalls</span>
+          </div>
+          <div class="actions">
+            <div class="btn-main">Plan trip</div>
+            <div class="btn-icon"><i class="ti ti-bell" style="font-size:14px;color:#2EC4A0;" aria-hidden="true"></i></div>
+            <div class="btn-icon"><i class="ti ti-directions" style="font-size:14px;color:#AAA;" aria-hidden="true"></i></div>
+            <div class="btn-icon"><i class="ti ti-share" style="font-size:14px;color:#AAA;" aria-hidden="true"></i></div>
+          </div>
+        </div>
+
+        <!-- WannaTryVibe -->
+        <div class="card">
+          <div class="card-hdr">
+            <i class="ti ti-sparkles" style="font-size:12px;color:#2EC4A0;" aria-hidden="true"></i>
+            <div class="card-hdr-title">WannaTryVibe</div>
+          </div>
+          <div class="card-body">
+            <div class="chips-row">
+              <span class="vibe">Hidden gem</span>
+              <span class="vibe">Monsoon magic</span>
+              <span class="vibe">Bamboo trek</span>
+              <span class="vibe">Refreshing pool</span>
+            </div>
+            <div class="ai-text">A layered cascade tucked in Cherrapunji's mist. The bamboo stair trek is an adventure itself — once you reach the base, a serene pool awaits. Best visited Oct–Apr for clear skies, or monsoon for dramatic falls.</div>
+          </div>
+        </div>
+
+        <!-- Spotted in Reels -->
+        <div class="card">
+          <div class="card-hdr">
+            <i class="ti ti-video" style="font-size:12px;color:#2EC4A0;" aria-hidden="true"></i>
+            <div class="card-hdr-title">Spotted in reels</div>
+          </div>
+          <div class="card-body">
+            <div class="highlight-item"><div class="h-dot"></div><div class="h-text">Best season Oct–Apr for clear rivers and road trips; monsoon for waterfalls and greenery.</div></div>
+            <div class="highlight-item"><div class="h-dot"></div><div class="h-text">Hidden gems nearby — Shnongpdeng, Wei Sawdong, Mawryngkhang Bamboo Trek.</div></div>
+            <div class="highlight-item"><div class="h-dot"></div><div class="h-text">Spend at least 4–6 days. Road trip vibes, flexible schedule recommended.</div></div>
+          </div>
+        </div>
+
+        <!-- Map -->
+        <div class="card">
+          <div class="card-hdr">
+            <i class="ti ti-map-pin" style="font-size:12px;color:#2EC4A0;" aria-hidden="true"></i>
+            <div class="card-hdr-title">Location</div>
+          </div>
+          <div class="map-placeholder">
+            <div class="map-pin-dot"></div>
+            <div class="map-label">Wei Sawdong Falls</div>
+          </div>
+        </div>
+
+        <!-- Info -->
+        <div class="card">
+          <div class="card-hdr">
+            <i class="ti ti-info-circle" style="font-size:12px;color:#2EC4A0;" aria-hidden="true"></i>
+            <div class="card-hdr-title">Info</div>
+          </div>
+          <div class="info-row">
+            <div class="info-left"><i class="ti ti-world" style="font-size:12px;color:#AAA;" aria-hidden="true"></i><div class="info-label">meghalayatourism.in</div></div>
+            <div class="info-ext"><i class="ti ti-external-link" style="font-size:10px;color:#2EC4A0;" aria-hidden="true"></i></div>
+          </div>
+        </div>
+
+        <!-- Google Reviews -->
+        <div class="card">
+          <div class="card-hdr">
+            <i class="ti ti-star" style="font-size:12px;color:#2EC4A0;" aria-hidden="true"></i>
+            <div class="card-hdr-title">Google Reviews</div>
+          </div>
+          <div class="review"><div class="rev-top"><div class="rev-name">Vishak R Nair</div><div class="rev-stars">★★★★★</div></div><div class="rev-text">One of the best waterfalls in Meghalaya. The layered cascades are stunning.</div></div>
+          <div class="review"><div class="rev-top"><div class="rev-name">Trekker for life</div><div class="rev-stars">★★★★★</div></div><div class="rev-text">Perfect nature escape. Cascading water and lush greenery is unmatched.</div></div>
+          <div class="see-more">See more <i class="ti ti-chevron-right" style="font-size:9px;" aria-hidden="true"></i></div>
+        </div>
+
+        <!-- Nearby -->
+        <div class="card">
+          <div class="card-hdr">
+            <i class="ti ti-map-2" style="font-size:12px;color:#2EC4A0;" aria-hidden="true"></i>
+            <div class="card-hdr-title">More around Cherrapunji</div>
+          </div>
+          <div class="nearby-scroll">
+            <div class="nb"><div class="nb-img nb-a"><i class="ti ti-mountain" style="font-size:16px;color:#2EC4A0;" aria-hidden="true"></i></div><div class="nb-name">Arwah Cave<div class="nb-loc">Cherrapunji</div></div></div>
+            <div class="nb"><div class="nb-img nb-b"><i class="ti ti-trees" style="font-size:16px;color:#8080D0;" aria-hidden="true"></i></div><div class="nb-name">Seven Sisters Falls<div class="nb-loc">Cherrapunji</div></div></div>
+            <div class="nb"><div class="nb-img nb-c"><i class="ti ti-walk" style="font-size:16px;color:#F0A050;" aria-hidden="true"></i></div><div class="nb-name">Mawryngkhang<div class="nb-loc">Meghalaya</div></div></div>
+            <div class="nb"><div class="nb-img nb-d"><i class="ti ti-ripple" style="font-size:16px;color:#E07090;" aria-hidden="true"></i></div><div class="nb-name">Shnongpdeng<div class="nb-loc">Meghalaya</div></div></div>
+          </div>
+        </div>
+
+        <div style="height:14px;"></div>
+      </div>
+    </div>
+    <div class="lbl">SaveDetail</div>
+  </div>
+</div>

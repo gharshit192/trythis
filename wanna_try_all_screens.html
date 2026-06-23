@@ -1,0 +1,490 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+.page-title{font-size:12px;font-weight:500;color:var(--color-text-secondary);padding:0 0 12px;text-align:center;}
+.row{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:24px;}
+.phone{width:175px;background:#E8E8E8;border-radius:34px;padding:9px;border:1px solid #D0D0D0;flex-shrink:0;}
+.screen{background:#F7F7F7;border-radius:24px;overflow:hidden;height:420px;overflow-y:auto;scrollbar-width:none;}
+.screen::-webkit-scrollbar{display:none;}
+.lbl{text-align:center;font-size:10px;color:var(--color-text-secondary);margin-top:7px;font-weight:500;}
+
+/* shared tokens */
+.hdr-bar{background:#FFF;padding:14px 13px 10px;display:flex;align-items:center;justify-content:space-between;}
+.hdr-title-sm{font-size:14px;font-weight:500;color:#111;}
+.back-btn{width:26px;height:26px;border-radius:50%;background:#F5F5F5;display:flex;align-items:center;justify-content:center;}
+.logo{font-size:14px;font-weight:500;color:#111;letter-spacing:-0.3px;}
+.logo em{color:#2EC4A0;font-style:normal;}
+.avatar{width:26px;height:26px;border-radius:50%;background:#2EC4A0;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:500;color:#003D30;}
+.bnav{background:#FFF;border-top:1px solid #F0F0F0;display:flex;justify-content:space-around;padding:7px 0 9px;}
+.ni{display:flex;flex-direction:column;align-items:center;gap:2px;}
+.ni span{font-size:6px;color:#CCC;}
+.ni.on span{color:#2EC4A0;}
+.card{margin:7px 13px 0;background:#FFF;border-radius:13px;border:1px solid #EFEFEF;overflow:hidden;}
+.card-hdr{padding:9px 11px 0;display:flex;align-items:center;gap:5px;}
+.cht{font-size:8px;font-weight:500;color:#111;}
+.card-body{padding:7px 11px 11px;}
+.ai-text{font-size:8px;color:#555;line-height:1.6;}
+.chips-row{display:flex;flex-wrap:wrap;gap:3px;margin-bottom:7px;}
+.vibe{font-size:7px;padding:2px 8px;border-radius:20px;background:#F0FBF8;color:#1A7A64;border:1px solid #B8EDE2;}
+.div{height:1px;background:#F0F0F0;margin:6px 0;}
+.sec{padding:10px 13px 6px;display:flex;justify-content:space-between;align-items:center;}
+.sec-t{font-size:9px;font-weight:500;color:#111;}
+.sec-l{font-size:7px;color:#2EC4A0;}
+.badge{font-size:6px;padding:2px 6px;border-radius:3px;font-weight:500;}
+.b-tr{background:#2EC4A0;color:#003D30;}
+.b-ca{background:#F0A050;color:#3A1800;}
+.b-re{background:#8080D0;color:#0A0A40;}
+.b-pr{background:#E07090;color:#1A0010;}
+.tag{font-size:7px;padding:2px 8px;border-radius:20px;background:#F5F5F5;color:#666;}
+
+/* PLACE DETAIL */
+.pd-hero{height:110px;background:#E8F5F1;position:relative;display:flex;flex-direction:column;justify-content:space-between;padding:9px;}
+.pd-cat{font-size:7px;padding:2px 8px;border-radius:4px;background:#2EC4A0;color:#003D30;font-weight:500;}
+.pd-src{font-size:7px;padding:2px 7px;border-radius:4px;background:rgba(0,0,0,0.08);color:#555;display:flex;align-items:center;gap:3px;}
+.pd-title-block{background:#FFF;padding:10px 13px 9px;}
+.pd-title{font-size:15px;font-weight:500;color:#111;}
+.pd-sub{font-size:8px;color:#AAA;margin-top:2px;display:flex;align-items:center;gap:4px;}
+.pd-rating{color:#2EC4A0;font-weight:500;}
+.pd-saves{font-size:7px;color:#AAA;margin-top:3px;}
+.pd-tags{display:flex;flex-wrap:wrap;gap:3px;margin-top:6px;}
+.pd-actions{display:flex;gap:5px;margin-top:8px;}
+.btn-main{flex:1;background:#111;border-radius:9px;padding:8px 0;text-align:center;font-size:8px;font-weight:500;color:#FFF;}
+.btn-icon{width:30px;height:30px;background:#F5F5F5;border-radius:9px;display:flex;align-items:center;justify-content:center;}
+.hl-item{display:flex;align-items:flex-start;gap:6px;padding:4px 0;}
+.hl-item+.hl-item{border-top:1px solid #F5F5F5;margin-top:3px;padding-top:7px;}
+.h-dot{width:4px;height:4px;border-radius:50%;background:#2EC4A0;margin-top:4px;flex-shrink:0;}
+.h-txt{font-size:7px;color:#555;line-height:1.5;}
+.map-box{height:70px;background:#E8F5F1;display:flex;align-items:center;justify-content:center;position:relative;}
+.map-dot{width:10px;height:10px;border-radius:50%;background:#2EC4A0;border:2px solid #FFF;}
+.map-lbl{position:absolute;bottom:6px;left:9px;font-size:6px;color:#1A7A64;background:rgba(255,255,255,0.9);padding:2px 5px;border-radius:3px;}
+.review{padding:7px 11px;border-bottom:1px solid #F5F5F5;}
+.review:last-child{border-bottom:none;}
+.rev-top{display:flex;justify-content:space-between;}
+.rev-name{font-size:7px;font-weight:500;color:#111;}
+.rev-stars{font-size:7px;color:#2EC4A0;}
+.rev-text{font-size:7px;color:#888;line-height:1.4;margin-top:2px;}
+.see-more{padding:5px 11px 9px;font-size:7px;color:#2EC4A0;display:flex;align-items:center;gap:2px;}
+.nb-scroll{display:flex;gap:6px;padding:7px 11px 11px;overflow-x:auto;scrollbar-width:none;}
+.nb-scroll::-webkit-scrollbar{display:none;}
+.nb{min-width:64px;background:#F7F7F7;border:1px solid #EFEFEF;border-radius:9px;overflow:hidden;flex-shrink:0;}
+.nb-img{height:38px;display:flex;align-items:center;justify-content:center;}
+.nb-a{background:#E8F5F1;}.nb-b{background:#EEF0FA;}.nb-c{background:#FEF3E8;}.nb-d{background:#FEF0F5;}
+.nb-name{padding:3px 5px 4px;font-size:6px;color:#666;line-height:1.3;}
+.nb-loc{font-size:5px;color:#AAA;}
+.info-row{padding:7px 11px;display:flex;align-items:center;justify-content:space-between;}
+.info-lbl{font-size:7px;color:#555;}
+.info-url{font-size:7px;color:#2EC4A0;}
+
+/* EXPLORE MAP */
+.map-full{height:240px;background:#E8F4EF;position:relative;display:flex;align-items:center;justify-content:center;}
+.map-grid{position:absolute;inset:0;opacity:0.08;}
+.map-pin{position:absolute;display:flex;flex-direction:column;align-items:center;}
+.pin-dot{width:10px;height:10px;border-radius:50%;background:#2EC4A0;border:2px solid #FFF;}
+.pin-line{width:1px;height:6px;background:#2EC4A0;}
+.pin-label{font-size:6px;background:#FFF;color:#333;padding:2px 5px;border-radius:3px;border:1px solid #EFEFEF;white-space:nowrap;}
+.map-search{position:absolute;top:10px;left:10px;right:10px;background:#FFF;border-radius:9px;padding:7px 10px;display:flex;align-items:center;gap:6px;border:1px solid #EFEFEF;}
+.map-search span{font-size:8px;color:#BBB;}
+.filter-row{display:flex;gap:5px;padding:8px 13px;overflow-x:auto;scrollbar-width:none;background:#FFF;}
+.filter-row::-webkit-scrollbar{display:none;}
+.filter-chip{font-size:7px;padding:3px 9px;border-radius:20px;white-space:nowrap;flex-shrink:0;}
+.fc-on{background:#111;color:#FFF;}
+.fc-off{background:#F0F0F0;color:#888;}
+.place-list-card{margin:0 13px 7px;background:#FFF;border-radius:12px;border:1px solid #EFEFEF;padding:9px 11px;display:flex;align-items:center;gap:10px;}
+.plc-img{width:38px;height:38px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.plc-img-a{background:#E8F5F1;}.plc-img-b{background:#FEF3E8;}.plc-img-c{background:#EEF0FA;}
+.plc-info{flex:1;}
+.plc-name{font-size:9px;font-weight:500;color:#111;}
+.plc-loc{font-size:7px;color:#AAA;margin-top:1px;}
+.plc-right{text-align:right;}
+.plc-dist{font-size:7px;color:#2EC4A0;font-weight:500;}
+.plc-type{font-size:6px;color:#AAA;margin-top:1px;}
+
+/* COLLECTIONS */
+.coll-hero{background:#FFF;padding:0 13px 10px;}
+.coll-stats{display:flex;gap:6px;margin-top:8px;}
+.stat-box{flex:1;background:#F7F7F7;border-radius:9px;padding:7px 8px;text-align:center;}
+.stat-num{font-size:14px;font-weight:500;color:#111;}
+.stat-lbl{font-size:7px;color:#AAA;margin-top:1px;}
+.coll-card{margin:0 13px 7px;background:#FFF;border-radius:12px;border:1px solid #EFEFEF;overflow:hidden;}
+.coll-img{height:56px;display:flex;align-items:center;justify-content:center;position:relative;}
+.coll-img-a{background:#E8F5F1;}.coll-img-b{background:#FEF3E8;}.coll-img-c{background:#EEF0FA;}.coll-img-d{background:#FEF0F5;}
+.coll-count{position:absolute;bottom:5px;right:7px;font-size:6px;background:rgba(0,0,0,0.12);color:#FFF;padding:1px 5px;border-radius:8px;}
+.coll-body{padding:7px 10px 8px;}
+.coll-name{font-size:10px;font-weight:500;color:#111;}
+.coll-sub{font-size:7px;color:#AAA;margin-top:1px;}
+.coll-row{display:flex;justify-content:space-between;align-items:center;margin-top:5px;}
+.coll-tag{font-size:6px;padding:2px 7px;border-radius:10px;}
+.add-coll{margin:0 13px 7px;background:#F7F7F7;border:1.5px dashed #DDD;border-radius:12px;padding:14px;display:flex;align-items:center;justify-content:center;gap:6px;}
+.add-coll span{font-size:8px;color:#AAA;}
+
+/* NEARBY */
+.nearby-map{height:130px;background:#E8F4EF;position:relative;display:flex;align-items:center;justify-content:center;}
+.you-dot{width:12px;height:12px;border-radius:50%;background:#111;border:2px solid #FFF;position:relative;z-index:2;}
+.you-ring{width:36px;height:36px;border-radius:50%;background:rgba(46,196,160,0.12);border:1px solid rgba(46,196,160,0.3);position:absolute;}
+.nb-pin{position:absolute;display:flex;flex-direction:column;align-items:center;}
+.nb-pin-dot{width:8px;height:8px;border-radius:50%;background:#2EC4A0;border:1.5px solid #FFF;}
+.nb-pin-lbl{font-size:5px;background:#FFF;color:#333;padding:1px 4px;border-radius:3px;border:1px solid #EEE;margin-top:2px;white-space:nowrap;}
+.nb-list-card{margin:0 13px 7px;background:#FFF;border-radius:12px;border:1px solid #EFEFEF;padding:9px 11px;display:flex;align-items:center;gap:9px;}
+.nb-lc-img{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.nb-lc-info{flex:1;}
+.nb-lc-name{font-size:9px;font-weight:500;color:#111;}
+.nb-lc-sub{font-size:7px;color:#AAA;margin-top:1px;}
+.nb-lc-right{text-align:right;}
+.nb-dist{font-size:8px;color:#2EC4A0;font-weight:500;}
+.nb-saved{font-size:6px;color:#AAA;margin-top:2px;}
+.nb-unsaved{font-size:6px;padding:2px 6px;border-radius:4px;background:#F0FBF8;color:#1A7A64;margin-top:3px;}
+
+/* PROFILE */
+.prof-top{background:#FFF;padding:16px 13px 12px;text-align:center;}
+.prof-av{width:50px;height:50px;border-radius:50%;background:#2EC4A0;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:500;color:#003D30;margin:0 auto;}
+.prof-name{font-size:13px;font-weight:500;color:#111;margin-top:8px;}
+.prof-handle{font-size:8px;color:#AAA;margin-top:2px;}
+.prof-stats{display:flex;gap:0;margin-top:10px;border-top:1px solid #F0F0F0;border-bottom:1px solid #F0F0F0;}
+.ps{flex:1;padding:8px 0;text-align:center;border-right:1px solid #F0F0F0;}
+.ps:last-child{border-right:none;}
+.ps-num{font-size:13px;font-weight:500;color:#111;}
+.ps-lbl{font-size:7px;color:#AAA;margin-top:1px;}
+.pref-section{margin:7px 13px 0;background:#FFF;border-radius:12px;border:1px solid #EFEFEF;overflow:hidden;}
+.pref-row{padding:10px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #F5F5F5;}
+.pref-row:last-child{border-bottom:none;}
+.pref-left{display:flex;align-items:center;gap:8px;}
+.pref-label{font-size:8px;color:#111;}
+.pref-sub{font-size:7px;color:#AAA;margin-top:1px;}
+.toggle{width:28px;height:16px;border-radius:8px;background:#2EC4A0;display:flex;align-items:center;padding:2px;justify-content:flex-end;}
+.toggle-off{background:#E0E0E0;justify-content:flex-start;}
+.toggle-dot{width:12px;height:12px;border-radius:50%;background:#FFF;}
+.pref-row-link{padding:10px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #F5F5F5;}
+.pref-row-link:last-child{border-bottom:none;}
+.logout-btn{margin:10px 13px;background:#FFF;border:1px solid #FFCDD2;border-radius:10px;padding:10px;text-align:center;font-size:8px;color:#E07070;}
+
+/* HOME EMPTY */
+.empty-top{background:#FFF;padding:14px 13px 10px;}
+.empty-hero{padding:20px 13px 10px;text-align:center;}
+.empty-icon{width:48px;height:48px;border-radius:50%;background:#F0FBF8;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;}
+.empty-title{font-size:14px;font-weight:500;color:#111;line-height:1.3;}
+.empty-sub{font-size:8px;color:#AAA;margin-top:5px;line-height:1.5;}
+.empty-cta{margin:10px 13px;background:#111;border-radius:10px;padding:10px;text-align:center;font-size:9px;font-weight:500;color:#FFF;}
+.disc-card{margin:0 13px 7px;background:#FFF;border-radius:12px;border:1px solid #EFEFEF;overflow:hidden;}
+.disc-img{height:60px;display:flex;align-items:center;justify-content:center;position:relative;}
+.disc-saves{position:absolute;bottom:4px;right:5px;font-size:6px;background:rgba(0,0,0,0.12);color:#FFF;padding:1px 5px;border-radius:8px;}
+.disc-body{padding:7px 10px 8px;}
+.disc-name{font-size:10px;font-weight:500;color:#111;}
+.disc-loc{font-size:7px;color:#AAA;margin-top:1px;}
+.disc-vibe{font-size:7px;color:#2EC4A0;margin-top:3px;}
+</style>
+
+<div style="padding:8px 0;">
+
+<div class="page-title">PlaceDetail &nbsp;·&nbsp; ExploreMap</div>
+<div class="row">
+
+  <!-- PLACE DETAIL -->
+  <div>
+    <div class="phone">
+      <div class="screen">
+        <div class="pd-hero">
+          <i class="ti ti-mountain" style="font-size:70px;color:#2EC4A0;opacity:0.1;position:absolute;right:-8px;bottom:-8px;" aria-hidden="true"></i>
+          <div class="back-btn"><i class="ti ti-arrow-left" style="font-size:10px;color:#333;" aria-hidden="true"></i></div>
+          <div style="display:flex;justify-content:space-between;align-items:flex-end;">
+            <div class="pd-cat">Hill Station</div>
+            <div class="pd-src"><i class="ti ti-brand-instagram" style="font-size:7px;" aria-hidden="true"></i> 142 saves</div>
+          </div>
+        </div>
+        <div class="pd-title-block">
+          <div class="pd-title">Cherrapunji</div>
+          <div class="pd-sub"><i class="ti ti-map-pin" style="font-size:7px;" aria-hidden="true"></i> Meghalaya, India &nbsp;·&nbsp; <span class="pd-rating">★ 4.8</span></div>
+          <div class="pd-saves">142 people saved this place</div>
+          <div class="pd-tags">
+            <span class="tag">Waterfalls</span><span class="tag">Monsoon</span><span class="tag">Trekking</span><span class="tag">Road trip</span>
+          </div>
+          <div class="pd-actions">
+            <div class="btn-main">Plan trip</div>
+            <div class="btn-icon"><i class="ti ti-bell" style="font-size:12px;color:#2EC4A0;" aria-hidden="true"></i></div>
+            <div class="btn-icon"><i class="ti ti-share" style="font-size:12px;color:#AAA;" aria-hidden="true"></i></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-hdr"><i class="ti ti-sparkles" style="font-size:11px;color:#2EC4A0;" aria-hidden="true"></i><div class="cht">WannaTryVibe</div></div>
+          <div class="card-body">
+            <div class="chips-row"><span class="vibe">Rainy wonderland</span><span class="vibe">Root bridges</span><span class="vibe">Mountain retreat</span></div>
+            <div class="ai-text">One of the wettest places on Earth — misty valleys, cascading falls, and living root bridges. A hidden gem for nature lovers and adventure seekers.</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-hdr"><i class="ti ti-video" style="font-size:11px;color:#2EC4A0;" aria-hidden="true"></i><div class="cht">Spotted in reels</div></div>
+          <div class="card-body">
+            <div class="hl-item"><div class="h-dot"></div><div class="h-txt">Best Oct–Apr for clear skies; monsoon for dramatic falls and greenery.</div></div>
+            <div class="hl-item"><div class="h-dot"></div><div class="h-txt">Plan at least 4–6 days. Hidden gems: Shnongpdeng, Mawryngkhang Trek.</div></div>
+            <div class="hl-item"><div class="h-dot"></div><div class="h-txt">Road trip vibes — flexible schedule recommended over fixed itinerary.</div></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-hdr"><i class="ti ti-map-pin" style="font-size:11px;color:#2EC4A0;" aria-hidden="true"></i><div class="cht">Location</div></div>
+          <div class="map-box"><div class="map-dot"></div><div class="map-lbl">Cherrapunji, Meghalaya</div></div>
+        </div>
+        <div class="card">
+          <div class="card-hdr"><i class="ti ti-star" style="font-size:11px;color:#2EC4A0;" aria-hidden="true"></i><div class="cht">Google Reviews</div></div>
+          <div class="review"><div class="rev-top"><div class="rev-name">Vishak R Nair</div><div class="rev-stars">★★★★★</div></div><div class="rev-text">Best waterfalls in Meghalaya. Layered cascades are stunning.</div></div>
+          <div class="review"><div class="rev-top"><div class="rev-name">Trekker for life</div><div class="rev-stars">★★★★★</div></div><div class="rev-text">Perfect nature escape. Lush greenery and cascading water.</div></div>
+          <div class="see-more">See more <i class="ti ti-chevron-right" style="font-size:8px;" aria-hidden="true"></i></div>
+        </div>
+        <div class="card">
+          <div class="card-hdr"><i class="ti ti-map-2" style="font-size:11px;color:#2EC4A0;" aria-hidden="true"></i><div class="cht">Places in Meghalaya</div></div>
+          <div class="nb-scroll">
+            <div class="nb"><div class="nb-img nb-a"><i class="ti ti-mountain" style="font-size:14px;color:#2EC4A0;" aria-hidden="true"></i></div><div class="nb-name">Wei Sawdong<div class="nb-loc">Cherrapunji</div></div></div>
+            <div class="nb"><div class="nb-img nb-b"><i class="ti ti-trees" style="font-size:14px;color:#8080D0;" aria-hidden="true"></i></div><div class="nb-name">Shillong<div class="nb-loc">Meghalaya</div></div></div>
+            <div class="nb"><div class="nb-img nb-c"><i class="ti ti-walk" style="font-size:14px;color:#F0A050;" aria-hidden="true"></i></div><div class="nb-name">Dawki<div class="nb-loc">Meghalaya</div></div></div>
+          </div>
+        </div>
+        <div style="height:12px;"></div>
+      </div>
+    </div>
+    <div class="lbl">PlaceDetail</div>
+  </div>
+
+  <!-- EXPLORE MAP -->
+  <div>
+    <div class="phone">
+      <div class="screen">
+        <div class="map-full">
+          <div class="map-search"><i class="ti ti-search" style="font-size:10px;color:#CCC;" aria-hidden="true"></i><span>Search places…</span></div>
+          <div class="you-ring"></div>
+          <div class="you-dot"></div>
+          <div class="map-pin" style="top:60px;left:55px;"><div class="pin-dot"></div><div class="pin-line"></div><div class="pin-label">Blue Tokai</div></div>
+          <div class="map-pin" style="top:95px;right:35px;"><div class="pin-dot"></div><div class="pin-line"></div><div class="pin-label">Cherrapunji</div></div>
+          <div class="map-pin" style="bottom:40px;left:40px;"><div class="pin-dot"></div><div class="pin-line"></div><div class="pin-label">Arwah Cave</div></div>
+          <div class="map-pin" style="bottom:55px;right:50px;"><div class="pin-dot"></div><div class="pin-line"></div><div class="pin-label">Blue Tokai 2</div></div>
+        </div>
+        <div class="filter-row">
+          <div class="filter-chip fc-on">All</div>
+          <div class="filter-chip fc-off">Travel</div>
+          <div class="filter-chip fc-off">Cafés</div>
+          <div class="filter-chip fc-off">Saved</div>
+          <div class="filter-chip fc-off">Trending</div>
+        </div>
+        <div class="sec"><div class="sec-t">Near you</div><div class="sec-l">View all</div></div>
+        <div class="place-list-card">
+          <div class="plc-img plc-img-b"><i class="ti ti-coffee" style="font-size:16px;color:#F0A050;opacity:0.7;" aria-hidden="true"></i></div>
+          <div class="plc-info"><div class="plc-name">Blue Tokai</div><div class="plc-loc">Hauz Khas, Delhi</div></div>
+          <div class="plc-right"><div class="plc-dist">0.8km</div><div class="plc-type">Café · Saved</div></div>
+        </div>
+        <div class="place-list-card">
+          <div class="plc-img plc-img-a"><i class="ti ti-building" style="font-size:16px;color:#2EC4A0;opacity:0.7;" aria-hidden="true"></i></div>
+          <div class="plc-info"><div class="plc-name">Qutub Minar</div><div class="plc-loc">Mehrauli, Delhi</div></div>
+          <div class="plc-right"><div class="plc-dist">3.2km</div><div class="plc-type">Travel · Trending</div></div>
+        </div>
+        <div class="place-list-card">
+          <div class="plc-img plc-img-c"><i class="ti ti-chef-hat" style="font-size:16px;color:#8080D0;opacity:0.7;" aria-hidden="true"></i></div>
+          <div class="plc-info"><div class="plc-name">Indian Accent</div><div class="plc-loc">The Lodhi, Delhi</div></div>
+          <div class="plc-right"><div class="plc-dist">4.1km</div><div class="plc-type">Restaurant</div></div>
+        </div>
+        <div style="height:8px;"></div>
+        <div class="bnav">
+          <div class="ni"><i class="ti ti-home" style="font-size:15px;color:#CCC;" aria-hidden="true"></i><span>Home</span></div>
+          <div class="ni"><i class="ti ti-bookmark" style="font-size:15px;color:#CCC;" aria-hidden="true"></i><span>Saved</span></div>
+          <div class="ni on"><i class="ti ti-map" style="font-size:15px;color:#2EC4A0;" aria-hidden="true"></i><span>Explore</span></div>
+          <div class="ni"><i class="ti ti-message" style="font-size:15px;color:#CCC;" aria-hidden="true"></i><span>Assistant</span></div>
+          <div class="ni"><i class="ti ti-user" style="font-size:15px;color:#CCC;" aria-hidden="true"></i><span>Profile</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="lbl">ExploreMap</div>
+  </div>
+
+</div>
+
+<div class="page-title">Collections &nbsp;·&nbsp; Nearby</div>
+<div class="row">
+
+  <!-- COLLECTIONS -->
+  <div>
+    <div class="phone">
+      <div class="screen">
+        <div class="hdr-bar">
+          <div class="logo">wanna<em>try</em></div>
+          <div style="display:flex;gap:6px;">
+            <div class="back-btn"><i class="ti ti-plus" style="font-size:11px;color:#2EC4A0;" aria-hidden="true"></i></div>
+            <div class="avatar">H</div>
+          </div>
+        </div>
+        <div class="coll-hero">
+          <div class="coll-stats">
+            <div class="stat-box"><div class="stat-num">24</div><div class="stat-lbl">Total saves</div></div>
+            <div class="stat-box"><div class="stat-num">6</div><div class="stat-lbl">Collections</div></div>
+            <div class="stat-box"><div class="stat-num">3</div><div class="stat-lbl">Reminders</div></div>
+          </div>
+        </div>
+        <div class="sec"><div class="sec-t">My collections</div><div class="sec-l">Edit</div></div>
+        <div class="coll-card">
+          <div class="coll-img coll-img-a"><i class="ti ti-mountain" style="font-size:22px;color:#2EC4A0;opacity:0.5;" aria-hidden="true"></i><div class="coll-count">8 saves</div></div>
+          <div class="coll-body"><div class="coll-name">Travel wishlist</div><div class="coll-sub">Places I want to visit</div><div class="coll-row"><span class="coll-tag b-tr" style="border-radius:10px;">Travel</span><span style="font-size:7px;color:#AAA;">Updated 2h ago</span></div></div>
+        </div>
+        <div class="coll-card">
+          <div class="coll-img coll-img-b"><i class="ti ti-coffee" style="font-size:22px;color:#F0A050;opacity:0.5;" aria-hidden="true"></i><div class="coll-count">5 saves</div></div>
+          <div class="coll-body"><div class="coll-name">Delhi cafés</div><div class="coll-sub">Coffee spots to try</div><div class="coll-row"><span class="coll-tag b-ca" style="border-radius:10px;">Café</span><span style="font-size:7px;color:#AAA;">Updated yesterday</span></div></div>
+        </div>
+        <div class="coll-card">
+          <div class="coll-img coll-img-c"><i class="ti ti-chef-hat" style="font-size:22px;color:#8080D0;opacity:0.5;" aria-hidden="true"></i><div class="coll-count">4 saves</div></div>
+          <div class="coll-body"><div class="coll-name">Weekend recipes</div><div class="coll-sub">Cook this Sunday</div><div class="coll-row"><span class="coll-tag b-re" style="border-radius:10px;">Recipe</span><span style="font-size:7px;color:#AAA;">Updated 3d ago</span></div></div>
+        </div>
+        <div class="add-coll"><i class="ti ti-plus" style="font-size:13px;color:#CCC;" aria-hidden="true"></i><span>New collection</span></div>
+        <div style="height:8px;"></div>
+        <div class="bnav">
+          <div class="ni"><i class="ti ti-home" style="font-size:15px;color:#CCC;" aria-hidden="true"></i><span>Home</span></div>
+          <div class="ni on"><i class="ti ti-bookmark" style="font-size:15px;color:#2EC4A0;" aria-hidden="true"></i><span>Saved</span></div>
+          <div class="ni"><i class="ti ti-map" style="font-size:15px;color:#CCC;" aria-hidden="true"></i><span>Explore</span></div>
+          <div class="ni"><i class="ti ti-message" style="font-size:15px;color:#CCC;" aria-hidden="true"></i><span>Assistant</span></div>
+          <div class="ni"><i class="ti ti-user" style="font-size:15px;color:#CCC;" aria-hidden="true"></i><span>Profile</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="lbl">Collections</div>
+  </div>
+
+  <!-- NEARBY -->
+  <div>
+    <div class="phone">
+      <div class="screen">
+        <div class="hdr-bar">
+          <div class="hdr-title-sm">Near you</div>
+          <div style="font-size:8px;color:#2EC4A0;">Gurgaon, HR</div>
+        </div>
+        <div class="nearby-map">
+          <div class="you-ring"></div>
+          <div class="you-dot"></div>
+          <div class="nb-pin" style="top:25px;left:45px;"><div class="nb-pin-dot"></div><div class="nb-pin-lbl">Blue Tokai</div></div>
+          <div class="nb-pin" style="top:40px;right:35px;"><div class="nb-pin-dot" style="background:#F0A050;"></div><div class="nb-pin-lbl">Dhaba 45</div></div>
+          <div class="nb-pin" style="bottom:25px;left:30px;"><div class="nb-pin-dot" style="background:#8080D0;"></div><div class="nb-pin-lbl">Cyber Hub</div></div>
+          <div class="nb-pin" style="bottom:30px;right:28px;"><div class="nb-pin-dot"></div><div class="nb-pin-lbl">Chaayos</div></div>
+        </div>
+        <div class="sec"><div class="sec-t">Your saves nearby</div><div class="sec-l">2 saves</div></div>
+        <div class="nb-list-card">
+          <div class="nb-lc-img" style="background:#FEF3E8;"><i class="ti ti-coffee" style="font-size:16px;color:#F0A050;opacity:0.7;" aria-hidden="true"></i></div>
+          <div class="nb-lc-info"><div class="nb-lc-name">Blue Tokai</div><div class="nb-lc-sub">Hauz Khas, Delhi</div></div>
+          <div class="nb-lc-right"><div class="nb-dist">0.8km</div><div class="nb-saved">Saved</div></div>
+        </div>
+        <div class="nb-list-card">
+          <div class="nb-lc-img" style="background:#E8F5F1;"><i class="ti ti-building" style="font-size:16px;color:#2EC4A0;opacity:0.7;" aria-hidden="true"></i></div>
+          <div class="nb-lc-info"><div class="nb-lc-name">Chaayos</div><div class="nb-lc-sub">Cyber Hub, Gurgaon</div></div>
+          <div class="nb-lc-right"><div class="nb-dist">1.2km</div><div class="nb-saved">Saved</div></div>
+        </div>
+        <div class="sec"><div class="sec-t">Trending nearby</div><div class="sec-l">See all</div></div>
+        <div class="nb-list-card">
+          <div class="nb-lc-img" style="background:#EEF0FA;"><i class="ti ti-tools-kitchen-2" style="font-size:16px;color:#8080D0;opacity:0.7;" aria-hidden="true"></i></div>
+          <div class="nb-lc-info"><div class="nb-lc-name">Punjab Grill</div><div class="nb-lc-sub">DLF Cyber City</div></div>
+          <div class="nb-lc-right"><div class="nb-dist">1.8km</div><div class="nb-unsaved">+ Save</div></div>
+        </div>
+        <div class="nb-list-card">
+          <div class="nb-lc-img" style="background:#FEF0F5;"><i class="ti ti-building" style="font-size:16px;color:#E07090;opacity:0.7;" aria-hidden="true"></i></div>
+          <div class="nb-lc-info"><div class="nb-lc-name">Ambience Mall</div><div class="nb-lc-sub">NH-48, Gurgaon</div></div>
+          <div class="nb-lc-right"><div class="nb-dist">2.4km</div><div class="nb-unsaved">+ Save</div></div>
+        </div>
+        <div style="height:8px;"></div>
+        <div class="bnav">
+          <div class="ni"><i class="ti ti-home" style="font-size:15px;color:#CCC;" aria-hidden="true"></i><span>Home</span></div>
+          <div class="ni"><i class="ti ti-bookmark" style="font-size:15px;color:#CCC;" aria-hidden="true"></i><span>Saved</span></div>
+          <div class="ni on"><i class="ti ti-map" style="font-size:15px;color:#2EC4A0;" aria-hidden="true"></i><span>Explore</span></div>
+          <div class="ni"><i class="ti ti-message" style="font-size:15px;color:#CCC;" aria-hidden="true"></i><span>Assistant</span></div>
+          <div class="ni"><i class="ti ti-user" style="font-size:15px;color:#CCC;" aria-hidden="true"></i><span>Profile</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="lbl">Nearby</div>
+  </div>
+
+</div>
+
+<div class="page-title">Profile &nbsp;·&nbsp; HomeEmpty (cold start)</div>
+<div class="row">
+
+  <!-- PROFILE -->
+  <div>
+    <div class="phone">
+      <div class="screen">
+        <div class="hdr-bar">
+          <div class="hdr-title-sm">Profile</div>
+          <div class="back-btn"><i class="ti ti-settings" style="font-size:11px;color:#AAA;" aria-hidden="true"></i></div>
+        </div>
+        <div class="prof-top">
+          <div class="prof-av">H</div>
+          <div class="prof-name">Harshit</div>
+          <div class="prof-handle">@harshit · Gurgaon</div>
+          <div class="prof-stats">
+            <div class="ps"><div class="ps-num">24</div><div class="ps-lbl">Saves</div></div>
+            <div class="ps"><div class="ps-num">6</div><div class="ps-lbl">Collections</div></div>
+            <div class="ps"><div class="ps-num">3</div><div class="ps-lbl">Reminders</div></div>
+          </div>
+        </div>
+        <div class="pref-section" style="margin-top:10px;">
+          <div class="pref-row">
+            <div class="pref-left"><i class="ti ti-bell" style="font-size:13px;color:#2EC4A0;" aria-hidden="true"></i><div><div class="pref-label">Notifications</div><div class="pref-sub">Reminders and alerts</div></div></div>
+            <div class="toggle"><div class="toggle-dot"></div></div>
+          </div>
+          <div class="pref-row">
+            <div class="pref-left"><i class="ti ti-map-pin" style="font-size:13px;color:#2EC4A0;" aria-hidden="true"></i><div><div class="pref-label">Nearby alerts</div><div class="pref-sub">When you're close to a save</div></div></div>
+            <div class="toggle"><div class="toggle-dot"></div></div>
+          </div>
+          <div class="pref-row">
+            <div class="pref-left"><i class="ti ti-moon" style="font-size:13px;color:#AAA;" aria-hidden="true"></i><div><div class="pref-label">Dark mode</div><div class="pref-sub">Coming soon</div></div></div>
+            <div class="toggle toggle-off"><div class="toggle-dot"></div></div>
+          </div>
+        </div>
+        <div class="pref-section" style="margin-top:8px;">
+          <div class="pref-row-link"><div class="pref-left"><i class="ti ti-help" style="font-size:13px;color:#AAA;" aria-hidden="true"></i><div class="pref-label">Help & support</div></div><i class="ti ti-chevron-right" style="font-size:10px;color:#CCC;" aria-hidden="true"></i></div>
+          <div class="pref-row-link"><div class="pref-left"><i class="ti ti-shield" style="font-size:13px;color:#AAA;" aria-hidden="true"></i><div class="pref-label">Privacy policy</div></div><i class="ti ti-chevron-right" style="font-size:10px;color:#CCC;" aria-hidden="true"></i></div>
+          <div class="pref-row-link"><div class="pref-left"><i class="ti ti-star" style="font-size:13px;color:#AAA;" aria-hidden="true"></i><div class="pref-label">Rate WannaTry</div></div><i class="ti ti-chevron-right" style="font-size:10px;color:#CCC;" aria-hidden="true"></i></div>
+        </div>
+        <div class="logout-btn">Log out</div>
+        <div style="height:8px;"></div>
+        <div class="bnav">
+          <div class="ni"><i class="ti ti-home" style="font-size:15px;color:#CCC;" aria-hidden="true"></i><span>Home</span></div>
+          <div class="ni"><i class="ti ti-bookmark" style="font-size:15px;color:#CCC;" aria-hidden="true"></i><span>Saved</span></div>
+          <div class="ni"><i class="ti ti-map" style="font-size:15px;color:#CCC;" aria-hidden="true"></i><span>Explore</span></div>
+          <div class="ni"><i class="ti ti-message" style="font-size:15px;color:#CCC;" aria-hidden="true"></i><span>Assistant</span></div>
+          <div class="ni on"><i class="ti ti-user" style="font-size:15px;color:#2EC4A0;" aria-hidden="true"></i><span>Profile</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="lbl">Profile</div>
+  </div>
+
+  <!-- HOME EMPTY -->
+  <div>
+    <div class="phone">
+      <div class="screen">
+        <div class="empty-top">
+          <div class="hdr-top">
+            <div class="logo">wanna<em>try</em></div>
+            <div class="avatar">H</div>
+          </div>
+        </div>
+        <div class="empty-hero">
+          <div class="empty-icon"><i class="ti ti-bookmark" style="font-size:22px;color:#2EC4A0;" aria-hidden="true"></i></div>
+          <div class="empty-title">Save your first reel.<br>We'll do the rest.</div>
+          <div class="empty-sub">Paste any Instagram, YouTube or web link and WannaTry extracts what matters — location, vibe, category.</div>
+        </div>
+        <div class="empty-cta">+ Save something</div>
+        <div class="sec"><div class="sec-t">Trending right now</div><div class="sec-l">See all</div></div>
+        <div class="disc-card">
+          <div class="disc-img coll-img-a"><i class="ti ti-mountain" style="font-size:22px;color:#2EC4A0;opacity:0.5;" aria-hidden="true"></i><div class="disc-saves">142 saves</div></div>
+          <div class="disc-body"><div class="disc-name">Cherrapunji, Meghalaya</div><div class="disc-loc">Hill Station · India</div><div class="disc-vibe">Waterfalls · Monsoon · Trekking</div></div>
+        </div>
+        <div class="disc-card">
+          <div class="disc-img coll-img-b"><i class="ti ti-coffee" style="font-size:22px;color:#F0A050;opacity:0.5;" aria-hidden="true"></i><div class="disc-saves">98 saves</div></div>
+          <div class="disc-body"><div class="disc-name">Blue Tokai Coffee</div><div class="disc-loc">Café · Delhi</div><div class="disc-vibe">Specialty coffee · Cosy · Work-friendly</div></div>
+        </div>
+        <div style="height:8px;"></div>
+        <div class="bnav">
+          <div class="ni on"><i class="ti ti-home" style="font-size:15px;color:#2EC4A0;" aria-hidden="true"></i><span>Home</span></div>
+          <div class="ni"><i class="ti ti-bookmark" style="font-size:15px;color:#CCC;" aria-hidden="true"></i><span>Saved</span></div>
+          <div class="ni"><i class="ti ti-map" style="font-size:15px;color:#CCC;" aria-hidden="true"></i><span>Explore</span></div>
+          <div class="ni"><i class="ti ti-message" style="font-size:15px;color:#CCC;" aria-hidden="true"></i><span>Assistant</span></div>
+          <div class="ni"><i class="ti ti-user" style="font-size:15px;color:#CCC;" aria-hidden="true"></i><span>Profile</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="lbl">HomeEmpty</div>
+  </div>
+
+</div>
+</div>

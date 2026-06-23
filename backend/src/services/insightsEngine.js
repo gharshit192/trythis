@@ -204,6 +204,58 @@ const claudeKnowledgeInsights = async (placeLabel) => {
     .filter((b) => b.text);
 };
 
+
+const buildPlaceTake = async (place, saves) => {
+  const placeLabel = [place?.canonicalName, place?.city, place?.region, place?.country].filter(Boolean).join(', ') || 'this place';
+  const summaries = (Array.isArray(saves) ? saves : [])
+    .map((save, idx) => {
+      const summary = save?.aiAnalysis?.summary || save?.userNote || '';
+      const tags = Array.isArray(save?.tags) ? save.tags.slice(0, 6) : [];
+      return '[' + (idx + 1) + '] ' + summary + '\nTags: ' + tags.join(', ');
+    })
+    .filter(Boolean)
+    .join('\n\n');
+
+  const prompt = [
+    'You are summarizing multiple saves for the same travel place.',
+    '',
+    'Place: ' + placeLabel,
+    'Category: ' + (place?.category || 'destination'),
+    'Vibe tags: ' + (Array.isArray(place?.vibeTags) ? place.vibeTags : []).slice(0, 8).join(', '),
+    '',
+    'Save notes:',
+    summaries || 'No additional notes.',
+    '',
+    'Return ONLY valid JSON in this exact shape:',
+    '{"text": string, "chips": [string, string, string, string, string, string]}',
+    '',
+    'Rules:',
+    '- text must be a concise travel take, max 600 chars',
+    '- chips must be 3 to 6 short vibe labels',
+    '- do not invent sources or user identities',
+  ].join('\n');
+
+  const msg = await client.messages.create({
+    model: MODEL,
+    max_tokens: 700,
+    messages: [{ role: 'user', content: prompt }],
+  });
+
+  const raw = msg?.content?.[0]?.text || '';
+  let parsed;
+  try {
+    const m = raw.match(/\{[\s\S]*\}/);
+    parsed = JSON.parse(m ? m[0] : raw);
+  } catch {
+    throw new InsightsError('SUMMARY_PARSE', 'Could not parse place take.');
+  }
+
+  return {
+    text: String(parsed?.text || '').slice(0, 600),
+    chips: Array.isArray(parsed?.chips) ? parsed.chips.map((x) => String(x).trim()).filter(Boolean).slice(0, 6) : [],
+  };
+};
+
 // generateInsights(save) → [{ text, source_domain, url }] (up to 4)
 // Provider chain: Brave (if key) → DuckDuckGo (free, real travel links) →
 // Wikivoyage/Wikipedia (free) → Claude knowledge.
@@ -245,4 +297,4 @@ const generateInsights = async (save) => {
   return claudeKnowledgeInsights(query);
 };
 
-module.exports = { generateInsights, buildQuery, InsightsError };
+module.exports = { generateInsights, buildQuery, buildPlaceTake, InsightsError };

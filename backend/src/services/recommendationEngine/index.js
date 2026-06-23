@@ -43,21 +43,36 @@ const fieldOf = (save, name) => {
   return undefined;
 };
 
+// Group categories into families so a Goa trip relates to other travel, not to a
+// product that merely shares the same platform.
+const TRAVEL_FAMILY = ['travel', 'experience', 'experiences', 'hotels', 'events'];
+const SHOP_FAMILY = ['shopping', 'fashion', 'beauty', 'product'];
+const FOOD_FAMILY = ['food', 'cafe', 'cafes', 'restaurant', 'restaurants', 'recipes'];
+const catFamily = (cat) => {
+  const c = String(cat || '').toLowerCase();
+  if (TRAVEL_FAMILY.includes(c)) return 'travel';
+  if (SHOP_FAMILY.includes(c)) return 'shop';
+  if (FOOD_FAMILY.includes(c)) return 'food';
+  return c || 'other';
+};
+
 const calculateSimilarityScore = (a, b) => {
   let score = 0;
-  if (a.category && a.category === b.category) score += 0.4;
+  // Same category family is the primary relevance signal (NOT same platform/domain).
+  if (catFamily(a.category) === catFamily(b.category)) score += 0.5;
+  if (a.category && a.category === b.category) score += 0.1;
 
-  const aDomain = fieldOf(a, 'domain');
-  const bDomain = fieldOf(b, 'domain');
-  if (aDomain && aDomain === bDomain) score += 0.3;
-
-  const aPrice = fieldOf(a, 'price');
-  const bPrice = fieldOf(b, 'price');
-  if (aPrice && bPrice && isPriceRange(aPrice, bPrice)) score += 0.2;
-
+  // Shared location matters a lot for travel/food.
   const aLoc = fieldOf(a, 'location');
   const bLoc = fieldOf(b, 'location');
-  if (aLoc && bLoc && aLoc === bLoc) score += 0.1;
+  if (aLoc && bLoc && aLoc === bLoc) score += 0.3;
+
+  // Price similarity is only meaningful within shopping.
+  if (catFamily(a.category) === 'shop') {
+    const aPrice = fieldOf(a, 'price');
+    const bPrice = fieldOf(b, 'price');
+    if (aPrice && bPrice && isPriceRange(aPrice, bPrice)) score += 0.2;
+  }
 
   return score;
 };
@@ -72,19 +87,12 @@ const generateRecommendations = async (userId, saveId, saves) => {
     const currentSave = saves.find((s) => idOf(s._id) === saveIdStr);
     if (!currentSave) return [];
 
-    const currentDomain = fieldOf(currentSave, 'domain');
-    const currentPrice = fieldOf(currentSave, 'price');
-
     const candidates = saves.filter((s) => {
       if (idOf(s._id) === saveIdStr) return false;
       if (idOf(s.userId) !== userIdStr) return false;
-      const domain = fieldOf(s, 'domain');
-      const price = fieldOf(s, 'price');
-      return (
-        s.category === currentSave.category ||
-        (domain && domain === currentDomain) ||
-        (price && currentPrice && isPriceRange(price, currentPrice))
-      );
+      // Only same category family is a relevant recommendation — never "same
+      // platform" (two unrelated YouTube reels are not related).
+      return catFamily(s.category) === catFamily(currentSave.category);
     });
 
     const scored = candidates

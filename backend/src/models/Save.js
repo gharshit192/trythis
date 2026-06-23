@@ -280,6 +280,9 @@ const intentItemSchema = new mongoose.Schema({
 
   isTemplate: { type: Boolean, default: false },
 
+  // Place reference for travel destinations
+  placeId: { type: mongoose.Schema.Types.ObjectId, ref: 'Place', default: null, index: true },
+
   // Location data for nearby feature
   extractedLocation: {
     name: { type: String, default: null },

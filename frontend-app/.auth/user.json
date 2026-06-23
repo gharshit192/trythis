@@ -1,0 +1,18 @@
+{
+  "cookies": [],
+  "origins": [
+    {
+      "origin": "http://localhost:3000",
+      "localStorage": [
+        {
+          "name": "auth_token",
+          "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZhMTkzYWVjYjVmY2JiZjAxOTA2NTNjYSIsImVtYWlsIjoiZ2hhcnNoaXQyOTFAZ21haWwuY29tIiwiaWF0IjoxNzgyMTU1MjU3LCJleHAiOjE3ODQ3NDcyNTd9.Ui9fPGTP6GQUjXrdqYzXJKvw0RlXfp6bYkn-Hh4CUE8"
+        },
+        {
+          "name": "user",
+          "value": "{\"id\":\"6a193aecb5fcbbf0190653ca\",\"email\":\"gharshit291@gmail.com\",\"name\":\"Harshit Gupta\",\"onboarding\":{\"completed\":true,\"currentStep\":3,\"templateSaveIds\":[],\"firstSaveAt\":\"2026-06-22T11:04:27.329Z\"}}"
+        }
+      ]
+    }
+  ]
+}

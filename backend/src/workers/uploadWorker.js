@@ -13,6 +13,7 @@ const transcription = require('../services/transcription');
 const notificationService = require('../services/notificationService');
 const { normalizeUrl, findDuplicateSave } = require('../utils/urlNormalizer');
 const { extractLocation } = require('../services/locationExtractor');
+const placeResolver = require('../services/placeResolver');
 const logger = require('../utils/logger');
 const fs = require('fs');
 
@@ -276,6 +277,13 @@ async function processLinkJob(job) {
     await autoCollectionEngine.assignSave(save);
   } catch (err) {
     logger.warn(`[processLinkJob] autoCollectionEngine failed: ${err.message}`);
+  }
+
+  try {
+    await placeResolver.resolvePlaceForSave(save);
+    await save.save();
+  } catch (err) {
+    logger.warn(`[processLinkJob] Place resolution failed: ${err.message}`);
   }
 
   // Queue for media processing if video source

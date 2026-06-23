@@ -12,6 +12,7 @@ router.use('/saves', require('./saves'));
 router.use('/collections', require('./collections'));
 router.use('/search', require('./search'));
 router.use('/recommendations', require('./recommendations'));
+router.use('/places', require('./places'));
 router.use('/notifications', require('./notifications'));
 router.use('/admin', require('./admin'));
 

@@ -1,5 +1,11 @@
 if (process.env.NODE_ENV !== 'production') {
   require('dotenv').config();
+  // Optional override file (e.g. ENV_FILE=.env.prod-local) — loaded after .env so
+  // its values win. Used to point a local run at the production database.
+  if (process.env.ENV_FILE) {
+    require('dotenv').config({ path: process.env.ENV_FILE, override: true });
+    console.log(`[ENV] Overriding with ${process.env.ENV_FILE}`);
+  }
 }
 const app = require('./app');
 const connectDB = require('./config/database');
@@ -67,11 +73,15 @@ const initializeServer = async () => {
         console.log('✅ Notification scheduler started');
       }
 
-      if (process.env.NODE_ENV !== 'production') {
+      // Cleanup jobs DELETE data. Set DISABLE_CLEANUP_JOBS=true to skip them — e.g.
+      // when pointing a local dev server at the production database for a one-off.
+      if (process.env.NODE_ENV !== 'production' && process.env.DISABLE_CLEANUP_JOBS !== 'true') {
         console.log('[DEBUG] Starting additional jobs (non-production mode)...');
         purgeScreenshots.start();
         setInterval(cleanupBundles, 60 * 60 * 1000);
         console.log('✅ Additional jobs started');
+      } else if (process.env.DISABLE_CLEANUP_JOBS === 'true') {
+        console.log('⏭️  Cleanup jobs skipped (DISABLE_CLEANUP_JOBS=true)');
       }
 
       console.log('[DEBUG] Server initialization complete');
