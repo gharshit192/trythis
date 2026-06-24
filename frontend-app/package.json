@@ -3,6 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@capacitor/android": "^6.2.1",
+    "@capacitor/app": "^6.0.3",
+    "@capacitor/cli": "^6.2.1",
+    "@capacitor/core": "^6.2.1",
+    "@capacitor/filesystem": "^6.0.4",
+    "@capacitor/ios": "^6.2.1",
+    "@capacitor/share": "^6.0.4",
+    "@capacitor/splash-screen": "^6.0.4",
+    "@capacitor/status-bar": "^6.0.3",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
@@ -16,6 +25,12 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
+    "build:native": "REACT_APP_API_URL=${REACT_APP_API_URL:-https://trythis-am0j.onrender.com} react-scripts build",
+    "cap:sync": "npm run build:native && cap sync",
+    "cap:android": "npm run build:native && cap run android",
+    "cap:ios": "npm run build:native && cap run ios",
+    "cap:open:android": "cap open android",
+    "cap:open:ios": "cap open ios",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },

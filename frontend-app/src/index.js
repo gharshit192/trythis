@@ -4,6 +4,9 @@ import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 import { registerServiceWorker } from './push';
+import { configureCapacitorRuntime } from './capacitorRuntime';
+
+configureCapacitorRuntime();
 
 // Register the service worker early so it's ready when the user opts into push.
 if ('serviceWorker' in navigator) {

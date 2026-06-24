@@ -13,7 +13,13 @@
     "frontend": "npm start --workspace=frontend",
     "test": "npm test --workspaces",
     "lint": "npm run lint --workspaces",
-    "setup": "npm install && npm run setup --workspaces"
+    "setup": "npm install && npm run setup --workspaces",
+    "mobile:build": "npm --prefix frontend-app run build:native",
+    "mobile:sync": "npm --prefix frontend-app run cap:sync",
+    "mobile:android": "npm --prefix frontend-app run cap:android",
+    "mobile:ios": "npm --prefix frontend-app run cap:ios",
+    "mobile:open:android": "npm --prefix frontend-app run cap:open:android",
+    "mobile:open:ios": "npm --prefix frontend-app run cap:open:ios"
   },
   "keywords": [
     "intent",
