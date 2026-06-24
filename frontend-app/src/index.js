@@ -3,6 +3,14 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
+import { registerServiceWorker } from './push';
+
+// Register the service worker early so it's ready when the user opts into push.
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    registerServiceWorker().catch((err) => console.error('[sw] register failed:', err));
+  });
+}
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(

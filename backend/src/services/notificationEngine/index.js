@@ -1,5 +1,6 @@
 const Notification = require('../../models/Notification');
 const logger = require('../../utils/logger');
+const pushService = require('../pushService');
 
 // Triggers
 const nearbyRediscovery = require('./triggers/nearbyRediscovery');
@@ -155,13 +156,28 @@ async function sendNotification(notificationId) {
       throw new Error('Notification not found');
     }
 
-    // In-app only: mark as sent immediately (notification is already in DB)
+    // Mark the in-app record as sent (it's already in the DB).
     notification.status = 'sent';
     notification.deliveryMethod = 'in_app';
     notification.sentAt = new Date();
     await notification.save();
 
     logger.info(`✅ In-app notification created: ${notificationId} for user ${notification.userId}`);
+
+    // Also deliver via Web Push (fire-and-forget — a push failure must not fail
+    // the in-app notification). No-op if VAPID isn't configured or the user has
+    // no subscriptions.
+    pushService
+      .sendToUser(notification.userId, {
+        title: notification.title,
+        body: notification.message,
+        url: notification.actionUrl || '/',
+        notificationId: String(notification._id),
+      })
+      .then((r) => {
+        if (r.sent > 0) logger.info(`[push] delivered ${notificationId} to ${r.sent} device(s)`);
+      })
+      .catch((err) => logger.warn(`[push] delivery error for ${notificationId}: ${err.message}`));
 
     return notification;
   } catch (error) {

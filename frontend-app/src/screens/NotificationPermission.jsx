@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { enablePushNotifications } from '../push';
 
 export default function NotificationPermission({ onNavigate }) {
   const [loading, setLoading] = useState(false);
@@ -6,14 +7,14 @@ export default function NotificationPermission({ onNavigate }) {
   const handleRequestNotification = async () => {
     setLoading(true);
     try {
-      if ('Notification' in window) {
-        const permission = await Notification.requestPermission();
-        if (permission === 'granted') {
-          new Notification('Wanna Try', {
-            body: "You're all set! We'll remind you when to try your saves.",
-            icon: '🔔'
-          });
-        }
+      // Requests browser permission, subscribes via the Push API, and registers
+      // the subscription with the backend so the engine can actually push.
+      const result = await enablePushNotifications();
+      if (result.ok) {
+        new Notification('Wanna Try', {
+          body: "You're all set! We'll remind you when to try your saves.",
+          icon: '/logo192.png',
+        });
       }
     } catch (err) {
       console.error('Notification request failed:', err);

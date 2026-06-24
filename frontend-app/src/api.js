@@ -381,6 +381,30 @@ const api = {
     return handle(res);
   },
 
+  // ---- Web Push ----
+  async getVapidPublicKey() {
+    const res = await fetch(`${API_BASE_URL}/notifications/vapid-public-key`, { headers: authHeader() });
+    return handle(res);
+  },
+
+  async subscribeToPush(subscription) {
+    const res = await fetch(`${API_BASE_URL}/notifications/subscribe`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
+      body: JSON.stringify(subscription),
+    });
+    return handle(res);
+  },
+
+  async unsubscribeFromPush(endpoint) {
+    const res = await fetch(`${API_BASE_URL}/notifications/unsubscribe`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
+      body: JSON.stringify({ endpoint }),
+    });
+    return handle(res);
+  },
+
   // ---- Location & Settings ----
   async updateLocation(lat, lng, city) {
     const res = await fetch(`${API_BASE_URL}/auth/location`, {

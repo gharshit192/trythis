@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import api from '../api';
+import { enablePushNotifications, disablePushNotifications } from '../push';
 
 const APP_VERSION = 'v1.0';
 
@@ -81,6 +82,10 @@ export default function Profile({ onNavigate }) {
       const updatedUser = { ...user, notificationsEnabled: newValue };
       setUser(updatedUser);
       localStorage.setItem('user', JSON.stringify(updatedUser));
+      // Turning ON also opts this device into Web Push (browser permission +
+      // subscription); turning OFF tears the subscription down.
+      if (newValue) await enablePushNotifications();
+      else await disablePushNotifications();
     } catch (err) {
       console.error('Failed to update notifications setting', err);
     } finally {

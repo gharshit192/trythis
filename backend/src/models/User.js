@@ -43,6 +43,15 @@ const userSchema = new mongoose.Schema(
 
     // Notification settings
     notificationsEnabled: { type: Boolean, default: true },
+    // Web Push subscriptions — one per device/browser the user opted in on.
+    pushSubscriptions: [{
+      endpoint: { type: String, required: true },
+      keys: {
+        p256dh: { type: String },
+        auth: { type: String },
+      },
+      createdAt: { type: Date, default: Date.now },
+    }],
     locationEnabled: { type: Boolean, default: false },
     location: {
       lat: { type: Number, default: null },

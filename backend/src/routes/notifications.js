@@ -1,8 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const Notification = require('../models/Notification');
+const User = require('../models/User');
 const authMiddleware = require('../middleware/auth');
 const logger = require('../utils/logger');
+const pushService = require('../services/pushService');
 
 router.use(authMiddleware);
 
@@ -61,6 +63,48 @@ router.get('/', async (req, res) => {
       status: 'error',
       error: { code: 'FETCH_ERROR', message: error.message },
     });
+  }
+});
+
+// Web Push: expose the VAPID public key so the browser can subscribe.
+router.get('/vapid-public-key', (req, res) => {
+  res.json({ status: 'success', data: { publicKey: pushService.getPublicKey(), enabled: pushService.isEnabled() } });
+});
+
+// Web Push: store a browser PushSubscription for the current user.
+// Dedupes by endpoint so re-subscribing on the same device doesn't pile up.
+router.post('/subscribe', async (req, res) => {
+  try {
+    const { endpoint, keys } = req.body || {};
+    if (!endpoint || !keys?.p256dh || !keys?.auth) {
+      return res.status(400).json({ status: 'error', error: { code: 'INVALID_SUBSCRIPTION', message: 'endpoint and keys (p256dh, auth) are required' } });
+    }
+    // Remove any existing record for this endpoint, then add the fresh one.
+    await User.updateOne({ _id: req.user.id }, { $pull: { pushSubscriptions: { endpoint } } });
+    await User.updateOne(
+      { _id: req.user.id },
+      { $push: { pushSubscriptions: { endpoint, keys: { p256dh: keys.p256dh, auth: keys.auth } } } }
+    );
+    logger.info(`[push] subscription stored for user ${req.user.id}`);
+    res.json({ status: 'success' });
+  } catch (error) {
+    logger.error(`Push subscribe error: ${error.message}`);
+    res.status(500).json({ status: 'error', error: { code: 'SUBSCRIBE_ERROR', message: error.message } });
+  }
+});
+
+// Web Push: remove a subscription (on logout / permission revoked).
+router.post('/unsubscribe', async (req, res) => {
+  try {
+    const { endpoint } = req.body || {};
+    if (!endpoint) {
+      return res.status(400).json({ status: 'error', error: { code: 'MISSING_ENDPOINT', message: 'endpoint is required' } });
+    }
+    await User.updateOne({ _id: req.user.id }, { $pull: { pushSubscriptions: { endpoint } } });
+    res.json({ status: 'success' });
+  } catch (error) {
+    logger.error(`Push unsubscribe error: ${error.message}`);
+    res.status(500).json({ status: 'error', error: { code: 'UNSUBSCRIBE_ERROR', message: error.message } });
   }
 });
 

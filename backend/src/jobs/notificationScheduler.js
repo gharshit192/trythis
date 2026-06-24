@@ -19,6 +19,9 @@ const {
 // engine's cooldown + daily budget, so this won't spam — it just gives the
 // triggers (weekend, nearby, forgotten-intent, seasonal…) more chances to fire.
 const SCHEDULE = process.env.NOTIFICATION_CRON || '0 9,14,20 * * *'; // 9am, 2pm, 8pm
+// Pin the cron to IST. Without this, node-cron uses the host's local time, so on
+// a UTC production server "0 14" fires at 2pm UTC = 7:30pm IST — not 2pm IST.
+const SCHEDULE_TZ = process.env.NOTIFICATION_CRON_TZ || 'Asia/Kolkata';
 
 const runOnce = async ({ now = new Date(), force = false } = {}) => {
   try {
@@ -122,8 +125,8 @@ const start = () => {
     runOnce().catch((err) =>
       logger.error(`notificationScheduler run failed: ${err.message}`)
     );
-  });
-  logger.info(`notificationScheduler: scheduled "${SCHEDULE}"`);
+  }, { timezone: SCHEDULE_TZ });
+  logger.info(`notificationScheduler: scheduled "${SCHEDULE}" (${SCHEDULE_TZ})`);
   return task;
 };
 
