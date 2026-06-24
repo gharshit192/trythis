@@ -36,14 +36,14 @@ const getCategoryIcon = (categoryName) => {
   return CATEGORY_ICONS.default;
 };
 
-export default function ScreenshotSummary({ sessionId, summary: initialSummary, thumbnails = [], onNavigate }) {
+export default function ScreenshotSummary({ sessionId, summary: initialSummary, thumbnails = [], saveId = null, autoSaved = false, onNavigate }) {
   const [summary, setSummary] = useState(initialSummary);
   const [refineText, setRefineText] = useState('');
   const [showRefine, setShowRefine] = useState(false);
   const [loading, setLoading] = useState(false);
   const [loadingAction, setLoadingAction] = useState('');
   const [error, setError] = useState(null);
-  const [saved, setSaved] = useState(false);
+  const [saved, setSaved] = useState(Boolean(autoSaved || saveId));
 
   if (!summary) {
     return (
@@ -92,9 +92,14 @@ export default function ScreenshotSummary({ sessionId, summary: initialSummary, 
     setLoadingAction('save');
     setError(null);
     try {
-      await api.saveScreenshotBundle(sessionId, summary);
+      const result = await api.saveScreenshotBundle(sessionId, summary);
+      const savedDoc = result?.save || result?.data || null;
       setSaved(true);
-      setTimeout(() => onNavigate('home'), 1500);
+      if (savedDoc?._id) {
+        setTimeout(() => onNavigate('save-detail', { id: savedDoc._id, refresh: true }), 700);
+      } else {
+        setTimeout(() => onNavigate('home', { refresh: true }), 700);
+      }
     } catch (err) {
       setError('Save failed. Please retry.');
     } finally {
@@ -286,7 +291,7 @@ export default function ScreenshotSummary({ sessionId, summary: initialSummary, 
           onClick={handleSave}
           disabled={loading || saved}
           style={{ flex: 1, padding: '12px 0', background: saved ? 'var(--colors-brands-success-main, #2E6B52)' : 'var(--colors-brands-primary-main, #0E7C7B)', color: 'white', border: 'none', borderRadius: 12, fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: loading ? 0.6 : 1 }}>
-          {saved ? '✓ Saved to collection' : loading && loadingAction === 'save' ? 'Saving...' : 'Save to collection'}
+          {saved ? 'Saved to your screenshots' : loading && loadingAction === 'save' ? 'Saving...' : 'Save to screenshots'}
         </button>
       </div>
     </div>

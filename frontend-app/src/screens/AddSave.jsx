@@ -96,7 +96,14 @@ function LinkFlow({ collections, onBack, onNavigate }) {
         setSaving(false);
         setUrl('');
         setProcessingStep(0);
-        onNavigate('firstSaveSuccess', { jobId: result?.jobId, isFirstSave: false, nextScreen: 'home' });
+        onNavigate('firstSaveSuccess', {
+          jobId: result?.jobId || null,
+          saveId: result?.saveIds?.[0] || result?.saveId || null,
+          saveIds: result?.saveIds || [],
+          batchCount: result?.count || result?.saveIds?.length || 0,
+          isFirstSave: false,
+          nextScreen: 'home',
+        });
       }, 1200);
     } catch (err) {
       setSaving(false);
@@ -131,7 +138,7 @@ function LinkFlow({ collections, onBack, onNavigate }) {
             marginBottom: 24
           }}>
             <span style={{ fontSize: 25 }}>
-              {processingStep === 1 ? '✓' : '⟳'}
+              {processingStep === 2 ? '✓' : '⟳'}
             </span>
           </div>
           <p style={{
@@ -171,24 +178,54 @@ function LinkFlow({ collections, onBack, onNavigate }) {
 
 // ── Photos flow ───────────────────────────────────────────────────────────────
 function PhotosFlow({ collections, onBack, onNavigate }) {
+  const MAX_BUNDLE_IMAGES = 3;
   const [files, setFiles] = useState([]); // [{ file, previewUrl }]
+  const [photoMode, setPhotoMode] = useState('single');
   const [title, setTitle] = useState('');
   const [notes, setNotes] = useState('');
   const [selectedCollectionId, setSelectedCollectionId] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [processingStep, setProcessingStep] = useState(0);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [error, setError] = useState(null);
   const inputRef = useRef(null);
   const [dragging, setDragging] = useState(false);
 
   const PROCESSING_STEPS = [
-    'Uploading your photos...',
-    'Submitted! Processing in background...',
+    {
+      title: 'Uploading your photos',
+      detail: 'Keeping the original quality so small handwriting stays readable.',
+      icon: 'ti-cloud-upload',
+    },
+    {
+      title: 'Reading every visible detail',
+      detail: 'Extracting handwriting, labels, lists, numbers, and image context.',
+      icon: 'ti-scan-eye',
+    },
+    {
+      title: 'Building your summary document',
+      detail: 'Organizing the messy notes into a clean summary, actions, and tags.',
+      icon: 'ti-file-analytics',
+    },
   ];
 
   useEffect(() => {
     return () => { files.forEach((f) => URL.revokeObjectURL(f.previewUrl)); };
   }, [files]);
+
+  useEffect(() => {
+    if (!uploading) return undefined;
+    setElapsedSeconds(0);
+    const tick = setInterval(() => {
+      setElapsedSeconds((s) => {
+        const next = s + 1;
+        if (next >= 5) setProcessingStep(1);
+        if (next >= 14) setProcessingStep(2);
+        return next;
+      });
+    }, 1000);
+    return () => clearInterval(tick);
+  }, [uploading]);
 
   const addFiles = (incoming) => {
     setError(null);
@@ -198,7 +235,16 @@ function PhotosFlow({ collections, onBack, onNavigate }) {
       if (f.size > 10 * 1024 * 1024) { setError(`${f.name}: too large (max 10MB)`); continue; }
       next.push({ file: f, previewUrl: URL.createObjectURL(f) });
     }
-    setFiles((prev) => [...prev, ...next].slice(0, 20));
+    setFiles((prev) => {
+      const limit = photoMode === 'single' ? 1 : MAX_BUNDLE_IMAGES;
+      const all = photoMode === 'single' ? next : [...prev, ...next];
+      if (all.length > limit) setError(photoMode === 'single' ? 'Single image mode allows only 1 image.' : `You can summarize up to ${MAX_BUNDLE_IMAGES} images at once.`);
+      const merged = all.slice(0, limit);
+      prev.forEach((f) => {
+        if (!merged.includes(f)) URL.revokeObjectURL(f.previewUrl);
+      });
+      return merged;
+    });
   };
 
   const removeAt = (i) => setFiles((prev) => {
@@ -216,21 +262,39 @@ function PhotosFlow({ collections, onBack, onNavigate }) {
 
     setUploading(true);
     setProcessingStep(0);
+    setElapsedSeconds(0);
 
     try {
-      const result = await api.submitScreenshotBundle(files.map((f) => f.file), title.trim());
+      const fd = new FormData();
+      files.forEach((x) => fd.append('files', x.file));
+      if (title.trim()) fd.append('title', title.trim());
+      if (notes.trim()) fd.append('notes', notes.trim());
+      if (selectedCollectionId) fd.append('collectionId', selectedCollectionId);
 
-      setProcessingStep(1);
+      const result = await api.analyzeScreenshotBundle(fd);
+      if (result?.status !== 'success') throw new Error(result?.error?.message || 'Analysis failed');
+
+      setProcessingStep(2);
+      const savedResult = await api.saveScreenshotBundle(result.sessionId, result.summary);
+      const savedDoc = savedResult?.save || savedResult?.data || null;
+
       files.forEach((x) => URL.revokeObjectURL(x.previewUrl));
-      setTimeout(() => {
-        setUploading(false);
-        setFiles([]);
-        setProcessingStep(0);
-        onNavigate('firstSaveSuccess', { jobId: result?.jobId, isFirstSave: false, nextScreen: 'home' });
-      }, 1200);
+      setUploading(false);
+      setFiles([]);
+      setProcessingStep(0);
+      setElapsedSeconds(0);
+      onNavigate('screenshot-summary', {
+        sessionId: result.sessionId,
+        summary: result.summary,
+        thumbnails: result.thumbnails || [],
+        source: photoMode,
+        saveId: savedDoc?._id || null,
+        autoSaved: !!savedDoc?._id,
+      });
     } catch (err) {
       setUploading(false);
       setProcessingStep(0);
+      setElapsedSeconds(0);
       setError(err.message || 'Upload failed');
     }
   };
@@ -244,44 +308,117 @@ function PhotosFlow({ collections, onBack, onNavigate }) {
         <div style={{
           position: 'fixed',
           inset: 0,
-          background: 'rgba(255,255,255,0.95)',
+          background: 'rgba(250,247,240,0.97)',
           display: 'flex',
-          flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          zIndex: 999
+          zIndex: 999,
+          padding: 22,
         }}>
           <div style={{
-            width: 56,
-            height: 56,
-            borderRadius: 28,
-            background: '#E0F7EE',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginBottom: 24
+            width: 'min(360px, 100%)',
+            background: 'var(--paper)',
+            border: '1px solid var(--hairline)',
+            borderRadius: 18,
+            padding: 20,
+            boxShadow: '0 22px 60px rgba(35, 31, 26, 0.16)',
           }}>
-            <span style={{ fontSize: 25 }}>
-              {processingStep === 1 ? '✓' : '⟳'}
-            </span>
+            <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 16 }}>
+              <div style={{
+                width: 52,
+                height: 52,
+                borderRadius: 16,
+                background: 'var(--coral-faint)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'var(--coral)',
+                flexShrink: 0,
+              }}>
+                <i className={`ti ${PROCESSING_STEPS[processingStep].icon}`} style={{ fontSize: 27 }}></i>
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <p style={{ fontSize: 12, color: 'var(--slate)', margin: '0 0 3px' }}>
+                  {files.length} image{files.length === 1 ? '' : 's'} · {elapsedSeconds}s elapsed
+                </p>
+                <p style={{ fontSize: 18, fontWeight: 800, color: 'var(--ink)', margin: 0, lineHeight: 1.2 }}>
+                  {PROCESSING_STEPS[processingStep].title}
+                </p>
+              </div>
+            </div>
+
+            <div style={{ height: 8, background: 'var(--linen)', borderRadius: 999, overflow: 'hidden', marginBottom: 16 }}>
+              <div style={{
+                width: `${Math.min(92, 18 + elapsedSeconds * 3 + processingStep * 18)}%`,
+                height: '100%',
+                background: 'linear-gradient(90deg, var(--coral), #E7A36D)',
+                borderRadius: 999,
+                transition: 'width 0.45s ease',
+              }} />
+            </div>
+
+            <p style={{ fontSize: 13, color: 'var(--slate)', lineHeight: 1.45, margin: '0 0 14px' }}>
+              {PROCESSING_STEPS[processingStep].detail}
+            </p>
+
+            <div style={{ display: 'grid', gap: 8 }}>
+              {PROCESSING_STEPS.map((step, i) => {
+                const done = i < processingStep;
+                const active = i === processingStep;
+                return (
+                  <div key={step.title} style={{ display: 'flex', alignItems: 'center', gap: 8, color: done || active ? 'var(--ink)' : 'var(--slate)' }}>
+                    <div style={{
+                      width: 20,
+                      height: 20,
+                      borderRadius: '50%',
+                      border: `1px solid ${done || active ? 'var(--coral)' : 'var(--hairline)'}`,
+                      background: done ? 'var(--coral)' : active ? 'var(--coral-faint)' : 'transparent',
+                      color: done ? '#fff' : 'var(--coral)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: 12,
+                    }}>
+                      {done ? <i className="ti ti-check" /> : active ? <i className="ti ti-loader-2" /> : i + 1}
+                    </div>
+                    <span style={{ fontSize: 13, fontWeight: active ? 700 : 500 }}>{step.title}</span>
+                  </div>
+                );
+              })}
+            </div>
+
+            <p style={{ fontSize: 12, color: 'var(--slate)', textAlign: 'center', margin: '16px 0 0' }}>
+              Usually takes 15-30 seconds. Keep this screen open.
+            </p>
           </div>
-          <p style={{
-            fontSize: 19,
-            fontWeight: 500,
-            textAlign: 'center',
-            color: '#1A1A1A',
-            margin: '0 0 8px',
-            transition: 'opacity 0.3s'
-          }}>
-            {PROCESSING_STEPS[processingStep]}
-          </p>
-          <p style={{ fontSize: 14, color: '#888', textAlign: 'center' }}>
-            {processingStep === 0 ? 'Uploading...' : 'Navigating...'}
-          </p>
         </div>
       )}
 
       <FlowHeader title="Upload photos" onBack={onBack} />
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
+        {[
+          { id: 'single', label: 'Single image', hint: 'One focused summary' },
+          { id: 'multiple', label: 'Multiple images', hint: 'One combined document' },
+        ].map((m) => {
+          const active = photoMode === m.id;
+          return (
+            <button
+              key={m.id}
+              type="button"
+              onClick={() => {
+                setPhotoMode(m.id);
+                setFiles((prev) => { prev.forEach((f) => URL.revokeObjectURL(f.previewUrl)); return []; });
+              }}
+              disabled={uploading}
+              style={{ textAlign: 'left', padding: '10px 11px', borderRadius: 10, border: active ? '1px solid var(--coral)' : '1px solid var(--hairline)', background: active ? 'var(--coral-faint)' : 'var(--paper)', cursor: 'pointer' }}
+            >
+              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--ink)' }}>{m.label}</div>
+              <div style={{ fontSize: 11, color: 'var(--slate)', marginTop: 2 }}>{m.hint}</div>
+            </button>
+          );
+        })}
+      </div>
 
       <div
         onClick={() => inputRef.current?.click()}
@@ -295,16 +432,16 @@ function PhotosFlow({ collections, onBack, onNavigate }) {
         }}
       >
         <i className="ti ti-upload" style={{ fontSize: 25, color: 'var(--coral)' }}></i>
-        <p style={{ fontSize: 14, marginTop: 6 }}>{files.length === 0 ? 'Click or drop images here' : `${files.length} image${files.length === 1 ? '' : 's'} selected — add more`}</p>
-        <p style={{ fontSize: 12, color: 'var(--slate)', marginTop: 4 }}>PNG, JPG or WebP · up to 10 files · 10 MB each</p>
-        <input ref={inputRef} type="file" accept="image/png,image/jpeg,image/webp" multiple style={{ display: 'none' }} onChange={(e) => addFiles(Array.from(e.target.files || []))} disabled={uploading} />
+        <p style={{ fontSize: 14, marginTop: 6 }}>{files.length === 0 ? (photoMode === 'single' ? 'Click or drop one image here' : `Click or drop up to ${MAX_BUNDLE_IMAGES} images here`) : `${files.length} image${files.length === 1 ? '' : 's'} selected${photoMode === 'multiple' && files.length < MAX_BUNDLE_IMAGES ? ' - add more' : ''}`}</p>
+        <p style={{ fontSize: 12, color: 'var(--slate)', marginTop: 4 }}>PNG, JPG or WebP · 10 MB each · max 3 images</p>
+        <input ref={inputRef} type="file" accept="image/png,image/jpeg,image/webp" multiple={photoMode === 'multiple'} style={{ display: 'none' }} onChange={(e) => addFiles(Array.from(e.target.files || []))} disabled={uploading} />
       </div>
 
       {files.length > 0 && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8, marginBottom: 12 }}>
           {files.map((f, i) => (
-            <div key={f.previewUrl} style={{ position: 'relative', aspectRatio: '1 / 1', borderRadius: 8, overflow: 'hidden' }}>
-              <img src={f.previewUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            <div key={f.previewUrl} style={{ position: 'relative', aspectRatio: '1 / 1', borderRadius: 8, overflow: 'hidden', border: '1px solid var(--hairline)', background: 'var(--linen)', padding: 4 }}>
+              <img src={f.previewUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#fff', borderRadius: 5 }} />
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); removeAt(i); }}
@@ -346,7 +483,7 @@ function PhotosFlow({ collections, onBack, onNavigate }) {
 
       {error && <p style={{ color: 'var(--error,#d33)', fontSize: 14, marginBottom: 8 }}>{error}</p>}
       <button className="btn-primary" disabled={uploading || files.length === 0} onClick={handleUpload}>
-        {uploading ? `Uploading ${files.length} image${files.length === 1 ? '' : 's'}…` : `Extract & save${files.length ? ` (${files.length})` : ''}`}
+        {uploading ? 'Analyzing...' : `Summarize${files.length ? ` (${files.length})` : ''}`}
       </button>
     </>
   );

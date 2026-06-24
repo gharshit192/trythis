@@ -122,7 +122,7 @@ function getNotificationBudget(persona) {
   const { saveCount = 0, confidence = 0 } = persona || {};
 
   if (saveCount < 10) return 1;
-  if (saveCount < 50) return 2;
+  if (saveCount < 20) return 2;
 
   if (confidence >= 0.6) return 3;
   return 2;

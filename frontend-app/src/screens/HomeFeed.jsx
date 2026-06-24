@@ -31,6 +31,7 @@ const getScreenshotCount = (save) => {
     || save.screenshots?.length
     || save.raw?.screenshots?.length
     || save.metadata?.screenshotCount
+    || save.aiAnalysis?.screenshotAnalysis?.data?.totalScreenshots
     || save.aiAnalysis?.screenshots?.length
     || 0;
 };

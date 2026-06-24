@@ -354,7 +354,9 @@ Rules:
     };
   });
 
-  return result || { summary: 'Analysis failed', highlights: [], themes: [], actions: [], comparison: null, tags: [] };
+  // On failure return null (NOT a placeholder) so the caller surfaces a real
+  // error and never persists/caches an empty "Analysis failed" object.
+  return result;
 };
 
 // ---- Exports ----

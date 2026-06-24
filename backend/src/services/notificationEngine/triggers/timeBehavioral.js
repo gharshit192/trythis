@@ -21,7 +21,7 @@ const TIME_RULES = [
   {
     id: 'friday_evening_weekend',
     match: (ctx) => ctx.dayOfWeek === 5 && ctx.hour >= 17 && ctx.hour <= 21,
-    categories: ['travel', 'experience'],
+    categories: ['travel', 'experience', 'experiences', 'hotels'],
     relevance: 0.85,
     title: 'Weekend ahead',
     messageTemplate: (save) => `Friday evening — "${save.title}" could be the weekend plan.`,
@@ -30,7 +30,7 @@ const TIME_RULES = [
   {
     id: 'saturday_brunch',
     match: (ctx) => ctx.dayOfWeek === 6 && ctx.hour >= 8 && ctx.hour <= 12,
-    categories: ['cafe', 'restaurant'],
+    categories: ['food', 'cafe', 'cafes', 'restaurant', 'restaurants', 'recipes'],
     relevance: 0.82,
     title: 'Saturday brunch',
     messageTemplate: (save) => `Saturday morning calls for "${save.title}".`,
@@ -39,7 +39,7 @@ const TIME_RULES = [
   {
     id: 'sunday_slow_morning',
     match: (ctx) => ctx.dayOfWeek === 0 && ctx.hour >= 8 && ctx.hour <= 11,
-    categories: ['cafe'],
+    categories: ['food', 'cafe', 'cafes', 'recipes'],
     relevance: 0.80,
     title: 'Slow Sunday',
     messageTemplate: (save) => `Quiet Sunday morning — try "${save.title}"?`,
@@ -48,7 +48,7 @@ const TIME_RULES = [
   {
     id: 'sunday_week_ahead',
     match: (ctx) => ctx.dayOfWeek === 0 && ctx.hour >= 18 && ctx.hour <= 22,
-    categories: ['fitness', 'experience', 'productivity'],
+    categories: ['fitness', 'experience', 'experiences', 'productivity', 'travel'],
     relevance: 0.75,
     title: 'Week ahead',
     messageTemplate: (save) => `Sunday evening planning — "${save.title}" for this week?`,
@@ -57,7 +57,7 @@ const TIME_RULES = [
   {
     id: 'weekday_lunch',
     match: (ctx) => ctx.dayOfWeek >= 1 && ctx.dayOfWeek <= 5 && ctx.hour >= 12 && ctx.hour <= 14,
-    categories: ['restaurant', 'cafe'],
+    categories: ['food', 'restaurant', 'restaurants', 'cafe', 'cafes', 'recipes'],
     relevance: 0.78,
     title: 'Lunch break',
     messageTemplate: (save) => `Lunch break — "${save.title}" is on your list.`,
@@ -66,7 +66,7 @@ const TIME_RULES = [
   {
     id: 'weekday_evening_unwind',
     match: (ctx) => ctx.dayOfWeek >= 1 && ctx.dayOfWeek <= 4 && ctx.hour >= 18 && ctx.hour <= 21,
-    categories: ['restaurant', 'experience'],
+    categories: ['food', 'restaurant', 'restaurants', 'experience', 'experiences'],
     relevance: 0.74,
     title: 'After work',
     messageTemplate: (save) => `Evening's open — "${save.title}" could fit.`,
@@ -132,12 +132,16 @@ async function evaluate(userId, context = {}, userPersona = null) {
 }
 
 function normalizeTimeContext(context) {
-  const now = new Date();
+  const now = context.now ? new Date(context.now) : new Date();
+  const localNow = typeof context.userTimezoneOffsetMinutes === 'number'
+    ? new Date(now.getTime() + context.userTimezoneOffsetMinutes * 60_000)
+    : now;
+  const hour = context.hour ?? (typeof context.userTimezoneOffsetMinutes === 'number' ? localNow.getUTCHours() : localNow.getHours());
   return {
-    dayOfWeek: context.dayOfWeek ?? now.getDay(),
-    hour: context.hour ?? now.getHours(),
-    dayOfMonth: context.dayOfMonth ?? now.getDate(),
-    timeOfDay: context.timeOfDay || bucketOfDay(now.getHours()),
+    dayOfWeek: context.dayOfWeek ?? (typeof context.userTimezoneOffsetMinutes === 'number' ? localNow.getUTCDay() : localNow.getDay()),
+    hour,
+    dayOfMonth: context.dayOfMonth ?? (typeof context.userTimezoneOffsetMinutes === 'number' ? localNow.getUTCDate() : localNow.getDate()),
+    timeOfDay: context.timeOfDay || bucketOfDay(hour),
   };
 }
 

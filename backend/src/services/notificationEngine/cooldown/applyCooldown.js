@@ -24,12 +24,12 @@ const logger = require('../../../utils/logger');
  * to prevent notifying twice about the same upload.
  */
 
-const SYSTEM_NOTIFICATION_TYPES = ['upload_completed', 'upload_failed'];
+const SYSTEM_NOTIFICATION_TYPES = ['upload_completed', 'upload_failed', 'upload_processing'];
 
 const COOLDOWN_CONFIG = {
   sameSaveDays: 7,
-  sameTriggerHours: 24,
-  sameCategoryHours: 12,
+  sameTriggerHours: 4,
+  sameCategoryHours: 4,
   burstWindowMinutes: 60,
   burstMaxCount: 1,
   dailySmartCap: 3,

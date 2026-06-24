@@ -31,7 +31,6 @@ const catMeta = (cat) => CATEGORY_META[cat] || CATEGORY_META.other;
 
 export default function ScreenshotDetail({ save, onNavigate }) {
   const [relatedScreenshots, setRelatedScreenshots] = useState([]);
-  const [recommendations, setRecommendations] = useState([]);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState(null);
@@ -42,6 +41,9 @@ export default function ScreenshotDetail({ save, onNavigate }) {
   const [aggregating, setAggregating] = useState(false);
   const [aggregateError, setAggregateError] = useState(null);
   const [aggregateData, setAggregateData] = useState(save?.aiAnalysis?.aggregateAnalysis || null);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [aggregateInstruction, setAggregateInstruction] = useState('');
+  const toggleSelect = (id) => setSelectedIds((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
 
   const showToast = (msg) => {
     setToast(msg);
@@ -54,26 +56,18 @@ export default function ScreenshotDetail({ save, onNavigate }) {
     // Load any previously-saved aggregate analysis (so it doesn't reset/re-run on revisit)
     setAggregateData(save?.aiAnalysis?.aggregateAnalysis || null);
 
-    // Fetch related screenshots (up to 6, excluding current)
+    // Fetch other screenshots (excluding current) for manual aggregate selection
     api.getSaves()
       .then((r) => {
         if (r?.status === 'success' && r?.data) {
           const related = r.data
-            .filter((s) => s.source === 'screenshot' && s._id !== save._id)
-            .slice(0, 6);
+            .filter((s) => (s.source === 'screenshot' || s.contentType === 'image') && s._id !== save._id)
+            .slice(0, 30);
           setRelatedScreenshots(related);
         }
       })
       .catch(() => {});
 
-    // Fetch recommendations
-    api.getRecommendations(save._id)
-      .then((r) => {
-        if (r?.status === 'success' && r?.data) {
-          setRecommendations(r.data);
-        }
-      })
-      .catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [save?._id]);
 
@@ -129,41 +123,22 @@ export default function ScreenshotDetail({ save, onNavigate }) {
   };
 
   const handleAggregate = async () => {
-    if (!save?._id) return;
+    if (!save?._id || selectedIds.length === 0) return;
     setAggregating(true);
     setAggregateError(null);
 
     try {
-      // Only aggregate screenshots that are actually RELATED to this one — same
-      // category (e.g. two job postings), not every screenshot the user ever saved.
-      // Otherwise unrelated notes/checklists get mixed into the comparison.
-      const allSaves = (await api.getSaves()).data || [];
-      const relatedScreens = allSaves.filter(
-        (s) => s._id !== save._id
-          && (s.contentType === 'image' || s.source === 'screenshot')
-          && s.category === save.category
-      ).slice(0, 6);
-
-      // Build analysis text from current + related (same-category) screenshots
-      const analyses = [save, ...relatedScreens]
-        .map((s) => {
-          const title = s.title || '';
-          const desc = s.description || '';
-          const summary = s.aiAnalysis?.summary || '';
-          return `Screenshot: ${title}\n${desc}\n${summary}`;
-        })
-        .join('\n\n---\n\n');
-
-      // Call API
-      const res = await api.aggregateScreenshotAnalysis(save._id, analyses);
-
+      const ids = [save._id, ...selectedIds];
+      const res = await api.createScreenshotAggregateDocument(ids, aggregateInstruction);
       if (res.status === 'success') {
-        setAggregateData(res.data);
+        const combined = res.data?.save;
+        setAggregateData(res.data?.aggregate || combined?.aiAnalysis?.aggregateAnalysis || null);
+        if (combined?._id) onNavigate('save-detail', { id: combined._id });
       } else {
-        setAggregateError(res.error?.message || 'Failed to aggregate');
+        setAggregateError(res.error?.message || 'Failed to create combined document');
       }
     } catch (err) {
-      setAggregateError(err.message || 'Failed to aggregate');
+      setAggregateError(err.message || 'Failed to create combined document');
     } finally {
       setAggregating(false);
     }
@@ -188,14 +163,14 @@ export default function ScreenshotDetail({ save, onNavigate }) {
 
   return (
     <div className="phone-frame" style={{ background: T.bg, color: T.text, minHeight: '100vh' }}>
-      <div style={{ display: 'flex', flexDirection: 'column', paddingBottom: 80 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', paddingBottom: 112 }}>
         {/* Hero section with overlays */}
         <div
           style={{
             borderRadius: 0,
             marginBottom: 0,
             overflow: 'hidden',
-            background: '#000',
+            background: (save?.thumbnail || save?.image) ? 'var(--linen)' : 'linear-gradient(135deg, var(--coral-faint), var(--paper))',
             aspectRatio: '16 / 11',
             display: 'flex',
             alignItems: 'center',
@@ -208,10 +183,18 @@ export default function ScreenshotDetail({ save, onNavigate }) {
               saveId={save._id}
               src={save.thumbnail || save.image}
               alt={safeTitle}
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#fff' }}
             />
           ) : (
-            <span style={{ color: T.textFaint, fontSize: 36 }}>▢</span>
+            <div style={{ textAlign: 'center', color: T.text, padding: 18 }}>
+              <div style={{ width: 54, height: 54, borderRadius: 14, background: T.bg, border: `1px solid ${T.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 10px', color: 'var(--coral)' }}>
+                <i className="ti ti-file-text" style={{ fontSize: 26 }}></i>
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 700 }}>Summary document</div>
+              <div style={{ fontSize: 11, color: T.textMuted, marginTop: 2 }}>
+                {save?.aiAnalysis?.screenshotAnalysis?.data?.totalScreenshots || save?.metadata?.screenshotCount || 0} images
+              </div>
+            </div>
           )}
 
           {/* Top overlay with controls */}
@@ -247,24 +230,6 @@ export default function ScreenshotDetail({ save, onNavigate }) {
             >
               ←
             </button>
-            <button
-              onClick={() => setConfirmDelete(true)}
-              style={{
-                width: 34,
-                height: 34,
-                borderRadius: '50%',
-                background: 'rgba(255,255,255,0.18)',
-                border: 0,
-                color: '#fff',
-                fontSize: 17,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              🗑
-            </button>
           </div>
 
           {/* Bottom overlay with category badge */}
@@ -279,7 +244,7 @@ export default function ScreenshotDetail({ save, onNavigate }) {
               display: 'flex',
               alignItems: 'flex-end',
               padding: '14px 14px',
-              gap: 8,
+              gap: 6,
             }}
           >
             <span
@@ -291,7 +256,7 @@ export default function ScreenshotDetail({ save, onNavigate }) {
                 color: T.text,
                 padding: '5px 12px',
                 borderRadius: 16,
-                fontSize: 14,
+                fontSize: 12,
                 fontWeight: 600,
               }}
             >
@@ -301,7 +266,7 @@ export default function ScreenshotDetail({ save, onNavigate }) {
         </div>
 
         {/* Content section */}
-        <div style={{ flex: 1, padding: '20px', overflowY: 'auto' }}>
+        <div style={{ flex: 1, padding: '20px 20px 28px', overflowY: 'auto' }}>
           {/* Title */}
           <h1
             style={{
@@ -372,7 +337,7 @@ export default function ScreenshotDetail({ save, onNavigate }) {
             >
               <h3
                 style={{
-                  fontSize: 14,
+                  fontSize: 12,
                   fontWeight: 600,
                   marginBottom: 8,
                   color: T.text,
@@ -404,7 +369,7 @@ export default function ScreenshotDetail({ save, onNavigate }) {
             <div style={{ marginBottom: 16 }}>
               <h3
                 style={{
-                  fontSize: 14,
+                  fontSize: 12,
                   fontWeight: 600,
                   marginBottom: 8,
                   color: T.text,
@@ -437,7 +402,7 @@ export default function ScreenshotDetail({ save, onNavigate }) {
             <div style={{ marginBottom: 16 }}>
               <h3
                 style={{
-                  fontSize: 14,
+                  fontSize: 12,
                   fontWeight: 600,
                   marginBottom: 8,
                   color: T.text,
@@ -450,7 +415,7 @@ export default function ScreenshotDetail({ save, onNavigate }) {
                   <li
                     key={i}
                     style={{
-                      fontSize: 14,
+                      fontSize: 12,
                       lineHeight: 1.6,
                       marginBottom: 6,
                       listStyleType: 'disc',
@@ -468,7 +433,7 @@ export default function ScreenshotDetail({ save, onNavigate }) {
             <div style={{ marginBottom: 16 }}>
               <h3
                 style={{
-                  fontSize: 14,
+                  fontSize: 12,
                   fontWeight: 600,
                   marginBottom: 8,
                   color: T.text,
@@ -493,7 +458,8 @@ export default function ScreenshotDetail({ save, onNavigate }) {
                       height: 100,
                       borderRadius: 8,
                       overflow: 'hidden',
-                      background: '#f0f0f0',
+                      background: 'var(--linen)',
+                      padding: 3,
                       cursor: 'pointer',
                       border: `1px solid ${T.border}`,
                     }}
@@ -503,7 +469,7 @@ export default function ScreenshotDetail({ save, onNavigate }) {
                         saveId={s._id}
                         src={s.thumbnail || s.image}
                         alt={s.title}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#fff', borderRadius: 5 }}
                       />
                     ) : (
                       <div
@@ -516,7 +482,7 @@ export default function ScreenshotDetail({ save, onNavigate }) {
                           color: T.textMuted,
                         }}
                       >
-                        🖼
+                        <i className="ti ti-file-text" style={{ fontSize: 20 }}></i>
                       </div>
                     )}
                   </div>
@@ -537,7 +503,7 @@ export default function ScreenshotDetail({ save, onNavigate }) {
           >
             <h3
               style={{
-                fontSize: 14,
+                fontSize: 12,
                 fontWeight: 600,
                 marginBottom: 8,
                 color: T.text,
@@ -549,16 +515,49 @@ export default function ScreenshotDetail({ save, onNavigate }) {
               <>
                 <p style={{ fontSize: 13, color: T.textMuted, marginBottom: 10, lineHeight: 1.5 }}>
                   {relatedScreenshots.length > 0
-                    ? 'Combine all related screenshots into a single analysis'
-                    : 'No related screenshots to aggregate'}
+                    ? 'Select screenshots to combine into a new document. Add context so the AI knows how they relate.'
+                    : 'No other screenshots to aggregate yet.'}
                 </p>
-                <button
-                  onClick={handleAggregate}
-                  disabled={aggregating || relatedScreenshots.length === 0}
-                  style={{ padding: '8px 12px', fontSize: 13, borderRadius: 6, background: 'var(--coral)', color: '#fff', border: 0, cursor: aggregating ? 'not-allowed' : 'pointer', opacity: aggregating || relatedScreenshots.length === 0 ? 0.6 : 1 }}
-                >
-                  {aggregating ? 'Aggregating...' : 'Aggregate'}
-                </button>
+                {relatedScreenshots.length > 0 && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 10, maxHeight: 220, overflowY: 'auto' }}>
+                    {relatedScreenshots.map((s) => {
+                      const checked = selectedIds.includes(s._id);
+                      return (
+                        <label key={s._id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 8, cursor: 'pointer', background: checked ? 'rgba(14,124,123,0.08)' : T.bg, border: `1px solid ${checked ? 'var(--coral)' : T.border}` }}>
+                          <input type="checkbox" checked={checked} onChange={() => toggleSelect(s._id)} style={{ width: 16, height: 16, accentColor: 'var(--coral)', flexShrink: 0 }} />
+                          {s.thumbnail ? (
+                            <img src={s.thumbnail} alt="" style={{ width: 32, height: 32, borderRadius: 6, objectFit: 'cover', flexShrink: 0 }} />
+                          ) : (
+                            <div style={{ width: 32, height: 32, borderRadius: 6, background: T.bgInner, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 14 }}>🖼</div>
+                          )}
+                          <span style={{ fontSize: 13, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.title || 'Untitled'}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                )}
+                {relatedScreenshots.length > 0 && (
+                  <div style={{ marginBottom: 10 }}>
+                    <p style={{ fontSize: 12, fontWeight: 600, color: T.textMuted, marginBottom: 6 }}>
+                      Answer for better aggregation
+                    </p>
+                    <textarea
+                      value={aggregateInstruction}
+                      onChange={(e) => setAggregateInstruction(e.target.value)}
+                      placeholder="How are these connected? What should the final document focus on? Any decisions, business ideas, risks, or next steps you want extracted?"
+                      style={{ width: '100%', minHeight: 74, borderRadius: 8, border: `1px solid ${T.border}`, background: T.bg, color: T.text, padding: 9, fontSize: 13, resize: 'vertical', boxSizing: 'border-box' }}
+                    />
+                  </div>
+                )}
+                {relatedScreenshots.length > 0 && (
+                  <button
+                    onClick={handleAggregate}
+                    disabled={aggregating || selectedIds.length === 0}
+                    style={{ padding: '8px 12px', fontSize: 13, borderRadius: 6, background: 'var(--coral)', color: '#fff', border: 0, cursor: aggregating || selectedIds.length === 0 ? 'not-allowed' : 'pointer', opacity: aggregating || selectedIds.length === 0 ? 0.6 : 1 }}
+                  >
+                    {aggregating ? 'Creating document...' : selectedIds.length > 0 ? `Create combined document (${selectedIds.length + 1})` : 'Select screenshots to combine'}
+                  </button>
+                )}
               </>
             ) : (
               <>
@@ -680,50 +679,6 @@ export default function ScreenshotDetail({ save, onNavigate }) {
             )}
           </div>
 
-          {/* Similar saves */}
-          {recommendations.length > 0 && (
-            <div style={{ marginBottom: 16 }}>
-              <h3
-                style={{
-                  fontSize: 14,
-                  fontWeight: 600,
-                  marginBottom: 8,
-                  color: T.text,
-                }}
-              >
-                Similar Saves
-              </h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {recommendations.slice(0, 3).map((rec) => (
-                  <div
-                    key={rec._id}
-                    onClick={() => onNavigate('save-detail', { id: rec._id })}
-                    style={{
-                      padding: 10,
-                      borderRadius: 8,
-                      background: T.bgInner,
-                      border: `1px solid ${T.border}`,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    <p
-                      style={{
-                        fontSize: 14,
-                        fontWeight: 500,
-                        color: T.text,
-                        marginBottom: 4,
-                      }}
-                    >
-                      {rec.title}
-                    </p>
-                    <p style={{ fontSize: 12, color: T.textMuted }}>
-                      {rec.category || 'general'}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
@@ -732,9 +687,13 @@ export default function ScreenshotDetail({ save, onNavigate }) {
         style={{
           position: 'fixed',
           bottom: 0,
-          left: 0,
-          right: 0,
-          padding: '12px 14px',
+          left: '50%',
+          right: 'auto',
+          transform: 'translateX(-50%)',
+          width: '100%',
+          maxWidth: 430,
+          boxSizing: 'border-box',
+          padding: '10px 12px calc(10px + env(safe-area-inset-bottom))',
           background: T.bg,
           borderTop: `1px solid ${T.border}`,
           display: 'flex',
@@ -745,9 +704,9 @@ export default function ScreenshotDetail({ save, onNavigate }) {
           onClick={handleShare}
           style={{
             flex: 1,
-            padding: '12px',
+            padding: '10px 6px',
             borderRadius: 8,
-            fontSize: 14,
+            fontSize: 12,
             fontWeight: 600,
             border: `1px solid ${T.border}`,
             background: T.bg,
@@ -758,12 +717,44 @@ export default function ScreenshotDetail({ save, onNavigate }) {
           ↗ Share
         </button>
         <button
+          onClick={handleExportPdf}
+          style={{
+            flex: 1,
+            padding: '10px 6px',
+            borderRadius: 8,
+            fontSize: 12,
+            fontWeight: 600,
+            border: `1px solid ${T.border}`,
+            background: T.bg,
+            color: T.text,
+            cursor: 'pointer',
+          }}
+        >
+          Export PDF
+        </button>
+        <button
+          onClick={() => setConfirmDelete(true)}
+          style={{
+            flex: 1,
+            padding: '10px 6px',
+            borderRadius: 8,
+            fontSize: 12,
+            fontWeight: 600,
+            border: '1px solid rgba(211,51,51,0.24)',
+            background: 'rgba(211,51,51,0.08)',
+            color: T.redFg,
+            cursor: 'pointer',
+          }}
+        >
+          Delete
+        </button>
+        <button
           onClick={() => onNavigate('home')}
           style={{
             flex: 1,
-            padding: '12px',
+            padding: '10px 6px',
             borderRadius: 8,
-            fontSize: 14,
+            fontSize: 12,
             fontWeight: 600,
             border: 0,
             background: 'var(--coral)',
@@ -803,7 +794,7 @@ export default function ScreenshotDetail({ save, onNavigate }) {
             onClick={(e) => e.stopPropagation()}
           >
             <h2 style={{ fontSize: 17, fontWeight: 600, marginBottom: 8 }}>Delete</h2>
-            <p style={{ fontSize: 14, color: T.textMuted, marginBottom: 16 }}>
+            <p style={{ fontSize: 12, color: T.textMuted, marginBottom: 16 }}>
               Are you sure you want to delete this screenshot?
             </p>
             {deleteError && (
@@ -910,7 +901,7 @@ export default function ScreenshotDetail({ save, onNavigate }) {
                     background: 'var(--coral)',
                     color: '#fff',
                     cursor: 'pointer',
-                    fontSize: 14,
+                    fontSize: 12,
                     fontWeight: 600,
                     marginBottom: 8,
                   }}
@@ -930,7 +921,7 @@ export default function ScreenshotDetail({ save, onNavigate }) {
                   background: 'var(--coral)',
                   color: '#fff',
                   cursor: shareLoading ? 'not-allowed' : 'pointer',
-                  fontSize: 14,
+                  fontSize: 12,
                   fontWeight: 600,
                   opacity: shareLoading ? 0.6 : 1,
                 }}
@@ -948,7 +939,7 @@ export default function ScreenshotDetail({ save, onNavigate }) {
                 background: T.bg,
                 color: T.text,
                 cursor: 'pointer',
-                fontSize: 14,
+                fontSize: 12,
                 fontWeight: 600,
                 marginTop: 8,
               }}
@@ -971,7 +962,7 @@ export default function ScreenshotDetail({ save, onNavigate }) {
             color: T.bg,
             padding: '10px 16px',
             borderRadius: 8,
-            fontSize: 14,
+            fontSize: 12,
             zIndex: 2000,
           }}
         >

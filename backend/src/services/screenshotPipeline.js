@@ -148,7 +148,7 @@ const processFiles = async (files = [], { userId, title, source = 'screenshot', 
       continue;
     }
 
-    const ocrText = await runOcr(fullPath);
+    const ocrText = fullPath ? await runOcr(fullPath) : '';
     const uploadedAt = new Date();
     const purgeAfter = addWorkingDays(uploadedAt, PURGE_AFTER_DAYS);
 

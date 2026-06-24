@@ -772,10 +772,10 @@ router.post('/upload-screenshots',
 // ─── Multi-screenshot bundle endpoints (Vision + refine + export) ────────────
 
 router.post('/screenshot-bundle',
-  (req, res, next) => upload.array('files', 20)(req, res, (err) => {
+  (req, res, next) => upload.array('files', 3)(req, res, (err) => {
     if (!err) return next();
     if (err.code === 'LIMIT_FILE_SIZE') return res.status(413).json({ status: 'error', error: { code: 'FILE_TOO_LARGE', message: 'each file must be ≤ 10MB' } });
-    if (err.code === 'LIMIT_FILE_COUNT') return res.status(413).json({ status: 'error', error: { code: 'TOO_MANY_FILES', message: 'max 20 files per upload' } });
+    if (err.code === 'LIMIT_FILE_COUNT') return res.status(413).json({ status: 'error', error: { code: 'TOO_MANY_FILES', message: 'max 3 files per upload' } });
     return res.status(400).json({ status: 'error', error: { code: 'INVALID_UPLOAD', message: err.message } });
   }),
   authMiddleware,
@@ -784,6 +784,9 @@ router.post('/screenshot-bundle',
       const files = req.files;
       if (!files || files.length === 0) {
         return res.status(400).json({ status: 'error', error: { code: 'NO_FILES', message: 'Upload at least one screenshot' } });
+      }
+      if (files.length > 3) {
+        return res.status(413).json({ status: 'error', error: { code: 'TOO_MANY_FILES', message: 'Upload up to 3 images at a time' } });
       }
 
       logger.info(`[screenshot-bundle] Processing ${files.length} files for user ${req.user.id}`);
@@ -797,19 +800,22 @@ router.post('/screenshot-bundle',
 
       const filePaths = pipelineResult.screenshots.map(s => {
         const filename = path.basename(s.url);
-        return path.join(screenshotPipeline.__dirs.FULL_DIR, filename);
+        const localPath = path.join(screenshotPipeline.__dirs.FULL_DIR, filename);
+        // Cloudinary-hosted screenshots have no local file — pass the remote URL
+        // so Claude can fetch them directly. Local saves use the on-disk path.
+        return require('fs').existsSync(localPath) ? localPath : s.url;
       });
 
       const sessionId = uuidv4();
       const start = Date.now();
-      const summary = await screenshotBundle.analyzeBundle(filePaths, sessionId);
+      const summary = await screenshotBundle.analyzeBundle(filePaths, sessionId, req.body.title || '');
       const processingTimeMs = Date.now() - start;
 
       if (!summary) {
         return res.status(500).json({ status: 'error', error: { code: 'ANALYSIS_FAILED', message: 'AI processing failed, please retry' } });
       }
 
-      screenshotBundle.saveSession(sessionId, filePaths, summary);
+      screenshotBundle.saveSession(sessionId, filePaths, summary, pipelineResult.screenshots.map(s => s.thumbnailUrl));
       logger.info(`[screenshot-bundle] Completed in ${processingTimeMs}ms: "${summary.autoTitle}"`);
 
       res.json({
@@ -849,16 +855,11 @@ router.post('/screenshot-bundle/:sessionId/refine',
       const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
       const imageContents = session.filePaths
-        .filter(fp => require('fs').existsSync(fp))
-        .map(fp => {
-          const ext = path.extname(fp).toLowerCase().replace('.', '');
-          const mediaType = ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg';
-          const data = require('fs').readFileSync(fp).toString('base64');
-          return { type: 'image', source: { type: 'base64', media_type: mediaType, data } };
-        });
+        .map(fp => screenshotBundle.buildImageContent(fp))
+        .filter(Boolean);
 
       const response = await client.messages.create({
-        model: 'claude-haiku-4-5-20251001',
+        model: 'claude-sonnet-4-6',
         max_tokens: 2048,
         temperature: 0,
         messages: [{
@@ -900,16 +901,42 @@ router.post('/screenshot-bundle/:sessionId/save',
         return res.status(404).json({ status: 'error', error: { code: 'SESSION_NOT_FOUND', message: 'Session expired' } });
       }
 
+      const existingSave = await Save.findOne({
+        userId: req.user.id,
+        status: 'active',
+        'metadata.screenshotSessionId': sessionId,
+      });
+      if (existingSave) {
+        return res.json({ status: 'success', save: existingSave, existing: true });
+      }
+
       const useSummary = bodySummary || session.summary;
+      const detectedCategory = (() => {
+        const c = String(useSummary.detectedTheme || '').toLowerCase();
+        if (['food', 'shopping', 'tech', 'finance', 'travel', 'other'].includes(c)) return c;
+        if (['cafe', 'cafes', 'restaurant', 'restaurants', 'recipe', 'recipes'].includes(c)) return 'food';
+        if (['hotel', 'hotels', 'stay', 'stays', 'place', 'places'].includes(c)) return 'travel';
+        return 'other';
+      })();
+
+      const singleThumbnail = (useSummary.totalScreenshots || session.filePaths?.length || 0) === 1
+        ? (session.thumbnails?.[0] || null)
+        : null;
 
       const save = new Save({
         userId: req.user.id,
         title: useSummary.autoTitle || 'Screenshot bundle',
-        category: useSummary.detectedTheme || 'other',
+        category: detectedCategory,
         source: 'screenshot',
         contentType: 'image',
+        thumbnail: singleThumbnail,
         processingStatus: 'done',
         tags: useSummary.categories?.flatMap(c => c.items?.flatMap(i => i.tags || []) || []).slice(0, 12) || [],
+        metadata: {
+          screenshotCount: useSummary.totalScreenshots || session.filePaths?.length || 0,
+          screenshotSessionId: sessionId,
+          thumbnailCount: Array.isArray(session.thumbnails) ? session.thumbnails.length : 0,
+        },
         aiAnalysis: {
           summary: useSummary.masterSummary?.oneLiner || '',
           keyPoints: useSummary.masterSummary?.bullets || [],
@@ -1044,6 +1071,153 @@ router.post('/bulk/import', async (req, res) => {
 // (GET /nearby relocated above the `/:id` route to avoid Express route shadowing —
 //  see the definition right after `GET /`.)
 
+// POST /aggregate-document — Create a new combined screenshot/image document
+router.post('/aggregate-document', async (req, res) => {
+  try {
+    const saveIds = Array.isArray(req.body.saveIds) ? req.body.saveIds.filter(Boolean) : [];
+    const instruction = typeof req.body.instruction === 'string' ? req.body.instruction.trim() : '';
+
+    const uniqueIds = [...new Set(saveIds.map(String))];
+    if (uniqueIds.length < 2) {
+      return res.status(400).json({
+        status: 'error',
+        error: { code: 'NEED_MULTIPLE_SAVES', message: 'Select at least two screenshots or images to combine' },
+      });
+    }
+    if (uniqueIds.some((id) => !mongoose.Types.ObjectId.isValid(id))) {
+      return res.status(400).json({ status: 'error', error: { code: 'INVALID_ID', message: 'Invalid save id' } });
+    }
+
+    const aggregateKey = `${uniqueIds.slice().sort().join('|')}::${instruction}`;
+    const existingAggregate = await Save.findOne({
+      userId: req.user.id,
+      status: 'active',
+      $or: [
+        { 'metadata.aggregateKey': aggregateKey },
+        {
+          'metadata.aggregateInstruction': instruction || null,
+          'metadata.aggregateSourceSaveIds': { $all: uniqueIds, $size: uniqueIds.length },
+        },
+      ],
+    }).select('-aiAnalysis.screenshotAnalysis.data.aggregate').lean();
+    if (existingAggregate) {
+      if (!existingAggregate.metadata?.aggregateKey) {
+        await Save.updateOne({ _id: existingAggregate._id }, { $set: { 'metadata.aggregateKey': aggregateKey } });
+      }
+      return res.json({
+        status: 'success',
+        existing: true,
+        data: {
+          save: existingAggregate,
+          aggregate: existingAggregate.aiAnalysis?.aggregateAnalysis || null,
+        },
+      });
+    }
+
+    const saves = await Save.find({
+      _id: { $in: uniqueIds },
+      userId: req.user.id,
+      status: 'active',
+      $or: [{ source: 'screenshot' }, { contentType: 'image' }],
+    }).lean();
+
+    if (saves.length !== uniqueIds.length) {
+      return res.status(404).json({
+        status: 'error',
+        error: { code: 'NOT_FOUND', message: 'One or more selected screenshots were not found' },
+      });
+    }
+
+    const ordered = uniqueIds.map((id) => saves.find((s) => String(s._id) === id)).filter(Boolean);
+    const analysisText = ordered.map((s, idx) => {
+      const ai = s.aiAnalysis || {};
+      const ocr = s.metadata?.ocrText || '';
+      const bundle = ai.screenshotAnalysis?.type === 'bundle' ? ai.screenshotAnalysis.data : null;
+      return [
+        `Screenshot ${idx + 1}: ${s.title || 'Untitled'}`,
+        s.description ? `Description: ${s.description}` : null,
+        ai.summary ? `Summary: ${ai.summary}` : null,
+        Array.isArray(ai.keyPoints) && ai.keyPoints.length ? `Key points: ${ai.keyPoints.join(' | ')}` : null,
+        ocr ? `OCR/raw text: ${ocr}` : null,
+        bundle ? `Existing document summary: ${JSON.stringify(bundle).slice(0, 3500)}` : null,
+      ].filter(Boolean).join('\n');
+    }).join('\n\n---\n\n');
+
+    const prompt = [
+      instruction ? `User context / answers:\n${instruction}` : null,
+      'Create one coherent combined document. Explain how the selected screenshots relate, extract business-relevant insights, decisions, risks, and concrete next actions. If the screenshots are raw notes, rewrite them into a polished structured document.',
+      analysisText,
+    ].filter(Boolean).join('\n\n');
+
+    const claudeService = require('../services/claudeService');
+    const aggregated = await claudeService.aggregateAnalyses(prompt);
+    if (!aggregated) {
+      return res.status(502).json({ status: 'error', error: { code: 'AGGREGATE_FAILED', message: 'Combined document failed to generate — please try again.' } });
+    }
+
+    const titleSeed = ordered[0]?.title || 'Combined screenshots';
+    const requestedTitle = typeof req.body.title === 'string' ? req.body.title.trim() : '';
+    const docTitle = requestedTitle || `Combined: ${titleSeed}`.slice(0, 120);
+    const combinedSave = new Save({
+      userId: req.user.id,
+      title: docTitle,
+      description: aggregated.summary || aggregated.combinedSummary || '',
+      thumbnail: null,
+      source: 'screenshot',
+      contentType: 'image',
+      category: 'other',
+      tags: Array.isArray(aggregated.tags) ? aggregated.tags.slice(0, 12) : [],
+      intentStatus: 'saved',
+      processingStatus: 'done',
+      confidence: 0.9,
+      metadata: {
+        aggregateSourceSaveIds: uniqueIds,
+        aggregateInstruction: instruction || null,
+        aggregateKey,
+      },
+      aiAnalysis: {
+        summary: aggregated.summary || aggregated.combinedSummary || '',
+        keyPoints: Array.isArray(aggregated.highlights) ? aggregated.highlights : [],
+        aggregateAnalysis: aggregated,
+        screenshotAnalysis: {
+          type: 'combined_document',
+          data: { sourceSaveIds: uniqueIds, instruction: instruction || null, aggregate: aggregated },
+          confidence: 0.9,
+          allMatches: [],
+        },
+        processedAt: new Date(),
+      },
+      status: 'active',
+    });
+
+    await combinedSave.save();
+    logger.info(`[aggregate-document] Created combined save ${combinedSave._id} from ${uniqueIds.length} saves`);
+    res.status(201).json({
+      status: 'success',
+      data: {
+        save: {
+          _id: combinedSave._id,
+          id: combinedSave._id,
+          title: combinedSave.title,
+          description: combinedSave.description,
+          thumbnail: combinedSave.thumbnail,
+          source: combinedSave.source,
+          contentType: combinedSave.contentType,
+          category: combinedSave.category,
+          tags: combinedSave.tags,
+          metadata: combinedSave.metadata,
+          status: combinedSave.status,
+          createdAt: combinedSave.createdAt,
+          updatedAt: combinedSave.updatedAt,
+        },
+        aggregate: aggregated,
+      },
+    });
+  } catch (error) {
+    logger.error(`Aggregate document error: ${error.message}`);
+    res.status(500).json({ status: 'error', error: { code: 'AGGREGATE_DOCUMENT_ERROR', message: error.message } });
+  }
+});
 // POST /:id/aggregate-analysis — Aggregate and analyze multiple screenshots
 router.post('/:id/aggregate-analysis', validateObjectId('id'), async (req, res) => {
   try {
@@ -1224,7 +1398,7 @@ router.get('/:id/export-pdf', validateObjectId('id'), async (req, res) => {
       if (Array.isArray(bundle.categories) && bundle.categories.length) {
         section('Categories');
         bundle.categories.forEach((cat) => {
-          doc.fontSize(12).font('Helvetica-Bold').fillColor(ACCENT).text(`${cat.emoji || ''} ${cat.name || 'Category'}${typeof cat.count === 'number' ? ` (${cat.count})` : ''}`.trim());
+          doc.fontSize(12).font('Helvetica-Bold').fillColor(ACCENT).text(`${cat.name || 'Category'}${typeof cat.count === 'number' ? ` (${cat.count})` : ''}`.trim());
           (cat.items || []).forEach((item) => {
             doc.fontSize(11).font('Helvetica-Bold').fillColor('#000').text(item.name || 'Item');
             if (item.details) doc.fontSize(10).font('Helvetica').fillColor('#444').text(item.details, { indent: 10, lineGap: 2 });

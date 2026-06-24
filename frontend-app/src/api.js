@@ -248,13 +248,20 @@ const api = {
   },
 
   async exportBundlePdf(sessionId) {
-    const url = new URL(`${API_BASE_URL}/saves/screenshot-bundle/${sessionId}/export-pdf`);
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch(`${API_BASE_URL}/saves/screenshot-bundle/${sessionId}/export-pdf`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!response.ok) throw new Error('Export failed');
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url.toString();
+    a.href = url;
     a.setAttribute('download', `wanna-try-summary-${Date.now()}.pdf`);
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
   },
 
   async updateIntent(id, { intentStatus, plannedFor, triedAt } = {}) {
@@ -478,7 +485,15 @@ const api = {
       body: fd,
     });
     const data = await handle(res);
-    return data?.data || data;
+    const bundle = data?.data || data;
+    const firstJob = bundle?.jobs?.[0] || null;
+    return {
+      ...bundle,
+      jobId: bundle?.jobId || firstJob?.jobId || null,
+      saveId: bundle?.saveId || firstJob?.saveId || null,
+      jobIds: Array.isArray(bundle?.jobs) ? bundle.jobs.map((job) => job.jobId).filter(Boolean) : [],
+      saveIds: Array.isArray(bundle?.jobs) ? bundle.jobs.map((job) => job.saveId).filter(Boolean) : [],
+    };
   },
 
   async getJobStatus(jobId) {
@@ -498,6 +513,14 @@ const api = {
   },
 
   // ---- Screenshot Analysis ----
+  async createScreenshotAggregateDocument(saveIds, instruction = '', title = '') {
+    const res = await fetch(`${API_BASE_URL}/saves/aggregate-document`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
+      body: JSON.stringify({ saveIds, instruction, title }),
+    });
+    return handle(res);
+  },
   async aggregateScreenshotAnalysis(saveId, analysisText) {
     const res = await fetch(`${API_BASE_URL}/saves/${saveId}/aggregate-analysis`, {
       method: 'POST',

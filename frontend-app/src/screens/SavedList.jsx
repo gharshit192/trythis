@@ -78,20 +78,22 @@ export default function SavedList({ filter, title, saves = [], onNavigate }) {
   const [locating, setLocating] = useState(false);
 
   useEffect(() => {
-    // If saves not provided or empty, fetch them from API
-    if (!saves || saves.length === 0) {
-      setLoading(true);
-      api.getSaves()
-        .then(result => {
-          if (result.status === 'success') {
-            setAllSaves(result.data);
-          }
-        })
-        .catch(err => console.error('Failed to fetch saves:', err))
-        .finally(() => setLoading(false));
-    } else {
-      setAllSaves(saves);
-    }
+    // Always refresh on entry. App-level saves can be stale after creating a
+    // screenshot summary document, so relying only on the passed prop hides it.
+    setLoading(true);
+    api.getSaves()
+      .then(result => {
+        if (result.status === 'success') {
+          setAllSaves(result.data || []);
+        } else {
+          setAllSaves(saves || []);
+        }
+      })
+      .catch(err => {
+        console.error('Failed to fetch saves:', err);
+        setAllSaves(saves || []);
+      })
+      .finally(() => setLoading(false));
   }, [saves]);
 
   const isCategoryView = !['video', 'link', 'bundle'].includes(filter);
@@ -216,7 +218,7 @@ export default function SavedList({ filter, title, saves = [], onNavigate }) {
                   </div>
                   <div style={{ minWidth: 0 }}>
                     <div className="save-card-name" style={{ marginBottom: 2 }}>{save.title}</div>
-                    <div style={{ fontSize: 11, color: 'var(--mute)' }}>{save.aiAnalysis?.screenshots?.length || 0} screenshots</div>
+                    <div style={{ fontSize: 11, color: 'var(--mute)' }}>{save.metadata?.screenshotCount || save.aiAnalysis?.screenshotAnalysis?.data?.totalScreenshots || save.screenshots?.length || 0} screenshots</div>
                   </div>
                 </div>
                 <div style={{ fontSize: 12, color: 'var(--slate)', lineHeight: 1.7, marginBottom: 10 }}>

@@ -161,7 +161,7 @@ function App() {
     'savedList': <SavedList {...props} saves={saves} filter={payload?.filter} title={payload?.title} />,
     'add-save': <AddSave {...props} />,
     'save-detail': <SaveDetail {...props} />,
-    'screenshot-summary': <ScreenshotSummary {...props} sessionId={payload?.sessionId} summary={payload?.summary} saveId={payload?.saveId} />,
+    'screenshot-summary': <ScreenshotSummary {...props} sessionId={payload?.sessionId} summary={payload?.summary} thumbnails={payload?.thumbnails || []} saveId={payload?.saveId} autoSaved={payload?.autoSaved} />,
     'collections': <Collections {...props} />,
     'collection-detail': <CollectionDetail {...props} />,
     'trip-collection': <TripCollection {...props} />,
@@ -173,7 +173,7 @@ function App() {
   };
 
   // Screens that should show the bottom nav
-  const hasBottomNav = ['home', 'home-empty', 'nearby', 'search', 'collections', 'profile', 'saved-list', 'save-detail', 'notifications'].includes(currentScreen);
+  const hasBottomNav = ['home', 'home-empty', 'nearby', 'search', 'collections', 'profile', 'savedList', 'notifications'].includes(currentScreen);
 
   return (
     <div style={{ minHeight: '100vh', width: '100%', display: 'flex', justifyContent: 'center', background: 'transparent' }}>

@@ -178,6 +178,11 @@ const intentItemSchema = new mongoose.Schema({
     default: 'general',
   },
   tags: [String],
+
+  // Free-form source/pipeline metadata. Existing upload and screenshot flows
+  // write job IDs, OCR details, screenshot counts, and recovery provenance here.
+  metadata: { type: mongoose.Schema.Types.Mixed, default: {} },
+
   collections: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Collection' }],
 
   // Intent lifecycle

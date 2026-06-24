@@ -9,7 +9,7 @@ const LOOKBACK_DAYS = 60;
 // - Users always open them immediately (100% open rate)
 // - They skew fatigue metrics and trigger suppression of smart notifications
 // - We only measure engagement with smart triggers to decide suppression
-const SYSTEM_NOTIFICATION_TYPES = ['upload_completed', 'upload_failed'];
+const SYSTEM_NOTIFICATION_TYPES = ['upload_completed', 'upload_failed', 'upload_processing'];
 
 /**
  * Build engagement profile for a user.
