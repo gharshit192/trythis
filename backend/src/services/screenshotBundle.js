@@ -10,6 +10,7 @@ const BUNDLE_DIR = path.join(UPLOADS_DIR, 'screenshot-bundles');
 const PUBLIC_BASE_URL = process.env.PUBLIC_BASE_URL || 'http://localhost:4000';
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const hindiOcr = require('./hindiOcr');
 
 const ensureBundleDir = () => {
   if (!fs.existsSync(BUNDLE_DIR)) fs.mkdirSync(BUNDLE_DIR, { recursive: true });
@@ -110,6 +111,17 @@ const analyzeBundle = async (filePaths, sessionId, userTitle = null) => {
 
     if (imageContents.length === 0) {
       throw new Error('no readable images in bundle');
+    }
+
+    // Devanagari (Hindi/Marathi) content — handwritten or printed — gets
+    // mangled by the generic classify+summarize+extract prompt below, which
+    // tends to guess plausible-looking words instead of admitting
+    // uncertainty. Route it to a dedicated transcription-first OCR pipeline.
+    const detection = await hindiOcr.detect(imageContents).catch(() => null);
+    if (detection?.hasDevanagari) {
+      logger.info('screenshotBundle: Devanagari detected, routing to hindiOcr pipeline');
+      const result = await hindiOcr.run(imageContents);
+      return hindiOcr.toBundleShape(result, imageContents.length, userTitle);
     }
 
     const content = [

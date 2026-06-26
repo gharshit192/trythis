@@ -1,288 +1,56 @@
-# TryThis - Save It. Find It. Try It.
+# Wanna Try
 
-A comprehensive platform for saving, organizing, and discovering things you want to try - from cafes and restaurants to travel destinations, products, and experiences.
+A save-and-resurface companion. Users capture links, videos, and screenshots
+from social apps; the backend extracts structured meaning with AI; and a
+notification engine resurfaces saved intent **at the right time and place**. The
+bet is timing, not storage.
 
-## 🎯 Project Overview
+## Start here
 
-TryThis is a full-stack application with dual product offerings:
-- **Web App** (React) - Browser-based interface for full functionality
-- **Mobile App** (React Native/Expo) - iOS/Android native experience
-- **Backend** (Node.js/Express) - RESTful API with MongoDB
+- **[AGENTS.md](AGENTS.md)** — the implementation rulebook. Read this first
+  before any change.
+- **[docs/adr/](docs/adr/)** — architecture decision records (the "why").
 
-## 📁 Project Structure
+## Documentation map
+
+| Doc | What it covers |
+|-----|----------------|
+| [docs/architecture.md](docs/architecture.md) | Repo layout, backend services, frontends, data flow |
+| [docs/product.md](docs/product.md) | Vision, problem, phased plan, core flow |
+| [docs/product/LIFEOS_ROADMAP.md](docs/product/LIFEOS_ROADMAP.md) | Detailed north-star roadmap |
+| [docs/extraction.md](docs/extraction.md) | URL/video/screenshot → structured save pipeline |
+| [docs/notifications.md](docs/notifications.md) | Trigger engine + Web Push/email delivery |
+| [docs/ops.md](docs/ops.md) | Setup, environment variables, deployment |
+| [docs/testing.md](docs/testing.md) | How to verify changes |
+| [docs/design-system.md](docs/design-system.md) | Canonical UI tokens, type scale, component specs |
+| [docs/code-patterns.md](docs/code-patterns.md) | Feature implementation workflow + patterns |
+| [docs/adr/](docs/adr/) | Decision records (extraction, OCR, notifications, frontend) |
+
+## Layout
 
 ```
-TryThis/
-├── frontend-app/          # React web application
-│   ├── src/
-│   │   ├── screens/       # 18 UI screens (Login, Home, Collections, etc.)
-│   │   ├── api.js         # API service with real backend integration
-│   │   ├── theme.css      # Design system with fixed footer
-│   │   └── App.js         # Main app component
-│   ├── public/
-│   └── package.json
-│
-├── frontend/              # React Native/Expo mobile app
-│   ├── src/
-│   │   ├── screens/
-│   │   ├── services/
-│   │   └── theme/
-│   └── package.json
-│
-├── backend/               # Node.js/Express API server
-│   ├── src/
-│   │   ├── routes/        # API endpoints (auth, saves, collections, search)
-│   │   ├── models/        # MongoDB schemas (User, Save, Collection, etc.)
-│   │   ├── middleware/    # Authentication & error handling
-│   │   ├── services/      # Business logic (extraction, recommendations)
-│   │   └── config/        # Database & Redis configuration
-│   ├── .env.example
-│   └── package.json
-│
-├── shared/                # Shared code between web and mobile
-│   ├── types/
-│   └── utils/
-│
-├── trythis-seed-data/     # Seed data ingestion pipeline
-│   └── seed-data/
-│       ├── ingest-seeds.js    # Processing pipeline
-│       ├── seeds.json         # 50 URLs for testing
-│       └── processed-saves.json # Processed metadata
-│
-├── docs/                  # Documentation
-│   ├── api/               # API endpoint docs
-│   ├── architecture/      # Tech stack & system design
-│   ├── data-models/       # Database schemas
-│   ├── features/          # Feature specifications
-│   └── systems/           # Fetch system, retention engine
-│
-├── MONOREPO_STRUCTURE.md  # Monorepo architecture guide
-├── ARCHITECTURE.md        # System architecture details
-└── docker-compose.yml     # Docker setup for local development
+backend/        Node.js/Express API — MongoDB + Redis/Bull + Claude/Vision AI. The brain.
+frontend-app/   Capacitor + PWA client (web dev loop + Android). ACTIVE.
+frontend/       Expo/React Native client. LEGACY.
+docs/           Canonical documentation (map above).
 ```
 
-See [MONOREPO_STRUCTURE.md](./MONOREPO_STRUCTURE.md) for detailed breakdown.
+This is an npm-workspaces monorepo; the authoritative lockfile is the root
+`package-lock.json`.
 
-## 🚀 Quick Start
-
-### Prerequisites
-- Node.js 18+
-- MongoDB (local or Atlas)
-- Redis (optional)
-
-### Setup
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/gharshit192/trythis.git
-   cd TryThis
-   ```
-
-2. **Install dependencies**
-   ```bash
-   # Backend
-   cd backend && npm install
-   
-   # Web app
-   cd ../frontend-app && npm install
-   
-   # Mobile app (optional)
-   cd ../frontend && npm install
-   ```
-
-3. **Configure environment**
-   ```bash
-   # Backend
-   cp backend/.env.example backend/.env
-   # Update with your MongoDB URI and other config
-   
-   # Mobile (optional)
-   cp frontend/.env.example frontend/.env
-   ```
-
-4. **Run the applications**
-   ```bash
-   # Terminal 1: Backend (port 4000)
-   cd backend && npm run dev
-   
-   # Terminal 2: Web app (port 3000)
-   cd frontend-app && npm start
-   
-   # Terminal 3: Mobile app (optional)
-   cd frontend && npm start
-   ```
-
-## 🎨 Features Implemented
-
-### Web App (18 Screens)
-- ✅ Authentication (Login/Signup)
-- ✅ Home Feed with saves display
-- ✅ Collections management
-- ✅ Search functionality
-- ✅ Save detail view
-- ✅ Quick save modal
-- ✅ Notifications
-- ✅ User profile
-- ✅ Onboarding flow
-- ✅ Fixed footer navigation (consistent across all screens)
-
-### Backend API
-- ✅ Authentication (JWT tokens)
-- ✅ Save CRUD operations
-- ✅ Collections management
-- ✅ Search with filters
-- ✅ Recommendations engine
-- ✅ Notifications system
-- ✅ Bulk import endpoint for seed data
-
-### Data Processing
-- ✅ Seed data ingestion from 50+ URLs
-- ✅ Metadata extraction (title, description, image)
-- ✅ Entity detection (hashtags, prices, locations)
-- ✅ Category classification
-- ✅ 41/50 successful full fetches from seed URLs
-
-## 🔧 Recent Updates
-
-### Screenshot Navigation & Aggregate Analysis (May 29, 2026)
-- ✅ Fixed screenshot detail view navigation - now shows individual detail instead of batch summary
-- ✅ Fixed screenshot filtering logic in SavedList to include all screenshot types
-- ✅ Fixed aggregate analysis using proper Claude model (sonnet-4-6)
-- ✅ Fixed export PDF with proper authentication headers
-- See [LATEST_FIXES.md](./LATEST_FIXES.md) for detailed changes
-
-### Footer Architecture Improvements
-- Restructured bottom navigation from embedded components to App root level
-- Implemented flexbox column layout for fixed footer without position:fixed
-- Auth error handling with graceful navigation instead of page reload
-- Consistent footer appearance across all 18 screens
-
-### API Integration
-- Implemented real backend API calls in frontend
-- Added axios-based API service layer with auth headers
-- JWT token management in localStorage
-- Error handling and loading states
-
-### Seed Data
-- Created 50-URL seed data set
-- Built ingestion pipeline with OG tag extraction
-- Implemented bulk import endpoint
-- Successfully imported 5+ sample items for demo
-
-## 📊 Database Schema
-
-### Collections
-- **users** - User accounts and authentication
-- **saves** - Individual saved items
-- **collections** - User-created collections
-- **notifications** - User notifications
-- **recommendations** - Personalized suggestions
-- **user_behavior** - Analytics & engagement tracking
-
-See [docs/data-models/schema.md](./docs/data-models/schema.md) for detailed schema.
-
-## 🔐 Authentication
-
-- Email/Password signup and login
-- JWT tokens stored in localStorage
-- Token refresh mechanism
-- Protected API routes with middleware
-
-**Test Credentials:**
-```
-Email: newuser@example.com
-Password: Password123
-```
-
-## 📚 Documentation
-
-**Latest Changes:**
-- [LATEST_FIXES.md](./LATEST_FIXES.md) - Screenshot navigation & aggregate analysis fixes (May 29, 2026)
-
-**Architecture & Design:**
-- [MONOREPO_STRUCTURE.md](./MONOREPO_STRUCTURE.md) - Detailed monorepo architecture
-- [ARCHITECTURE.md](./ARCHITECTURE.md) - System design and components
-
-**Implementation Guides:**
-- [IMPLEMENTATION_SUMMARY.md](./IMPLEMENTATION_SUMMARY.md) - Latest feature implementations
-- [FIXES_SUMMARY.md](./FIXES_SUMMARY.md) - UI fixes and refinements
-
-**API & Database:**
-- [docs/api/endpoints.md](./docs/api/endpoints.md) - API endpoint documentation
-- [docs/architecture/tech-stack.md](./docs/architecture/tech-stack.md) - Technology choices
-- [docs/data-models/schema.md](./docs/data-models/schema.md) - Database schemas
-
-**Features & Systems:**
-- [NOTIFICATIONS_COMPLETE_SETUP.md](./NOTIFICATIONS_COMPLETE_SETUP.md) - Notification system setup
-- [NOTIFICATION_TESTING_GUIDE.md](./NOTIFICATION_TESTING_GUIDE.md) - Testing notifications
-
-## 🛠️ Tech Stack
-
-### Frontend (Web)
-- React 18
-- Axios for HTTP requests
-- CSS for styling (design tokens)
-- React Router for navigation
-
-### Frontend (Mobile)
-- React Native
-- Expo for development
-- Same component structure as web for code sharing
-
-### Backend
-- Node.js with Express.js
-- MongoDB with Mongoose
-- Redis for caching
-- JWT for authentication
-
-### DevOps
-- Docker & Docker Compose
-- GitHub Actions for CI/CD
-- Environment-based configuration
-
-## 🧪 Testing
-
-Run tests with:
-```bash
-# Backend tests
-cd backend && npm test
-
-# Frontend tests
-cd frontend-app && npm test
-```
-
-## 🚢 Deployment
-
-See [SETUP.md](./SETUP.md) for deployment instructions.
-
-## 👥 Git Configuration
+## Quick start
 
 ```bash
-git config user.email "gharshit192@gmail.com"
-git config user.name "Harshit Gupta"
+npm install                            # workspaces install (repo root)
+cp backend/.env.example backend/.env   # then fill in values
+docker-compose up                      # MongoDB + Redis
+cd backend && npm run dev              # API on :4000
+cd frontend-app && npm run dev         # PWA dev loop
 ```
 
-## 📝 Commit History
+See [docs/ops.md](docs/ops.md) for the full environment and deployment guide.
 
-1. **Initial commit** - TryThis MVP with footer fixes, seed data ingestion, and bulk import
-2. **Frontend-app commit** - Updated with footer fixes and real API integration
-3. **Submodule update** - Updated frontend-app submodule pointer with latest changes
+## Tech stack
 
-## 🤝 Contributing
-
-1. Create a feature branch
-2. Make your changes
-3. Commit with descriptive messages
-4. Push and create a pull request
-
-## 📄 License
-
-ISC
-
-## 🙋 Support
-
-For issues or questions, create an issue on the GitHub repository.
-
----
-
-**Generated with Claude Code** 🤖
+Node.js/Express · MongoDB (Mongoose) · Redis + Bull · Cloudinary · Claude API ·
+Google Cloud Vision (Hindi OCR) · Web Push (VAPID) · Capacitor + PWA frontend.

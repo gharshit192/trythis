@@ -10,6 +10,7 @@
 
 const Anthropic = require('@anthropic-ai/sdk');
 const logger = require('../../utils/logger');
+const hindiOcr = require('../hindiOcr');
 
 const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -119,17 +120,15 @@ const parseJsonSafely = (text) => {
 };
 
 const analyze = async ({ mergedOcrText = '', imageCount = 1, fallbackTitle = '', imageUrls = [] } = {}) => {
-  const prompt = buildSinglePassPrompt(mergedOcrText, imageCount);
-
-  // Build content array: images first, then prompt text
-  const content = [];
-
+  // Build image content blocks up front so they can be reused for both the
+  // Devanagari detection check and whichever prompt ends up running.
+  const imageBlocks = [];
   if (imageUrls && imageUrls.length > 0) {
     for (const url of imageUrls) {
       if (!url || typeof url !== 'string') continue;
       // Only add if it's a real HTTP URL (Cloudinary). Skip local paths.
       if (url.startsWith('http://') || url.startsWith('https://')) {
-        content.push({
+        imageBlocks.push({
           type: 'image',
           source: { type: 'url', url },
         });
@@ -140,7 +139,21 @@ const analyze = async ({ mergedOcrText = '', imageCount = 1, fallbackTitle = '',
     }
   }
 
-  content.push({ type: 'text', text: prompt });
+  // Devanagari (Hindi/Marathi) content — handwritten or printed — gets
+  // mangled by the generic classify+summarize+extract prompt below, which
+  // tends to guess plausible-looking words instead of admitting
+  // uncertainty. Route it to a dedicated transcription-first OCR pipeline.
+  if (imageBlocks.length > 0) {
+    const detection = await hindiOcr.detect(imageBlocks).catch(() => null);
+    if (detection?.hasDevanagari) {
+      logger.info('[screenshotAnalyzer] Devanagari detected, routing to hindiOcr pipeline');
+      const result = await hindiOcr.run(imageBlocks);
+      return hindiOcr.toAnalyzerShape(result, fallbackTitle);
+    }
+  }
+
+  const prompt = buildSinglePassPrompt(mergedOcrText, imageCount);
+  const content = [...imageBlocks, { type: 'text', text: prompt }];
 
   if (content.length === 1) {
     // Only text, no images — Claude has nothing visual to work with
