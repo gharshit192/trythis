@@ -24,11 +24,20 @@ Status format: `Proposed - YYYY-MM-DD` / `Accepted - YYYY-MM-DD` /
 - [ADR 0004](0004-screenshot-analysis.md) — Screenshot analysis and bundle
   summarization. *Accepted*
 - [ADR 0005](0005-hindi-devanagari-ocr-vision.md) — Hindi/Devanagari OCR: Google
-  Vision primary, LLM fallback, monthly cost guard. *Accepted*
+  Vision primary, LLM fallback, monthly cost guard. *Engine ordering superseded
+  by ADR 0008/0009; the OCR-engine-transcribes / LLM-only-structures rule and
+  cost guard remain in force*
 - [ADR 0006](0006-notification-engine.md) — Notification trigger engine and
   timing-first resurfacing. *Accepted*
 - [ADR 0007](0007-dual-frontend-capacitor-pwa.md) — Dual frontend: Capacitor +
   PWA (Android-first), Expo legacy. *Accepted*
+- [ADR 0008](0008-vision-fallback-last-sarvam-stt.md) — Vision fallback-last
+  while GCP billing is disabled; Sarvam STT for Hindi/Hinglish reel audio.
+  *Accepted; Sarvam endpoint choice superseded by ADR 0009*
+- [ADR 0009](0009-hindi-first-extraction-and-resurfacing.md) — Hindi-first
+  extraction: Sarvam translate-first, Tesseract for printed Devanagari,
+  Devanagari-aware locations, durable budget counters, Web Share Target.
+  *Accepted*
 
 ## Maintenance Rules
 

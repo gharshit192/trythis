@@ -6,3 +6,8 @@
 secrets/
 *.serviceaccount.json
 .vision-usage.json
+
+.sarvam-usage.json
+
+# tesseract.js language data (downloaded at runtime)
+*.traineddata

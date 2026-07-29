@@ -3,7 +3,7 @@
 //
 // Functions:
 // - analyzeTranscript: Extract structured metadata from transcript (replaces Ollama)
-// - transcribeAudio: Convert audio to text (fallback for Whisper)
+
 // - analyzeScreenshot: Extract text + entities from images (fallback for Tesseract)
 // - parseJsonSafely: Robust JSON extraction with markdown stripping
 
@@ -202,15 +202,8 @@ Rules:
   }
 };
 
-// ---- 2. Transcribe Audio ----
-// Converts audio WAV file to English text
-// Returns: { transcription, translation, language }
-const transcribeAudio = async (wavFilePath, durationSeconds = 30, language = 'en') => {
-  // NOTE: Claude API does not support audio input (only text, images, documents).
-  // Audio transcription requires Whisper. Fall back to heuristic analysis with metadata.
-  logger.info(`claudeService.transcribeAudio: Claude does not support audio input, falling back to heuristic analysis`);
-  return { transcription: '', translation: '', language: 'en' };
-};
+// (No audio transcription here: Claude's API takes text/images/documents only.
+// Speech-to-text lives in mediaProcessor's Sarvam/Groq/Whisper cascade.)
 
 // ---- 3. Analyze Screenshot ----
 // Extracts text and entities from image using Claude Vision
@@ -362,7 +355,7 @@ Rules:
 // ---- Exports ----
 module.exports = {
   analyzeTranscript,
-  transcribeAudio,
+
   analyzeScreenshot,
   aggregateAnalyses,
   parseJsonSafely,

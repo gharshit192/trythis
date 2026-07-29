@@ -121,19 +121,30 @@ The link/video pipeline turns a URL into a structured save. See
   an error. Do not surface raw "partial/failed" as a trust-damaging badge when
   the data is actually usable.
 
-## OCR Rules (Hindi / Devanagari)
+## OCR & Speech Rules (Hindi / Devanagari)
 
-See [`backend/src/services/hindiOcr.js`](backend/src/services/hindiOcr.js) and
-[ADR 0005](docs/adr/0005-hindi-devanagari-ocr-vision.md).
+See [`backend/src/services/hindiOcr.js`](backend/src/services/hindiOcr.js),
+[ADR 0005](docs/adr/0005-hindi-devanagari-ocr-vision.md) (core rules),
+[ADR 0008](docs/adr/0008-vision-fallback-last-sarvam-stt.md) and
+[ADR 0009](docs/adr/0009-hindi-first-extraction-and-resurfacing.md) (current
+ordering).
 
 - Devanagari (handwritten or printed) is routed to the dedicated `hindiOcr`
   pipeline via cheap detection, so the generic English screenshot path is
-  untouched.
-- **Google Cloud Vision is the primary transcription engine** (real
-  per-symbol confidence); an LLM only **structures** the already-read text
-  (entities/summary) — it never re-reads pixels and so cannot re-hallucinate.
-- Vision runs under the monthly budget guard; on any failure (no key, billing
-  off, network, budget exhausted) it falls back to the LLM path automatically.
+  untouched. Callers pass the detection's `handwritten` flag into `run()`.
+- **Printed Devanagari: Tesseract (`hin+eng`) transcribes first** — free,
+  local, purpose-built. **Handwritten: dual-LLM cross-check first**, then
+  budget-guarded Google Vision last while GCP billing is disabled. In every
+  path an LLM only **structures** already-read text — it never re-reads pixels
+  and so cannot re-hallucinate.
+- **Reel audio: Sarvam `speech-to-text-translate` (saaras) first** — English
+  out in one call; plain STT (saarika, auto-detect language) is the fallback,
+  then Groq/local Whisper. **A produced transcript is never discarded** because
+  a downstream translation failed; Devanagari transcripts are valid inputs and
+  displayable (only Urdu-Arabic script stays out of the UI). There is no Claude
+  audio fallback — Claude's API takes no audio.
+- Monthly budget counters (Sarvam seconds, Vision images) persist in Mongo via
+  `UsageCounter` — never in local files alone (ephemeral disks reset them).
 - Service-account JSON keys live under `backend/secrets/` (gitignored) and are
   referenced via `GOOGLE_APPLICATION_CREDENTIALS`. Never commit a key.
 
@@ -147,6 +158,13 @@ See [`docs/notifications.md`](docs/notifications.md) and
   delivered via Web Push (VAPID) / email. Delivery is idempotent.
 - The product moat is **timing** — resurfacing a save when it matters. Trigger
   logic is core; treat it as such (tests, honest confidence, no spam).
+- **Production scheduling requires an external cron** hitting
+  `POST /notifications/run` with the `x-cron-secret` header (`CRON_SECRET`) —
+  in-process node-cron never fires on hosts that sleep when idle (Render free
+  tier). Scheduled runs pass each user's stored location into trigger context.
+- Location matching must work for Hindi content: `locationExtractor` carries
+  Devanagari aliases, and `mediaProcessor` re-extracts location from the
+  transcript/frame-OCR after analysis when metadata found none.
 
 ## Frontend Rules
 

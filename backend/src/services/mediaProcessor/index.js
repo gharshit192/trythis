@@ -16,6 +16,9 @@ const audioAnalyzer = require('../audioAnalyzer');
 const autoCollectionEngine = require('../autoCollectionEngine');
 const frameExtractor = require('../frameExtractor');
 const claudeService = require('../claudeService');
+const sarvamSpeech = require('../sarvamSpeech');
+const geminiText = require('../geminiText');
+const locationExtractor = require('../locationExtractor');
 const { looksLikeHallucination } = require('../../utils/hallucinationGuard');
 const typeToCategory = require('../../utils/structuredTypeToCategory');
 const { resolveCategory } = typeToCategory;
@@ -322,12 +325,46 @@ const transcribeWithGroq = async (wavPath) => {
   return { transcription, translation, language: detectedLang, _source: 'groq' };
 };
 
-// Priority: Groq cloud API → local Whisper → give up (Claude can't do audio)
+const normalizeTranscriptToEnglish = async (result) => {
+  if (!result) return result;
+  const text = result.translation || result.transcription || '';
+  if (!geminiText.needsEnglishNormalization({ text, language: result.language })) {
+    return { ...result, translation: result.translation || result.transcription || '' };
+  }
+
+  const translation = await geminiText.normalizeTranscriptToEnglish({
+    text: result.transcription || result.translation || '',
+    language: result.language,
+  });
+
+  // A failed normalization must never sink the transcript itself — the
+  // native-script text is still a real save input (downstream decides what is
+  // safe to display). Keep whatever translation we already had.
+  return { ...result, translation: translation || result.translation || '', _normalizedBy: translation ? 'gemini' : null };
+};
+
+// Priority: Sarvam STT → Groq cloud API → local Whisper → give up (Claude can't do audio)
 const transcribeWithWhisperOrClaude = async (wavPath, { durationSeconds, category } = {}) => {
-  // 1. Groq cloud Whisper (fast, free, works on any CPU)
+  // 1. Sarvam for Hindi/Hinglish/code-mixed Indian speech. Its translate
+  // endpoint returns English directly; plain-STT results are still accepted —
+  // a native-script transcript is a usable save input and must not be thrown
+  // away just because a later translation step failed.
+  if (process.env.SARVAM_API_KEY) {
+    try {
+      const result = await normalizeTranscriptToEnglish(await sarvamSpeech.transcribeAudio(wavPath));
+      if (result && (result.translation || result.transcription)) {
+        logger.info(`[mediaProcessor] transcription via Sarvam (${result._source})`);
+        return result;
+      }
+    } catch (err) {
+      logger.warn(`[mediaProcessor] Sarvam transcription failed, falling back to Groq/local Whisper: ${err.message}`);
+    }
+  }
+
+  // 2. Groq cloud Whisper (fast, free, works on any CPU)
   if (process.env.GROQ_API_KEY) {
     try {
-      const result = await transcribeWithGroq(wavPath);
+      const result = await normalizeTranscriptToEnglish(await transcribeWithGroq(wavPath));
       if (result && result.translation) {
         logger.info('[mediaProcessor] transcription via Groq Whisper API');
         return result;
@@ -337,9 +374,9 @@ const transcribeWithWhisperOrClaude = async (wavPath, { durationSeconds, categor
     }
   }
 
-  // 2. Local whisper-cli (fast on Mac/powerful servers, slow on free-tier)
+  // 3. Local whisper-cli (fast on Mac/powerful servers, slow on free-tier)
   try {
-    const result = await transcribeWithWhisper(wavPath, { durationSeconds, category });
+    const result = await normalizeTranscriptToEnglish(await transcribeWithWhisper(wavPath, { durationSeconds, category }));
     if (result && result.translation) {
       logger.info('[mediaProcessor] transcription via Whisper');
       return { ...result, _source: 'whisper' };
@@ -358,22 +395,12 @@ const transcribeWithWhisperOrClaude = async (wavPath, { durationSeconds, categor
     }
   }
 
-  try {
-    logger.info('[mediaProcessor] transcription via Claude API (Whisper fallback)');
-    const claudeResult = await claudeService.transcribeAudio(wavPath);
-    if (claudeResult && claudeResult.transcription) {
-      return {
-        transcription: claudeResult.transcription,
-        translation: claudeResult.translation,
-        language: claudeResult.language,
-        _source: 'claude',
-      };
-    }
-    throw new Error('Claude transcription returned empty');
-  } catch (err) {
-    logger.error(`[mediaProcessor] Claude fallback failed: ${err.message}`);
-    throw new Error(`Transcription failed (Whisper + Claude): ${err.message}`);
-  }
+  // No engine produced a transcript. Claude's API cannot take audio input, so
+  // there is no "Claude fallback" — pretending otherwise just returned empty
+  // strings dressed up as a transcription. Fail softly: the caller proceeds
+  // with metadata-only analysis and marks the save partial.
+  logger.warn('[mediaProcessor] all transcription engines failed (Sarvam/Groq/Whisper) — proceeding without transcript');
+  return null;
 };
 
 // ---- main entry ----
@@ -521,17 +548,17 @@ const processSave = async (saveId) => {
 
       let englishClean = null;
       if (raw.translation || raw.transcription) {
-        // P0-#3: Store only the English transcript. Whisper.cpp emits Hindustani
-        // in Urdu Arabic script which is unreadable for our users — so we keep
-        // the translation-pass output and never expose the original.
-        // Critical edge case: short Hindi clips often translate to empty. In
-        // that case we DO NOT fall back to the original (would leak Urdu script
-        // to the UI) — instead we store null + flag the save as `partial` so
-        // the user sees a "retry" option.
+        // P0-#3 (amended): Prefer the English transcript. Whisper.cpp emits
+        // Hindustani in Urdu Arabic script which is unreadable for our users —
+        // never expose that. But Devanagari (Sarvam saarika output) IS the
+        // audience's own script, so when translation is empty a Devanagari
+        // transcript is kept rather than discarded — losing real Hindi content
+        // was worse than showing it untranslated.
         const isNonEnglishScript = ['hi', 'ur', 'ta', 'te', 'bn', 'pa', 'kn', 'ml', 'gu', 'mr'].includes(raw.language);
+        const isDevanagari = /[ऀ-ॿ]/.test(raw.transcription || '') && !/[؀-ۿ]/.test(raw.transcription || '');
         const englishCandidate = raw.translation && raw.translation.trim().length >= 20
           ? raw.translation
-          : (isNonEnglishScript ? null : raw.transcription);
+          : (isNonEnglishScript ? (isDevanagari ? raw.transcription : null) : raw.transcription);
         englishClean = englishCandidate && !looksLikeHallucination(englishCandidate) ? englishCandidate : null;
 
         if (englishCandidate && !englishClean) {
@@ -662,6 +689,30 @@ const processSave = async (saveId) => {
         if (analysis.audioTags.length) {
           const merged = Array.from(new Set([...(fresh.tags || []), ...analysis.audioTags])).slice(0, 16);
           update.tags = merged;
+        }
+
+        // Location enrichment: the metadata stage only saw title/description,
+        // but reels usually name the place in the audio (often in Hindi) or in
+        // on-screen text. Without this, Hindi content never gets coordinates
+        // and every location trigger silently skips it.
+        if (fresh.extractedLocation?.lat == null) {
+          try {
+            const sd = analysis.structuredData || {};
+            const namedPlace = sd.place?.city || sd.place?.name || sd.itinerary?.destination || null;
+            const located = locationExtractor.findKnownLocation(namedPlace)
+              || await locationExtractor.extractLocation(
+                [analysisInput, raw.transcription, frameOcr, analysis.summary].filter(Boolean).join('\n')
+              );
+            if (located) {
+              update.extractedLocation = {
+                name: located.name, city: located.city, country: located.country,
+                lat: located.lat, lng: located.lng,
+              };
+              logger.info(`[mediaProcessor ${saveId}] location enriched: ${located.city}`);
+            }
+          } catch (e) {
+            logger.warn(`[mediaProcessor ${saveId}] location enrichment failed: ${e.message}`);
+          }
         }
 
         // Merge processingStages as a full object — avoids the MongoDB conflict

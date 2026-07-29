@@ -1574,7 +1574,7 @@ router.post('/:id/plan', async (req, res) => {
       origin = user?.city || user?.location?.city || '';
     }
 
-    const data = await planEngine.generatePlan(save, origin);
+    const data = await planEngine.generatePlan(save, origin, req.body || {});
     res.json({ status: 'success', data });
   } catch (err) {
     const code = err.code || 'PLAN_ERROR';

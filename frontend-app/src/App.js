@@ -24,6 +24,7 @@ import Nearby from './screens/Nearby';
 import CollectionDetail from './screens/CollectionDetail';
 import DemoSaves from './screens/DemoSaves';
 import FirstSaveSuccess from './screens/FirstSaveSuccess';
+import ShareIntake from './screens/ShareIntake';
 
 function App() {
   const [authChecked, setAuthChecked] = useState(false);
@@ -60,11 +61,48 @@ function App() {
     );
   };
 
+  // Web Share Target intake (installed PWA): Android's share sheet opens the
+  // app at /share-target?url=…&text=…&title=… (manifest.json share_target).
+  // Consume the params, clean the URL so refresh can't double-save, and return
+  // the share — or a share stashed from before login.
+  const consumeSharedContent = () => {
+    let shared = null;
+    if (window.location.pathname === '/share-target') {
+      const q = new URLSearchParams(window.location.search);
+      const rawUrl = (q.get('url') || '').trim();
+      const text = (q.get('text') || '').trim();
+      const title = (q.get('title') || '').trim();
+      // Instagram/YouTube usually put the link inside `text`, not `url`.
+      const link = rawUrl || (text.match(/https?:\/\/\S+/) || [])[0] || (title.match(/https?:\/\/\S+/) || [])[0] || '';
+      shared = { url: link, text, title };
+      window.history.replaceState({}, '', '/');
+    } else {
+      try { shared = JSON.parse(localStorage.getItem('pending_share') || 'null'); } catch { shared = null; }
+    }
+    localStorage.removeItem('pending_share');
+    return shared && (shared.url || shared.text || shared.title) ? shared : null;
+  };
+
   useEffect(() => {
     // Synchronous auth check before rendering (prevents login flash)
     const storedToken = localStorage.getItem('auth_token');
     const storedUser = localStorage.getItem('user');
     const lastScreen = localStorage.getItem('last_screen');
+
+    const shared = consumeSharedContent();
+    if (shared) {
+      if (storedToken && storedUser) {
+        api.ping().catch(() => {});
+        setPayload(shared);
+        setCurrentScreen('share-intake');
+      } else {
+        // Save it right after login instead of losing the share.
+        localStorage.setItem('pending_share', JSON.stringify(shared));
+        setCurrentScreen('login');
+      }
+      setAuthChecked(true);
+      return;
+    }
 
     if (storedToken && storedUser) {
       try {
@@ -108,6 +146,21 @@ function App() {
     if (protectedScreens.includes(screen) && !localStorage.getItem('auth_token')) {
       setCurrentScreen('login');
       return;
+    }
+
+    // A share stashed before login gets saved as soon as the user lands home.
+    if ((screen === 'home' || screen === 'home-empty') && localStorage.getItem('auth_token')) {
+      try {
+        const pending = JSON.parse(localStorage.getItem('pending_share') || 'null');
+        if (pending && (pending.url || pending.text || pending.title)) {
+          localStorage.removeItem('pending_share');
+          setPayload(pending);
+          setCurrentScreen('share-intake');
+          return;
+        }
+      } catch {
+        localStorage.removeItem('pending_share');
+      }
     }
 
     setPayload(nextPayload);
@@ -160,6 +213,7 @@ function App() {
     'home': <HomeFeed {...props} nearbySaves={nearbySaves} showNearbyBanner={showNearbyBanner} onDismissNearby={() => setShowNearbyBanner(false)} />,
     'savedList': <SavedList {...props} saves={saves} filter={payload?.filter} title={payload?.title} />,
     'add-save': <AddSave {...props} />,
+    'share-intake': <ShareIntake {...props} />,
     'save-detail': <SaveDetail {...props} />,
     'screenshot-summary': <ScreenshotSummary {...props} sessionId={payload?.sessionId} summary={payload?.summary} thumbnails={payload?.thumbnails || []} saveId={payload?.saveId} autoSaved={payload?.autoSaved} />,
     'collections': <Collections {...props} />,

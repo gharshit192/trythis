@@ -18,6 +18,7 @@ const Anthropic = require('@anthropic-ai/sdk');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const vision = require('@google-cloud/vision');
 const logger = require('../utils/logger');
+const usageCounter = require('./usageCounter');
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const geminiClient = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -512,47 +513,72 @@ const getVisionClient = () => {
 };
 
 // ─── Monthly cost guard ───────────────────────────────────────────────────
-// Cloud Vision bills PER IMAGE after the free tier (1,000/mo). To avoid
-// surprise charges we keep a persistent month-bucketed counter and refuse to
-// call Vision once VISION_MONTHLY_LIMIT is reached — callers transparently
-// fall back to the (free) LLM path instead.
+// Cloud Vision bills PER IMAGE after the free tier (1,000/mo). The counter
+// lives in Mongo (see usageCounter) so it survives deploys; the old JSON file
+// remains as a best-effort fallback when Mongo is unreachable.
 const VISION_MONTHLY_LIMIT = parseInt(process.env.VISION_MONTHLY_LIMIT || '1000', 10);
 const USAGE_FILE = path.join(__dirname, '../../.vision-usage.json');
-const currentMonth = () => new Date().toISOString().slice(0, 7); // "YYYY-MM"
-
-const readVisionUsage = () => {
-  try {
-    const data = JSON.parse(fs.readFileSync(USAGE_FILE, 'utf8'));
-    if (data.month === currentMonth()) return data;
-  } catch { /* missing or unparseable — treat as zero */ }
-  return { month: currentMonth(), count: 0 };
-};
 
 // How many images we can still send this month (>= 0).
-const visionBudgetRemaining = () => Math.max(0, VISION_MONTHLY_LIMIT - readVisionUsage().count);
-
-const recordVisionUsage = (imageCount) => {
-  const usage = readVisionUsage();
-  usage.count += imageCount;
-  try {
-    fs.writeFileSync(USAGE_FILE, JSON.stringify(usage));
-  } catch (err) {
-    logger.warn(`hindiOcr: failed to persist Vision usage: ${err.message}`);
-  }
-  return usage.count;
+const visionBudgetRemaining = async () => {
+  const used = await usageCounter.get('vision-images', { fallbackFile: USAGE_FILE });
+  return Math.max(0, VISION_MONTHLY_LIMIT - used);
 };
 
-const toVisionImageContent = async (block) => {
+const recordVisionUsage = (imageCount) =>
+  usageCounter.add('vision-images', imageCount, { fallbackFile: USAGE_FILE });
+
+const toImageBuffer = async (block) => {
   if (block.source?.type === 'url') {
     const res = await fetch(block.source.url);
     if (!res.ok) throw new Error(`failed to fetch image: HTTP ${res.status}`);
-    const buf = Buffer.from(await res.arrayBuffer());
-    return { content: buf.toString('base64') };
+    return Buffer.from(await res.arrayBuffer());
   }
   if (block.source?.type === 'base64') {
-    return { content: block.source.data };
+    return Buffer.from(block.source.data, 'base64');
   }
-  throw new Error('unsupported image source for Vision');
+  throw new Error('unsupported image source');
+};
+
+const toVisionImageContent = async (block) => ({ content: (await toImageBuffer(block)).toString('base64') });
+
+// ─── Tesseract — free, local OCR for PRINTED Devanagari ───────────────────
+// A purpose-built OCR engine beats vision LLMs on printed Hindi (no
+// hallucinated words, real per-line confidence) and costs nothing — no key,
+// no billing, no monthly cap. Handwriting is where Tesseract collapses, so
+// only printed documents route here; handwritten ones go to the LLM
+// cross-check path (and Vision when configured).
+let tesseractWorkerPromise = null;
+const getTesseractWorker = () => {
+  if (!tesseractWorkerPromise) {
+    tesseractWorkerPromise = (async () => {
+      const { createWorker } = require('tesseract.js');
+      return createWorker('hin+eng');
+    })();
+    // A failed init (offline CDN, bad install) must not poison every later call.
+    tesseractWorkerPromise.catch(() => { tesseractWorkerPromise = null; });
+  }
+  return tesseractWorkerPromise;
+};
+
+// Tesseract reports confidence 0-100 per line; normalize to 0-1.
+const runWithTesseract = async (imageContents) => {
+  const worker = await getTesseractWorker();
+  const lines = [];
+  for (const block of imageContents) {
+    const buf = await toImageBuffer(block);
+    const { data } = await worker.recognize(buf);
+    for (const l of data.lines || []) {
+      const text = (l.text || '').trim();
+      if (!text) continue;
+      lines.push({
+        line: lines.length + 1,
+        text,
+        confidence: typeof l.confidence === 'number' ? Math.round(l.confidence) / 100 : null,
+      });
+    }
+  }
+  return lines;
 };
 
 // The SDK returns detectedBreak.type as an enum number; the REST API returns
@@ -606,7 +632,7 @@ const runWithGoogleVision = async (imageContents) => {
   // Cost guard: each image is one billable Vision unit. Don't start a batch we
   // can't fully afford this month — fall back to the free LLM path instead.
   const needed = imageContents.length;
-  const remaining = visionBudgetRemaining();
+  const remaining = await visionBudgetRemaining();
   if (remaining < needed) {
     logger.warn(`hindiOcr: Vision monthly budget exhausted (need ${needed}, ${remaining} left of ${VISION_MONTHLY_LIMIT}) — falling back to LLMs`);
     return null;
@@ -625,7 +651,7 @@ const runWithGoogleVision = async (imageContents) => {
   const responses = batch.responses || [];
   const billed = responses.filter((r) => !r.error).length;
   if (billed > 0) {
-    const total = recordVisionUsage(billed);
+    const total = await recordVisionUsage(billed);
     logger.info(`hindiOcr: Vision used ${billed} unit(s); month total ${total}/${VISION_MONTHLY_LIMIT}`);
   }
 
@@ -767,36 +793,19 @@ const runWithLLMs = async (imageContents) => {
   };
 };
 
-// Primary entry point. Transcribe with Google Vision (real handwriting OCR),
-// then structure the text with an LLM. Falls back to the dual-LLM path when
-// Vision isn't configured or fails — so the pipeline degrades gracefully
-// rather than breaking before a Vision key is provisioned.
-const run = async (imageContents) => {
-  let visionLines = null;
-  try {
-    visionLines = await runWithGoogleVision(imageContents);
-  } catch (err) {
-    logger.warn(`hindiOcr: Google Vision failed, falling back to LLMs: ${err.message}`);
-  }
+// ─── Shared: engine-OCR lines (Tesseract/Vision) → the standard rich result.
+// The engine read the pixels; Claude only structures the already-read text, so
+// it cannot re-hallucinate the document (ADR 0005's core rule).
+const CONF_THRESHOLD = 0.6;
 
-  if (!visionLines || visionLines.length === 0) {
-    if (!isVisionConfigured()) {
-      logger.warn('hindiOcr: GOOGLE_APPLICATION_CREDENTIALS not set — using LLM-only fallback (lower handwriting accuracy)');
-    }
-    return runWithLLMs(imageContents);
-  }
-
-  const transcribedText = visionLines.map((l) => l.text).join('\n');
+const finalizeOcrLines = async (ocrLines, source, extraModels = {}) => {
+  const transcribedText = ocrLines.map((l) => l.text).join('\n');
   const structured = await structureWithClaude(transcribedText).catch((err) => {
     logger.warn(`hindiOcr: structuring failed: ${err.message}`);
     return { documentType: 'auto', entities: EMPTY_RESULT.entities, summary: '' };
   });
 
-  // Vision gives a real per-line confidence; treat low-confidence lines as
-  // "needs review" so the UI can flag them (mirrors the disputed/confirmed
-  // split the dual-LLM path produces).
-  const CONF_THRESHOLD = 0.6;
-  const lines = visionLines.map((l) => ({
+  const lines = ocrLines.map((l) => ({
     line: l.line,
     text: l.text,
     altText: null,
@@ -818,9 +827,59 @@ const run = async (imageContents) => {
     overallConfidence,
     disputedLines: lines.filter((l) => !l.agreed).length,
     totalLines: lines.length,
-    source: 'google-vision',
-    _models: { vision: { lines: visionLines }, structuring: structured },
+    source,
+    _models: { [source]: { lines: ocrLines }, structuring: structured, ...extraModels },
   };
+};
+
+const TESSERACT_MIN_CONFIDENCE = parseFloat(process.env.TESSERACT_MIN_CONFIDENCE || '0.55');
+
+// Primary entry point. Printed Devanagari goes to Tesseract first (free,
+// local, no hallucination); handwriting skips it — that's where Tesseract
+// collapses — and uses the dual-LLM cross-check, with budget-guarded Google
+// Vision as the last resort while billing is disabled (ADR 0008/0009).
+// Callers pass detect()'s handwritten flag; when unknown we assume handwritten
+// (the conservative path).
+const run = async (imageContents, { handwritten = true } = {}) => {
+  if (!handwritten) {
+    try {
+      const tessLines = await runWithTesseract(imageContents);
+      const scored = tessLines.map((l) => l.confidence).filter((c) => typeof c === 'number');
+      const avg = scored.length ? scored.reduce((a, b) => a + b, 0) / scored.length : 0;
+      if (tessLines.length > 0 && avg >= TESSERACT_MIN_CONFIDENCE) {
+        return await finalizeOcrLines(tessLines, 'tesseract');
+      }
+      logger.info(`hindiOcr: tesseract yield too weak (lines=${tessLines.length}, avgConf=${avg.toFixed(2)}) — falling back to LLM OCR`);
+    } catch (err) {
+      logger.warn(`hindiOcr: tesseract failed (${err.message}) — falling back to LLM OCR`);
+    }
+  }
+
+  const llmResult = await runWithLLMs(imageContents).catch((err) => {
+    logger.warn(`hindiOcr: LLM OCR failed, trying Google Vision last: ${err.message}`);
+    return EMPTY_RESULT;
+  });
+
+  const llmLines = llmResult.transcription?.lines || [];
+  if (llmLines.length > 0) {
+    return { ...llmResult, source: 'dual-llm' };
+  }
+
+  let visionLines = null;
+  try {
+    visionLines = await runWithGoogleVision(imageContents);
+  } catch (err) {
+    logger.warn(`hindiOcr: Google Vision fallback failed: ${err.message}`);
+  }
+
+  if (!visionLines || visionLines.length === 0) {
+    if (!isVisionConfigured()) {
+      logger.warn('hindiOcr: GOOGLE_APPLICATION_CREDENTIALS not set and LLM OCR returned no text');
+    }
+    return llmResult;
+  }
+
+  return finalizeOcrLines(visionLines, 'google-vision-fallback', { llmFallbackAttempt: llmResult });
 };
 
 // ─── Map the rich result into the bundle shape screenshotBundle.js (PDF

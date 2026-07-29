@@ -120,7 +120,7 @@ const analyzeBundle = async (filePaths, sessionId, userTitle = null) => {
     const detection = await hindiOcr.detect(imageContents).catch(() => null);
     if (detection?.hasDevanagari) {
       logger.info('screenshotBundle: Devanagari detected, routing to hindiOcr pipeline');
-      const result = await hindiOcr.run(imageContents);
+      const result = await hindiOcr.run(imageContents, { handwritten: detection.handwritten !== false });
       return hindiOcr.toBundleShape(result, imageContents.length, userTitle);
     }
 

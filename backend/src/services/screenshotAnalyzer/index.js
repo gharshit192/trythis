@@ -147,7 +147,7 @@ const analyze = async ({ mergedOcrText = '', imageCount = 1, fallbackTitle = '',
     const detection = await hindiOcr.detect(imageBlocks).catch(() => null);
     if (detection?.hasDevanagari) {
       logger.info('[screenshotAnalyzer] Devanagari detected, routing to hindiOcr pipeline');
-      const result = await hindiOcr.run(imageBlocks);
+      const result = await hindiOcr.run(imageBlocks, { handwritten: detection.handwritten !== false });
       return hindiOcr.toAnalyzerShape(result, fallbackTitle);
     }
   }

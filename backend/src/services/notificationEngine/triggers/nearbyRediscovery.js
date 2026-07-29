@@ -1,13 +1,21 @@
 const Save = require('../../../models/Save');
 const logger = require('../../../utils/logger');
 
+// Keys must match Save.category enum values (food/cafes/experiences/…, not
+// singular guesses) — unmatched categories fall back to DEFAULT_RADIUS instead
+// of being silently skipped.
 const DISTANCE_RADIUS = {
-  cafe: { min: 1, max: 5 },
-  restaurant: { min: 3, max: 10 },
+  food: { min: 1, max: 10 },
+  cafes: { min: 1, max: 5 },
+  restaurants: { min: 3, max: 10 },
   shopping: { min: 2, max: 15 },
   experience: { min: 5, max: 50 },
+  experiences: { min: 5, max: 50 },
+  entertainment: { min: 2, max: 25 },
+  events: { min: 2, max: 25 },
   travel: { min: 50, max: 300 },
 };
+const DEFAULT_RADIUS = { min: 2, max: 25 };
 
 async function evaluate(userId, context = {}) {
   try {
@@ -17,22 +25,22 @@ async function evaluate(userId, context = {}) {
       return [];
     }
 
+    // extractedLocation is a top-level object on Save ({lat,lng,city,...}),
+    // not an array under metadata — match on populated coordinates.
     const userSaves = await Save.find({
       userId,
       status: 'active',
-      $expr: { $gt: [{ $size: '$metadata.extractedLocation' }, 0] },
+      'extractedLocation.lat': { $ne: null },
+      'extractedLocation.lng': { $ne: null },
     });
 
     const candidates = [];
 
     for (const save of userSaves) {
-      const distance = calculateDistance(
-        userLocation,
-        save.metadata.extractedLocation
-      );
+      const distance = calculateDistance(userLocation, save.extractedLocation);
 
-      const radius = DISTANCE_RADIUS[save.category];
-      if (!radius || distance < radius.min || distance > radius.max) {
+      const radius = DISTANCE_RADIUS[save.category] || DEFAULT_RADIUS;
+      if (distance < radius.min || distance > radius.max) {
         continue;
       }
 

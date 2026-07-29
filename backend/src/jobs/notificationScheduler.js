@@ -28,7 +28,8 @@ const runOnce = async ({ now = new Date(), force = false } = {}) => {
     // User has no "status" field — the old { status: 'active' } matched zero
     // users, so the scheduler never ran for anyone. Evaluate everyone who hasn't
     // turned notifications off.
-    const users = await User.find({ notificationsEnabled: { $ne: false } }).select('_id timezone');
+    const users = await User.find({ notificationsEnabled: { $ne: false } })
+      .select('_id timezone timezoneOffset locationEnabled location');
     logger.info(`notificationScheduler: evaluating ${users.length} users`);
 
     let totalEvaluated = 0;
@@ -41,9 +42,16 @@ const runOnce = async ({ now = new Date(), force = false } = {}) => {
         // Evaluate triggers for this user. Default to IST (+330) — users are
         // India-based and timezoneOffset isn't stored, so a 0/UTC default made
         // quiet-hours treat IST daytime as night and suppressed everything.
+        // Last stored device location (PATCH /auth/location) — without it the
+        // nearby/weather triggers can never fire from a cron run.
+        const userLocation = user.locationEnabled && user.location?.lat != null && user.location?.lng != null
+          ? { lat: user.location.lat, lng: user.location.lng }
+          : null;
+
         const candidates = await evaluateNotifications(user._id, {
           userTimezoneOffsetMinutes: user.timezoneOffset ?? 330,
           quietHoursEnabled: true,
+          userLocation,
         });
 
         totalEvaluated += candidates.length;

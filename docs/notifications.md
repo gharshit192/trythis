@@ -25,9 +25,21 @@ feed the engine.
 - Delivery is **idempotent** — a save is not notified twice for the same trigger
   firing.
 
+## Scheduling in production
+
+The in-process node-cron (9am/2pm/8pm IST) only fires while the server process
+is awake — on free-tier hosts that sleep when idle it effectively never runs.
+Production must configure an external cron hitting
+`POST /notifications/run` (header `x-cron-secret: <CRON_SECRET>`); the request
+both wakes the service and runs the scheduler. Scheduled runs pass each user's
+last stored location (`PATCH /auth/location`) so nearby/weather triggers work
+outside realtime evaluation.
+
 ## Environment
 
 ```
+# External cron shared secret (required in production)
+CRON_SECRET=
 # Web Push (generate with: npx web-push generate-vapid-keys)
 VAPID_PUBLIC_KEY= · VAPID_PRIVATE_KEY= · VAPID_SUBJECT=mailto:you@example.com
 # Email

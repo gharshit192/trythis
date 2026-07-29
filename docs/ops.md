@@ -5,7 +5,16 @@ Consolidated from the former `SETUP.md`, `START_HERE.md`, and `DEPLOYMENT.md`.
 ## Prerequisites
 
 Node.js, MongoDB, Redis, and a Cloudinary account. AI keys: Anthropic (Claude),
-optional Gemini, and Google Cloud Vision (service-account JSON) for Hindi OCR.
+optional Gemini, Sarvam for Hindi/Hinglish reel audio (translate-first, see ADR
+0009), and optional Google Cloud Vision (service-account JSON) as the last
+Hindi OCR fallback. Printed-Devanagari OCR uses tesseract.js (no key; downloads
+`hin+eng` traineddata on first use).
+
+**Production cron**: set `CRON_SECRET` and point an external scheduler
+(cron-job.org / UptimeRobot / GitHub Action) at
+`POST <backend>/notifications/run` with header `x-cron-secret: <CRON_SECRET>`
+~3x/day. The in-process node-cron does not fire on hosts that sleep when idle
+(Render free tier), so without this no notifications are ever evaluated.
 
 ## Local setup
 
@@ -36,8 +45,10 @@ MONGODB_DB                        # explicit db name (prod: wanna-try). The app
                                   # refuses to start if this resolves to "test".
 # AI
 ANTHROPIC_API_KEY · GEMINI_API_KEY
+SARVAM_API_KEY · SARVAM_MONTHLY_AUDIO_SECONDS_LIMIT=3600
+GOOGLE_MAPS_API_KEY               # optional geocoding for day-wise routes
 GOOGLE_APPLICATION_CREDENTIALS=./secrets/your-vision-key.json
-VISION_MONTHLY_LIMIT=700          # cost guard for Cloud Vision (ADR 0005)
+VISION_MONTHLY_LIMIT=700          # cost guard; Vision is fallback-last while billing is off
 # Media
 CLOUDINARY_CLOUD_NAME · CLOUDINARY_API_KEY · CLOUDINARY_API_SECRET
 # Notifications
@@ -46,7 +57,9 @@ SMTP_* · EMAIL_FROM · PUBLIC_BASE_URL
 ```
 
 Secrets are never committed: `.env`, `.env*.local`, `backend/secrets/`, and
-`.vision-usage.json` are gitignored. Rotate any key that leaks.
+`.vision-usage.json`, and `.sarvam-usage.json` are gitignored. Rotate any key
+that leaks. Monthly API budget counters live in Mongo (`UsageCounter`); the
+JSON files are only a fallback when Mongo is unreachable.
 
 ## Deployment
 

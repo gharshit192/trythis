@@ -1,6 +1,10 @@
 # ADR 0005: Hindi/Devanagari OCR — Google Vision Primary, LLM Fallback, Cost Guard
 
-Status: Accepted - 2026-06-26
+Status: Accepted - 2026-06-26. Engine ordering superseded by ADR 0008 - 2026-06-26
+and ADR 0009 - 2026-07-29 (Tesseract first for printed Devanagari; Vision
+budget-guarded last while billing is disabled). The core rule — a purpose-built
+OCR engine transcribes, the LLM only structures already-read text — and the
+monthly cost guard remain in force.
 
 ## Context
 

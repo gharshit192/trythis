@@ -41,8 +41,18 @@ rather than breaking the save:
 Single screenshots and multi-image bundles go through Claude vision in a single
 pass (`screenshotAnalyzer/`, `screenshotBundle.js`), producing the same
 structured-save shape plus a bundle master summary and PDF export. Devanagari
-content is detected and routed to the dedicated Vision-based OCR pipeline
-([ADR 0005](adr/0005-hindi-devanagari-ocr-vision.md)).
+content is detected and routed to the dedicated Hindi OCR pipeline. **Printed**
+Devanagari is transcribed by Tesseract (`hin+eng`) first — free, local,
+purpose-built; **handwritten** goes to the dual-LLM cross-check, with Google
+Cloud Vision as the final budget-guarded fallback while billing is disabled
+([ADR 0005](adr/0005-hindi-devanagari-ocr-vision.md),
+[ADR 0009](adr/0009-hindi-first-extraction-and-resurfacing.md)).
+
+Reel audio uses Sarvam `speech-to-text-translate` (saaras — English out in one
+call) with plain STT, Groq Whisper, and local Whisper as fallbacks. A produced
+transcript is never discarded because translation failed; Devanagari transcripts
+stay usable. After analysis, location is re-extracted from the transcript and
+frame OCR (Devanagari-aware city aliases) when the metadata stage found none.
 
 ## Testing the pipeline
 
