@@ -207,6 +207,11 @@ function PhotosFlow({ collections, onBack, onNavigate }) {
       detail: 'Organizing the messy notes into a clean summary, actions, and tags.',
       icon: 'ti-file-analytics',
     },
+    {
+      title: 'Still working — almost there',
+      detail: 'Big photos or a just-woken server can take up to a minute. Your upload is safe on our side — no need to re-send it.',
+      icon: 'ti-hourglass-high',
+    },
   ];
 
   useEffect(() => {
@@ -221,6 +226,7 @@ function PhotosFlow({ collections, onBack, onNavigate }) {
         const next = s + 1;
         if (next >= 5) setProcessingStep(1);
         if (next >= 14) setProcessingStep(2);
+        if (next >= 32) setProcessingStep(3); // long-haul reassurance (cold server)
         return next;
       });
     }, 1000);
@@ -258,6 +264,7 @@ function PhotosFlow({ collections, onBack, onNavigate }) {
   };
 
   const handleUpload = async () => {
+    if (uploading) return; // double-tap guard — one analysis per tap
     if (!files.length) return setError('Pick at least one image.');
 
     setUploading(true);
@@ -388,7 +395,7 @@ function PhotosFlow({ collections, onBack, onNavigate }) {
             </div>
 
             <p style={{ fontSize: 12, color: 'var(--slate)', textAlign: 'center', margin: '16px 0 0' }}>
-              Usually takes 15-30 seconds. Keep this screen open.
+              Usually 15–30s, up to a minute if the server was asleep. Keep this screen open — it will finish.
             </p>
           </div>
         </div>

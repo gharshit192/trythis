@@ -65,6 +65,18 @@ const cleanupCloudinaryThumbnail = async (save) => {
 };
 
 // Multer config: disk storage to OS temp dir (pipeline moves files into uploads/).
+// Screenshot-bundle duplicate-upload guard (see the route for rationale):
+// user + exact file bytes → the analysis promise, so retries join it.
+const BUNDLE_DEDUP_TTL_MS = 10 * 60 * 1000;
+const bundleDedup = new Map(); // dedupKey -> { promise, at }
+const bundleDedupKey = (userId, files) => {
+  const crypto = require('crypto');
+  const fs = require('fs');
+  const h = crypto.createHash('md5').update(String(userId));
+  for (const f of files) h.update(fs.readFileSync(f.path));
+  return h.digest('hex');
+};
+
 const upload = multer({
   storage: multer.diskStorage({
     destination: os.tmpdir(),
@@ -789,43 +801,83 @@ router.post('/screenshot-bundle',
         return res.status(413).json({ status: 'error', error: { code: 'TOO_MANY_FILES', message: 'Upload up to 3 images at a time' } });
       }
 
-      logger.info(`[screenshot-bundle] Processing ${files.length} files for user ${req.user.id}`);
-
-      const pipelineResult = await screenshotPipeline.processFiles(files, {
-        userId: req.user.id,
-        title: req.body.title || '',
-        source: 'screenshot_bundle',
-        category: 'other'
-      });
-
-      const filePaths = pipelineResult.screenshots.map(s => {
-        const filename = path.basename(s.url);
-        const localPath = path.join(screenshotPipeline.__dirs.FULL_DIR, filename);
-        // Cloudinary-hosted screenshots have no local file — pass the remote URL
-        // so Claude can fetch them directly. Local saves use the on-disk path.
-        return require('fs').existsSync(localPath) ? localPath : s.url;
-      });
-
-      const sessionId = uuidv4();
-      const start = Date.now();
-      const summary = await screenshotBundle.analyzeBundle(filePaths, sessionId, req.body.title || '');
-      const processingTimeMs = Date.now() - start;
-
-      if (!summary) {
-        return res.status(500).json({ status: 'error', error: { code: 'ANALYSIS_FAILED', message: 'AI processing failed, please retry' } });
+      // Duplicate-upload guard: analysis can run 60s+ (cold server, big mobile
+      // photos), long enough for the client's connection to drop or the user to
+      // retry — while the first run keeps going server-side. A retry with the
+      // same bytes must JOIN the in-flight/recent analysis and get the same
+      // sessionId (the /save step is already idempotent per session), not spawn
+      // a second session and a duplicate save.
+      const dedupKey = bundleDedupKey(req.user.id, files);
+      const cached = bundleDedup.get(dedupKey);
+      if (cached && Date.now() - cached.at < BUNDLE_DEDUP_TTL_MS) {
+        logger.info(`[screenshot-bundle] duplicate upload joined existing analysis (${dedupKey.slice(0, 8)}…)`);
+        try {
+          return res.json(await cached.promise);
+        } catch {
+          bundleDedup.delete(dedupKey); // first attempt failed — process fresh below
+        }
       }
 
-      screenshotBundle.saveSession(sessionId, filePaths, summary, pipelineResult.screenshots.map(s => s.thumbnailUrl));
-      logger.info(`[screenshot-bundle] Completed in ${processingTimeMs}ms: "${summary.autoTitle}"`);
+      logger.info(`[screenshot-bundle] Processing ${files.length} files for user ${req.user.id}`);
 
-      res.json({
-        status: 'success',
-        sessionId,
-        summary,
-        imageCount: files.length,
-        thumbnails: pipelineResult.screenshots.map(s => s.thumbnailUrl),
-        processingTimeMs
-      });
+      const work = (async () => {
+        const pipelineResult = await screenshotPipeline.processFiles(files, {
+          userId: req.user.id,
+          title: req.body.title || '',
+          source: 'screenshot_bundle',
+          category: 'other'
+        });
+
+        const filePaths = pipelineResult.screenshots.map(s => {
+          const filename = path.basename(s.url);
+          const localPath = path.join(screenshotPipeline.__dirs.FULL_DIR, filename);
+          // Cloudinary-hosted screenshots have no local file — pass the remote URL
+          // so Claude can fetch them directly. Local saves use the on-disk path.
+          return require('fs').existsSync(localPath) ? localPath : s.url;
+        });
+
+        const sessionId = uuidv4();
+        const start = Date.now();
+        const summary = await screenshotBundle.analyzeBundle(filePaths, sessionId, req.body.title || '');
+        const processingTimeMs = Date.now() - start;
+
+        if (!summary) {
+          const err = new Error('AI processing failed, please retry');
+          err.code = 'ANALYSIS_FAILED';
+          throw err;
+        }
+
+        screenshotBundle.saveSession(sessionId, filePaths, summary, pipelineResult.screenshots.map(s => s.thumbnailUrl));
+        logger.info(`[screenshot-bundle] Completed in ${processingTimeMs}ms: "${summary.autoTitle}"`);
+
+        return {
+          status: 'success',
+          sessionId,
+          summary,
+          imageCount: files.length,
+          thumbnails: pipelineResult.screenshots.map(s => s.thumbnailUrl),
+          processingTimeMs
+        };
+      })();
+
+      bundleDedup.set(dedupKey, { promise: work, at: Date.now() });
+      // Swallow unhandled-rejection noise for joiners that never arrive.
+      work.catch(() => {});
+      for (const [k, v] of bundleDedup) {
+        if (Date.now() - v.at > BUNDLE_DEDUP_TTL_MS) bundleDedup.delete(k);
+      }
+
+      let payload;
+      try {
+        payload = await work;
+      } catch (err) {
+        bundleDedup.delete(dedupKey);
+        if (err.code === 'ANALYSIS_FAILED') {
+          return res.status(500).json({ status: 'error', error: { code: 'ANALYSIS_FAILED', message: err.message } });
+        }
+        throw err;
+      }
+      res.json(payload);
     } catch (err) {
       logger.error(`screenshot-bundle failed: ${err.message}`, { stack: err.stack });
       res.status(500).json({ status: 'error', error: { code: 'INTERNAL', message: err.message } });
