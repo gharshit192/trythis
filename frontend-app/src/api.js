@@ -8,6 +8,13 @@ const authHeader = () => {
 // The app-icon badge is driven by the unread count, so anything that changes
 // that count has to say so. Announced here rather than at each call site so no
 // future caller can forget.
+// Saves list cache. Anything that creates, changes or deletes a save clears it,
+// so the only staleness possible is a change made on another device within the
+// window below.
+const SAVES_TTL_MS = 60_000;
+let savesCache = { data: null, at: 0 };
+const invalidateSaves = () => { savesCache = { data: null, at: 0 }; };
+
 const notifyBadgeChanged = () => {
   try {
     window.dispatchEvent(new Event('wt-badge-refresh'));
@@ -152,11 +159,27 @@ const api = {
       headers: { 'Content-Type': 'application/json', ...authHeader() },
       body: JSON.stringify({ title, url, sourceType, notes, description, collectionIds }),
     });
+    invalidateSaves();
     return handle(res);
   },
 
-  async getSaves({ signal } = {}) {
-    return handleAbortable(fetch(`${API_BASE_URL}/saves`, { headers: authHeader(), signal }));
+  // Six screens fetch the saves list on mount, so every tab switch used to wait
+  // on a full round trip before rendering anything — the app felt like it was
+  // loading rather than navigating. A short-lived cache makes a return to a
+  // screen you were just on immediate, and any write invalidates it, so the
+  // list is never stale in a way the user caused.
+  //
+  // Deliberately short: this is about the seconds around a tab switch, not
+  // about holding data across a session.
+  async getSaves({ signal, force = false } = {}) {
+    const fresh = savesCache.data && Date.now() - savesCache.at < SAVES_TTL_MS;
+    if (fresh && !force) return savesCache.data;
+
+    const result = await handleAbortable(fetch(`${API_BASE_URL}/saves`, { headers: authHeader(), signal }));
+    // Never cache an abort or an error — a failed fetch must not stop the next
+    // screen from trying again.
+    if (result?.status === 'success') savesCache = { data: result, at: Date.now() };
+    return result;
   },
 
   async getSaveById(id) {
@@ -188,6 +211,7 @@ const api = {
       headers: { 'Content-Type': 'application/json', ...authHeader() },
       body: JSON.stringify(patch),
     });
+    invalidateSaves();
     return handle(res);
   },
 
@@ -196,6 +220,7 @@ const api = {
       method: 'DELETE',
       headers: authHeader(),
     });
+    invalidateSaves();
     return handle(res);
   },
 
@@ -255,6 +280,7 @@ const api = {
       headers: { 'Content-Type': 'application/json', ...authHeader() },
       body: JSON.stringify({ summary }),
     });
+    invalidateSaves();
     return handle(res);
   },
 
@@ -297,6 +323,7 @@ const api = {
       method: 'POST',
       headers: authHeader(),
     });
+    invalidateSaves();
     return handle(res);
   },
 
@@ -574,6 +601,7 @@ const api = {
       headers: { 'Content-Type': 'application/json', ...authHeader() },
       body: JSON.stringify({ saveIds, instruction, title }),
     });
+    invalidateSaves();
     return handle(res);
   },
   async aggregateScreenshotAnalysis(saveId, analysisText) {

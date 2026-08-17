@@ -84,6 +84,26 @@ function ActionButton({ variant, onClick, children }) {
   );
 }
 
+// The button label follows what was saved, not which trigger fired. These
+// triggers (time-of-day, seasonal, forgotten intent) resurface anything, so a
+// label baked into the trigger put "Plan trip" under a biryani reel.
+const primaryActionLabel = (save) => {
+  switch (save?.aiAnalysis?.structuredData?.type) {
+    case 'recipe': return 'View recipe';
+    case 'itinerary': return 'Plan trip';
+    case 'product': return 'View product';
+    case 'event': return 'View event';
+    case 'place': return 'View place';
+    default: break;
+  }
+  switch (save?.category) {
+    case 'travel': return 'Plan trip';
+    case 'food': return 'View recipe';
+    case 'shopping': return 'View product';
+    default: return 'View save';
+  }
+};
+
 const NotificationCard = ({
   notification,
   save,
@@ -153,12 +173,12 @@ const NotificationCard = ({
         );
 
       case 'time_behavioral':
-        return <ActionButton variant="coral" onClick={handleViewSave}>Plan trip</ActionButton>;
+        return <ActionButton variant="coral" onClick={handleViewSave}>{primaryActionLabel(save)}</ActionButton>;
 
       case 'forgotten_intent':
         return (
           <>
-            <ActionButton variant="purple" onClick={handleViewSave}>View save</ActionButton>
+            <ActionButton variant="purple" onClick={handleViewSave}>{primaryActionLabel(save)}</ActionButton>
             <ActionButton variant="ghost" onClick={handleNotInterested}>Not interested</ActionButton>
           </>
         );
@@ -167,7 +187,7 @@ const NotificationCard = ({
       case 'smart_collection':
         return (
           <ActionButton variant="coral" onClick={handleViewSave}>
-            {type === 'smart_collection' ? 'View collection' : 'View save'}
+            {type === 'smart_collection' ? 'View collection' : primaryActionLabel(save)}
           </ActionButton>
         );
 

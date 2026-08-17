@@ -710,11 +710,19 @@ const processSave = async (saveId) => {
         // but reels usually name the place in the audio (often in Hindi) or in
         // on-screen text. Without this, Hindi content never gets coordinates
         // and every location trigger silently skips it.
-        if (fresh.extractedLocation?.lat == null) {
+        // A named destination from the structured analysis outranks whatever an
+        // earlier text scan guessed. The metadata stage matches any city that
+        // appears anywhere in the title or description, so an Ooty itinerary
+        // whose caption happened to mention Hyderabad was pinned to Hyderabad —
+        // and because a location already existed, the authoritative destination
+        // was never even consulted.
+        const sd = analysis.structuredData || {};
+        const namedPlace = sd.place?.city || sd.place?.name || sd.itinerary?.destination || null;
+        const structuredMatch = namedPlace ? locationExtractor.findKnownLocation(namedPlace) : null;
+
+        if (structuredMatch || fresh.extractedLocation?.lat == null) {
           try {
-            const sd = analysis.structuredData || {};
-            const namedPlace = sd.place?.city || sd.place?.name || sd.itinerary?.destination || null;
-            const located = locationExtractor.findKnownLocation(namedPlace)
+            const located = structuredMatch
               || await locationExtractor.extractLocation(
                 [analysisInput, raw.transcription, frameOcr, analysis.summary].filter(Boolean).join('\n')
               );

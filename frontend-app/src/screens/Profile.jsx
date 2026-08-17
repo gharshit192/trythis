@@ -26,7 +26,6 @@ export default function Profile({ onNavigate }) {
   // refuses to deliver them, and the row has to say so instead of showing "On".
   const [pushState, setPushState] = useState('off');
   const [pushNote, setPushNote] = useState(null);
-  const [testingPush, setTestingPush] = useState(false);
 
   // Modals
   const [confirmLogout, setConfirmLogout] = useState(false);
@@ -120,29 +119,6 @@ export default function Profile({ onNavigate }) {
       setPushNote(PUSH_FAILURE_COPY.error);
     } finally {
       setSettingsSaving(false);
-    }
-  };
-
-  // The fastest way to tell "this device never subscribed" from "the send
-  // failed" — the server reports both numbers.
-  const handleTestPush = async () => {
-    setTestingPush(true);
-    setPushNote(null);
-    try {
-      const res = await api.sendTestPush();
-      if (res.status !== 'success') {
-        setPushNote(res?.error?.message || 'Test failed.');
-      } else if (!res.data.subscriptions) {
-        setPushNote('This device isn\'t subscribed yet — turn notifications on first.');
-      } else if (!res.data.sent) {
-        setPushNote(`Subscribed on ${res.data.subscriptions} device(s), but the send failed.`);
-      } else {
-        setPushNote(`Sent to ${res.data.sent} device(s). It should appear in a moment.`);
-      }
-    } catch (err) {
-      setPushNote('Test failed — check your connection.');
-    } finally {
-      setTestingPush(false);
     }
   };
 
@@ -274,12 +250,6 @@ export default function Profile({ onNavigate }) {
                 <span className="pf-ival" style={{ color: notificationsEnabled && pushState === 'on' ? 'var(--cook)' : 'var(--mute)' }}>
                   {notificationsEnabled && pushState === 'on' ? 'On' : 'Off'}
                 </span>
-              </div>
-            )}
-            {pushState === 'on' && (
-              <div className="pf-item" onClick={testingPush ? undefined : handleTestPush} style={{ cursor: testingPush ? 'not-allowed' : 'pointer', opacity: testingPush ? 0.6 : 1 }}>
-                <span className="pf-iname">📨 Send a test notification</span>
-                <span className="pf-ival">{testingPush ? 'Sending…' : 'Test ›'}</span>
               </div>
             )}
             {pushNote && (
