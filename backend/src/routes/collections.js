@@ -4,6 +4,12 @@ const Collection = require('../models/Collection');
 const authMiddleware = require('../middleware/auth');
 const logger = require('../utils/logger');
 
+// Exactly what the collection screens render off a populated save:
+// SaveCard reads _id/title/thumbnail/category/contentType/source, Collections
+// filters on isTemplate, CollectionDetail shows image + title. Nothing else is
+// touched, so nothing else needs sending.
+const COLLECTION_SAVE_FIELDS = 'title thumbnail image category contentType source isTemplate createdAt';
+
 router.use(authMiddleware);
 
 router.post('/', async (req, res) => {
@@ -36,8 +42,14 @@ router.post('/', async (req, res) => {
 
 router.get('/', async (req, res) => {
   try {
+    // Project the populated saves down to what a card renders. An unprojected
+    // populate pulls every full save document — including aiAnalysis, its
+    // transcripts and the raw per-model OCR output — for every save in every
+    // collection. That made this the slowest endpoint in the app (~2.3s) and
+    // meant the same saves were sent twice per screen: once by GET /saves and
+    // again nested in here.
     const collections = await Collection.find({ userId: req.user.id })
-      .populate('saves')
+      .populate({ path: 'saves', select: COLLECTION_SAVE_FIELDS })
       .sort({ createdAt: -1 });
 
     res.json({
@@ -55,7 +67,8 @@ router.get('/', async (req, res) => {
 
 router.get('/:id', async (req, res) => {
   try {
-    const collection = await Collection.findById(req.params.id).populate('saves');
+    const collection = await Collection.findById(req.params.id)
+      .populate({ path: 'saves', select: COLLECTION_SAVE_FIELDS });
 
     if (!collection || collection.userId.toString() !== req.user.id) {
       return res.status(404).json({

@@ -36,6 +36,31 @@ const getCategoryIcon = (categoryName) => {
   return CATEGORY_ICONS.default;
 };
 
+// A category whose items are the lines of one transcribed document, rather than
+// a list of distinct things. toBundleShape names it "Transcribed Lines" and
+// gives every item a "Line N" detail.
+const isTranscribedDocument = (cat) =>
+  Array.isArray(cat?.items)
+  && cat.items.length > 0
+  && cat.items.every((i) => /^Line \d+/.test(String(i?.details || '')));
+
+// Join the lines back into readable text. Lines that ended mid-sentence are
+// joined with a space; ones ending in a danda, full stop or question mark start
+// a new line, which is how the original was laid out.
+const documentText = (cat) =>
+  (cat.items || [])
+    .map((i) => String(i?.name || '').trim())
+    .filter(Boolean)
+    .reduce((text, line, idx) => {
+      if (idx === 0) return line;
+      const endsSentence = /[।॥.!?]$/.test(text.trimEnd());
+      return text + (endsSentence ? '\n' : ' ') + line;
+    }, '');
+
+// Lines the pipeline flagged as needing a human eye.
+const unreviewedCount = (cat) =>
+  (cat.items || []).filter((i) => /—\s*(models disagree|low OCR confidence)/.test(String(i?.details || ''))).length;
+
 export default function ScreenshotSummary({ sessionId, summary: initialSummary, thumbnails = [], saveId = null, autoSaved = false, onNavigate }) {
   const [summary, setSummary] = useState(initialSummary);
   const [refineText, setRefineText] = useState('');
@@ -230,8 +255,32 @@ export default function ScreenshotSummary({ sessionId, summary: initialSummary, 
               </p>
             )}
 
-            {/* Items list with bifurcations */}
-            {cat.items && cat.items.length > 0 && (
+            {/* A transcribed document is prose, not an inventory. Rendering each
+                line as its own bullet labelled "Line 1..9" turned a handwritten
+                letter into a debug dump — the reader could see the words but
+                could not read the letter. Render it as continuous text instead,
+                and keep the list rendering below for genuine item lists
+                (receipts, menus, checklists). */}
+            {isTranscribedDocument(cat) ? (
+              <div style={{ marginTop: 8 }}>
+                <p style={{
+                  fontSize: 15,
+                  // Devanagari needs more room between lines than Latin at the
+                  // same size, or the matras above and below collide.
+                  lineHeight: 1.95,
+                  color: 'var(--colors-type-primary, #1a1a1a)',
+                  margin: 0,
+                  whiteSpace: 'pre-wrap',
+                }}>
+                  {documentText(cat)}
+                </p>
+                {unreviewedCount(cat) > 0 && (
+                  <p style={{ fontSize: 11, color: 'var(--colors-type-tertiary, #888)', marginTop: 12, marginBottom: 0 }}>
+                    {unreviewedCount(cat)} of {cat.items.length} lines are worth checking against the original.
+                  </p>
+                )}
+              </div>
+            ) : cat.items && cat.items.length > 0 && (
               <div style={{ marginTop: 8 }}>
                 {cat.items.map((item, ii) => (
                   <div key={ii} style={{ marginBottom: 6 }}>
