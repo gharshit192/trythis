@@ -19,6 +19,13 @@ const logger = require('../utils/logger');
 
 const STALE_AFTER_MS = Number(process.env.STUCK_SAVE_STALE_MINUTES || 15) * 60 * 1000;
 const MAX_RECOVERED = Number(process.env.STUCK_SAVE_MAX_RECOVERED || 25);
+// Recovered saves are released one at a time, not all at once. `enqueue` is a
+// bare setImmediate with no concurrency limit, and each job is a video download
+// plus a Whisper pass — releasing a boot's whole backlog together would put a
+// small host under more load than normal traffic ever does, right at start-up.
+const RELEASE_INTERVAL_MS = Number(process.env.STUCK_SAVE_RELEASE_INTERVAL_MS || 30_000);
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const recoverStuckSaves = async () => {
   const cutoff = new Date(Date.now() - STALE_AFTER_MS);
@@ -57,15 +64,23 @@ const recoverStuckSaves = async () => {
     logger.warn(`[recoverStuckSaves] ${unrecoverable.length} stuck save(s) marked failed — no URL to retry`);
   }
 
-  for (const save of requeue) {
-    // Touch updatedAt so a second instance booting alongside this one sees a
-    // fresh timestamp and skips the save instead of double-queueing it.
-    await Save.updateOne(
-      { _id: save._id },
-      { processingStatus: 'processing', processingError: null }
-    );
-    mediaProcessor.enqueue(save._id.toString());
-  }
+  // Claim the whole batch up front. Touching updatedAt now means a second
+  // instance booting alongside this one sees fresh timestamps and skips them,
+  // rather than re-queueing the same saves while we drip-feed them.
+  await Save.updateMany(
+    { _id: { $in: requeue.map((s) => s._id) } },
+    { processingStatus: 'processing', processingError: null }
+  );
+
+  // Released on a timer, deliberately not awaited by the caller — the server
+  // must finish booting and start serving immediately.
+  (async () => {
+    for (let i = 0; i < requeue.length; i++) {
+      mediaProcessor.enqueue(requeue[i]._id.toString());
+      logger.info(`[recoverStuckSaves] released ${i + 1}/${requeue.length}`);
+      if (i < requeue.length - 1) await sleep(RELEASE_INTERVAL_MS);
+    }
+  })().catch((err) => logger.warn(`[recoverStuckSaves] release loop failed: ${err.message}`));
 
   const total = await Save.countDocuments({ processingStatus: 'processing', updatedAt: { $lt: cutoff } });
   if (total > 0) {
