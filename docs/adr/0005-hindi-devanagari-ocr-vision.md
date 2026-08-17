@@ -55,3 +55,39 @@ billing account even to use the free tier.
 Materially better handwritten-Devanagari transcription, with bounded cost and a
 safe fallback. Even Vision is imperfect on messy proper nouns, so low-confidence
 lines are flagged for review rather than presented as certain.
+
+## Amendment (2026-08-17) — how the cross-check compares two readings
+
+The dual-LLM cross-check was correct in principle and wrong in execution. Three
+faults made it condemn documents it had in fact read correctly; production had
+Hindi saves scored `0` with **every** line marked disputed, on text that was
+accurate.
+
+1. **Exact string equality is not a valid test for Devanagari.** Two models
+   agreeing on content still differ on composed vs decomposed matras, Devanagari
+   vs Arabic digits (`१००८` / `1008`), danda vs full stop, and zero-width joiners
+   inside conjuncts. Comparison now canonicalises (NFC, digit folding, joiner and
+   punctuation stripping) and accepts a normalised edit-distance similarity of
+   **≥ 0.88**. Meaning-preserving variation is agreement.
+2. **Lines were paired by array index.** One model merging or splitting a single
+   line shifted every line after it, so one hiccup disputed the rest of the
+   document. Pairing is now a two-pass best-match within a ±2 line window, and a
+   counterpart is claimed **only on genuine agreement** — otherwise a divergent
+   line steals the counterpart belonging to the next one.
+3. **A failed model was indistinguishable from an empty page.** Both return
+   `EMPTY_RESULT`, so a Gemini outage was scored as zero confidence in the user's
+   document. The result now carries `corroboration: 'dual' | 'single' | 'none'`.
+   Single-model output is *uncorroborated*, not *disputed*: nothing is flagged for
+   review, and the UI must never claim models disagreed when only one ran.
+
+Confidence is now the **mean per-line confidence**, not the share of lines that
+matched exactly. The ratio conflated "we could not cross-check this" with "this
+is wrong."
+
+Per-line verification status stays on the line. It was previously emitted as a
+tag per item, and the bundle save flattens item tags into the save's tag list —
+so a twelve-line document surfaced twelve copies of `disputed` as browsable tags.
+
+`scripts/rescoreHindiSaves.js` re-derives all of this from the per-model outputs
+already stored in `_models`, so existing saves can be corrected without re-running
+any vision model.

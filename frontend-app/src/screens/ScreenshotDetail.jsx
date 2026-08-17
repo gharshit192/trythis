@@ -30,7 +30,6 @@ const CATEGORY_META = {
 const catMeta = (cat) => CATEGORY_META[cat] || CATEGORY_META.other;
 
 export default function ScreenshotDetail({ save, onNavigate }) {
-  const [relatedScreenshots, setRelatedScreenshots] = useState([]);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState(null);
@@ -38,12 +37,9 @@ export default function ScreenshotDetail({ save, onNavigate }) {
   const [shareLoading, setShareLoading] = useState(false);
   const [shareError, setShareError] = useState(null);
   const [toast, setToast] = useState(null);
-  const [aggregating, setAggregating] = useState(false);
-  const [aggregateError, setAggregateError] = useState(null);
+  // Only ever read here — a combined document arrives with this already
+  // computed. Building one is the Documents tab's job.
   const [aggregateData, setAggregateData] = useState(save?.aiAnalysis?.aggregateAnalysis || null);
-  const [selectedIds, setSelectedIds] = useState([]);
-  const [aggregateInstruction, setAggregateInstruction] = useState('');
-  const toggleSelect = (id) => setSelectedIds((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
 
   const showToast = (msg) => {
     setToast(msg);
@@ -56,17 +52,11 @@ export default function ScreenshotDetail({ save, onNavigate }) {
     // Load any previously-saved aggregate analysis (so it doesn't reset/re-run on revisit)
     setAggregateData(save?.aiAnalysis?.aggregateAnalysis || null);
 
-    // Fetch other screenshots (excluding current) for manual aggregate selection
-    api.getSaves()
-      .then((r) => {
-        if (r?.status === 'success' && r?.data) {
-          const related = r.data
-            .filter((s) => (s.source === 'screenshot' || s.contentType === 'image') && s._id !== save._id)
-            .slice(0, 30);
-          setRelatedScreenshots(related);
-        }
-      })
-      .catch(() => {});
+    // Every other image the user owns used to be fetched here to fill a
+    // "Related Screenshots" strip and an aggregate picker. Both are gone: being
+    // an image is not a relationship, and choosing what to combine now happens
+    // in Saves → Documents. Dropping the call also spares this screen a full
+    // getSaves() on every open.
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [save?._id]);
@@ -122,28 +112,6 @@ export default function ScreenshotDetail({ save, onNavigate }) {
     });
   };
 
-  const handleAggregate = async () => {
-    if (!save?._id || selectedIds.length === 0) return;
-    setAggregating(true);
-    setAggregateError(null);
-
-    try {
-      const ids = [save._id, ...selectedIds];
-      const res = await api.createScreenshotAggregateDocument(ids, aggregateInstruction);
-      if (res.status === 'success') {
-        const combined = res.data?.save;
-        setAggregateData(res.data?.aggregate || combined?.aiAnalysis?.aggregateAnalysis || null);
-        if (combined?._id) onNavigate('save-detail', { id: combined._id });
-      } else {
-        setAggregateError(res.error?.message || 'Failed to create combined document');
-      }
-    } catch (err) {
-      setAggregateError(err.message || 'Failed to create combined document');
-    } finally {
-      setAggregating(false);
-    }
-  };
-
   const handleExportPdf = async () => {
     if (!save?._id) return;
     try {
@@ -158,7 +126,6 @@ export default function ScreenshotDetail({ save, onNavigate }) {
   const safeTitle = save?.title || 'Untitled screenshot';
   const safeSummary = save?.aiAnalysis?.summary || save?.description || '';
   const keyPoints = save?.aiAnalysis?.keyPoints || [];
-  const tags = save?.tags || [];
   const structuredData = save?.aiAnalysis?.structuredData || {};
 
   return (
@@ -364,38 +331,13 @@ export default function ScreenshotDetail({ save, onNavigate }) {
             </div>
           )}
 
-          {/* Tags */}
-          {tags.length > 0 && (
-            <div style={{ marginBottom: 16 }}>
-              <h3
-                style={{
-                  fontSize: 12,
-                  fontWeight: 600,
-                  marginBottom: 8,
-                  color: T.text,
-                }}
-              >
-                Tags
-              </h3>
-              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                {tags.map((tag) => (
-                  <span
-                    key={tag}
-                    style={{
-                      fontSize: 13,
-                      padding: '4px 10px',
-                      borderRadius: 12,
-                      background: T.bgInner,
-                      border: `1px solid ${T.border}`,
-                      color: T.text,
-                    }}
-                  >
-                    #{tag}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
+          {/* Tags and "Related Screenshots" were removed here deliberately.
+              For a photo or screenshot the tags were machine noise — the Hindi OCR
+              emitted one per transcribed line, so a document surfaced twelve copies
+              of "disputed" — and "related" was every other image the user owned,
+              matched on nothing but being an image. Neither told the reader
+              anything true about the document in front of them. Key points and
+              the export stay; they are derived from this document's own content. */}
 
           {/* Key points */}
           {keyPoints.length > 0 && (
@@ -428,70 +370,14 @@ export default function ScreenshotDetail({ save, onNavigate }) {
             </div>
           )}
 
-          {/* Related screenshots */}
-          {relatedScreenshots.length > 0 && (
-            <div style={{ marginBottom: 16 }}>
-              <h3
-                style={{
-                  fontSize: 12,
-                  fontWeight: 600,
-                  marginBottom: 8,
-                  color: T.text,
-                }}
-              >
-                Related Screenshots
-              </h3>
-              <div
-                style={{
-                  display: 'flex',
-                  gap: 10,
-                  overflowX: 'auto',
-                  paddingBottom: 8,
-                }}
-              >
-                {relatedScreenshots.map((s) => (
-                  <div
-                    key={s._id}
-                    onClick={() => onNavigate('save-detail', { id: s._id })}
-                    style={{
-                      flex: '0 0 100px',
-                      height: 100,
-                      borderRadius: 8,
-                      overflow: 'hidden',
-                      background: 'var(--linen)',
-                      padding: 3,
-                      cursor: 'pointer',
-                      border: `1px solid ${T.border}`,
-                    }}
-                  >
-                    {s.thumbnail || s.image ? (
-                      <SmartImage
-                        saveId={s._id}
-                        src={s.thumbnail || s.image}
-                        alt={s.title}
-                        style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#fff', borderRadius: 5 }}
-                      />
-                    ) : (
-                      <div
-                        style={{
-                          width: '100%',
-                          height: '100%',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          color: T.textMuted,
-                        }}
-                      >
-                        <i className="ti ti-file-text" style={{ fontSize: 20 }}></i>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Aggregate & summarize section */}
+          {/* Combined-document analysis. Only rendered for a save that IS a
+              combination of several documents. A single photo has nothing to
+              aggregate, so it used to show an empty picker inviting the user to
+              aggregate a document with unrelated ones — which is how combined
+              documents ended up mixing content that had no relation. Choosing
+              what to combine now happens in Saves → Documents, where the user
+              can see and tick the actual documents. */}
+          {aggregateData && (
           <div
             style={{
               marginBottom: 16,
@@ -509,57 +395,8 @@ export default function ScreenshotDetail({ save, onNavigate }) {
                 color: T.text,
               }}
             >
-              Aggregate Analysis
+              Combined document
             </h3>
-            {!aggregateData ? (
-              <>
-                <p style={{ fontSize: 13, color: T.textMuted, marginBottom: 10, lineHeight: 1.5 }}>
-                  {relatedScreenshots.length > 0
-                    ? 'Select screenshots to combine into a new document. Add context so the AI knows how they relate.'
-                    : 'No other screenshots to aggregate yet.'}
-                </p>
-                {relatedScreenshots.length > 0 && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 10, maxHeight: 220, overflowY: 'auto' }}>
-                    {relatedScreenshots.map((s) => {
-                      const checked = selectedIds.includes(s._id);
-                      return (
-                        <label key={s._id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 8, cursor: 'pointer', background: checked ? 'rgba(14,124,123,0.08)' : T.bg, border: `1px solid ${checked ? 'var(--coral)' : T.border}` }}>
-                          <input type="checkbox" checked={checked} onChange={() => toggleSelect(s._id)} style={{ width: 16, height: 16, accentColor: 'var(--coral)', flexShrink: 0 }} />
-                          {s.thumbnail ? (
-                            <img src={s.thumbnail} alt="" style={{ width: 32, height: 32, borderRadius: 6, objectFit: 'cover', flexShrink: 0 }} />
-                          ) : (
-                            <div style={{ width: 32, height: 32, borderRadius: 6, background: T.bgInner, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 14 }}>🖼</div>
-                          )}
-                          <span style={{ fontSize: 13, color: T.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.title || 'Untitled'}</span>
-                        </label>
-                      );
-                    })}
-                  </div>
-                )}
-                {relatedScreenshots.length > 0 && (
-                  <div style={{ marginBottom: 10 }}>
-                    <p style={{ fontSize: 12, fontWeight: 600, color: T.textMuted, marginBottom: 6 }}>
-                      Answer for better aggregation
-                    </p>
-                    <textarea
-                      value={aggregateInstruction}
-                      onChange={(e) => setAggregateInstruction(e.target.value)}
-                      placeholder="How are these connected? What should the final document focus on? Any decisions, business ideas, risks, or next steps you want extracted?"
-                      style={{ width: '100%', minHeight: 74, borderRadius: 8, border: `1px solid ${T.border}`, background: T.bg, color: T.text, padding: 9, fontSize: 13, resize: 'vertical', boxSizing: 'border-box' }}
-                    />
-                  </div>
-                )}
-                {relatedScreenshots.length > 0 && (
-                  <button
-                    onClick={handleAggregate}
-                    disabled={aggregating || selectedIds.length === 0}
-                    style={{ padding: '8px 12px', fontSize: 13, borderRadius: 6, background: 'var(--coral)', color: '#fff', border: 0, cursor: aggregating || selectedIds.length === 0 ? 'not-allowed' : 'pointer', opacity: aggregating || selectedIds.length === 0 ? 0.6 : 1 }}
-                  >
-                    {aggregating ? 'Creating document...' : selectedIds.length > 0 ? `Create combined document (${selectedIds.length + 1})` : 'Select screenshots to combine'}
-                  </button>
-                )}
-              </>
-            ) : (
               <>
                 {/* Summary */}
                 {aggregateData.summary && (
@@ -673,11 +510,8 @@ export default function ScreenshotDetail({ save, onNavigate }) {
                   📄 Export as PDF
                 </button>
               </>
-            )}
-            {aggregateError && (
-              <p style={{ fontSize: 13, color: T.redFg, marginTop: 8 }}>{aggregateError}</p>
-            )}
           </div>
+          )}
 
         </div>
       </div>

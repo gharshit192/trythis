@@ -12,6 +12,7 @@ const connectDB = require('./config/database');
 const redisClient = require('./config/redis');
 const purgeScreenshots = require('./jobs/purgeScreenshots');
 const notificationScheduler = require('./jobs/notificationScheduler');
+const { recoverStuckSaves } = require('./jobs/recoverStuckSaves');
 const { cleanupBundles } = require('./jobs/cleanupBundles');
 const uploadWorker = require('./workers/uploadWorker');
 
@@ -65,6 +66,15 @@ const initializeServer = async () => {
       console.log('[DEBUG] Starting upload worker...');
       uploadWorker.start();
       console.log('✅ Upload worker started');
+
+      // Re-queue saves stranded mid-pipeline by the last shutdown. processSave
+      // runs in-process, so a deploy or an idle-sleep kills anything in flight
+      // and leaves the save spinning forever. Best-effort and non-blocking —
+      // recovery must never keep the server from accepting traffic.
+      if (process.env.DISABLE_STUCK_SAVE_RECOVERY !== 'true') {
+        recoverStuckSaves()
+          .catch((err) => console.warn(`⚠️  Stuck-save recovery failed: ${err.message}`));
+      }
 
       // Start background jobs in all modes (including production)
       if (process.env.ENABLE_NOTIFICATIONS !== 'false') {

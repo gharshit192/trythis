@@ -5,6 +5,17 @@ const authHeader = () => {
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
+// The app-icon badge is driven by the unread count, so anything that changes
+// that count has to say so. Announced here rather than at each call site so no
+// future caller can forget.
+const notifyBadgeChanged = () => {
+  try {
+    window.dispatchEvent(new Event('wt-badge-refresh'));
+  } catch {
+    /* no window (tests) — nothing to update */
+  }
+};
+
 const handle = async (response) => {
   const data = await response.json().catch(() => ({}));
   if (!response.ok && response.status === 401) {
@@ -370,7 +381,9 @@ const api = {
       headers: { 'Content-Type': 'application/json', ...authHeader() },
       body: JSON.stringify({ read: true }),
     });
-    return handle(res);
+    const result = await handle(res);
+    notifyBadgeChanged();
+    return result;
   },
 
   async dismissNotification(id) {
@@ -378,7 +391,9 @@ const api = {
       method: 'POST',
       headers: authHeader(),
     });
-    return handle(res);
+    const result = await handle(res);
+    notifyBadgeChanged();
+    return result;
   },
 
   // ---- Web Push ----
@@ -401,6 +416,22 @@ const api = {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...authHeader() },
       body: JSON.stringify({ endpoint }),
+    });
+    return handle(res);
+  },
+
+  // Unread count for the app-icon badge. Cheap enough to poll.
+  async getBadgeCount() {
+    const res = await fetch(`${API_BASE_URL}/notifications/badge`, { headers: authHeader() });
+    return handle(res);
+  },
+
+  // Sends a push to this user's own devices. The response separates "no
+  // subscriptions" from "send failed", which is the whole point of having it.
+  async sendTestPush() {
+    const res = await fetch(`${API_BASE_URL}/notifications/test-push`, {
+      method: 'POST',
+      headers: authHeader(),
     });
     return handle(res);
   },

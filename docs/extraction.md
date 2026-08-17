@@ -36,6 +36,42 @@ rather than breaking the save:
   transcribed, filled fields), not optimism. Sparse input → low confidence and a
   generic type, never a confident guess.
 
+### yt-dlp expires — treat it as perishable
+
+Video download gates everything downstream: `mediaProcessor` only transcribes
+`if (mp4Ready)`, so a failed download costs you the transcript, the frame OCR,
+and most of the confidence score. And yt-dlp is the one dependency that breaks
+without anyone touching the repo — sites change their delivery and extractors
+stop working until upstream ships a fix.
+
+This bit us in **July 2026**: Instagram changed, the deployed image still carried
+a March build, and *every* reel failed for two months with `Instagram sent an
+empty media response`. The code was fine. The binary was four months old.
+
+- The Dockerfile installs `latest` at **build time**, which pins the binary to
+  the image's build date. `docker-entrypoint.sh` re-runs `yt-dlp -U` on every
+  container start so the image can't silently rot. Set
+  `YTDLP_AUTO_UPDATE=false` to opt out.
+- **First thing to check when extraction breaks across the board:** compare
+  `yt-dlp --version` against the latest release. A whole-platform failure is
+  almost always a stale extractor, not your code.
+- Download failures record the **real** reason on
+  `processingStages.videoDownload.error` (auth required, rate limited, timeout,
+  binary missing). This used to be a hardcoded "private, geo-blocked, or
+  removed" for every failure, which is precisely why the outage above went
+  undiagnosed for so long. Keep it specific.
+
+### Interrupted saves are recovered on boot
+
+`processSave` runs in-process, so a deploy, an OOM kill, or a free-tier host
+falling asleep strands the save at `processingStatus='processing'` with nothing
+to retry it. `jobs/recoverStuckSaves.js` re-queues them at startup — only saves
+untouched for `STUCK_SAVE_STALE_MINUTES` (default 15, so in-flight work is never
+stolen), capped at `STUCK_SAVE_MAX_RECOVERED` per boot (default 25, so a crash
+loop can't stampede). Stuck saves with no URL can't be replayed and are marked
+`failed` with a reason instead of spinning forever. Disable with
+`DISABLE_STUCK_SAVE_RECOVERY=true`.
+
 ## Screenshots
 
 Single screenshots and multi-image bundles go through Claude vision in a single

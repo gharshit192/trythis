@@ -740,32 +740,154 @@ const runWithClaude = async (imageContents) => {
 // identically is far more likely correct than either model's solo claim of
 // 0.99. Lines where they diverge get flagged as disputed instead of
 // silently picking one guess.
-const normalizeForCompare = (s) => String(s || '').replace(/\s+/g, ' ').trim();
+// Devanagari-aware canonicalisation before comparing two transcriptions.
+//
+// Exact string equality is the wrong test for this script. Two vision models
+// reading the same line agree on the *content* and still differ in ways that
+// carry no meaning: composed vs decomposed matras (NFC), Devanagari digits
+// (१०८) vs Arabic (108), danda (।) vs full stop, zero-width joiners inside
+// conjuncts, and spacing around them. Comparing raw strings marked ~100% of
+// production lines "disputed" — 12/12, 20/20 — on documents whose text was in
+// fact read correctly, which zeroed the confidence score and flooded the tags.
+const DEVANAGARI_DIGITS = '०१२३४५६७८९';
+const canonicalizeDevanagari = (s) => String(s || '')
+  .normalize('NFC')
+  // Devanagari digits → Arabic, so १०८ and 108 compare equal.
+  .replace(/[०-९]/g, (d) => String(DEVANAGARI_DIGITS.indexOf(d)))
+  // Zero-width joiner/non-joiner: invisible, and models place them differently.
+  .replace(/[​-‍﻿]/g, '')
+  // Danda / double danda are sentence punctuation; so is the period a model
+  // may substitute for them. None of it changes what the line says.
+  .replace(/[।॥.,;:!?'"“”‘’()\[\]{}\-–—]/g, ' ')
+  .replace(/\s+/g, ' ')
+  .trim()
+  .toLowerCase();
+
+// Levenshtein distance, two-row variant (only the previous row is ever needed).
+const editDistance = (a, b) => {
+  if (a === b) return 0;
+  if (!a.length) return b.length;
+  if (!b.length) return a.length;
+
+  let prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+  let curr = new Array(b.length + 1);
+
+  for (let i = 1; i <= a.length; i++) {
+    curr[0] = i;
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      curr[j] = Math.min(curr[j - 1] + 1, prev[j] + 1, prev[j - 1] + cost);
+    }
+    [prev, curr] = [curr, prev];
+  }
+  return prev[b.length];
+};
+
+// 1 = identical after canonicalisation, 0 = nothing in common.
+const similarity = (a, b) => {
+  const x = canonicalizeDevanagari(a);
+  const y = canonicalizeDevanagari(b);
+  if (!x && !y) return 1;
+  if (!x || !y) return 0;
+  const longest = Math.max(x.length, y.length);
+  return 1 - editDistance(x, y) / longest;
+};
+
+// A line both models read the same way, allowing for the noise above. Handwriting
+// OCR that differs by one matra out of forty characters is agreement, not a
+// dispute the user needs to adjudicate.
+const AGREE_THRESHOLD = 0.88;
+// How far out of position a counterpart line may be found. A model that merges
+// or splits one line shifts everything after it; index-only pairing then
+// compares every remaining line against the wrong counterpart and reports the
+// whole rest of the document as disputed.
+const ALIGN_WINDOW = 2;
 
 const mergeTranscriptions = (geminiResult, claudeResult) => {
   const gLines = geminiResult.transcription?.lines || [];
   const cLines = claudeResult.transcription?.lines || [];
-  const maxLen = Math.max(gLines.length, cLines.length);
 
-  const lines = [];
-  for (let i = 0; i < maxLen; i++) {
-    const g = gLines[i];
-    const c = cLines[i];
-    if (g && c) {
-      const agreed = normalizeForCompare(g.text) === normalizeForCompare(c.text);
-      lines.push({
+  const claimed = new Set();
+  const paired = new Array(gLines.length).fill(null);
+
+  // Pass 1 — agreement only. A Claude line is claimed solely when it genuinely
+  // matches, never merely because it was the least-bad option in the window.
+  // Claiming on a weak best-match lets one divergent line steal the counterpart
+  // belonging to the next line, which then reads as disputed too.
+  gLines.forEach((g, i) => {
+    let best = null;
+    for (let j = Math.max(0, i - ALIGN_WINDOW); j <= Math.min(cLines.length - 1, i + ALIGN_WINDOW); j++) {
+      if (claimed.has(j)) continue;
+      const score = similarity(g.text, cLines[j].text);
+      if (score < AGREE_THRESHOLD) continue;
+      // Closest position wins a tie — models usually agree on line order.
+      if (!best || score > best.score || (score === best.score && Math.abs(j - i) < Math.abs(best.index - i))) {
+        best = { index: j, score, line: cLines[j] };
+      }
+    }
+    if (best) {
+      claimed.add(best.index);
+      paired[i] = best;
+    }
+  });
+
+  // Pass 2 — the leftovers. Each unmatched Gemini line takes the nearest still
+  // unclaimed Claude line purely to show the user the alternative reading.
+  gLines.forEach((g, i) => {
+    if (paired[i]) return;
+    let nearest = null;
+    for (let j = Math.max(0, i - ALIGN_WINDOW); j <= Math.min(cLines.length - 1, i + ALIGN_WINDOW); j++) {
+      if (claimed.has(j)) continue;
+      if (!nearest || Math.abs(j - i) < Math.abs(nearest.index - i)) {
+        nearest = { index: j, score: similarity(g.text, cLines[j].text), line: cLines[j] };
+      }
+    }
+    if (nearest) {
+      claimed.add(nearest.index);
+      paired[i] = nearest;
+    }
+  });
+
+  const lines = gLines.map((g, i) => {
+    const match = paired[i];
+    const score = match ? match.score : 0;
+    if (match && score >= AGREE_THRESHOLD) {
+      return {
         line: i + 1,
         text: g.text,
-        altText: agreed ? null : c.text,
-        agreed,
-        confidence: agreed ? Math.max(g.confidence ?? 0.9, c.confidence ?? 0.9) : Math.min(g.confidence ?? 0.5, c.confidence ?? 0.5),
-      });
-    } else {
-      // Only one model produced a line at this position — can't cross-check it.
-      const only = g || c;
-      lines.push({ line: i + 1, text: only.text, altText: null, agreed: false, confidence: (only.confidence ?? 0.5) * 0.6 });
+        altText: null,
+        agreed: true,
+        // Corroboration by a second model is worth more than either one's
+        // self-reported number, which is near-1.0 even when it is wrong.
+        confidence: Math.max(g.confidence ?? 0.9, match.line.confidence ?? 0.9, score),
+        agreementScore: Math.round(score * 100) / 100,
+      };
     }
-  }
+    // Genuinely different readings. Keep both so the user can adjudicate, and
+    // let how close they are drive the confidence rather than a flat 0.5.
+    return {
+      line: i + 1,
+      text: g.text,
+      altText: match ? match.line.text : null,
+      agreed: false,
+      confidence: Math.round(Math.min(g.confidence ?? 0.5, match?.line.confidence ?? 0.5) * score * 100) / 100,
+      agreementScore: Math.round(score * 100) / 100,
+    };
+  });
+
+  // Lines only Claude saw — kept, uncorroborated, appended in original order.
+  cLines.forEach((c, j) => {
+    if (claimed.has(j)) return;
+    lines.push({
+      line: lines.length + 1,
+      text: c.text,
+      altText: null,
+      agreed: false,
+      confidence: Math.round((c.confidence ?? 0.5) * 0.6 * 100) / 100,
+      agreementScore: 0,
+    });
+  });
+
   return lines;
 };
 
@@ -775,9 +897,32 @@ const runWithLLMs = async (imageContents) => {
     runWithClaude(imageContents).catch((err) => { logger.warn(`hindiOcr: Claude failed: ${err.message}`); return EMPTY_RESULT; }),
   ]);
 
+  // A failed model returns EMPTY_RESULT, which is indistinguishable from a model
+  // that legitimately read nothing. Both used to flow into the cross-check as if
+  // a real second opinion existed, so every line came out "unverified" and the
+  // score — a pure agreement ratio — collapsed to 0. In production two of three
+  // Hindi documents were scored 0 for exactly this reason: Gemini returned no
+  // lines at all and the document was blamed for it.
+  const gaveLines = (r) => (r.transcription?.lines || []).length > 0;
+  const haveGemini = gaveLines(geminiResult);
+  const haveClaude = gaveLines(claudeResult);
+  const corroboration = haveGemini && haveClaude ? 'dual' : (haveGemini || haveClaude ? 'single' : 'none');
+
+  if (corroboration === 'single') {
+    logger.warn(`hindiOcr: only ${haveGemini ? 'Gemini' : 'Claude'} returned lines — transcript is uncorroborated, not low-quality`);
+  } else if (corroboration === 'none') {
+    logger.warn('hindiOcr: neither model returned any lines');
+  }
+
   const lines = mergeTranscriptions(geminiResult, claudeResult);
-  const agreedCount = lines.filter((l) => l.agreed).length;
-  const overallConfidence = lines.length ? Math.round((agreedCount / lines.length) * 100) / 100 : 0;
+
+  // Mean per-line confidence rather than the share of lines that matched. The
+  // ratio conflated "we could not cross-check this" with "this is wrong", and
+  // made a single unreadable line drag a whole accurate page toward zero.
+  const scored = lines.map((l) => l.confidence).filter((c) => typeof c === 'number');
+  const overallConfidence = scored.length
+    ? Math.round((scored.reduce((a, b) => a + b, 0) / scored.length) * 100) / 100
+    : 0;
 
   return {
     language: geminiResult.language || claudeResult.language || 'Hindi',
@@ -787,7 +932,13 @@ const runWithLLMs = async (imageContents) => {
     entities: geminiResult.entities || claudeResult.entities || EMPTY_RESULT.entities,
     summary: geminiResult.summary || claudeResult.summary || '',
     overallConfidence,
-    disputedLines: lines.filter((l) => !l.agreed).length,
+    // 'dual'   — both models read it, so `agreed` means something.
+    // 'single' — only one model returned lines; nothing is disputed, it is
+    //            simply unconfirmed, and the UI must not imply disagreement.
+    // 'none'   — neither model read anything.
+    corroboration,
+    disputedLines: corroboration === 'dual' ? lines.filter((l) => !l.agreed).length : 0,
+    uncorroboratedLines: corroboration === 'dual' ? 0 : lines.length,
     totalLines: lines.length,
     _models: { gemini: geminiResult, claude: claudeResult },
   };
@@ -888,21 +1039,34 @@ const run = async (imageContents, { handwritten = true } = {}) => {
 const toBundleShape = (result, screenshotCount, userTitle) => {
   const lines = result.transcription?.lines || [];
   const entities = result.entities || {};
+  // With only one model's reading there is nothing to disagree with. Saying
+  // "models disagree" there is simply false, and telling the user to verify a
+  // line we never cross-checked is noise.
+  const singleModel = result.corroboration === 'single';
 
   const items = lines.map((l) => {
     let note = '';
-    if (!l.agreed) note = l.altText ? ' — models disagree, unverified' : ' — low OCR confidence, verify';
+    if (!l.agreed && !singleModel) note = l.altText ? ' — models disagree, unverified' : ' — low OCR confidence, verify';
     return {
       name: l.agreed ? l.text : `${l.text}${l.altText ? ` / ${l.altText}` : ''}`,
       details: `Line ${l.line}${note}`,
-      tags: [l.agreed ? 'confirmed' : 'disputed'],
+      // Deliberately no tags. These used to be ['confirmed'|'disputed'], and the
+      // bundle save flattens every item's tags into the save's user-facing tag
+      // list — so a 12-line document surfaced as twelve copies of "disputed".
+      // Per-line verification status belongs on the line (`agreed`), not in the
+      // tags a user browses by.
+      tags: [],
     };
   });
 
   const bullets = [];
   if (result.summary) bullets.push(result.summary);
-  if (typeof result.disputedLines === 'number' && result.totalLines) {
-    bullets.push(`${result.totalLines - result.disputedLines} of ${result.totalLines} lines high-confidence; ${result.disputedLines} need review`);
+  if (result.totalLines) {
+    if (singleModel) {
+      bullets.push(`${result.totalLines} lines transcribed by a single model — read, but not cross-checked`);
+    } else if (typeof result.disputedLines === 'number') {
+      bullets.push(`${result.totalLines - result.disputedLines} of ${result.totalLines} lines high-confidence; ${result.disputedLines} need review`);
+    }
   }
   if (entities.people?.length) bullets.push(`People mentioned: ${entities.people.join(', ')}`);
   if (entities.locations?.length) bullets.push(`Places mentioned: ${entities.locations.join(', ')}`);
@@ -979,4 +1143,7 @@ module.exports = {
   toAnalyzerShape,
   parseJsonSafely,
   parseVisionLines,
+  // Exported for tests: the agreement rule decides every line's confidence and
+  // whether the user is asked to verify it, so it needs to be assertable.
+  __test__: { canonicalizeDevanagari, similarity, mergeTranscriptions, AGREE_THRESHOLD },
 };

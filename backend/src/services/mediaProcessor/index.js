@@ -112,15 +112,21 @@ const downloadMergedMp4Graceful = async (sourceUrl, outPath) => new Promise((res
 
   const killTimer = setTimeout(() => {
     proc.kill('SIGKILL');
-    logger.warn(`[yt-dlp] timeout after 30s for ${sourceUrl.split('?')[0]}`);
-    resolve(null);
+    logger.warn(`[yt-dlp] timeout after ${YTDLP_GRACEFUL_TIMEOUT / 1000}s for ${sourceUrl.split('?')[0]}`);
+    resolve({ success: false, reason: `Download timed out after ${YTDLP_GRACEFUL_TIMEOUT / 1000}s.` });
   }, YTDLP_GRACEFUL_TIMEOUT);
 
   proc.stderr.on('data', (d) => { stderr += d; });
 
-  proc.on('error', () => {
+  proc.on('error', (err) => {
     clearTimeout(killTimer);
-    resolve(null);
+    // ENOENT here means the yt-dlp binary is missing from the image entirely —
+    // worth saying out loud rather than reporting it as an inaccessible video.
+    const reason = err.code === 'ENOENT'
+      ? 'yt-dlp is not installed on the server.'
+      : `Could not run yt-dlp: ${err.message}`;
+    logger.warn(`[yt-dlp] spawn failed for ${sourceUrl.split('?')[0]}: ${reason}`);
+    resolve({ success: false, reason });
   });
 
   proc.on('close', (code) => {
@@ -130,7 +136,11 @@ const downloadMergedMp4Graceful = async (sourceUrl, outPath) => new Promise((res
     } else {
       const userMessage = mapYtdlpError(stderr);
       logger.warn(`[yt-dlp] graceful exit ${code} for ${sourceUrl.split('?')[0]}: ${userMessage}`);
-      resolve(null);
+      // Hand the real reason back to the caller. It used to stop at this log
+      // line while the DB recorded a hardcoded "private, geo-blocked, or
+      // removed" for every failure — so a stale-extractor outage was
+      // indistinguishable from a genuinely private post for two months.
+      resolve({ success: false, reason: userMessage });
     }
   });
 });
@@ -490,10 +500,15 @@ const processSave = async (saveId) => {
     }
 
     // ─── DOWNLOAD (if not skipped) ───
+    let downloadFailureReason = null;
     if (!downloadSkipped) {
       logger.info(`[mediaProcessor ${saveId}] downloading ${save.url}`);
       const downloadResult = await downloadMergedMp4Graceful(save.url, mp4Path);
-      mp4Ready = downloadResult && fs.existsSync(mp4Path);
+      mp4Ready = downloadResult?.success === true && fs.existsSync(mp4Path);
+      if (!mp4Ready) {
+        downloadFailureReason = downloadResult?.reason
+          || 'yt-dlp reported success but produced no file.';
+      }
     } else {
       logger.info(`[mediaProcessor ${saveId}] download was skipped, proceeding with metadata analysis`);
     }
@@ -502,12 +517,12 @@ const processSave = async (saveId) => {
     if (!downloadSkipped && !mp4Ready) {
       logger.warn(`[mediaProcessor ${saveId}] MP4 download returned null or file does not exist — skipping transcription`);
       partialReasons.push('video download failed');
-      // Mark videoDownload stage as failed
+      // Mark videoDownload stage as failed, recording what actually went wrong.
       const existing = await Save.findById(saveId).select('processingStages');
       if (existing?.processingStages) {
         existing.processingStages.videoDownload = {
           completed: false,
-          error: 'Video download unavailable (private, geo-blocked, or removed)',
+          error: downloadFailureReason || 'Video download unavailable.',
           completedAt: null
         };
         await Save.findByIdAndUpdate(saveId, { processingStages: existing.processingStages });

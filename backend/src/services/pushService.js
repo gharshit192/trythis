@@ -6,7 +6,12 @@
 
 const webpush = require('web-push');
 const User = require('../models/User');
+const badgeService = require('./badgeService');
 const logger = require('../utils/logger');
+
+// Keep an undelivered push queued for a day (phone off, no network). Without
+// this the TTL is whatever the push service defaults to, which varies.
+const TTL_SECONDS = 24 * 60 * 60;
 
 const PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || '';
 const PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || '';
@@ -32,7 +37,20 @@ const sendToUser = async (userId, payload) => {
   const subs = user?.pushSubscriptions || [];
   if (subs.length === 0) return { sent: 0, pruned: 0 };
 
-  const body = JSON.stringify(payload);
+  // App-icon count, resolved once for the whole fan-out. Purely cosmetic: if it
+  // fails the notification must still go out, so the payload just omits it.
+  let count;
+  try {
+    count = await badgeService.unreadCount(userId);
+  } catch (err) {
+    logger.warn(`[pushService] badge count failed for user ${userId}: ${err.message}`);
+  }
+
+  // Payloads are capped around 4KB — title, body, a link and a count, never a
+  // whole object.
+  const body = JSON.stringify(
+    count === undefined ? payload : { ...payload, count }
+  );
   const deadEndpoints = [];
   let sent = 0;
 
@@ -41,7 +59,8 @@ const sendToUser = async (userId, payload) => {
       try {
         await webpush.sendNotification(
           { endpoint: sub.endpoint, keys: { p256dh: sub.keys?.p256dh, auth: sub.keys?.auth } },
-          body
+          body,
+          { TTL: TTL_SECONDS }
         );
         sent += 1;
       } catch (err) {

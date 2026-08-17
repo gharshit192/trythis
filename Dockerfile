@@ -30,7 +30,14 @@ RUN apk add --no-cache \
 RUN TESSDATA_PREFIX=/usr/share/tessdata tesseract --list-langs \
  && echo "✓ tesseract OK"
 
-# yt-dlp — official binary, avoids pip/managed-env issues on Alpine
+# yt-dlp — official binary, avoids pip/managed-env issues on Alpine.
+#
+# This pins whatever was latest at BUILD time, which is not good enough on its
+# own: extractors break whenever a site changes its delivery, and nothing in this
+# repo would trigger a rebuild. Instagram did exactly that in July 2026 — a
+# months-old image kept returning "empty media response" for every reel while the
+# code was fine. docker-entrypoint.sh refreshes the binary on each start so the
+# image ages gracefully instead of silently rotting.
 RUN wget -qO /usr/local/bin/yt-dlp \
       https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp \
  && chmod +x /usr/local/bin/yt-dlp \
@@ -55,5 +62,11 @@ WORKDIR /app
 COPY backend/package*.json ./
 RUN npm install --legacy-peer-deps
 COPY backend/src ./src
+
+# Refreshes yt-dlp on every container start, then execs the CMD below.
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
 EXPOSE 4000
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["node", "src/server.js"]

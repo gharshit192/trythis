@@ -7,6 +7,7 @@ const collectionsRoutes = require('./routes/collections');
 const searchRoutes = require('./routes/search');
 const recommendationsRoutes = require('./routes/recommendations');
 const notificationsRoutes = require('./routes/notifications');
+const pushPublicRoutes = require('./routes/pushPublic');
 const notificationTestRoutes = require('./routes/notificationTest');
 const uploadsRoutes = require('./routes/uploads');
 const audioProcessingRoutes = require('./routes/audioProcessing');
@@ -54,8 +55,12 @@ app.use('/saves', savesRoutes);
 app.use('/collections', collectionsRoutes);
 app.use('/search', searchRoutes);
 app.use('/recommendations', recommendationsRoutes);
-// notificationTestRoutes first: its /notifications/run is secret-protected and
-// must bypass the user-auth middleware in notificationsRoutes.
+// Order matters: both routers below apply authMiddleware to everything they
+// see, so any route that must skip user auth has to be mounted ahead of them.
+// pushPublicRoutes first: /notifications/resubscribe comes from the service
+// worker, which has no token. Then notificationTestRoutes, whose
+// /notifications/run is secret-protected rather than user-authed.
+app.use('/notifications', pushPublicRoutes);        // /notifications/resubscribe
 app.use('/notifications', notificationTestRoutes);  // /notifications/run + /test/*
 app.use('/notifications', notificationsRoutes);
 app.use('/uploads', uploadsRoutes);

@@ -38,6 +38,9 @@ Status format: `Proposed - YYYY-MM-DD` / `Accepted - YYYY-MM-DD` /
   extraction: Sarvam translate-first, Tesseract for printed Devanagari,
   Devanagari-aware locations, durable budget counters, Web Share Target.
   *Accepted*
+- [ADR 0010](0010-web-push-delivery-hardening.md) — Web Push delivery: endpoints
+  are globally unique, refreshed every load, rotations reported by the service
+  worker; deep-link and badge contracts. Extends ADR 0006. *Accepted*
 
 ## Maintenance Rules
 

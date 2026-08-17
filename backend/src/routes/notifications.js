@@ -5,6 +5,7 @@ const User = require('../models/User');
 const authMiddleware = require('../middleware/auth');
 const logger = require('../utils/logger');
 const pushService = require('../services/pushService');
+const badgeService = require('../services/badgeService');
 
 router.use(authMiddleware);
 
@@ -72,24 +73,85 @@ router.get('/vapid-public-key', (req, res) => {
 });
 
 // Web Push: store a browser PushSubscription for the current user.
-// Dedupes by endpoint so re-subscribing on the same device doesn't pile up.
+//
+// An endpoint belongs to a browser install, not to a person. The $pull below is
+// deliberately unscoped: if someone else was previously logged in on this
+// browser, their record for this endpoint has to go, or the engine will keep
+// pushing their notifications to whoever is using the device now. Re-subscribing
+// on the same device is also what makes this an upsert rather than a pile-up.
 router.post('/subscribe', async (req, res) => {
   try {
-    const { endpoint, keys } = req.body || {};
+    const { endpoint, keys, expirationTime } = req.body || {};
     if (!endpoint || !keys?.p256dh || !keys?.auth) {
       return res.status(400).json({ status: 'error', error: { code: 'INVALID_SUBSCRIPTION', message: 'endpoint and keys (p256dh, auth) are required' } });
     }
-    // Remove any existing record for this endpoint, then add the fresh one.
-    await User.updateOne({ _id: req.user.id }, { $pull: { pushSubscriptions: { endpoint } } });
+    if (!/^https:\/\//.test(endpoint)) {
+      return res.status(400).json({ status: 'error', error: { code: 'INVALID_SUBSCRIPTION', message: 'endpoint must be an https URL' } });
+    }
+
+    // Detach this endpoint from every user, including the current one.
+    await User.updateMany(
+      { 'pushSubscriptions.endpoint': endpoint },
+      { $pull: { pushSubscriptions: { endpoint } } }
+    );
     await User.updateOne(
       { _id: req.user.id },
-      { $push: { pushSubscriptions: { endpoint, keys: { p256dh: keys.p256dh, auth: keys.auth } } } }
+      {
+        $push: {
+          pushSubscriptions: {
+            endpoint,
+            keys: { p256dh: keys.p256dh, auth: keys.auth },
+            expirationTime: typeof expirationTime === 'number' ? expirationTime : null,
+          },
+        },
+      }
     );
     logger.info(`[push] subscription stored for user ${req.user.id}`);
     res.json({ status: 'success' });
   } catch (error) {
     logger.error(`Push subscribe error: ${error.message}`);
     res.status(500).json({ status: 'error', error: { code: 'SUBSCRIBE_ERROR', message: error.message } });
+  }
+});
+
+// Unread count for the app-icon badge. Deliberately tiny and separate from
+// GET / — the client polls this while the app is open and doesn't want the
+// notification list back with it.
+router.get('/badge', async (req, res) => {
+  try {
+    const count = await badgeService.unreadCount(req.user.id);
+    res.json({ status: 'success', data: { count } });
+  } catch (error) {
+    logger.error(`Badge count error: ${error.message}`);
+    res.status(500).json({ status: 'error', error: { code: 'BADGE_ERROR', message: error.message } });
+  }
+});
+
+// Self-test: push to the caller's own devices, right now. This is the only way
+// to tell "this browser never subscribed" apart from "the send failed" — the
+// response reports how many subscriptions we hold and how many we reached.
+router.post('/test-push', async (req, res) => {
+  try {
+    if (!pushService.isEnabled()) {
+      return res.status(503).json({ status: 'error', error: { code: 'PUSH_DISABLED', message: 'VAPID keys are not configured on the server' } });
+    }
+    const user = await User.findById(req.user.id).select('pushSubscriptions').lean();
+    const subscriptions = user?.pushSubscriptions?.length || 0;
+    if (subscriptions === 0) {
+      return res.json({ status: 'success', data: { subscriptions: 0, sent: 0, pruned: 0 } });
+    }
+
+    const result = await pushService.sendToUser(req.user.id, {
+      title: '🔔 Test notification',
+      body: 'Push is working on this device.',
+      url: '/notifications',
+      notificationId: `test-${Date.now()}`,
+    });
+    logger.info(`[push] test push for user ${req.user.id} → ${JSON.stringify(result)}`);
+    res.json({ status: 'success', data: { subscriptions, ...result } });
+  } catch (error) {
+    logger.error(`Test push error: ${error.message}`);
+    res.status(500).json({ status: 'error', error: { code: 'TEST_PUSH_ERROR', message: error.message } });
   }
 });
 

@@ -2,6 +2,7 @@ const Notification = require('../models/Notification');
 const User = require('../models/User');
 const Save = require('../models/Save');
 const emailService = require('./emailService');
+const pushService = require('./pushService');
 const logger = require('../utils/logger');
 
 /**
@@ -65,12 +66,26 @@ async function sendJobNotification(userId, payload) {
 
     logger.info(`[notificationService] Created notification ${notification._id} for user ${userId} (${type})`);
 
-    // Try to send push notification if user has pushToken
-    // TODO: Wire this up when push service is ready
-    // const user = await User.findById(userId).select('pushToken').lean();
-    // if (user?.pushToken) {
-    //   await sendPushNotification(user.pushToken, title, notifMessage);
-    // }
+    // Also deliver via Web Push. Fire-and-forget: the upload already succeeded,
+    // and a push failure must never bubble into the job pipeline. No-op when
+    // VAPID isn't configured or the user has no subscriptions.
+    //
+    // JOB_QUEUED is in-app only — the user is looking at the app when they
+    // upload, so a tray notification saying "processing…" is pure noise.
+    if (type !== 'JOB_QUEUED') {
+      pushService
+        .sendToUser(userId, {
+          title,
+          body: notifMessage,
+          // Must match the deep-link shape the engine uses and App.js parses.
+          url: saveId ? `/saves/${saveId}` : '/notifications',
+          notificationId: String(notification._id),
+        })
+        .then((r) => {
+          if (r.sent > 0) logger.info(`[push] delivered ${notification._id} to ${r.sent} device(s)`);
+        })
+        .catch((err) => logger.warn(`[push] delivery error for ${notification._id}: ${err.message}`));
+    }
 
     return notification._id;
   } catch (err) {

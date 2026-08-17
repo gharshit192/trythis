@@ -44,12 +44,17 @@ const userSchema = new mongoose.Schema(
     // Notification settings
     notificationsEnabled: { type: Boolean, default: true },
     // Web Push subscriptions — one per device/browser the user opted in on.
+    // An endpoint identifies a *browser install*, not a person: the same endpoint
+    // must never live on two users at once, or the previous owner's pushes get
+    // delivered to whoever logged in on that browser last. The subscribe route
+    // enforces that globally; see routes/notifications.js.
     pushSubscriptions: [{
       endpoint: { type: String, required: true },
       keys: {
         p256dh: { type: String },
         auth: { type: String },
       },
+      expirationTime: { type: Number, default: null },
       createdAt: { type: Date, default: Date.now },
     }],
     locationEnabled: { type: Boolean, default: false },
@@ -77,5 +82,8 @@ const userSchema = new mongoose.Schema(
 
 userSchema.index({ email: 1 }, { unique: true });
 userSchema.index({ lastActiveAt: -1 });
+// Subscribing sweeps this endpoint off every other user first — that sweep is a
+// collection-wide query, so it needs an index to stay cheap.
+userSchema.index({ 'pushSubscriptions.endpoint': 1 });
 
 module.exports = mongoose.model('User', userSchema);

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import api from '../api';
-import { enablePushNotifications, disablePushNotifications } from '../push';
+import { enablePushNotifications, disablePushNotifications, getPushState } from '../push';
 
 const APP_VERSION = 'v1.0';
 
@@ -20,6 +20,13 @@ export default function Profile({ onNavigate }) {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [locationEnabled, setLocationEnabled] = useState(false);
   const [settingsSaving, setSettingsSaving] = useState(false);
+  // What this browser can actually do: 'on' | 'off' | 'blocked' | 'unsupported'.
+  // Kept separate from notificationsEnabled (the server-side preference) because
+  // they disagree often — a user can want notifications while their browser
+  // refuses to deliver them, and the row has to say so instead of showing "On".
+  const [pushState, setPushState] = useState('off');
+  const [pushNote, setPushNote] = useState(null);
+  const [testingPush, setTestingPush] = useState(false);
 
   // Modals
   const [confirmLogout, setConfirmLogout] = useState(false);
@@ -40,6 +47,7 @@ export default function Profile({ onNavigate }) {
       setNotificationsEnabled(storedUser.notificationsEnabled ?? true);
       setLocationEnabled(storedUser.locationEnabled ?? false);
     }
+    setPushState(getPushState());
 
     const ctrl = new AbortController();
     (async () => {
@@ -72,24 +80,69 @@ export default function Profile({ onNavigate }) {
     setPwError(null); setPwInfo(null);
   };
 
+  const PUSH_FAILURE_COPY = {
+    denied: 'Notifications are blocked for this site. Allow them in your browser or phone settings, then try again.',
+    unsupported: 'This browser can\'t do notifications. On iPhone, add Wanna Try to your Home Screen first.',
+    'no-key': 'Push isn\'t configured on the server yet — nothing to turn on.',
+    error: 'Couldn\'t turn notifications on. Please try again.',
+  };
+
   const handleNotificationsToggle = async () => {
     setSettingsSaving(true);
+    setPushNote(null);
     try {
       const newValue = !notificationsEnabled;
+
+      if (newValue) {
+        // Ask the browser BEFORE persisting the preference. This click is the
+        // user gesture the permission prompt needs, and if it fails the toggle
+        // must not end up reading "On" against a device that will never be
+        // delivered to.
+        const result = await enablePushNotifications();
+        setPushState(getPushState());
+        if (!result.ok) {
+          setPushNote(PUSH_FAILURE_COPY[result.reason] || PUSH_FAILURE_COPY.error);
+          return;
+        }
+      } else {
+        await disablePushNotifications();
+        setPushState(getPushState());
+      }
+
       await api.updateSettings({ notificationsEnabled: newValue });
       setNotificationsEnabled(newValue);
       // Update localStorage
       const updatedUser = { ...user, notificationsEnabled: newValue };
       setUser(updatedUser);
       localStorage.setItem('user', JSON.stringify(updatedUser));
-      // Turning ON also opts this device into Web Push (browser permission +
-      // subscription); turning OFF tears the subscription down.
-      if (newValue) await enablePushNotifications();
-      else await disablePushNotifications();
     } catch (err) {
       console.error('Failed to update notifications setting', err);
+      setPushNote(PUSH_FAILURE_COPY.error);
     } finally {
       setSettingsSaving(false);
+    }
+  };
+
+  // The fastest way to tell "this device never subscribed" from "the send
+  // failed" — the server reports both numbers.
+  const handleTestPush = async () => {
+    setTestingPush(true);
+    setPushNote(null);
+    try {
+      const res = await api.sendTestPush();
+      if (res.status !== 'success') {
+        setPushNote(res?.error?.message || 'Test failed.');
+      } else if (!res.data.subscriptions) {
+        setPushNote('This device isn\'t subscribed yet — turn notifications on first.');
+      } else if (!res.data.sent) {
+        setPushNote(`Subscribed on ${res.data.subscriptions} device(s), but the send failed.`);
+      } else {
+        setPushNote(`Sent to ${res.data.sent} device(s). It should appear in a moment.`);
+      }
+    } catch (err) {
+      setPushNote('Test failed — check your connection.');
+    } finally {
+      setTestingPush(false);
     }
   };
 
@@ -205,10 +258,35 @@ export default function Profile({ onNavigate }) {
         {/* Settings */}
         <div className="pf-section">
           <div className="pf-sitems">
-            <div className="pf-item" onClick={settingsSaving ? undefined : handleNotificationsToggle} style={{ cursor: settingsSaving ? 'not-allowed' : 'pointer', opacity: settingsSaving ? 0.6 : 1 }}>
-              <span className="pf-iname">🔔 Notifications</span>
-              <span className="pf-ival" style={{ color: notificationsEnabled ? 'var(--cook)' : 'var(--mute)' }}>{notificationsEnabled ? 'On' : 'Off'}</span>
-            </div>
+            {/* Four states, not two. 'blocked' and 'unsupported' can't be
+                resolved by tapping, so the row stops being a toggle and explains
+                itself instead. */}
+            {pushState === 'blocked' || pushState === 'unsupported' ? (
+              <div className="pf-item" style={{ cursor: 'default' }}>
+                <span className="pf-iname">🔔 Notifications</span>
+                <span className="pf-ival" style={{ color: 'var(--mute)' }}>
+                  {pushState === 'blocked' ? 'Blocked' : 'Unavailable'}
+                </span>
+              </div>
+            ) : (
+              <div className="pf-item" onClick={settingsSaving ? undefined : handleNotificationsToggle} style={{ cursor: settingsSaving ? 'not-allowed' : 'pointer', opacity: settingsSaving ? 0.6 : 1 }}>
+                <span className="pf-iname">🔔 Notifications</span>
+                <span className="pf-ival" style={{ color: notificationsEnabled && pushState === 'on' ? 'var(--cook)' : 'var(--mute)' }}>
+                  {notificationsEnabled && pushState === 'on' ? 'On' : 'Off'}
+                </span>
+              </div>
+            )}
+            {pushState === 'on' && (
+              <div className="pf-item" onClick={testingPush ? undefined : handleTestPush} style={{ cursor: testingPush ? 'not-allowed' : 'pointer', opacity: testingPush ? 0.6 : 1 }}>
+                <span className="pf-iname">📨 Send a test notification</span>
+                <span className="pf-ival">{testingPush ? 'Sending…' : 'Test ›'}</span>
+              </div>
+            )}
+            {pushNote && (
+              <div style={{ padding: '8px 14px 12px', fontSize: 13, lineHeight: 1.45, color: 'var(--slate)' }}>
+                {pushNote}
+              </div>
+            )}
             <div className="pf-item" onClick={settingsSaving ? undefined : handleLocationToggle} style={{ cursor: settingsSaving ? 'not-allowed' : 'pointer', opacity: settingsSaving ? 0.6 : 1 }}>
               <span className="pf-iname">📍 Nearby radius</span>
               <span className="pf-ival">{locationEnabled ? '2 km ›' : 'Off ›'}</span>

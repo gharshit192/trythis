@@ -143,6 +143,18 @@ ordering).
   a downstream translation failed; Devanagari transcripts are valid inputs and
   displayable (only Urdu-Arabic script stays out of the UI). There is no Claude
   audio fallback — Claude's API takes no audio.
+- **Never compare two Devanagari readings with `===`.** Models that agree on
+  content still differ on matra composition, digit form (`१००८`/`1008`), danda vs
+  full stop, and zero-width joiners. Compare through
+  `canonicalizeDevanagari` + similarity ≥ 0.88, and pair lines by best match, not
+  by array index — see the amendment in
+  [ADR 0005](docs/adr/0005-hindi-devanagari-ocr-vision.md).
+- **A failed model is not a low-quality document.** When one model returns
+  nothing, the transcript is *uncorroborated* (`corroboration: 'single'`), not
+  *disputed* — do not flag its lines for review or imply models disagreed.
+- **Per-line verification status never becomes a tag.** Item tags are flattened
+  into the save's user-facing tag list, so a per-line verdict shows up once per
+  line. Keep it on the line.
 - Monthly budget counters (Sarvam seconds, Vision images) persist in Mongo via
   `UsageCounter` — never in local files alone (ephemeral disks reset them).
 - Service-account JSON keys live under `backend/secrets/` (gitignored) and are
@@ -150,8 +162,9 @@ ordering).
 
 ## Notification Rules
 
-See [`docs/notifications.md`](docs/notifications.md) and
-[ADR 0006](docs/adr/0006-notification-engine.md).
+See [`docs/notifications.md`](docs/notifications.md),
+[ADR 0006](docs/adr/0006-notification-engine.md) (what to notify) and
+[ADR 0010](docs/adr/0010-web-push-delivery-hardening.md) (getting it delivered).
 
 - Triggers (time-behavioral, seasonal, nearby/location, forgotten-intent) are
   evaluated in the notification engine, scheduled through the queue, and
@@ -165,6 +178,25 @@ See [`docs/notifications.md`](docs/notifications.md) and
 - Location matching must work for Hindi content: `locationExtractor` carries
   Devanagari aliases, and `mediaProcessor` re-extracts location from the
   transcript/frame-OCR after analysis when metadata found none.
+
+### Web Push delivery
+
+- A push endpoint identifies a **browser install, not a user**. Attaching one
+  must detach it from every other user first, or the previous owner's
+  notifications get delivered to whoever logged in on that device last.
+- **Every path that creates a user-facing notification also pushes it.** Writing
+  an in-app row alone is a silent failure — the user is not in the app, which is
+  the whole reason to notify them. Push is fire-and-forget: it must never fail
+  the request that triggered it.
+- Anything that emits an `actionUrl` must have a matching case in
+  `consumeDeepLink()` in `App.js`. The app has no router, so an unhandled path
+  means the notification opens the app on the wrong screen.
+- Bump `VERSION` in `frontend-app/public/sw.js` whenever that file changes — a
+  service worker only updates when its bytes differ.
+- Never prompt for notification permission without a user gesture behind it. The
+  silent refresh in `PushSetup` re-subscribes already-granted users only.
+- Web Push does not work inside the Capacitor WebView. Native push needs
+  FCM/APNs and does not exist yet; do not assume the Android shell gets these.
 
 ## Frontend Rules
 

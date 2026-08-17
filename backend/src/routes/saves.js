@@ -983,7 +983,13 @@ router.post('/screenshot-bundle/:sessionId/save',
         contentType: 'image',
         thumbnail: singleThumbnail,
         processingStatus: 'done',
-        tags: useSummary.categories?.flatMap(c => c.items?.flatMap(i => i.tags || []) || []).slice(0, 12) || [],
+        // Deduped: this flattens a tag list per item, so a document whose lines
+        // all carry the same tag used to produce twelve identical tags.
+        tags: [...new Set(
+          (useSummary.categories || []).flatMap(c => (c.items || []).flatMap(i => i.tags || []))
+            .map(t => String(t).trim())
+            .filter(Boolean)
+        )].slice(0, 12),
         metadata: {
           screenshotCount: useSummary.totalScreenshots || session.filePaths?.length || 0,
           screenshotSessionId: sessionId,

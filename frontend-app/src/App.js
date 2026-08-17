@@ -4,6 +4,8 @@ import api from './api';
 
 import BottomNav from './components/BottomNav';
 import InstallPrompt from './components/InstallPrompt';
+import PushSetup from './components/PushSetup';
+import BadgeSync from './components/BadgeSync';
 import Login from './screens/Login';
 import Signup from './screens/Signup';
 import HomeEmpty from './screens/HomeEmpty';
@@ -83,6 +85,26 @@ function App() {
     return shared && (shared.url || shared.text || shared.title) ? shared : null;
   };
 
+  // Notification deep links. Tapping a notification makes the service worker
+  // navigate an existing window (or open one) at the notification's actionUrl —
+  // `/saves/<id>` or `/notifications`. This app has no router, so the path has
+  // to be translated into a screen here, then cleared so a later refresh doesn't
+  // bounce the user back to it.
+  const consumeDeepLink = () => {
+    const path = window.location.pathname;
+    let target = null;
+
+    const saveMatch = path.match(/^\/saves\/([A-Za-z0-9]+)\/?$/);
+    if (saveMatch) {
+      target = { screen: 'save-detail', payload: { id: saveMatch[1] } };
+    } else if (/^\/notifications\/?$/.test(path)) {
+      target = { screen: 'notifications', payload: null };
+    }
+
+    if (target) window.history.replaceState({}, '', '/');
+    return target;
+  };
+
   useEffect(() => {
     // Synchronous auth check before rendering (prevents login flash)
     const storedToken = localStorage.getItem('auth_token');
@@ -104,6 +126,9 @@ function App() {
       return;
     }
 
+    // Always consume it, authed or not, so the URL is clean either way.
+    const deepLink = consumeDeepLink();
+
     if (storedToken && storedUser) {
       try {
         const parsedUser = JSON.parse(storedUser);
@@ -116,8 +141,11 @@ function App() {
         api.getSaves().then(result => {
           if (result.status === 'success') {
             setSaves(result.data);
-            // Go to last screen or home if user has saves
-            if (lastScreen && ['home', 'collections', 'profile', 'search', 'notifications'].includes(lastScreen)) {
+            // A tapped notification wins over the remembered screen.
+            if (deepLink) {
+              setPayload(deepLink.payload);
+              setCurrentScreen(deepLink.screen);
+            } else if (lastScreen && ['home', 'collections', 'profile', 'search', 'notifications'].includes(lastScreen)) {
               setCurrentScreen(lastScreen);
             } else {
               setCurrentScreen(result.data.length > 0 ? 'home' : 'home-empty');
@@ -202,6 +230,9 @@ function App() {
 
   const props = { onNavigate: navigate, payload };
 
+  // Recomputed each render, so logging in or out flips it without extra state.
+  const isAuthenticated = !!localStorage.getItem('auth_token');
+
   const screenMap = {
     'login': <Login {...props} />,
     'signup': <Signup {...props} />,
@@ -250,6 +281,10 @@ function App() {
 
       {/* PWA install / Add-to-Home-Screen nudge (Android button · iOS instructions) */}
       {hasBottomNav && <InstallPrompt />}
+
+      {/* Headless: keep the push subscription alive and the icon count honest. */}
+      <PushSetup isAuthenticated={isAuthenticated} />
+      <BadgeSync isAuthenticated={isAuthenticated} />
     </div>
   );
 }

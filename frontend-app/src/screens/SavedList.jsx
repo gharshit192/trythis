@@ -54,6 +54,35 @@ const SORT_OPTIONS = [
   { id: 'nearby', label: 'Near Me' },
 ];
 
+const VIEW_TABS = [
+  { id: 'all', label: 'All' },
+  { id: 'links', label: 'Links' },
+  { id: 'documents', label: 'Documents' },
+];
+
+// One compact line describing what a document actually is, so the row is
+// scannable without opening it. Prefers the concrete (transcribed lines, page
+// count) over the generic.
+const documentSubtitle = (save) => {
+  const data = save.aiAnalysis?.screenshotAnalysis?.data;
+  const hw = data?.handwrittenAnalysis;
+  const parts = [];
+
+  if (hw?.totalLines) parts.push(`${hw.totalLines} line${hw.totalLines === 1 ? '' : 's'}`);
+  if (hw?.language) parts.push(hw.language);
+  else if (hw?.script) parts.push(hw.script);
+
+  if (!parts.length) {
+    const count = save.metadata?.screenshotCount || data?.totalScreenshots || 0;
+    if (count > 1) parts.push(`${count} pages`);
+    const type = data?.detectedTheme || save.aiAnalysis?.screenshotAnalysis?.type;
+    if (type && type !== 'bundle') parts.push(String(type));
+  }
+
+  if (!parts.length) parts.push('Document');
+  return parts.join(' · ');
+};
+
 function CategoryThumb({ save, meta }) {
   if (save.thumbnail) {
     return (
@@ -76,6 +105,18 @@ export default function SavedList({ filter, title, saves = [], onNavigate }) {
   const [sortMode, setSortMode] = useState('all');
   const [userCoords, setUserCoords] = useState(null);
   const [locating, setLocating] = useState(false);
+  // Which of All / Links / Documents is showing. 'all' keeps whatever `filter`
+  // the caller asked for, so category views (eat, travel, …) still work.
+  const [tab, setTab] = useState(filter === 'link' ? 'links' : filter === 'bundle' ? 'documents' : 'all');
+  // Combining is explicit: the user picks the documents that belong together.
+  // Nothing is aggregated automatically — that was what produced combined
+  // documents mixing unrelated content.
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [combining, setCombining] = useState(false);
+  const [combineError, setCombineError] = useState(null);
+
+  const toggleSelect = (id) =>
+    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
 
   useEffect(() => {
     // Always refresh on entry. App-level saves can be stale after creating a
@@ -96,11 +137,13 @@ export default function SavedList({ filter, title, saves = [], onNavigate }) {
       .finally(() => setLoading(false));
   }, [saves]);
 
-  const isCategoryView = !['video', 'link', 'bundle'].includes(filter);
+  const isCategoryView = tab === 'all' && !['video', 'link', 'bundle'].includes(filter);
 
   useEffect(() => {
+    // The tab wins when it isn't 'all'; otherwise the caller's filter applies.
+    const effectiveFilter = tab === 'links' ? 'link' : tab === 'documents' ? 'bundle' : filter;
     let filtered;
-    switch (filter) {
+    switch (effectiveFilter) {
       case 'video':
         filtered = allSaves.filter(isVideo);
         break;
@@ -142,7 +185,35 @@ export default function SavedList({ filter, title, saves = [], onNavigate }) {
     }
 
     setFilteredSaves(filtered);
-  }, [allSaves, filter, sortMode, userCoords, isCategoryView]);
+  }, [allSaves, filter, tab, sortMode, userCoords, isCategoryView]);
+
+  // Leaving the Documents tab drops the selection — a checkbox the user can no
+  // longer see must not still be armed when they come back.
+  useEffect(() => {
+    if (tab !== 'documents') {
+      setSelectedIds([]);
+      setCombineError(null);
+    }
+  }, [tab]);
+
+  const handleCombine = async () => {
+    if (selectedIds.length < 2) return;
+    setCombining(true);
+    setCombineError(null);
+    try {
+      const res = await api.createScreenshotAggregateDocument(selectedIds, '');
+      if (res.status === 'success' && res.data?.save?._id) {
+        setSelectedIds([]);
+        onNavigate('save-detail', { id: res.data.save._id });
+      } else {
+        setCombineError(res.error?.message || 'Could not combine these documents.');
+      }
+    } catch (err) {
+      setCombineError(err.message || 'Could not combine these documents.');
+    } finally {
+      setCombining(false);
+    }
+  };
 
   const handleSortClick = (mode) => {
     if (mode === 'nearby' && !userCoords) {
@@ -169,7 +240,23 @@ export default function SavedList({ filter, title, saves = [], onNavigate }) {
         <span className="cv-title">{title}</span>
         <span className="cv-more">⋯</span>
       </div>
-      <div className="cv-stats">{filteredSaves.length} save{filteredSaves.length !== 1 ? 's' : ''}</div>
+      <div className="cv-stats">
+        {filteredSaves.length} {tab === 'documents' ? 'document' : 'save'}{filteredSaves.length !== 1 ? 's' : ''}
+      </div>
+
+      {/* All / Links / Documents. Documents is where photos and screenshots are
+          selected and combined by hand. */}
+      <div className="cv-filters">
+        {VIEW_TABS.map((t) => (
+          <div
+            key={t.id}
+            className={`cv-f ${tab === t.id ? 'cv-f-a' : 'cv-f-i'}`}
+            onClick={() => setTab(t.id)}
+          >
+            {t.label}
+          </div>
+        ))}
+      </div>
 
       {isCategoryView && (
         <div className="cv-filters">
@@ -202,6 +289,73 @@ export default function SavedList({ filter, title, saves = [], onNavigate }) {
             <SaveCard key={save._id} save={save} onNavigate={onNavigate} />
           ))}
         </div>
+      ) : tab === 'documents' ? (
+        <>
+          <div style={{ padding: '0 20px 8px', fontSize: 12, color: 'var(--mute)', lineHeight: 1.5 }}>
+            Select two or more to combine them into one document.
+          </div>
+          <div className="cv-list" style={{ paddingBottom: selectedIds.length >= 2 ? 88 : 20 }}>
+            {filteredSaves.map((save) => {
+              const meta = getCategoryMeta(save.category);
+              const checked = selectedIds.includes(save._id);
+              return (
+                <div
+                  key={save._id}
+                  className="cv-item"
+                  onClick={() => onNavigate('save-detail', { id: save._id })}
+                  style={{ background: checked ? 'var(--coral-faint)' : undefined }}
+                >
+                  {/* Stop the row's navigation so ticking a box doesn't open the save. */}
+                  <div
+                    onClick={(e) => { e.stopPropagation(); toggleSelect(save._id); }}
+                    style={{ display: 'flex', alignItems: 'center', paddingRight: 10, cursor: 'pointer' }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      readOnly
+                      style={{ width: 18, height: 18, accentColor: 'var(--coral)', pointerEvents: 'none' }}
+                    />
+                  </div>
+                  <CategoryThumb save={save} meta={meta} />
+                  <div className="cv-info">
+                    <div className="cv-iname">{save.title}</div>
+                    <div className="cv-isub">{documentSubtitle(save)}</div>
+                  </div>
+                  <div className="cv-dist" style={{ color: 'var(--mute)', fontWeight: 500, fontSize: 11 }}>
+                    {getRelativeTime(save.createdAt)}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {combineError && (
+            <div style={{ padding: '0 20px 12px', fontSize: 13, color: 'var(--rust, #c0392b)' }}>{combineError}</div>
+          )}
+
+          {selectedIds.length >= 2 && (
+            <div style={{
+              position: 'sticky', bottom: 0, padding: '12px 20px',
+              background: 'var(--paper)', borderTop: '1px solid var(--hairline)',
+              display: 'flex', gap: 10, alignItems: 'center',
+            }}>
+              <button
+                onClick={() => setSelectedIds([])}
+                style={{ padding: '10px 14px', fontSize: 13, borderRadius: 8, background: 'transparent', color: 'var(--slate)', border: '1px solid var(--hairline)', cursor: 'pointer' }}
+              >
+                Clear
+              </button>
+              <button
+                onClick={handleCombine}
+                disabled={combining}
+                style={{ flex: 1, padding: '10px 14px', fontSize: 14, fontWeight: 600, borderRadius: 8, background: 'var(--coral)', color: '#fff', border: 0, cursor: combining ? 'not-allowed' : 'pointer', opacity: combining ? 0.6 : 1 }}
+              >
+                {combining ? 'Combining…' : `Combine ${selectedIds.length} selected`}
+              </button>
+            </div>
+          )}
+        </>
       ) : filter === 'bundle' ? (
         <div className="save-card-grid" style={{ padding: '0 20px 20px' }}>
           {filteredSaves.map((save) => {

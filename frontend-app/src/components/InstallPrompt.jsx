@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { registerServiceWorker } from '../push';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const isStandalone = () =>
@@ -47,10 +48,10 @@ export default function InstallPrompt() {
   const [ios, setIos] = useState(false);
 
   // Register the service worker (installability requirement on Android).
+  // Goes through the shared helper so this doesn't register a second, differently
+  // -URL'd worker — the real registration carries an `?api=` param.
   useEffect(() => {
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').catch(() => {});
-    }
+    registerServiceWorker().catch(() => {});
   }, []);
 
   useEffect(() => {
