@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import './theme.css';
 import api from './api';
 
@@ -35,6 +35,11 @@ function App() {
   const [saves, setSaves] = useState([]);
   const [nearbySaves, setNearbySaves] = useState([]);
   const [showNearbyBanner, setShowNearbyBanner] = useState(false);
+  // Where the user came from. Without this every back button went to Home, so
+  // Collections -> a category -> back dumped you on the home feed instead of
+  // returning to Collections. A ref, not state: pushing a history entry must
+  // never itself cause a render.
+  const navHistory = useRef([]);
 
   const requestAndStoreLocation = async () => {
     if (!navigator.geolocation) return;
@@ -191,6 +196,14 @@ function App() {
       }
     }
 
+    // Record where we were so back can return there. Re-navigating to the
+    // screen you are already on is not a move worth remembering.
+    if (screen !== currentScreen) {
+      navHistory.current.push({ screen: currentScreen, payload });
+      // Bounded: a long session should not accumulate an unbounded stack.
+      if (navHistory.current.length > 20) navHistory.current.shift();
+    }
+
     setPayload(nextPayload);
     setCurrentScreen(screen);
     // Persist navigable screens to localStorage for recovery on hard refresh
@@ -198,6 +211,19 @@ function App() {
     if (persistable.includes(screen)) {
       localStorage.setItem('last_screen', screen);
     }
+  };
+
+  // Step back to the previous screen, or Home when there is nothing to go back
+  // to (a deep link, or the first screen of the session).
+  const goBack = () => {
+    const previous = navHistory.current.pop();
+    if (!previous) {
+      setPayload(null);
+      setCurrentScreen('home');
+      return;
+    }
+    setPayload(previous.payload);
+    setCurrentScreen(previous.screen);
   };
 
   // Show splash screen while auth is being checked
@@ -228,7 +254,7 @@ function App() {
     );
   }
 
-  const props = { onNavigate: navigate, payload };
+  const props = { onNavigate: navigate, onBack: goBack, payload };
 
   // Recomputed each render, so logging in or out flips it without extra state.
   const isAuthenticated = !!localStorage.getItem('auth_token');
@@ -261,13 +287,15 @@ function App() {
   const hasBottomNav = ['home', 'home-empty', 'nearby', 'search', 'collections', 'profile', 'savedList', 'notifications'].includes(currentScreen);
 
   return (
-    <div style={{ minHeight: '100vh', width: '100%', display: 'flex', justifyContent: 'center', background: 'transparent' }}>
-      <div style={{
+    <div className="app-shell-outer" style={{ width: '100%', display: 'flex', justifyContent: 'center', background: 'transparent' }}>
+      {/* Height lives in .app-shell so it can declare 100vh then 100dvh — an
+          inline style cannot express that fallback pair, and 100vh alone puts
+          the bottom nav below the fold on mobile. */}
+      <div className="app-shell" style={{
         width: '100%',
         maxWidth: 430,
         display: 'flex',
         flexDirection: 'column',
-        height: '100vh',
         overflow: 'hidden'
       }}>
         {/* Screen Content */}

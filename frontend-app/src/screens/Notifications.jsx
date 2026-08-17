@@ -285,6 +285,9 @@ export default function Notifications({ onNavigate }) {
   const [hasMore, setHasMore] = useState(true);
   const [, setPagination] = useState(null);
   const [savesById, setSavesById] = useState({});
+  // Authoritative unread total from the server. The list is paginated, so the
+  // loaded rows are not a count.
+  const [serverUnread, setServerUnread] = useState(null);
 
   const PAGE_SIZE = 10;
 
@@ -330,6 +333,7 @@ export default function Notifications({ onNavigate }) {
           setNotifications((prev) => [...prev, ...newNotifications]);
         }
         setPagination(res.data.pagination);
+        if (typeof res.data.unreadCount === 'number') setServerUnread(res.data.unreadCount);
         setHasMore(res.data.pagination?.hasMore || false);
         setOffset(pageOffset);
       }
@@ -348,11 +352,17 @@ export default function Notifications({ onNavigate }) {
   };
 
   const handleMarkRead = async (id) => {
+    const wasUnread = notifications.some(
+      (n) => n._id === id && (n.status === 'sent' || n.status === 'pending')
+    );
     setNotifications((prev) =>
       prev.map((n) =>
         n._id === id ? { ...n, status: 'opened' } : n
       )
     );
+    // Keep the header count in step; it comes from the server, so marking one
+    // row read locally would otherwise leave the total unchanged until reload.
+    if (wasUnread) setServerUnread((c) => (typeof c === 'number' ? Math.max(0, c - 1) : c));
     try {
       await api.markNotificationRead(id);
     } catch (err) {
@@ -372,22 +382,18 @@ export default function Notifications({ onNavigate }) {
   };
 
   const handleMarkAllAsRead = async () => {
-    const unreadIds = notifications
-      .filter((n) => n.status === 'sent' || n.status === 'pending')
-      .map((n) => n._id);
+    if (unreadCount === 0) return;
 
-    if (unreadIds.length === 0) return;
-
+    // Optimistic: clear the rows on screen immediately. The server call below
+    // covers every unread notification, including pages not loaded yet — which
+    // is why this cannot be done by PATCHing what the client happens to hold.
     setNotifications((prev) =>
-      prev.map((n) =>
-        unreadIds.includes(n._id) ? { ...n, status: 'opened' } : n
-      )
+      prev.map((n) => ((n.status === 'sent' || n.status === 'pending') ? { ...n, status: 'opened' } : n))
     );
+    setServerUnread(0);
 
     try {
-      await Promise.all(
-        unreadIds.map((id) => api.markNotificationRead(id))
-      );
+      await api.markAllNotificationsRead();
     } catch (err) {
       console.error('Failed to mark all as read:', err);
       loadNotifications(0);
@@ -398,9 +404,13 @@ export default function Notifications({ onNavigate }) {
     onNavigate('save-detail', { id: saveId });
   };
 
-  const unreadCount = notifications.filter(
+  // The list is paginated, so counting the loaded rows under-reports: with 51
+  // unread and 10 on screen the header claimed 10. The server sends the real
+  // total; fall back to the local count only before the first response lands.
+  const loadedUnread = notifications.filter(
     (n) => n.status === 'sent' || n.status === 'pending'
   ).length;
+  const unreadCount = serverUnread != null ? serverUnread : loadedUnread;
 
   const UPLOAD_TYPES = ['upload_completed', 'upload_failed'];
   // Everything that isn't an upload is a "smart reminder" — covers all current

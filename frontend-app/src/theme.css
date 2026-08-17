@@ -206,10 +206,26 @@ body {
 }
 
 /* Bottom nav (.tab-bar mirrors .bnav) */
+/* The app shell. 100vh on a mobile browser is the viewport with the URL bar
+   HIDDEN, so a fixed-height column sized that way pushes the bottom nav below
+   the fold, and it shifts every time the bar hides or shows on scroll. 100dvh
+   tracks the actual visible viewport; the 100vh line stays as the fallback for
+   browsers that lack dvh. */
+.app-shell {
+  height: 100vh;
+  height: 100dvh;
+}
+.app-shell-outer {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
 .tab-bar {
   background: var(--card);
   border-top: 1px dashed var(--border);
-  padding: 11px 0 18px;
+  /* Sits above the iPhone home indicator instead of under it. Falls back to 0
+     where the inset is unsupported or absent, so nothing changes on desktop. */
+  padding: 11px 0 calc(18px + env(safe-area-inset-bottom, 0px));
   display: flex;
   justify-content: space-around;
   align-items: center;

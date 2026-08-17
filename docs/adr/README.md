@@ -42,6 +42,10 @@ Status format: `Proposed - YYYY-MM-DD` / `Accepted - YYYY-MM-DD` /
   are globally unique, refreshed every load, rotations reported by the service
   worker; deep-link and badge contracts. Extends ADR 0006. *Accepted*
 
+- [ADR 0011](0011-geocoding-cached-osm-first.md) — Geocoding: cache each place
+  permanently, OpenStreetMap by default, Google opt-in. Replaces the hardcoded
+  city list as the source of coordinates. *Accepted*
+
 ## Maintenance Rules
 
 - Do not add a new cross-cutting pattern without an ADR.

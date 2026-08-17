@@ -175,6 +175,14 @@ See [`docs/notifications.md`](docs/notifications.md),
   `POST /notifications/run` with the `x-cron-secret` header (`CRON_SECRET`) —
   in-process node-cron never fires on hosts that sleep when idle (Render free
   tier). Scheduled runs pass each user's stored location into trigger context.
+- **Never resolve a place against a fixed list alone.** The set of places users
+  save is unbounded; the ~60-city list in `locationExtractor` is a fast path, not
+  the answer. Use `resolvePlace()`, which falls back to a geocoder and caches the
+  result permanently — see [ADR 0011](docs/adr/0011-geocoding-cached-osm-first.md).
+- **Geocoding defaults to OpenStreetMap and must stay free to run.** Google is
+  opt-in via `GOOGLE_MAPS_API_KEY`; the system has to work fully without it.
+  Cache every lookup, misses included, or an unresolvable string is re-queried
+  forever.
 - Location matching must work for Hindi content: `locationExtractor` carries
   Devanagari aliases, and `mediaProcessor` re-extracts location from the
   transcript/frame-OCR after analysis when metadata found none.

@@ -413,6 +413,18 @@ const api = {
     return result;
   },
 
+  // Marks every unread notification read server-side, including ones the client
+  // has not loaded. One request, not one per visible row.
+  async markAllNotificationsRead() {
+    const res = await fetch(`${API_BASE_URL}/notifications/read-all`, {
+      method: 'POST',
+      headers: authHeader(),
+    });
+    const result = await handle(res);
+    notifyBadgeChanged();
+    return result;
+  },
+
   async dismissNotification(id) {
     const res = await fetch(`${API_BASE_URL}/notifications/${id}/dismiss`, {
       method: 'POST',

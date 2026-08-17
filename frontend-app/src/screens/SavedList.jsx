@@ -98,7 +98,7 @@ function CategoryThumb({ save, meta }) {
   );
 }
 
-export default function SavedList({ filter, title, saves = [], onNavigate }) {
+export default function SavedList({ filter, title, saves = [], onNavigate, onBack }) {
   const [filteredSaves, setFilteredSaves] = useState([]);
   const [allSaves, setAllSaves] = useState(saves);
   const [loading, setLoading] = useState(!saves || saves.length === 0);
@@ -138,6 +138,8 @@ export default function SavedList({ filter, title, saves = [], onNavigate }) {
   }, [saves]);
 
   const isCategoryView = tab === 'all' && !['video', 'link', 'bundle'].includes(filter);
+  // The generic saves list, as opposed to a drill-down into one category.
+  const isGeneralList = [undefined, null, 'all', 'link', 'bundle'].includes(filter);
 
   useEffect(() => {
     // The tab wins when it isn't 'all'; otherwise the caller's filter applies.
@@ -236,7 +238,7 @@ export default function SavedList({ filter, title, saves = [], onNavigate }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', width: '100%', flex: 1, overflowY: 'auto' }}>
       <div className="cv-nav">
-        <span className="cv-back" onClick={() => onNavigate('home')}>←</span>
+        <span className="cv-back" onClick={() => (onBack ? onBack() : onNavigate('home'))}>←</span>
         <span className="cv-title">{title}</span>
         <span className="cv-more">⋯</span>
       </div>
@@ -244,8 +246,11 @@ export default function SavedList({ filter, title, saves = [], onNavigate }) {
         {filteredSaves.length} {tab === 'documents' ? 'document' : 'save'}{filteredSaves.length !== 1 ? 's' : ''}
       </div>
 
-      {/* All / Links / Documents. Documents is where photos and screenshots are
-          selected and combined by hand. */}
+      {/* All / Links / Documents — only on the general saves list. On a category
+          view ("Eat & Drink", "Shop") these are meaningless: tapping one would
+          navigate out of the category the user just chose, and stacking them
+          above the sort row put two competing filter bars on the same screen. */}
+      {isGeneralList && (
       <div className="cv-filters">
         {VIEW_TABS.map((t) => (
           <div
@@ -257,6 +262,7 @@ export default function SavedList({ filter, title, saves = [], onNavigate }) {
           </div>
         ))}
       </div>
+      )}
 
       {isCategoryView && (
         <div className="cv-filters">

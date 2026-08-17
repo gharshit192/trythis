@@ -111,6 +111,25 @@ router.post('/subscribe', async (req, res) => {
   }
 });
 
+// Mark every unread notification read, in one query.
+//
+// The client used to do this by PATCHing each notification it had loaded, which
+// meant "Mark all read" only ever cleared the current page — with 51 unread and
+// 10 on screen it left 41 behind, while firing 10 parallel requests to do it.
+router.post('/read-all', async (req, res) => {
+  try {
+    const result = await Notification.updateMany(
+      { userId: req.user.id, status: { $in: ['pending', 'sent'] } },
+      { $set: { status: 'opened', openedAt: new Date() } }
+    );
+    logger.info(`[notifications] marked ${result.modifiedCount} read for user ${req.user.id}`);
+    res.json({ status: 'success', data: { marked: result.modifiedCount } });
+  } catch (error) {
+    logger.error(`Mark all read error: ${error.message}`);
+    res.status(500).json({ status: 'error', error: { code: 'MARK_ALL_ERROR', message: error.message } });
+  }
+});
+
 // Unread count for the app-icon badge. Deliberately tiny and separate from
 // GET / — the client polls this while the app is open and doesn't want the
 // notification list back with it.
