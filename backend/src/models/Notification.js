@@ -108,6 +108,9 @@ notificationSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 // Compound index for user notifications
 notificationSchema.index({ userId: 1, status: 1, createdAt: -1 });
+// The notifications list sorts by sentAt, not createdAt, so the index above
+// could only narrow to the user and then had to sort the rest in memory.
+notificationSchema.index({ userId: 1, sentAt: -1 });
 
 // Back-compat: API consumers used to read `notification.read` directly. Now
 // derived from the `status` enum so the old shape keeps working in JSON.

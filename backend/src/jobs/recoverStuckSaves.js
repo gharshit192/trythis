@@ -23,7 +23,14 @@ const MAX_RECOVERED = Number(process.env.STUCK_SAVE_MAX_RECOVERED || 25);
 // bare setImmediate with no concurrency limit, and each job is a video download
 // plus a Whisper pass — releasing a boot's whole backlog together would put a
 // small host under more load than normal traffic ever does, right at start-up.
-const RELEASE_INTERVAL_MS = Number(process.env.STUCK_SAVE_RELEASE_INTERVAL_MS || 30_000);
+// 30s was too tight. A single reel takes 60-90s end to end (download, Groq
+// upload, Claude analysis), so releasing one every 30s kept two or three
+// running at once. On a small instance that starves everything else: in
+// production it pushed ordinary API calls to ~2s and made yt-dlp itself time
+// out after 60s on downloads that normally finish in five. Recovery is
+// backlog work with nobody waiting on it — it should stay out of the way of
+// the person actually using the app.
+const RELEASE_INTERVAL_MS = Number(process.env.STUCK_SAVE_RELEASE_INTERVAL_MS || 150_000);
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
