@@ -16,13 +16,33 @@ set -e
 
 YTDLP_BIN="${YTDLP_BIN:-/usr/local/bin/yt-dlp}"
 
+YTDLP_URL="${YTDLP_URL:-https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp}"
+
 if [ "${YTDLP_AUTO_UPDATE:-true}" = "true" ]; then
-  echo "[entrypoint] yt-dlp before: $($YTDLP_BIN --version 2>/dev/null || echo unknown)"
-  # -U replaces the binary in place. Capped so a hung download can't stall boot.
-  if timeout 60 "$YTDLP_BIN" -U --no-warnings >/dev/null 2>&1; then
-    echo "[entrypoint] yt-dlp after:  $($YTDLP_BIN --version 2>/dev/null || echo unknown)"
+  BEFORE="$($YTDLP_BIN --version 2>/dev/null || echo unknown)"
+  echo "[entrypoint] yt-dlp before: $BEFORE"
+
+  # Fetch the release binary rather than calling `yt-dlp -U`. Self-update is not
+  # dependable: it refuses outright on pip-installed copies and exits non-zero,
+  # which is indistinguishable from "already current" — a stale binary then sails
+  # through looking updated. Downloading is unconditional and verifiable.
+  #
+  # Written to a temp path and only moved into place once it runs, so a truncated
+  # or corrupt download can never replace a working binary.
+  TMP="${TMPDIR:-/tmp}/yt-dlp.new"
+  if timeout 90 wget -qO "$TMP" "$YTDLP_URL" && chmod +x "$TMP" && "$TMP" --version >/dev/null 2>&1; then
+    mv "$TMP" "$YTDLP_BIN"
+    AFTER="$($YTDLP_BIN --version 2>/dev/null || echo unknown)"
+    if [ "$AFTER" = "$BEFORE" ]; then
+      echo "[entrypoint] yt-dlp already current: $AFTER"
+    else
+      echo "[entrypoint] yt-dlp updated: $BEFORE -> $AFTER"
+    fi
   else
-    echo "[entrypoint] yt-dlp self-update skipped (offline or already current) — continuing"
+    rm -f "$TMP"
+    # Loud, because a stale extractor is invisible until every video silently
+    # fails to download — which is exactly how this went unnoticed for months.
+    echo "[entrypoint] WARNING: yt-dlp update FAILED — still running $BEFORE, video extraction may break"
   fi
 else
   echo "[entrypoint] yt-dlp auto-update disabled (YTDLP_AUTO_UPDATE=false)"
