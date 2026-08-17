@@ -737,10 +737,19 @@ const processSave = async (saveId) => {
         if (existing?.processingStages) {
           existing.processingStages.aiAnalysis = { completed: true, error: null, completedAt: new Date() };
           update.processingStages = existing.processingStages;
-          if (update.processingStages.videoDownload?.error && !update.confidence) {
-            update.confidence = 0.4;
-          }
         }
+
+        // Score every completed run, not just the failures. Only ever raises it:
+        // an earlier stage may have known something this one didn't.
+        const scored = scoreConfidence({
+          transcript: englishClean,
+          structuredType: analysis.structuredData?.type,
+          keyPoints: update.aiAnalysis?.keyPoints || analysis.keyPoints,
+          frameOcr,
+          located: Boolean(update.extractedLocation?.lat != null),
+          downloadFailed: Boolean(update.processingStages?.videoDownload?.error),
+        });
+        update.confidence = Math.max(scored, existing?.confidence || 0);
 
         const updated = await Save.findByIdAndUpdate(saveId, update, { new: true });
         logger.info(`[mediaProcessor ${saveId}] analysis done (type=${analysis.structuredData.type}, tags=${analysis.audioTags.length}, title="${updated.title}")`);
@@ -773,19 +782,60 @@ const processSave = async (saveId) => {
 // a full sentence — so we deliberately do NOT fall back to it. Generic
 // "Video by <handle>" reads better than a 80-char truncated summary.
 const pickBetterTitle = (currentTitle, analysis) => {
-  const isGeneric = !currentTitle || /^video by\s+/i.test(currentTitle) || /^instagram (?:post|reel|igtv)\b/i.test(currentTitle);
+  const isGeneric = !currentTitle
+    // A bare URL is the most generic title there is, and it was missing from
+    // this list — so saves whose metadata stage never ran (anything recovered
+    // after an interrupted job) kept the raw link as their title even once the
+    // analysis had produced a real one. The card then reads as empty to the
+    // user however rich the extraction underneath it is.
+    || /^\s*https?:\/\//i.test(currentTitle)
+    || /^video by\s+/i.test(currentTitle)
+    || /^instagram (?:post|reel|igtv)\b/i.test(currentTitle);
   if (!isGeneric) return null;
+
   const sd = analysis?.structuredData || {};
-  const candidate =
+  let candidate =
     sd.recipe?.title ||
     sd.product?.name ||
     sd.event?.eventName ||
     sd.itinerary?.destination ||
     sd.place?.name ||
     null;
+
+  // Nothing structured to name it by. A trimmed summary still beats a URL,
+  // which tells the user nothing at all.
+  if (!candidate && /^\s*https?:\/\//i.test(currentTitle || '') && analysis?.summary) {
+    const firstClause = String(analysis.summary).split(/[.!?\n]/)[0].trim();
+    if (firstClause.length >= 12) candidate = firstClause;
+  }
+
   if (!candidate) return null;
   const clean = String(candidate).trim().replace(/\s+/g, ' ').slice(0, 80);
   return clean && clean.toLowerCase() !== String(currentTitle).toLowerCase() ? clean : null;
+};
+
+// Confidence is evidence, not optimism: the share of signals we actually
+// managed to collect for this save, so the UI can tell a rich extraction from a
+// title-only guess.
+//
+// This was previously set *only* when the download failed (a flat 0.4). A run
+// that succeeded completely — transcript, summary, structured recipe — left the
+// field untouched, so fully-extracted saves sat at whatever the metadata stage
+// had guessed, and recovered ones sat at 0 while carrying a full recipe.
+const scoreConfidence = ({ transcript, structuredType, keyPoints, frameOcr, located, downloadFailed }) => {
+  let score = 0.3; // metadata alone
+  const transcriptLength = String(transcript || '').trim().length;
+  if (transcriptLength >= 120) score += 0.3;
+  else if (transcriptLength >= 40) score += 0.15;
+  if (structuredType && structuredType !== 'other') score += 0.15;
+  if ((keyPoints || []).length >= 3) score += 0.1;
+  if (String(frameOcr || '').trim().length >= 40) score += 0.05;
+  if (located) score += 0.05;
+  // No audio means a whole class of detail was never available, whatever else
+  // we scraped together.
+  if (downloadFailed) score = Math.min(score, 0.45);
+  // Never claim certainty — some detail is always only in the video.
+  return Math.round(Math.min(score, 0.95) * 100) / 100;
 };
 
 // Gap 5: pick frame count by duration. Was a fixed 4 — short reels were
@@ -832,4 +882,4 @@ const enqueue = (saveId) => {
   });
 };
 
-module.exports = { processSave, enqueue, __test__: { pickBetterTitle, pickFrameCount, pickOcrLangs, pickWhisperModel } };
+module.exports = { processSave, enqueue, __test__: { pickBetterTitle, pickFrameCount, pickOcrLangs, pickWhisperModel, scoreConfidence } };
