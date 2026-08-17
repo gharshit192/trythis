@@ -718,7 +718,10 @@ const processSave = async (saveId) => {
         // was never even consulted.
         const sd = analysis.structuredData || {};
         const namedPlace = sd.place?.city || sd.place?.name || sd.itinerary?.destination || null;
-        const structuredMatch = namedPlace ? locationExtractor.findKnownLocation(namedPlace) : null;
+        // resolvePlace, not findKnownLocation: the hardcoded list only covers
+        // ~60 Indian cities, so a destination like "Meghalaya" or "Bangkok"
+        // resolved to nothing at all. Geocoded results are cached permanently.
+        const structuredMatch = namedPlace ? await locationExtractor.resolvePlace(namedPlace) : null;
 
         if (structuredMatch || fresh.extractedLocation?.lat == null) {
           try {

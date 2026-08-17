@@ -134,7 +134,45 @@ function findKnownLocation(name) {
   return null;
 }
 
+/**
+ * Resolve a named place to coordinates, falling back to a geocoder.
+ *
+ * The known list stays first: it is instant, free, and it is the only thing
+ * that matches Devanagari aliases ("गोवा"), which no geocoder query built from
+ * our text would reliably hit. The geocoder exists for everything the list was
+ * never going to contain — Meghalaya, Bangkok, Sri Lanka — which is why only 6
+ * of 50 saves had coordinates.
+ *
+ * Never throws: a save must still complete if geocoding is down.
+ */
+async function resolvePlace(name) {
+  if (!name) return null;
+  const known = findKnownLocation(name);
+  if (known) return known;
+
+  try {
+    // Required lazily: locationExtractor is imported by pure-function tests that
+    // have no database, and the geocoder needs the cache model.
+    const geocoder = require('./geocoder');
+    const hit = await geocoder.geocode(name);
+    if (!hit) return null;
+    return {
+      name: hit.city || hit.name,
+      city: hit.city || hit.name,
+      state: hit.state || null,
+      country: hit.country || null,
+      lat: hit.lat,
+      lng: hit.lng,
+      source: hit.source,
+    };
+  } catch (err) {
+    logger.warn(`[locationExtractor] geocoder unavailable for "${name}": ${err.message}`);
+    return null;
+  }
+}
+
 module.exports = {
   extractLocation,
   findKnownLocation,
+  resolvePlace,
 };
