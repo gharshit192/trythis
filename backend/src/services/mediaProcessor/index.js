@@ -280,6 +280,12 @@ const transcribeWithWhisper = async (wavPath, { durationSeconds, category } = {}
 // Groq Whisper API — cloud transcription, free tier, ~5s for a 60s reel.
 // Requires GROQ_API_KEY env var. Uses whisper-large-v3-turbo (better than local base).
 // Two-pass: transcribe (original lang) → translate (English), mirrors local whisper strategy.
+// Seeds Whisper's decoder. Written as punctuated sentences on purpose: the
+// model mirrors the prompt's style, and without one it returns a single
+// unbroken run-on that is hard to read and worse to summarise.
+const GROQ_PROMPT = 'नमस्ते दोस्तों, आज हम एक आसान रेसिपी बनाएंगे। सामग्री लिख लीजिए। '
+  + 'This reel mixes Hindi and English: recipe, ingredients, price, location, immunity, detox.';
+
 const transcribeWithGroq = async (wavPath) => {
   const GROQ_API_KEY = process.env.GROQ_API_KEY;
   if (!GROQ_API_KEY) throw new Error('GROQ_API_KEY not set');
@@ -290,8 +296,20 @@ const transcribeWithGroq = async (wavPath) => {
   const callGroq = async (endpoint) => {
     const fd = new FormData();
     fd.append('file', fs.createReadStream(wavPath), { filename: 'audio.wav', contentType: 'audio/wav' });
-    fd.append('model', 'whisper-large-v3-turbo');
+    // whisper-large-v3, not the turbo variant. Turbo is distilled for speed and
+    // degrades most on exactly the audio this app is full of — Hindi and
+    // code-mixed Hinglish. A real production transcript came back with a
+    // four-times repetition loop ("थोड़क थोड़क थोड़क थोड़क") and not one
+    // sentence-ending mark in 555 characters, both signatures of that.
+    fd.append('model', process.env.GROQ_WHISPER_MODEL || 'whisper-large-v3');
     fd.append('response_format', 'verbose_json');
+    // Greedy decoding. The repetition loops above are a sampling artefact;
+    // pinning temperature to 0 is the standard mitigation.
+    fd.append('temperature', '0');
+    // Whisper imitates the prompt's punctuation and register, so a seed written
+    // in full sentences is what makes it emit sentence breaks at all. It also
+    // biases spelling toward the vocabulary these reels actually use.
+    fd.append('prompt', GROQ_PROMPT);
     const res = await axios.post(`https://api.groq.com/openai/v1/audio/${endpoint}`, fd, {
       headers: { Authorization: `Bearer ${GROQ_API_KEY}`, ...fd.getHeaders() },
       timeout: 60 * 1000,
