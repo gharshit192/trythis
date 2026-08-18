@@ -172,6 +172,9 @@ const generatePdf = (summary) => {
   return new Promise((resolve, reject) => {
     try {
       const doc = new PDFDocument({ margin: 42, bufferPages: true, size: 'A4' });
+      // Screenshot bundles are the main source of Hindi documents, so this
+      // export is the one that most needs a Devanagari font embedded.
+      require('../utils/pdfFonts').enableDevanagari(doc);
       const chunks = [];
 
       doc.on('data', chunk => chunks.push(chunk));

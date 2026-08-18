@@ -1347,7 +1347,11 @@ router.get('/:id/export-pdf', validateObjectId('id'), async (req, res) => {
 
     const ai = save.aiAnalysis || {};
     const sd = ai.structuredData || {};
+    const { isTranscribedDocument, documentText, unreviewedCount } = require('../utils/transcriptDocument');
     const doc = new PDFDocument({ margin: 50, bufferPages: true, size: 'A4' });
+    // Without this every Devanagari character in the export is mojibake:
+    // pdfkit's built-in fonts carry no Devanagari glyphs at all.
+    require('../utils/pdfFonts').enableDevanagari(doc);
 
     const safeName = (save.title || 'save').replace(/[^a-z0-9]/gi, '-').slice(0, 40);
     res.setHeader('Content-Type', 'application/pdf');
@@ -1365,7 +1369,23 @@ router.get('/:id/export-pdf', validateObjectId('id'), async (req, res) => {
       doc.moveDown(0.3);
     };
 
+    // A bundle save carries the same sentences in several places: the summary
+    // paragraph, the bundle's master bullets, and aiAnalysis.keyPoints (copied
+    // from those bullets at save time). Printed literally the reader met the
+    // same paragraph three times before reaching anything new, which is most of
+    // why these exports read as noise. Anything already on the page is skipped.
+    const printed = new Set();
+    const normaliseForDedupe = (text) => String(text || '').replace(/\s+/g, ' ').trim().toLowerCase();
+    const alreadyPrinted = (text) => {
+      const key = normaliseForDedupe(text);
+      if (!key) return true;
+      if (printed.has(key)) return true;
+      printed.add(key);
+      return false;
+    };
+
     const bullet = (text) => {
+      if (alreadyPrinted(text)) return;
       doc.fontSize(11).font('Helvetica').fillColor('#000000').text(`• ${text}`, { indent: 12, align: 'left' });
     };
 
@@ -1384,6 +1404,7 @@ router.get('/:id/export-pdf', validateObjectId('id'), async (req, res) => {
     const summary = ai.summary || save.description;
     if (summary) {
       doc.moveDown(0.6);
+      alreadyPrinted(summary); // claim it, so the identical bullet below is skipped
       doc.fontSize(12).font('Helvetica').fillColor('#222222').text(summary, { align: 'left', lineGap: 2 });
     }
 
@@ -1456,6 +1477,28 @@ router.get('/:id/export-pdf', validateObjectId('id'), async (req, res) => {
       if (Array.isArray(bundle.categories) && bundle.categories.length) {
         section('Categories');
         bundle.categories.forEach((cat) => {
+          // A transcribed document is prose. Printing one bold row per line with
+          // a "Line 7 — models disagree, unverified" caption under each turned a
+          // handwritten letter into a page of OCR diagnostics that nobody could
+          // read as a letter. Print it as text, and say once at the end how much
+          // wants checking.
+          if (isTranscribedDocument(cat)) {
+            doc.fontSize(12).font('Helvetica-Bold').fillColor(ACCENT).text(cat.name || 'Transcript');
+            doc.moveDown(0.3);
+            // Devanagari needs a taller line than Latin at the same size, or the
+            // matras above and below the baseline collide between rows.
+            doc.fontSize(12).font('Helvetica').fillColor('#111111')
+              .text(documentText(cat), { lineGap: 7, align: 'left' });
+            const unsure = unreviewedCount(cat);
+            if (unsure) {
+              doc.moveDown(0.4);
+              doc.fontSize(9).font('Helvetica').fillColor(MUTED)
+                .text(`${unsure} of ${cat.items.length} lines are worth checking against the original.`);
+            }
+            doc.moveDown(0.5);
+            return;
+          }
+
           doc.fontSize(12).font('Helvetica-Bold').fillColor(ACCENT).text(`${cat.name || 'Category'}${typeof cat.count === 'number' ? ` (${cat.count})` : ''}`.trim());
           (cat.items || []).forEach((item) => {
             doc.fontSize(11).font('Helvetica-Bold').fillColor('#000').text(item.name || 'Item');
@@ -1469,9 +1512,13 @@ router.get('/:id/export-pdf', validateObjectId('id'), async (req, res) => {
     }
 
     // ── KEY POINTS (highlighted) ──
-    if (ai.keyPoints?.length) {
+    // For a bundle these are a copy of the master bullets already printed under
+    // the summary, so the heading is only worth drawing if something survives
+    // the dedupe.
+    const freshKeyPoints = (ai.keyPoints || []).filter((k) => !printed.has(normaliseForDedupe(k)));
+    if (freshKeyPoints.length) {
       section('Key Points');
-      ai.keyPoints.forEach(bullet);
+      freshKeyPoints.forEach(bullet);
     }
 
     // ── STRUCTURED DATA ──

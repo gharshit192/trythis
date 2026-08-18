@@ -112,9 +112,23 @@ const rescore = (hw) => {
       tags: [],
     }));
 
+    // The master bullets carry a rendered sentence about the old verdicts —
+    // "1 of 20 lines confirmed by both models; 19 disputed" — which contradicts
+    // the re-scored numbers everywhere else. Regenerate it from the new result
+    // rather than leaving two different answers on the same page.
+    const bullets = (sa.data?.masterSummary?.bullets || []).map((b) => {
+      if (!/lines? (?:high-confidence|confirmed|transcribed)/i.test(String(b))) return b;
+      if (next.corroboration === 'single') {
+        return `${next.totalLines} lines transcribed by a single model — read, but not cross-checked`;
+      }
+      return `${next.totalLines - next.disputedLines} of ${next.totalLines} lines high-confidence; ${next.disputedLines} need review`;
+    });
+
     await Save.updateOne({ _id: save._id }, {
       $set: {
         tags: cleanTags,
+        'aiAnalysis.screenshotAnalysis.data.masterSummary.bullets': bullets,
+        'aiAnalysis.keyPoints': bullets,
         confidence: next.overallConfidence,
         'aiAnalysis.screenshotAnalysis.data.handwrittenAnalysis': next,
         'aiAnalysis.screenshotAnalysis.data.categories.0.items': newItems,
