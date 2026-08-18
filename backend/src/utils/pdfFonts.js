@@ -24,6 +24,7 @@
 const path = require('path');
 const fs = require('fs');
 const fontkit = require('fontkit');
+const logger = require('./logger');
 
 const FONT_DIR = path.join(__dirname, '..', '..', 'assets', 'fonts');
 const FILES = {
@@ -84,7 +85,20 @@ const splitByCoverage = (text, bold = false) => {
  * Devanagari inside a string is drawn with the Devanagari face automatically.
  */
 const enableDevanagari = (doc) => {
-  if (doc.__unicodeEnabled || !available) return doc;
+  if (doc.__unicodeEnabled) return doc;
+  if (!available) {
+    // Say so. Returning quietly here is how a Docker image that never copied
+    // assets/ produced Helvetica-only PDFs in production while the code looked
+    // correct and the logs said nothing — the exact failure this file exists to
+    // prevent, reintroduced one directory up.
+    const missing = Object.entries(FILES).filter(([, f]) => !fs.existsSync(f)).map(([n]) => n);
+    logger.error(
+      `[pdfFonts] font files missing (${missing.join(', ')}) in ${FONT_DIR} — `
+      + 'PDF export will fall back to Helvetica and any Devanagari will be mojibake. '
+      + 'Check that the deployment copies backend/assets.'
+    );
+    return doc;
+  }
 
   Object.entries(FILES).forEach(([name, file]) => doc.registerFont(name, file));
 

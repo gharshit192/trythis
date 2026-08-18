@@ -62,6 +62,14 @@ WORKDIR /app
 COPY backend/package*.json ./
 RUN npm install --legacy-peer-deps
 COPY backend/src ./src
+# Fonts for PDF export. Easy to forget, and forgetting is silent: pdfkit falls
+# back to Helvetica, which has no Devanagari glyphs, so Hindi exports come out as
+# mojibake with nothing in the logs to explain it. The check below fails the
+# build instead — same reasoning as the tesseract verification above.
+COPY backend/assets ./assets
+RUN test -f assets/fonts/NotoSans-Regular.ttf \
+ && test -f assets/fonts/NotoSansDevanagari-Regular.ttf \
+ && echo "✓ PDF fonts present" 
 
 # Refreshes yt-dlp on every container start, then execs the CMD below.
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
