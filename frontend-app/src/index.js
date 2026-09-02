@@ -1,10 +1,10 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
-import App from './App';
+import App from './app/App';
 import reportWebVitals from './reportWebVitals';
-import { registerServiceWorker } from './push';
-import { configureCapacitorRuntime } from './capacitorRuntime';
+import { registerServiceWorker } from './lib/push';
+import { configureCapacitorRuntime } from './lib/capacitorRuntime';
 
 configureCapacitorRuntime();
 

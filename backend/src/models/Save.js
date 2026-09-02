@@ -202,6 +202,10 @@ const intentItemSchema = new mongoose.Schema({
   },
   plannedFor: Date,
   triedAt: Date,
+  // Asked once, after the status flips to `tried`. The only training signal
+  // that says whether a save was *good*, not merely clicked (ADR 0015).
+  rating: { type: Number, min: 1, max: 5, default: null },
+  triedNote: { type: String, default: null },
 
   // AI enrichment
   aiAnalysis: aiAnalysisSchema,

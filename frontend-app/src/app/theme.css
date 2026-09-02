@@ -1,0 +1,222 @@
+/* ════════════════════════════════════════════════════════════════════
+   WANNA TRY — design tokens + shared primitives.
+   The only stylesheet new code may use. Source of truth: docs/design-system.md
+   (ADR 0013). Legacy per-screen classes are in legacy.css until each screen
+   is rebuilt.
+   ════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ground + ink */
+  --bg:        #FAF8F5;
+  --card:      #FFFFFF;
+  --card-2:    #EDEAE3;
+  --ink:       #15201E;
+  --mute:      #6E7B78;
+  --faint:     #9BA5A2;
+  --line:      #E7E2DA;
+
+  /* accent — one */
+  --teal:      #0E7C7B;
+  --teal-d:    #0A5A59;
+  --teal-soft: #E4EFEE;
+  --sand:      #E9D9BE;   /* highlights on --teal-d grounds */
+
+  /* category hues — the taxonomy */
+  --cat-place: #0E7C7B;  --cat-place-soft: #E4EFEE;
+  --cat-food:  #C99425;  --cat-food-soft:  #F6EDD6;
+  --cat-shop:  #8B5E3C;  --cat-shop-soft:  #F1E7DF;
+  --cat-learn: #6B5B95;  --cat-learn-soft: #ECE8F3;
+  --cat-none:  #6E7B78;  --cat-none-soft:  #EDEAE3;
+
+  /* semantic */
+  --attention: #C45A3C;
+  --good:      #1B6A57;
+
+  /* type */
+  --font-display: 'DM Serif Display', Georgia, serif;
+  --font-body:    'Work Sans', -apple-system, system-ui, sans-serif;
+
+  /* space + shape */
+  --pad-screen: 24px;
+  --pad-top:    56px;
+  --r-tile:     11px;
+  --r-control:  12px;
+  --r-card:     14px;
+  --r-pill:     999px;
+  --shadow-fab: 0 6px 16px rgba(14, 124, 123, .32);
+
+  /* ── legacy aliases: read by screens in legacy.css only. Remove with them. ── */
+  --paper: var(--bg);      --linen: var(--bg);
+  --ink-muted: var(--mute);
+  --border: rgba(0,0,0,.10); --hairline: var(--border); --hairline-soft: rgba(0,0,0,.06);
+  --rust: var(--teal);     --coral: var(--teal);      --amber-link: var(--teal);
+  --coral-soft: rgba(14,124,123,.10); --coral-faint: rgba(14,124,123,.06);
+  --mustard: var(--cat-food); --brown: var(--cat-shop); --plum: var(--cat-learn);
+  --travel: var(--cat-place); --shop: var(--cat-shop); --cook: var(--cat-food); --learn: var(--cat-learn);
+  --slate: #475569; --sage: #B8D4C9; --clay: #D2C7E8; --mist: #B8D4C9; --dune: #DCC4AC;
+  --disp: var(--font-display); --body: var(--font-body);
+  --r-sm: 4px; --r-md: 5px; --r-lg: 8px; --r-xl: 8px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+button, input, textarea, select { font-family: inherit; }
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  overflow-x: hidden;            /* no sideways shake on horizontal swipe */
+  overscroll-behavior-x: none;
+  max-width: 100%;
+}
+body {
+  font-family: var(--font-body);
+  color: var(--ink);
+  background-color: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.app-shell {
+  height: 100vh;
+  height: 100dvh;
+}
+.app-shell-outer {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+/* ── Screen scaffolding ──────────────────────────────────────────── */
+.wt-screen {
+  display: flex; flex-direction: column; flex: 1; width: 100%;
+  padding: var(--pad-top) var(--pad-screen) 28px;
+  overflow-y: auto;
+}
+.wt-screen.has-nav { padding-bottom: 110px; }
+.wt-screen.dark { background: var(--teal-d); color: #fff; }
+
+.wt-title {
+  font-family: var(--font-display); font-weight: 400;
+  font-size: 30px; line-height: 1.1; letter-spacing: -.005em; text-wrap: balance;
+}
+.wt-title.lg { font-size: 34px; }
+.wt-sub { font-size: 15.5px; line-height: 1.5; color: var(--mute); }
+.wt-eyebrow {
+  font-size: 12.5px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--teal);
+}
+.wt-section-label {
+  display: flex; align-items: baseline; justify-content: space-between;
+  font-size: 12px; font-weight: 600; letter-spacing: .10em; text-transform: uppercase; color: var(--faint);
+  margin-bottom: 4px;
+}
+.wt-section-label .action { font-size: 13px; font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--teal); cursor: pointer; }
+
+/* ── Row: the one list element ───────────────────────────────────── */
+.wt-row {
+  display: flex; gap: 13px; align-items: center;
+  padding: 13px 0; border-bottom: 1px solid var(--line);
+  cursor: pointer; text-align: left; width: 100%; background: none; border-left: 0; border-right: 0; border-top: 0;
+  color: inherit;
+}
+.wt-row.top { align-items: flex-start; }
+.wt-row-body { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 0; }
+.wt-row-title { font-family: var(--font-display); font-size: 17.5px; line-height: 1.2; color: var(--ink); }
+.wt-row-meta  { font-size: 13px; line-height: 1.4; color: var(--mute); }
+.wt-row-reason { font-size: 12.5px; line-height: 1.35; font-weight: 500; color: var(--teal); }
+.wt-row-trail { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; flex-shrink: 0; font-size: 12.5px; color: var(--faint); font-variant-numeric: tabular-nums; }
+
+/* ── Category tile ───────────────────────────────────────────────── */
+.wt-tile {
+  width: 44px; height: 44px; border-radius: var(--r-tile); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--tile-soft, var(--cat-none-soft)); color: var(--tile-ink, var(--cat-none));
+}
+.wt-tile.place { --tile-soft: var(--cat-place-soft); --tile-ink: var(--cat-place); }
+.wt-tile.food  { --tile-soft: var(--cat-food-soft);  --tile-ink: var(--cat-food); }
+.wt-tile.shop  { --tile-soft: var(--cat-shop-soft);  --tile-ink: var(--cat-shop); }
+.wt-tile.learn { --tile-soft: var(--cat-learn-soft); --tile-ink: var(--cat-learn); }
+
+/* ── Chips ───────────────────────────────────────────────────────── */
+.wt-chips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
+.wt-chips::-webkit-scrollbar { display: none; }
+.wt-chip {
+  height: 38px; padding: 0 15px; border-radius: var(--r-pill); white-space: nowrap; flex-shrink: 0;
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--card); border: 1px solid var(--line); color: var(--ink);
+  font-size: 14px; font-weight: 500; cursor: pointer;
+}
+.wt-chip.sm { height: 32px; padding: 0 12px; font-size: 13px; }
+.wt-chip.is-on { background: var(--ink); border-color: var(--ink); color: #fff; font-weight: 600; }
+.wt-chip.select { height: 46px; padding: 0 16px; border-radius: 23px; font-size: 15px; }
+.wt-chip.select.is-on { background: var(--teal); border-color: var(--teal); }
+.wt-chip .dot { width: 8px; height: 8px; border-radius: 4px; flex-shrink: 0; background: var(--dot, var(--faint)); }
+.wt-chip.is-on .dot { background: rgba(255,255,255,.85); }
+
+/* ── Status control (Want to try · Planning · Tried it) ──────────── */
+.wt-status { display: flex; height: 46px; padding: 4px; border-radius: var(--r-control); background: var(--card-2); }
+.wt-status button {
+  flex: 1; border: 0; background: transparent; border-radius: 9px; cursor: pointer;
+  font-size: 14px; font-weight: 500; color: var(--mute);
+}
+.wt-status button.is-on { background: var(--card); color: var(--ink); font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+
+/* ── Buttons ─────────────────────────────────────────────────────── */
+.wt-btn {
+  height: 54px; width: 100%; border: 0; border-radius: var(--r-control); cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  font-size: 16.5px; font-weight: 600; color: #fff; background: var(--teal);
+}
+.wt-btn.secondary { background: var(--card); color: var(--ink); border: 1px solid var(--line); }
+.wt-btn.ghost { background: transparent; color: var(--mute); font-weight: 500; height: 46px; }
+.wt-btn.on-dark { background: #fff; color: var(--teal-d); }
+.wt-btn.on-dark.secondary { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,.28); font-weight: 500; }
+.wt-btn.sm { height: 50px; font-size: 15.5px; }
+.wt-btn.icon { width: 52px; height: 52px; flex-shrink: 0; padding: 0; }
+.wt-btn:disabled { opacity: .5; cursor: default; }
+.wt-btn:focus-visible, .wt-chip:focus-visible, .wt-row:focus-visible { outline: 2px solid var(--teal); outline-offset: 3px; }
+
+/* ── Search bar ──────────────────────────────────────────────────── */
+.wt-search {
+  display: flex; align-items: center; gap: 10px; height: 48px; padding: 0 14px;
+  border: 1px solid var(--line); border-radius: var(--r-control); background: var(--card);
+  color: var(--faint); font-size: 15px; cursor: pointer;
+}
+.wt-search input { flex: 1; border: 0; outline: 0; background: transparent; font-size: 15px; color: var(--ink); }
+
+/* ── Banner / wells ──────────────────────────────────────────────── */
+.wt-banner {
+  display: flex; gap: 12px; align-items: center; padding: 14px 16px;
+  border-radius: var(--r-card); background: var(--teal-soft); color: var(--teal-d);
+  font-size: 14px; line-height: 1.45;
+}
+.wt-banner.warm { background: #F1EDE5; color: #6B5747; }
+.wt-banner .label { display: block; font-size: 11.5px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 3px; }
+
+/* ── Bottom nav ──────────────────────────────────────────────────── */
+.wt-tab-bar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
+  max-width: 430px; margin: 0 auto;
+  padding: 10px 22px calc(22px + env(safe-area-inset-bottom, 0px));
+  background: var(--card); border-top: 1px solid var(--line);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.wt-tab { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 54px; color: var(--faint); cursor: pointer; background: none; border: 0; font-size: 10.5px; font-weight: 500; }
+.wt-tab.is-on { color: var(--teal); font-weight: 600; }
+.wt-fab {
+  width: 56px; height: 56px; border-radius: 28px; margin-top: -26px; border: 0; cursor: pointer;
+  background: var(--teal); color: #fff; display: flex; align-items: center; justify-content: center;
+  box-shadow: var(--shadow-fab);
+}
+
+/* ── Empty state ─────────────────────────────────────────────────── */
+.wt-empty { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; padding: 40px 12px; }
+.wt-empty .t { font-family: var(--font-display); font-size: 22px; }
+.wt-empty .s { font-size: 14.5px; color: var(--mute); max-width: 280px; line-height: 1.5; }
+
+/* ── Progress (onboarding) ───────────────────────────────────────── */
+.wt-progress { flex: 1; height: 3px; border-radius: 2px; background: var(--line); position: relative; }
+.wt-progress > i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 2px; background: var(--teal); }
+
+/* ── Motion ──────────────────────────────────────────────────────── */
+@keyframes wt-spin { to { transform: rotate(360deg); } }
+.wt-spinner { width: 26px; height: 26px; border-radius: 13px; border: 2.5px solid var(--teal); border-top-color: transparent; animation: wt-spin 1s linear infinite; flex-shrink: 0; }
+@media (prefers-reduced-motion: reduce) { .wt-spinner { animation: none; } }

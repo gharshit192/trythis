@@ -1,4 +1,4 @@
-import { getCategoryMeta } from '../categoryMeta';
+import { getCategoryMeta } from '../lib/categoryMeta';
 import SmartImage from './SmartImage';
 
 const isVideoSave = (save) =>

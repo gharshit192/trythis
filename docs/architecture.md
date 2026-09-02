@@ -68,6 +68,23 @@ POST /screenshots (single + bundle analysis, PDF export)
   behind `Capacitor.isNativePlatform()`. See
   [ADR 0007](adr/0007-dual-frontend-capacitor-pwa.md) and
   `frontend-app/MOBILE_APP.md`.
+
+  ```
+  frontend-app/src/
+  ├─ app/          App.js — shell, screen map, navigate()/goBack(); theme.css — tokens + primitives
+  ├─ api/          client.js (fetch, auth header, caches) + one module per backend domain,
+  │                assembled into the `api` object by index.js
+  ├─ features/     auth · onboarding · home · explore · capture · saves · collections ·
+  │                notifications · profile · search — one folder per capability
+  ├─ components/   Shared primitives (Icon, CategoryTile, ListRow, Chip, StatusControl,
+  │                Button, BottomNav, SearchBar, EmptyState, Banner, …)
+  └─ lib/          push.js · capacitorRuntime.js · categoryMeta.js · format.js
+  ```
+
+  Organization is decided in [ADR 0012](adr/0012-frontend-feature-folders.md);
+  the visual system in [ADR 0013](adr/0013-text-first-ui-no-thumbnails.md) and
+  [`design-system.md`](design-system.md); the screens in [`design/`](design/README.md).
+
 - **`frontend/` (legacy):** Expo/React Native. Not invested in unless a task
   explicitly scopes it.
 

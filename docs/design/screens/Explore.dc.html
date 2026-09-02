@@ -1,0 +1,126 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Work+Sans:wght@400;500;600;700&display=swap">
+  <style>
+    :root{--ink:#15201E;--mute:#6E7B78;--faint:#9BA5A2;--bg:#FAF8F5;--card:#fff;--line:#E7E2DA;
+      --teal:#0E7C7B;--teal-d:#0A5A59;--teal-soft:#E4EFEE;}
+    *{box-sizing:border-box;}
+    body{margin:0;width:390px;height:844px;overflow:hidden;background:var(--bg);
+      font-family:"Work Sans",-apple-system,system-ui,sans-serif;color:var(--ink);}
+    a{color:var(--teal);} a:hover{color:var(--teal-d);}
+  </style>
+</helmet>
+
+<div style="width:390px;height:844px;display:flex;flex-direction:column;background:var(--bg);position:relative;">
+
+  <div style="padding:56px 24px 0;">
+    <h1 style="font-family:'DM Serif Display',Georgia,serif;font-weight:400;font-size:30px;line-height:1.1;margin:0 0 16px;">Explore</h1>
+    <div style="display:flex;gap:8px;margin-bottom:18px;overflow:hidden;">
+      <span style="height:38px;padding:0 15px;border-radius:19px;background:var(--ink);color:#fff;font-size:14px;font-weight:600;display:flex;align-items:center;white-space:nowrap;">Near you</span>
+      <span style="height:38px;padding:0 15px;border-radius:19px;background:var(--card);border:1px solid var(--line);font-size:14px;font-weight:500;display:flex;align-items:center;white-space:nowrap;">For you</span>
+      <span style="height:38px;padding:0 15px;border-radius:19px;background:var(--card);border:1px solid var(--line);font-size:14px;font-weight:500;display:flex;align-items:center;white-space:nowrap;">This weekend</span>
+      <span style="height:38px;padding:0 15px;border-radius:19px;background:var(--card);border:1px solid var(--line);font-size:14px;font-weight:500;display:flex;align-items:center;white-space:nowrap;">Cafes</span>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:6px;border-bottom:1px solid var(--line);">
+      <span style="font-size:13px;color:var(--mute);">Within 5 km of Hauz Khas &middot; 14 places</span>
+      <span style="display:flex;align-items:center;gap:5px;font-size:13px;font-weight:500;color:var(--teal);">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0E7C7B" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M6 12h12M10 18h4"/></svg>Filter
+      </span>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;padding:0 24px;">
+
+    <div style="display:flex;gap:13px;align-items:flex-start;padding:15px 0;border-bottom:1px solid var(--line);">
+      <div style="width:44px;height:44px;border-radius:11px;background:#ECE8F3;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6B5B95" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h6a2 2 0 0 1 2 2v14a2 2 0 0 0-2-2H4z"/><path d="M20 4h-6a2 2 0 0 0-2 2v14a2 2 0 0 1 2-2h6z"/></svg>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;flex-grow:1;min-width:0;">
+        <span style="font-family:'DM Serif Display',Georgia,serif;font-size:18px;line-height:1.2;">Kunzum, Greater Kailash</span>
+        <span style="font-size:13px;color:var(--mute);line-height:1.4;">Bookshop cafe &middot; ₹350 for two &middot; quiet after 4pm</span>
+        <span style="font-size:12.5px;color:var(--teal);font-weight:500;">Because you saved 3 cafes in Hauz Khas</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0;">
+        <span style="font-size:12.5px;color:var(--faint);">3.4 km</span>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#15201E" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h12a1 1 0 0 1 1 1v15l-7-4-7 4V5a1 1 0 0 1 1-1z"/></svg>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:13px;align-items:flex-start;padding:15px 0;border-bottom:1px solid var(--line);">
+      <div style="width:44px;height:44px;border-radius:11px;background:#F1E7DF;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8B5E3C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l2-5h14l2 5"/><path d="M4 9v11h16V9"/><path d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0"/></svg>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;flex-grow:1;min-width:0;">
+        <span style="font-family:'DM Serif Display',Georgia,serif;font-size:18px;line-height:1.2;">Dilli Haat, INA</span>
+        <span style="font-size:13px;color:var(--mute);line-height:1.4;">Handloom, state food stalls &middot; ₹30 entry</span>
+        <span style="font-size:12.5px;color:var(--teal);font-weight:500;">Saved by 14 people who tried your places</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0;">
+        <span style="font-size:12.5px;color:var(--faint);">0.9 km</span>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#15201E" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h12a1 1 0 0 1 1 1v15l-7-4-7 4V5a1 1 0 0 1 1-1z"/></svg>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:13px;align-items:flex-start;padding:15px 0;border-bottom:1px solid var(--line);">
+      <div style="width:44px;height:44px;border-radius:11px;background:#E4EFEE;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0E7C7B" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h12v6a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4z"/><path d="M16 10h2a2 2 0 0 1 0 4h-2"/><path d="M7 4v2M10 4v2M13 4v2"/></svg>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;flex-grow:1;min-width:0;">
+        <span style="font-family:'DM Serif Display',Georgia,serif;font-size:18px;line-height:1.2;">Elma's Bakery, Hauz Khas</span>
+        <span style="font-size:13px;color:var(--mute);line-height:1.4;">Brunch, cakes &middot; ₹600 for two</span>
+        <span style="font-size:12.5px;color:var(--teal);font-weight:500;">In the same reel as Blue Tokai</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0;">
+        <span style="font-size:12.5px;color:var(--faint);">1.8 km</span>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="#0E7C7B" stroke="#0E7C7B" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h12a1 1 0 0 1 1 1v15l-7-4-7 4V5a1 1 0 0 1 1-1z"/></svg>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:13px;align-items:flex-start;padding:15px 0;border-bottom:1px solid var(--line);">
+      <div style="width:44px;height:44px;border-radius:11px;background:#F6EDD6;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C99425" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h16a8 8 0 0 1-16 0z"/><path d="M8 20h8"/><path d="M12 4v2M8 5l1 2M16 5l-1 2"/></svg>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;flex-grow:1;min-width:0;">
+        <span style="font-family:'DM Serif Display',Georgia,serif;font-size:18px;line-height:1.2;">Naivedyam, Hauz Khas</span>
+        <span style="font-size:13px;color:var(--mute);line-height:1.4;">South Indian &middot; ₹500 for two</span>
+        <span style="font-size:12.5px;color:var(--teal);font-weight:500;">Trending in Delhi this week</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0;">
+        <span style="font-size:12.5px;color:var(--faint);">2.0 km</span>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#15201E" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h12a1 1 0 0 1 1 1v15l-7-4-7 4V5a1 1 0 0 1 1-1z"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <div style="position:absolute;left:0;right:0;bottom:0;height:86px;padding:10px 22px 22px;background:var(--card);border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;width:54px;">
+      <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="#9BA5A2" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>
+      <span style="font-size:10.5px;font-weight:500;color:#9BA5A2;">Home</span>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;width:54px;">
+      <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="#0E7C7B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></svg>
+      <span style="font-size:10.5px;font-weight:600;color:#0E7C7B;">Explore</span>
+    </div>
+    <div style="width:56px;height:56px;border-radius:28px;background:var(--teal);display:flex;align-items:center;justify-content:center;margin-top:-26px;box-shadow:0 6px 16px rgba(14,124,123,.32);">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;width:54px;">
+      <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="#9BA5A2" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h12a1 1 0 0 1 1 1v15l-7-4-7 4V5a1 1 0 0 1 1-1z"/></svg>
+      <span style="font-size:10.5px;font-weight:500;color:#9BA5A2;">Saved</span>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;width:54px;">
+      <svg width="23" height="23" viewBox="0 0 24 24" fill="none" stroke="#9BA5A2" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20a8 8 0 0 1 16 0"/></svg>
+      <span style="font-size:10.5px;font-weight:500;color:#9BA5A2;">Me</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

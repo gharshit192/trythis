@@ -45,6 +45,21 @@ Status format: `Proposed - YYYY-MM-DD` / `Accepted - YYYY-MM-DD` /
 - [ADR 0011](0011-geocoding-cached-osm-first.md) — Geocoding: cache each place
   permanently, OpenStreetMap by default, Google opt-in. Replaces the hardcoded
   city list as the source of coordinates. *Accepted*
+- [ADR 0012](0012-frontend-feature-folders.md) — Frontend organization: feature
+  folders, a split API client, shared primitives; `theme.css` holds tokens only.
+  *Accepted*
+- [ADR 0013](0013-text-first-ui-no-thumbnails.md) — Text-first UI: no
+  thumbnails in lists, drawn SVG icons, one row vocabulary; corrects the
+  documented palette to the shipped teal set. *Accepted*
+- [ADR 0014](0014-cold-start-is-supply.md) — Cold start is a supply problem:
+  import-first onboarding, one seed city, trending gated at 5 savers, never an
+  LLM-invented place; two onboarding questions. *Accepted*
+- [ADR 0015](0015-intent-lifecycle-and-explore.md) — Intent lifecycle in the UI
+  (Want / Planning / Tried + rating), Explore replaces Nearby, notifications
+  bell, trip planning from travel saves. *Accepted*
+- [ADR 0016](0016-voice-capture-to-structured-memory.md) — Voice capture →
+  structured memory document with a `resurfaceAt` date; the LifeOS Future
+  Memory Engine's first trigger. *Accepted*
 
 ## Maintenance Rules
 

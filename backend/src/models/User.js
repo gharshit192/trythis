@@ -66,6 +66,9 @@ const userSchema = new mongoose.Schema(
     },
     onboardingNotificationSent: { type: Boolean, default: false },
 
+    // Two onboarding questions: city lives in `location.city`; this is the other.
+    interests: { type: [String], default: [] },
+
     onboarding: {
       completed:       { type: Boolean, default: false },
       currentStep:     { type: Number, default: 0 },

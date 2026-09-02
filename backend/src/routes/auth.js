@@ -469,11 +469,13 @@ router.patch('/settings', authMiddleware, async (req, res) => {
 // ── Update onboarding progress / completion
 router.patch('/me/onboarding', authMiddleware, async (req, res) => {
   try {
-    const { completed, currentStep, firstSaveAt } = req.body;
+    const { completed, currentStep, firstSaveAt, interests, city } = req.body;
     const patch = {};
     if (typeof completed === 'boolean') patch['onboarding.completed'] = completed;
     if (typeof currentStep === 'number') patch['onboarding.currentStep'] = currentStep;
     if (firstSaveAt) patch['onboarding.firstSaveAt'] = new Date(firstSaveAt);
+    if (Array.isArray(interests)) patch.interests = interests.map(String).slice(0, 30);
+    if (typeof city === 'string') patch['location.city'] = city.trim().slice(0, 80) || null;
 
     const user = await User.findByIdAndUpdate(
       req.user.id,

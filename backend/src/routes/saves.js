@@ -364,7 +364,7 @@ router.get('/', async (req, res) => {
     // Use projection to load only feed-relevant fields (3-5x faster than full document).
     // MongoDB loads entire document by default; this limits to display fields only.
     const saves = await Save.find({ userId: req.user.id, status: 'active' })
-      .select('title thumbnail image category contentType tags intentStatus createdAt source url aiAnalysis isTemplate')
+      .select('title thumbnail image category contentType tags intentStatus plannedFor triedAt rating createdAt source url aiAnalysis isTemplate extractedLocation')
       .sort({
         createdAt: -1,
       });
@@ -510,7 +510,7 @@ router.patch('/:id', validateObjectId('id'), async (req, res) => {
 // Intent lifecycle: change intentStatus and (optionally) plannedFor / triedAt.
 router.patch('/:id/intent', validateObjectId('id'), async (req, res) => {
   try {
-    const { intentStatus, plannedFor, triedAt } = req.body;
+    const { intentStatus, plannedFor, triedAt, rating, triedNote } = req.body;
     const save = await Save.findById(req.params.id);
     if (!save || save.userId.toString() !== req.user.id) {
       return res.status(404).json({ status: 'error', error: { code: 'NOT_FOUND', message: 'Save not found' } });
@@ -525,6 +525,14 @@ router.patch('/:id/intent', validateObjectId('id'), async (req, res) => {
     }
     if (plannedFor !== undefined) save.plannedFor = plannedFor ? new Date(plannedFor) : null;
     if (triedAt !== undefined) save.triedAt = triedAt ? new Date(triedAt) : null;
+    if (rating !== undefined) {
+      const r = rating === null ? null : Number(rating);
+      if (r !== null && (!Number.isInteger(r) || r < 1 || r > 5)) {
+        return res.status(400).json({ status: 'error', error: { code: 'VALIDATION_ERROR', message: 'rating must be an integer 1–5 or null' } });
+      }
+      save.rating = r;
+    }
+    if (triedNote !== undefined) save.triedNote = triedNote ? String(triedNote).slice(0, 1000) : null;
     await save.save();
     logger.info(`Save ${save._id} intent → ${save.intentStatus}`);
     res.json({ status: 'success', data: save });

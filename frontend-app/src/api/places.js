@@ -1,0 +1,25 @@
+import { API_BASE_URL, handle } from './client';
+
+const places = {
+  async getPlace(id) {
+    const res = await fetch(`${API_BASE_URL}/places/${id}`);
+    return handle(res);
+  },
+
+  async getPlaceSimilar(id) {
+    const res = await fetch(`${API_BASE_URL}/places/${id}/similar`);
+    return handle(res);
+  },
+
+  async getTrendingPlaces(limit = 10) {
+    const res = await fetch(`${API_BASE_URL}/places/trending?limit=${limit}`);
+    return handle(res);
+  },
+
+  async getNearbyPlaces(lat, lng, radiusMetres = 5000) {
+    const res = await fetch(`${API_BASE_URL}/places/nearby?lat=${lat}&lng=${lng}&radiusMetres=${radiusMetres}`);
+    return handle(res);
+  },
+};
+
+export default places;

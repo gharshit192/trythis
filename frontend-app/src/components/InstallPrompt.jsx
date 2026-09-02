@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { registerServiceWorker } from '../push';
+import { registerServiceWorker } from '../lib/push';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const isStandalone = () =>

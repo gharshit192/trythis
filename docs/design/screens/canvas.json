@@ -1,0 +1,183 @@
+{
+  "artboards": [
+    {
+      "file": "Welcome.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "1 · Welcome"
+    },
+    {
+      "file": "City.dc.html",
+      "x": 470,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "2 · Your city"
+    },
+    {
+      "file": "Interests.dc.html",
+      "x": 940,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "3 · Interests",
+      "is_interactive": true
+    },
+    {
+      "file": "Import.dc.html",
+      "x": 1410,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "4 · Bring your saves"
+    },
+    {
+      "file": "Extracting.dc.html",
+      "x": 1880,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "5 · Reading reels"
+    },
+    {
+      "file": "Starter.dc.html",
+      "x": 2350,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "6 · Your list"
+    },
+    {
+      "file": "Main.dc.html",
+      "x": 0,
+      "y": 1000,
+      "w": 390,
+      "h": 844,
+      "title": "Home"
+    },
+    {
+      "file": "Explore.dc.html",
+      "x": 470,
+      "y": 1000,
+      "w": 390,
+      "h": 844,
+      "title": "Explore"
+    },
+    {
+      "file": "Detail.dc.html",
+      "x": 940,
+      "y": 1000,
+      "w": 390,
+      "h": 844,
+      "title": "Item"
+    },
+    {
+      "file": "MultiExtract.dc.html",
+      "x": 1410,
+      "y": 1000,
+      "w": 390,
+      "h": 844,
+      "title": "5 places in one reel",
+      "is_interactive": true
+    },
+    {
+      "file": "Saved.dc.html",
+      "x": 1880,
+      "y": 1000,
+      "w": 390,
+      "h": 844,
+      "title": "Saved"
+    },
+    {
+      "file": "Tried.dc.html",
+      "x": 2350,
+      "y": 1000,
+      "w": 390,
+      "h": 844,
+      "title": "Tried it",
+      "is_interactive": true
+    },
+    {
+      "file": "Notifications.dc.html",
+      "x": 0,
+      "y": 2000,
+      "w": 390,
+      "h": 844,
+      "title": "Smart notifications"
+    },
+    {
+      "file": "Trip.dc.html",
+      "x": 470,
+      "y": 2000,
+      "w": 390,
+      "h": 844,
+      "title": "Travel save"
+    },
+    {
+      "file": "Itinerary.dc.html",
+      "x": 940,
+      "y": 2000,
+      "w": 390,
+      "h": 844,
+      "title": "Day-wise plan"
+    },
+    {
+      "file": "Voice.dc.html",
+      "x": 1880,
+      "y": 2000,
+      "w": 390,
+      "h": 844,
+      "title": "Voice capture"
+    },
+    {
+      "file": "VoiceResult.dc.html",
+      "x": 2350,
+      "y": 2000,
+      "w": 390,
+      "h": 844,
+      "title": "Voice → document"
+    }
+  ],
+  "annotations": [
+    {
+      "id": "row-onboarding",
+      "x": 0,
+      "y": -150,
+      "w": 560,
+      "text": "FIRST TEN MINUTES\nTwo questions, then import what they already saved. The app is full before they ever see Home."
+    },
+    {
+      "id": "row-app",
+      "x": 0,
+      "y": 850,
+      "w": 560,
+      "text": "THE APP — NO THUMBNAILS\nCategory icon + serif title + one meta line + a reason. The photo is kept on the save and reachable from the item screen, never shown in lists."
+    },
+    {
+      "id": "row-more",
+      "x": 0,
+      "y": 1850,
+      "w": 700,
+      "text": "NOTIFICATIONS · TRIPS · VOICE\nBell on Home opens 'For you'. Travel saves get a 'Plan this trip' offer pre-filled from the reels → day-wise plan, every stop credited to its reel. Voice: speak in Hindi/English/mixed → Whisper/Sarvam transcript → Claude pulls out who / where / about / remind-me and writes the document."
+    },
+    {
+      "id": "note-data",
+      "x": 1410,
+      "y": 2000,
+      "w": 380,
+      "text": "WHERE EXPLORE / NEARBY DATA COMES FROM\n\n1. The user's own saves — always, from day one (GET /saves/nearby).\n2. Seeded places for the launch city — Place.source = 'seed' (GET /places/nearby).\n3. Other users' saves — Place.saveCount, shown only past a threshold (GET /places/trending).\n\nA row's reason line says which one it is. No LLM-generated places."
+    },
+    {
+      "id": "note-palette",
+      "x": 2820,
+      "y": 0,
+      "w": 300,
+      "text": "Same tokens as the live app: teal #0E7C7B, DM Serif Display + Work Sans, mustard / brown / plum by category."
+    }
+  ],
+  "launch": {
+    "view": "canvas"
+  }
+}

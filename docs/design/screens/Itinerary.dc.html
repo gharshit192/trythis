@@ -1,0 +1,91 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Work+Sans:wght@400;500;600;700&display=swap">
+  <style>
+    :root{--ink:#15201E;--mute:#6E7B78;--faint:#9BA5A2;--bg:#FAF8F5;--card:#fff;--line:#E7E2DA;
+      --teal:#0E7C7B;--teal-d:#0A5A59;--teal-soft:#E4EFEE;}
+    *{box-sizing:border-box;}
+    body{margin:0;width:390px;height:844px;overflow:hidden;background:var(--bg);
+      font-family:"Work Sans",-apple-system,system-ui,sans-serif;color:var(--ink);}
+    a{color:var(--teal);} a:hover{color:var(--teal-d);}
+  </style>
+</helmet>
+
+<div style="width:390px;height:844px;display:flex;flex-direction:column;background:var(--bg);padding:56px 24px 28px;">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#15201E" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+    <div style="display:flex;gap:18px;">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#15201E" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-6.5 7-12a7 7 0 0 0-14 0c0 5.5 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg>
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#15201E" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7M12 15V3M8 7l4-4 4 4"/></svg>
+    </div>
+  </div>
+
+  <span style="font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--teal);">Your plan</span>
+  <h1 style="font-family:'DM Serif Display',Georgia,serif;font-weight:400;font-size:30px;line-height:1.12;margin:8px 0 6px;">Goa, 7 days</h1>
+  <span style="font-size:14px;color:var(--mute);margin-bottom:18px;">4&ndash;10 Oct &middot; ₹13,400 est. &middot; staying in Panjim</span>
+
+  <div style="display:flex;gap:8px;margin-bottom:18px;overflow:hidden;">
+    <span style="height:34px;padding:0 13px;border-radius:17px;background:var(--ink);color:#fff;font-size:13px;font-weight:600;display:flex;align-items:center;white-space:nowrap;">Day 1</span>
+    <span style="height:34px;padding:0 13px;border-radius:17px;background:var(--card);border:1px solid var(--line);font-size:13px;font-weight:500;display:flex;align-items:center;white-space:nowrap;">Day 2</span>
+    <span style="height:34px;padding:0 13px;border-radius:17px;background:var(--card);border:1px solid var(--line);font-size:13px;font-weight:500;display:flex;align-items:center;white-space:nowrap;">Day 3</span>
+    <span style="height:34px;padding:0 13px;border-radius:17px;background:var(--card);border:1px solid var(--line);font-size:13px;font-weight:500;display:flex;align-items:center;white-space:nowrap;">Day 4</span>
+    <span style="height:34px;padding:0 13px;border-radius:17px;background:var(--card);border:1px solid var(--line);font-size:13px;font-weight:500;display:flex;align-items:center;white-space:nowrap;">5</span>
+  </div>
+
+  <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px;">
+    <span style="font-family:'DM Serif Display',Georgia,serif;font-size:20px;">Saturday &middot; Panjim</span>
+    <span style="font-size:12.5px;color:var(--faint);">₹900 &middot; 3 stops</span>
+  </div>
+
+  <!-- timeline -->
+  <div style="display:flex;flex-direction:column;">
+    <div style="display:flex;gap:14px;padding:12px 0;">
+      <div style="display:flex;flex-direction:column;align-items:center;width:44px;flex-shrink:0;">
+        <span style="font-size:12px;font-weight:600;color:var(--mute);">9:00</span>
+        <div style="width:2px;flex-grow:1;background:var(--line);margin-top:6px;"></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:3px;flex-grow:1;padding-bottom:8px;">
+        <span style="font-family:'DM Serif Display',Georgia,serif;font-size:17px;line-height:1.2;">Fontainhas walk</span>
+        <span style="font-size:13px;color:var(--mute);line-height:1.4;">Portuguese quarter, best light before 11. Free.</span>
+        <span style="font-size:12.5px;color:var(--teal);font-weight:500;">From your reel &middot; @goawithme</span>
+      </div>
+    </div>
+    <div style="display:flex;gap:14px;padding:12px 0;">
+      <div style="display:flex;flex-direction:column;align-items:center;width:44px;flex-shrink:0;">
+        <span style="font-size:12px;font-weight:600;color:var(--mute);">13:00</span>
+        <div style="width:2px;flex-grow:1;background:var(--line);margin-top:6px;"></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:3px;flex-grow:1;padding-bottom:8px;">
+        <span style="font-family:'DM Serif Display',Georgia,serif;font-size:17px;line-height:1.2;">Fish thali, Ritz Classic</span>
+        <span style="font-size:13px;color:var(--mute);line-height:1.4;">12 min walk. ₹250. Queue after 1:30, so go early.</span>
+        <span style="font-size:12.5px;color:var(--teal);font-weight:500;">From your reel &middot; @delhifoodwalks</span>
+      </div>
+    </div>
+    <div style="display:flex;gap:14px;padding:12px 0;">
+      <div style="display:flex;flex-direction:column;align-items:center;width:44px;flex-shrink:0;">
+        <span style="font-size:12px;font-weight:600;color:var(--mute);">17:00</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:3px;flex-grow:1;">
+        <span style="font-family:'DM Serif Display',Georgia,serif;font-size:17px;line-height:1.2;">Miramar beach sunset</span>
+        <span style="font-size:13px;color:var(--mute);line-height:1.4;">Bus 4 from Panjim, ₹15. Sunset 6:12.</span>
+        <span style="font-size:12.5px;color:var(--faint);font-weight:500;">Added to fill the evening &mdash; swap it</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:auto;display:flex;gap:10px;">
+    <button style="flex-grow:1;height:52px;border:0;border-radius:12px;background:var(--teal);color:#fff;font-family:'Work Sans',sans-serif;font-size:15.5px;font-weight:600;cursor:pointer;">Save plan</button>
+    <button style="height:52px;padding:0 18px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);font-family:'Work Sans',sans-serif;font-size:15px;font-weight:500;cursor:pointer;">Change dates</button>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

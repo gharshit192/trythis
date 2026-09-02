@@ -51,7 +51,22 @@ frontend/       Expo/React Native client. LEGACY.
 shared/         Shared spec docs (API_SPEC, DATA_MODELS).
 trythis-seed-data/  Seed URLs for exercising the extraction pipeline.
 docs/           Canonical documentation (see README for the map).
+docs/design/    The UI design: PDF + per-screen HTML sources (ADR 0013).
 uploads/        Local upload/bundle storage (screenshot bundles, thumbnails).
+```
+
+Frontend internals (`frontend-app/src/`, see [ADR 0012](docs/adr/0012-frontend-feature-folders.md)):
+
+```
+app/          App.js (shell + screen map + navigation), theme.css (tokens + primitives ONLY).
+api/          One module per backend domain (auth, saves, collections, places,
+              notifications, uploads) over a shared client.js; re-exported from index.js.
+features/     One folder per capability: auth, onboarding, home, explore, capture,
+              saves, collections, notifications, profile, search. A screen lives
+              with the code only it uses.
+components/   Shared primitives (Icon, CategoryTile, ListRow, SectionLabel, Chip,
+              StatusControl, Button, BottomNav, SearchBar, EmptyState, Banner).
+lib/          Non-UI helpers: push, capacitorRuntime, categoryMeta, format.
 ```
 
 Backend internals (`backend/src/`):
@@ -69,7 +84,9 @@ seeds/ utils/ Seed scripts and shared helpers (logger, etc).
 ## Backend Rules
 
 - Keep HTTP routes thin: parse input, authenticate, call one service, return.
-  Business logic lives in `services/`, never in routes.
+  Business logic lives in `services/`, never in routes. **Known debt:**
+  `routes/saves.js` (~1,700 lines) violates this; new save logic goes in a
+  service, and touching an existing handler there means moving it out.
 - One capability per service module. Multi-step capabilities get their own
   folder (`extractionEngine/`, `notificationEngine/`, `screenshotAnalyzer/`,
   `mediaProcessor/`, …); single-file services sit directly in `services/`.
@@ -208,16 +225,40 @@ See [`docs/notifications.md`](docs/notifications.md),
 
 ## Frontend Rules
 
-See [ADR 0007](docs/adr/0007-dual-frontend-capacitor-pwa.md).
+See [ADR 0007](docs/adr/0007-dual-frontend-capacitor-pwa.md) (platform),
+[ADR 0012](docs/adr/0012-frontend-feature-folders.md) (organization),
+[ADR 0013](docs/adr/0013-text-first-ui-no-thumbnails.md) (visual rules),
+[ADR 0014](docs/adr/0014-cold-start-is-supply.md) (cold start / Home rails),
+[ADR 0015](docs/adr/0015-intent-lifecycle-and-explore.md) (status, navigation).
 
 - One web codebase (`frontend-app/`) runs in the browser for testing and wraps
   into Android via Capacitor. Keep it that way.
 - Native-only capabilities (share-target intake, background geofencing, FCM
   push) must be **feature-detected** behind `Capacitor.isNativePlatform()` with
   a graceful web fallback, so the browser test loop never breaks.
-- Follow the **canonical design system** in
-  [`docs/design-system.md`](docs/design-system.md): use its forest/ink/linen
-  CSS-variable tokens and type scale; never hardcode colors or font sizes.
+- **Feature folders.** A screen lives in `features/<capability>/`. A helper used
+  by two features moves to `lib/`; a visual element used by two features moves
+  to `components/`. Nothing new goes in a flat `screens/`.
+- **Compose primitives; don't redraw them.** Rows, tiles, chips, buttons, the
+  status control and the bottom nav exist once in `components/`. Inline
+  `style={{…}}` is for a genuinely one-off computed value, never for a repeated
+  element or a colour.
+- **Tokens from `theme.css`, never hex.** The canonical set is in
+  [`docs/design-system.md`](docs/design-system.md): teal accent, four category
+  hues, DM Serif Display + Work Sans. The alias tokens (`--rust`, `--coral`,
+  `--linen`, `--hairline`, `--ink-muted`) are gone — do not reintroduce them.
+- **No thumbnails in lists.** A row is tile · serif title · meta · reason. The
+  saved image is reachable from the item screen's source row only.
+- **Icons are inline SVG via `Icon`.** No emoji in UI chrome, no icon font.
+- **Recommendation rows carry a true reason** or do not render. Home rails hide
+  when empty. Never fill a rail with an LLM-generated place.
+- **Every save exposes its status** (Want to try · Planning · Tried it) through
+  `StatusControl`, bound to `intentStatus` via `PATCH /saves/:id/intent`.
+- **Bottom nav is Home · Explore · + · Saved · Me.** Nearby is Explore's default
+  chip, not a tab.
+- **Dead code is removed, not moved.** A screen no import reaches, a helper
+  defined in more than one file, a CSS class no JSX references — delete it in
+  the change that finds it.
 - For end-to-end feature workflow and patterns, see
   [`docs/code-patterns.md`](docs/code-patterns.md).
 

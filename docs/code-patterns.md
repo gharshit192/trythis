@@ -1,5 +1,13 @@
 # Code Patterns
 
+> **Note (2026-09-02):** the frontend examples below reference the legacy
+> Expo client (`frontend/src/screens/…`). The active client is `frontend-app/`,
+> organized per [ADR 0012](adr/0012-frontend-feature-folders.md); build new
+> screens from the primitives in `src/components/` and the patterns in
+> [`design-system.md`](design-system.md). This document is rewritten against
+> the new structure once the redesign's first feature lands.
+
+
 Step-by-step guide to implementing features end-to-end (backend route → service →
 frontend screen → API integration → tests).
 

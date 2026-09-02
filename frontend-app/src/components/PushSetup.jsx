@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { syncPushSubscription } from '../push';
+import { syncPushSubscription } from '../lib/push';
 
 /**
  * Keeps this browser's push subscription alive. Renders nothing.

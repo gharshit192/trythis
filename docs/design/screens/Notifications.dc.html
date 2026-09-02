@@ -1,0 +1,90 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Work+Sans:wght@400;500;600;700&display=swap">
+  <style>
+    :root{--ink:#15201E;--mute:#6E7B78;--faint:#9BA5A2;--bg:#FAF8F5;--card:#fff;--line:#E7E2DA;
+      --teal:#0E7C7B;--teal-d:#0A5A59;--teal-soft:#E4EFEE;}
+    *{box-sizing:border-box;}
+    body{margin:0;width:390px;height:844px;overflow:hidden;background:var(--bg);
+      font-family:"Work Sans",-apple-system,system-ui,sans-serif;color:var(--ink);}
+    a{color:var(--teal);} a:hover{color:var(--teal-d);}
+  </style>
+</helmet>
+
+<div style="width:390px;height:844px;display:flex;flex-direction:column;background:var(--bg);padding:56px 24px 28px;">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+    <div style="display:flex;align-items:center;gap:14px;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#15201E" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      <h1 style="font-family:'DM Serif Display',Georgia,serif;font-weight:400;font-size:28px;line-height:1.1;margin:0;">For you</h1>
+    </div>
+    <span style="font-size:13px;font-weight:500;color:var(--teal);">Mark all read</span>
+  </div>
+
+  <span style="font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin-bottom:4px;">Right now</span>
+
+  <div style="display:flex;gap:13px;align-items:flex-start;padding:14px 0;border-bottom:1px solid var(--line);">
+    <div style="width:44px;height:44px;border-radius:11px;background:#E4EFEE;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0E7C7B" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-6.5 7-12a7 7 0 0 0-14 0c0 5.5 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:4px;flex-grow:1;min-width:0;">
+      <span style="font-family:'DM Serif Display',Georgia,serif;font-size:17px;line-height:1.25;">You're 400 m from Blue Tokai</span>
+      <span style="font-size:13.5px;color:var(--mute);line-height:1.4;">Saved 12 days ago. Open till 11pm, quiet on weekday afternoons.</span>
+      <div style="display:flex;gap:8px;margin-top:6px;">
+        <span style="font-size:13px;font-weight:600;color:#fff;background:var(--teal);padding:7px 13px;border-radius:9px;">Directions</span>
+        <span style="font-size:13px;font-weight:500;color:var(--mute);padding:7px 10px;">Not today</span>
+      </div>
+    </div>
+    <span style="width:8px;height:8px;border-radius:4px;background:#C45A3C;flex-shrink:0;margin-top:6px;"></span>
+  </div>
+
+  <span style="font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin:20px 0 4px;">This week</span>
+
+  <div style="display:flex;gap:13px;align-items:flex-start;padding:14px 0;border-bottom:1px solid var(--line);">
+    <div style="width:44px;height:44px;border-radius:11px;background:#F6EDD6;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C99425" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:4px;flex-grow:1;min-width:0;">
+      <span style="font-family:'DM Serif Display',Georgia,serif;font-size:17px;line-height:1.25;">Free Saturday? Three things fit.</span>
+      <span style="font-size:13.5px;color:var(--mute);line-height:1.4;">Chandni Chowk parathas, Dilli Haat, then Kunzum &mdash; all within 40 minutes of each other.</span>
+    </div>
+    <span style="width:8px;height:8px;border-radius:4px;background:#C45A3C;flex-shrink:0;margin-top:6px;"></span>
+  </div>
+
+  <div style="display:flex;gap:13px;align-items:flex-start;padding:14px 0;border-bottom:1px solid var(--line);">
+    <div style="width:44px;height:44px;border-radius:11px;background:#F1E7DF;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8B5E3C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14l5-5 4 4 7-7"/><path d="M15 6h5v5"/></svg>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:4px;flex-grow:1;min-width:0;">
+      <span style="font-family:'DM Serif Display',Georgia,serif;font-size:17px;line-height:1.25;">Chikankari kurta dropped to ₹1,600</span>
+      <span style="font-size:13.5px;color:var(--mute);line-height:1.4;">₹200 less than when you saved it.</span>
+    </div>
+  </div>
+
+  <span style="font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin:20px 0 4px;">Earlier</span>
+
+  <div style="display:flex;gap:13px;align-items:flex-start;padding:14px 0;border-bottom:1px solid var(--line);">
+    <div style="width:44px;height:44px;border-radius:11px;background:#E4EFEE;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0E7C7B" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:4px;flex-grow:1;min-width:0;">
+      <span style="font-family:'DM Serif Display',Georgia,serif;font-size:17px;line-height:1.25;color:var(--mute);">Goa in October &mdash; you saved this in June</span>
+      <span style="font-size:13.5px;color:var(--faint);line-height:1.4;">Best weather, lowest prices. Want a plan?</span>
+    </div>
+  </div>
+
+  <div style="margin-top:auto;display:flex;align-items:center;justify-content:center;gap:8px;">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9BA5A2" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+    <span style="font-size:13px;color:var(--faint);">Only when something's worth it. Never more than one a day.</span>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import api from '../api';
-import { setAppBadge } from '../push';
+import { setAppBadge } from '../lib/push';
 
 /**
  * Keeps the app-icon count honest while the app is open. Renders nothing.
