@@ -7,6 +7,7 @@ const screenshotPipeline = require('../services/screenshotPipeline');
 const screenshotAnalyzer = require('../services/screenshotAnalyzer');
 const audioAnalyzer = require('../services/audioAnalyzer');
 const mediaProcessor = require('../services/mediaProcessor');
+const placeResolver = require('../services/placeResolver');
 const thumbnailCache = require('../services/thumbnailCache');
 const autoCollectionEngine = require('../services/autoCollectionEngine');
 const transcription = require('../services/transcription');
@@ -257,6 +258,17 @@ async function processLinkJob(job) {
   );
 
   logger.info(`[processLinkJob] ✓ Save ${save._id} updated: stages=${Object.values(save.processingStages).filter(s => s.completed).length}/2, confidence=${save.confidence}`);
+
+  // Articles and non-video links end here, so link the place now; video saves
+  // get a better location from mediaProcessor, which links them itself.
+  if (!isVideoSource && save.extractedLocation?.name) {
+    try {
+      const placeId = await placeResolver.resolvePlaceForSave(save);
+      if (placeId) { save.placeId = placeId; await save.save(); }
+    } catch (err) {
+      logger.warn(`[processLinkJob] place link failed: ${err.message}`);
+    }
+  }
 
   // Cache thumbnail locally from remote URL
   if (save.thumbnail && !save.thumbnail.startsWith('/static/')) {

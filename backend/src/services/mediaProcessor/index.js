@@ -19,6 +19,7 @@ const claudeService = require('../claudeService');
 const sarvamSpeech = require('../sarvamSpeech');
 const geminiText = require('../geminiText');
 const locationExtractor = require('../locationExtractor');
+const placeResolver = require('../placeResolver');
 const { looksLikeHallucination } = require('../../utils/hallucinationGuard');
 const typeToCategory = require('../../utils/structuredTypeToCategory');
 const { resolveCategory } = typeToCategory;
@@ -781,6 +782,16 @@ const processSave = async (saveId) => {
         update.confidence = Math.max(scored, existing?.confidence || 0);
 
         const updated = await Save.findByIdAndUpdate(saveId, update, { new: true });
+        // The location is final at this point; this is the one stage every reel
+        // passes through, so it is where a save joins the shared Place index.
+        if (updated && !updated.placeId && (updated.extractedLocation?.name || updated.extractedLocation?.city)) {
+          try {
+            const placeId = await placeResolver.resolvePlaceForSave(updated);
+            if (placeId) await Save.updateOne({ _id: saveId }, { $set: { placeId } });
+          } catch (e) {
+            logger.warn(`[mediaProcessor ${saveId}] place link failed: ${e.message}`);
+          }
+        }
         logger.info(`[mediaProcessor ${saveId}] analysis done (type=${analysis.structuredData.type}, tags=${analysis.audioTags.length}, title="${updated.title}")`);
 
         try {

@@ -4,7 +4,7 @@ import Icon from '../../components/Icon';
 import Chip from '../../components/Chip';
 import ListRow from '../../components/ListRow';
 import EmptyState from '../../components/EmptyState';
-import { formatDistance } from '../../lib/format';
+import { formatDistance, distanceMetres } from '../../lib/format';
 import { getCategoryTile } from '../../lib/categoryMeta';
 
 // Explore replaces the Nearby tab (ADR 0015). One screen, every category; the
@@ -49,7 +49,13 @@ export default function Explore({ onNavigate, nearbySaves = [] }) {
           api.getNearbyPlaces(lat, lng, RADIUS_M).catch(() => null),
         ]);
         if (mine?.status === 'success') setNear(mine.saves || []);
-        if (seeded?.status === 'success') setPlaces(seeded.data || seeded.places || []);
+        if (seeded?.status === 'success') {
+          // /places/nearby returns a bounding box without distances; measure here so
+          // seeded rows sort and read like the user's own.
+          setPlaces((seeded.data || seeded.places || [])
+            .map((p) => ({ ...p, distanceMetres: p.geo?.lat != null ? Math.round(distanceMetres(lat, lng, p.geo.lat, p.geo.lng)) : null }))
+            .sort((a, b) => (a.distanceMetres ?? 1e9) - (b.distanceMetres ?? 1e9)));
+        }
         setGeo('ok');
       } finally { setLoading(false); }
     }, () => { setGeo('denied'); setLoading(false); }, { timeout: 10000, maximumAge: 300000 });
@@ -67,7 +73,7 @@ export default function Explore({ onNavigate, nearbySaves = [] }) {
       const seeded = places.filter((p) => !mineIds.has(p._id)).map((p) => ({
         key: p._id, category: p.category, title: p.canonicalName,
         meta: [p.city, ...(p.vibeTags || []).slice(0, 2)].filter(Boolean).join(' · '),
-        reason: p.saveCount >= 5 ? `Saved by ${p.saveCount} people` : 'Worth a look in your city',
+        reason: p.saveCount >= 5 ? `Saved by ${p.saveCount} people` : p.aggregatedTake?.text ? p.aggregatedTake.text.split(/[;.]/)[0].slice(0, 70) : 'Worth a look in your city',
         trail: p.distanceMetres != null ? formatDistance(p.distanceMetres) : undefined, saved: false,
         onClick: () => onNavigate('place', { id: p._id }),
       }));

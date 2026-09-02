@@ -1,16 +1,29 @@
+// Turns a located save into a shared Place record (ADR 0014): the inventory
+// behind Explore's "near you" and "popular". One Place per real-world venue or
+// destination, shared across users; saveCount is how many saves point at it.
 const Place = require('../../models/Place');
 const logger = require('../../utils/logger');
 const { buildCanonicalKey } = require('../../utils/canonicalKey');
 
-const TRAVEL_CATEGORIES = ['travel', 'experience', 'experiences', 'hotels'];
+const TRAVEL_CATEGORIES = ['travel', 'experience', 'experiences', 'hotels', 'hotel'];
+// Anything you go *to*. A recipe, a film or a jacket has a location only by
+// accident and must not become a place.
+const VENUE_CATEGORIES = ['cafe', 'restaurant', 'food', 'street_food', 'shopping', 'market', 'fashion', 'fitness', 'events', 'event'];
 
 function isTravel(save) {
   const cat = String(save?.category || '').toLowerCase();
   const type = String(save?.aiAnalysis?.structuredData?.type || '').toLowerCase();
-  return TRAVEL_CATEGORIES.includes(cat) || type === 'place' || type === 'itinerary';
+  return TRAVEL_CATEGORIES.includes(cat) || type === 'itinerary';
+}
+function isVenue(save) {
+  const cat = String(save?.category || '').toLowerCase();
+  const type = String(save?.aiAnalysis?.structuredData?.type || '').toLowerCase();
+  return VENUE_CATEGORIES.includes(cat) || type === 'place' || type === 'event';
 }
 
 function deriveCategory(save, tags = []) {
+  const cat = String(save?.category || '').toLowerCase();
+  if (isVenue(save) && !isTravel(save)) return VENUE_CATEGORIES.includes(cat) ? cat : 'place';
   const t = tags.map((x) => String(x || '').toLowerCase());
   if (t.some((x) => /waterfall/.test(x))) return 'waterfall';
   if (t.some((x) => /beach/.test(x))) return 'beach';
@@ -26,7 +39,7 @@ function isTakeStale(place) {
   return (Date.now() - new Date(g).getTime()) > TAKE_TTL_DAYS * 864e5;
 }
 
-async function findNearby(loc, metres = 500) {
+async function findNearby(loc, metres = 150) {
   if (loc?.lat == null || loc?.lng == null) return null;
   const d = metres / 111320;
   return Place.findOne({
@@ -36,27 +49,33 @@ async function findNearby(loc, metres = 500) {
   });
 }
 
+// Idempotent per save: a save already linked to a place is never counted twice,
+// so this is safe to call from every stage that can add a location.
 async function resolvePlaceForSave(save) {
   try {
-    if (!isTravel(save)) return null;
+    if (!save || save.placeId) return save?.placeId || null;
+    if (!isTravel(save) && !isVenue(save)) return null;
     const loc = save.extractedLocation || {};
-    const name = loc.name || loc.city;
+    const sdPlace = save.aiAnalysis?.structuredData?.place || {};
+    // A venue needs a venue name; a city alone only makes a place for travel.
+    const name = sdPlace.name || loc.name || (isTravel(save) ? loc.city : null);
     if (!name) return null;
+    const city = loc.city || sdPlace.city || null;
 
-    const key = buildCanonicalKey({ name, city: loc.city, country: loc.country });
+    const key = buildCanonicalKey({ name, city, country: loc.country });
     const tags = Array.isArray(save.tags) ? save.tags.slice(0, 8) : [];
 
     let place = await Place.findOne({ canonicalKey: key });
-    if (!place) place = await findNearby(loc, 500);
+    if (!place) place = await findNearby(loc, isTravel(save) ? 2000 : 150);
 
     if (!place) {
       place = await Place.create({
         canonicalName: name,
         canonicalKey: key,
-        city: loc.city || null,
+        city,
         region: loc.region || null,
         country: loc.country || null,
-        geo: { lat: loc.lat ?? null, lng: loc.lng ?? null },
+        geo: { lat: loc.lat ?? sdPlace.coordinates?.lat ?? null, lng: loc.lng ?? sdPlace.coordinates?.lng ?? null },
         category: deriveCategory(save, tags),
         vibeTags: tags,
         heroThumbnail: save.thumbnail || null,
@@ -65,10 +84,7 @@ async function resolvePlaceForSave(save) {
       });
       logger.info(`[place] created ${place._id} "${name}" key=${key}`);
     } else {
-      const update = {
-        $inc: { saveCount: 1 },
-        $addToSet: { vibeTags: { $each: tags } },
-      };
+      const update = { $inc: { saveCount: 1 }, $addToSet: { vibeTags: { $each: tags } } };
       if (!place.heroThumbnail && save.thumbnail) update.$set = { heroThumbnail: save.thumbnail };
       await Place.updateOne({ _id: place._id }, update);
       logger.info(`[place] linked save to existing ${place._id} (saveCount+1)`);
@@ -76,11 +92,10 @@ async function resolvePlaceForSave(save) {
 
     save.placeId = place._id;
 
-    if (isTakeStale(place)) {
+    if (place.source !== 'seed' && isTakeStale(place)) {
       const { enqueueTakeBuild } = require('../../jobs/buildPlaceTake');
       enqueueTakeBuild(place._id);
     }
-
     return place._id;
   } catch (e) {
     logger.warn(`[place] resolve failed: ${e.message}`);
@@ -88,4 +103,4 @@ async function resolvePlaceForSave(save) {
   }
 }
 
-module.exports = { resolvePlaceForSave, isTravel, deriveCategory };
+module.exports = { resolvePlaceForSave, isTravel, isVenue, deriveCategory };
