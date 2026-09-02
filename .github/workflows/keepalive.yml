@@ -2,12 +2,21 @@ name: Keep backend warm
 
 # Render's free tier spins the service down after ~15 min idle, so a new user's
 # first login waits ~30-50s for a cold start. Pinging /health keeps it warm.
+#
+# The window matters. Free tier allows 750 instance-hours/month across ALL free
+# services; pinging round the clock every 10 min means the service never sleeps
+# and burns ~730h by itself, which is what got the account suspended in Sept 2026.
+# Restricting the ping to waking hours (02:00-17:59 UTC ≈ 07:30-23:30 IST) costs
+# ~490h/month and leaves real headroom. The trade is one ~40s cold start on the
+# first request of the morning.
+#
 # NOTE: GitHub Actions cron can be delayed under load — for guaranteed warmth use
-# an external pinger (cron-job.org / UptimeRobot) on the same /health URL.
+# an external pinger (cron-job.org / UptimeRobot) on the same /health URL, but
+# keep it inside the same hourly window or the quota problem comes straight back.
 
 on:
   schedule:
-    - cron: '*/10 * * * *' # every 10 minutes
+    - cron: '*/10 2-17 * * *' # every 10 min, 07:30-23:30 IST only
   workflow_dispatch: {}
 
 jobs:
