@@ -24,16 +24,8 @@ export default function Home({ onNavigate, payload, nearbySaves = [] }) {
   // empty, so a returning user never pays for them.
   const [templates, setTemplates] = useState([]);
   const [popular, setPopular] = useState([]);
-  const [forYou, setForYou] = useState([]);
   // Plan this weekend (brief §27): only offered when 2+ saved places are within 10 km.
   const [weekend, setWeekend] = useState(null);   // { count, lat, lng }
-  useEffect(() => {
-    if (loading || saves.length < 2 || !navigator.geolocation || localStorage.getItem('location_requested') !== 'true') return;
-    navigator.geolocation.getCurrentPosition((p) => {
-      const { latitude: lat, longitude: lng } = p.coords;
-      api.weekendCandidates(lat, lng).then((r) => { if (r?.status === 'success' && r.data.count >= 2) setWeekend({ count: r.data.count, lat, lng }); }).catch(() => {});
-    }, () => {}, { timeout: 8000, maximumAge: 300000 });
-  }, [loading, saves.length]);
   const [copying, setCopying] = useState(null);
   // Surprise me (brief §15): one pick at a time from places you haven't saved, with a reason.
   const [surprise, setSurprise] = useState(null);       // null | 'loading' | { pool, i }
@@ -51,10 +43,22 @@ export default function Home({ onNavigate, payload, nearbySaves = [] }) {
     if (r?.status === 'success') { setSurpriseSaved(true); load(true); }
   };
 
+  const weekendCheck = (list) => new Promise((resolve) => {
+    if (list.length < 2 || !navigator.geolocation || localStorage.getItem('location_requested') !== 'true') return resolve(null);
+    const done = (v) => { clearTimeout(t); resolve(v); };
+    const t = setTimeout(() => done(null), 2500);
+    navigator.geolocation.getCurrentPosition((p) => {
+      const { latitude: lat, longitude: lng } = p.coords;
+      api.weekendCandidates(lat, lng).then((r) => done(r?.status === 'success' && r.data.count >= 2 ? { count: r.data.count, lat, lng } : null)).catch(() => done(null));
+    }, () => done(null), { timeout: 2000, maximumAge: 300000 });
+  });
   const load = async (force = false) => {
     try {
       const [savesRes, badge] = await Promise.all([api.getSaves({ force }), api.getBadgeCount().catch(() => null)]);
-      if (savesRes?.status === 'success') setSaves(savesRes.data || []);
+      const list = savesRes?.status === 'success' ? (savesRes.data || []) : [];
+      // Everything Home shows arrives together — no sections popping in after paint.
+      setWeekend(await weekendCheck(list));
+      if (savesRes?.status === 'success') setSaves(list);
       const n = badge?.data?.count ?? badge?.count;
       if (typeof n === 'number') setUnread(n);
     } finally {
@@ -62,10 +66,6 @@ export default function Home({ onNavigate, payload, nearbySaves = [] }) {
     }
   };
   useEffect(() => { load(!!payload?.refresh); }, [payload?.refresh]); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    if (loading || !saves.length) return;
-    api.getPicks(4).then((r) => r?.status === 'success' && setForYou((r.data || []).slice(0, 3))).catch(() => {});
-  }, [loading, saves.length]);
   useEffect(() => {
     if (loading || saves.length) return;
     api.getTemplateSaves().then((r) => r?.status === 'success' && setTemplates((r.data || []).slice(0, 6))).catch(() => {});
@@ -204,16 +204,6 @@ export default function Home({ onNavigate, payload, nearbySaves = [] }) {
           </span>
           <Icon name="forward" size={18} />
         </button>
-      )}
-
-      {forYou.length > 0 && (
-        <section style={{ marginBottom: 24 }}>
-          <SectionLabel action="More" onAction={() => onNavigate('explore')}>Made for you</SectionLabel>
-          {forYou.map((p) => (
-            <ListRow key={p._id} category={p.category} title={p.canonicalName} meta={[p.city, ...(p.aggregatedTake?.chips || []).slice(0, 2)].filter(Boolean).join(' · ')}
-              reason={p.reason} onClick={() => onNavigate('place', { id: p._id })} />
-          ))}
-        </section>
       )}
 
       {planning.length > 0 && (

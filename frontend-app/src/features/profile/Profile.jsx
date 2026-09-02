@@ -110,8 +110,7 @@ export default function Profile({ onNavigate }) {
       <div style={{ marginTop: 24 }}><SectionLabel>About you</SectionLabel></div>
       <p style={{ fontSize: 13.5, color: 'var(--mute)', margin: '4px 0 10px', lineHeight: 1.45 }}>Ask, trip plans and nudges use these. Tap again to clear.</p>
       {[
-        ['diet', 'I eat', [['veg', 'Veg'], ['non-veg', 'Non-veg'], ['eggetarian', 'Eggetarian'], ['vegan', 'Vegan']]],
-        ['budget', 'Budget', [['low', '₹'], ['mid', '₹₹'], ['high', '₹₹₹']]],
+        ['budget', 'Budget', [['low', 'Keep it cheap'], ['mid', 'Mid-range'], ['high', 'Happy to splurge']]],
         ['company', 'Usually with', [['partner', 'Partner'], ['friends', 'Friends'], ['family', 'Family'], ['solo', 'Solo']]],
         ['nudgeTime', 'Nudge me in the', [['morning', 'Morning'], ['evening', 'Evening']]],
       ].map(([k, label, opts]) => (
