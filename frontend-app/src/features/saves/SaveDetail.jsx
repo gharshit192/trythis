@@ -8,6 +8,7 @@ import ListRow from '../../components/ListRow';
 import { getCategoryTile } from '../../lib/categoryMeta';
 import { relativeTime } from '../../lib/format';
 import Trip from './Trip';
+import SaveSections from './SaveSections';
 
 // Screenshot saves keep their own (legacy) detail until it is rebuilt.
 const ScreenshotDetail = lazy(() => import('./ScreenshotDetail'));
@@ -179,15 +180,7 @@ export default function SaveDetail({ onNavigate, onBack, payload }) {
           <p style={{ fontSize: 15.5, lineHeight: 1.55, margin: 0 }}>{summary}</p>
         </div>
       )}
-      {(save.aiAnalysis?.keyPoints || []).length > 0 && !summary && (
-        <ul style={{ margin: '0 0 20px', paddingLeft: 18, fontSize: 15, lineHeight: 1.6 }}>{save.aiAnalysis.keyPoints.slice(0, 5).map((k) => <li key={k}>{k}</li>)}</ul>
-      )}
-      {sd.recipe?.isRecipe && (sd.recipe.ingredients || []).length > 0 && (
-        <div style={{ marginBottom: 20 }}>
-          <SectionLabel>{sd.recipe.ingredients.length} ingredients{sd.recipe.cookingTime ? ` · ${sd.recipe.cookingTime}` : ''}</SectionLabel>
-          <p style={{ fontSize: 15, lineHeight: 1.6, margin: 0, color: 'var(--mute)' }}>{sd.recipe.ingredients.slice(0, 12).join(' · ')}</p>
-        </div>
-      )}
+      <SaveSections save={save} />
       {tags.length > 0 && (
         <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap', marginBottom: 22 }}>
           {tags.map((t) => <span key={t} className="wt-chip sm" style={{ cursor: 'default', fontSize: 12.5 }}>{t}</span>)}
