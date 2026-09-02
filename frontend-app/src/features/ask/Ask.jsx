@@ -21,7 +21,7 @@ function Answer({ text }) {
     <div style={{ fontSize: 15.5, lineHeight: 1.55 }}>
       {lines.map((l, i) => {
         const bullet = /^[-•]\s+/.test(l);
-        const t = l.replace(/^[-•]\s+/, '').replace(/\s*\[#\d+\]/g, '');
+        const t = l.replace(/^[-•]\s+/, '').replace(/\s*\[#\d+\]/g, '').replace(/\*\*/g, '');
         return bullet
           ? <div key={i} style={{ display: 'flex', gap: 10, padding: '5px 0' }}><span style={{ color: 'var(--teal)', fontWeight: 600 }}>•</span><span>{t}</span></div>
           : <p key={i} style={{ margin: '0 0 8px' }}>{t}</p>;

@@ -64,8 +64,28 @@ const rank = (saves, question) => {
 const SYSTEM = `You are Wanna Try's memory — the assistant inside an app where the user saves reels, links, screenshots and voice notes of things they want to try (places, food, recipes, trips, products, ideas).
 You answer ONLY from the user's saved items listed below. Every claim must trace to a listed save; never invent places, prices, timings or dishes the saves do not contain. If nothing saved answers the question, say so in one line and suggest what they could save.
 Voice: warm, direct, specific, second person, short. Lead with the answer. Use the user's own wording from their saves. Prefer a short list of 2–4 options with the one detail that helps choose (price, time, distance, why they saved it). Mention status when useful ("you planned this for Saturday", "you tried it and rated it 4/5").
-Reference saves inline by their number like [#3]; put every save you used in saveRefs.
-Return ONLY JSON: {"answer": "<plain text, short paragraphs; list items start with '- '>", "saveRefs": [3, 7], "followUps": ["<short question>", "<short question>"]}`;
+Reference saves inline by their number like [#3]. Plain text only — no markdown bold, no headings.
+Follow-ups are questions the user might ask you next about their saves (e.g. "Which of these is cheapest?"), never offers to do something for them.
+Reply in exactly this shape, nothing else:
+<answer>
+your answer here; list items start with "- "
+</answer>
+<refs>3, 7</refs>
+<followups>
+- first follow-up question
+- second follow-up question
+</followups>`;
+
+// Tagged text instead of JSON: answers carry newlines, quotes and bullets,
+// which the model kept emitting raw inside JSON strings.
+const parseTagged = (text = '') => {
+  const grab = (tag) => (text.match(new RegExp(`<${tag}>([\\s\\S]*?)</${tag}>`)) || [])[1];
+  const answer = (grab('answer') || '').trim();
+  if (!answer) return null;
+  const refs = (grab('refs') || '').split(/[^\d]+/).filter(Boolean).map(Number);
+  const followUps = (grab('followups') || '').split('\n').map((l) => l.replace(/^\s*[-•]\s*/, '').trim()).filter(Boolean);
+  return { answer, saveRefs: refs, followUps };
+};
 
 async function ask({ userId, question, conversationId, user }) {
   const q = clip(question, 600);
@@ -82,11 +102,15 @@ async function ask({ userId, question, conversationId, user }) {
   const prompt = `Today: ${today}${city ? `. User's city: ${city}` : ''}. Saved items: ${saves.length}${picked.length < saves.length ? ` (showing the ${picked.length} most relevant)` : ''}.\n\nSAVES:\n${index || '(nothing saved yet)'}\n\n${history ? `CONVERSATION SO FAR:\n${history}\n\n` : ''}User: ${q}`;
 
   let out = null;
-  try {
-    const res = await client.messages.create({ model: MODEL, max_tokens: 900, temperature: 0.2, system: SYSTEM, messages: [{ role: 'user', content: prompt }] });
-    out = parseJsonSafely(res.content?.[0]?.text || '');
-  } catch (err) {
-    logger.error(`[ask] claude failed: ${err.message}`);
+  for (let attempt = 0; attempt < 2 && !out; attempt += 1) {
+    try {
+      const res = await client.messages.create({ model: MODEL, max_tokens: 900, temperature: 0.2, system: SYSTEM, messages: [{ role: 'user', content: prompt }] });
+      const text = res.content?.[0]?.text || '';
+      out = parseTagged(text) || (parseJsonSafely(text)?.answer ? parseJsonSafely(text) : null);
+      if (!out) logger.warn(`[ask] unparseable reply (attempt ${attempt + 1}): ${text.slice(0, 200)}`);
+    } catch (err) {
+      logger.error(`[ask] claude failed (attempt ${attempt + 1}): ${err.message}`);
+    }
   }
   // Degrade to a plain miss rather than an error screen (AGENTS.md: every AI call degrades gracefully).
   const answer = clip(out?.answer, 4000) || (saves.length ? "I couldn't put that together just now — try asking again in a moment." : 'Nothing saved yet. Share a reel, paste a link, or say it — then ask me anything about it.');
