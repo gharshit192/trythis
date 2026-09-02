@@ -74,11 +74,18 @@ async function processJob(job) {
 
     logger.info(`[UploadWorker] Job ${job._id} completed, save: ${resultSaveId}`);
 
-    await notificationService.sendJobNotification(job.userId, {
-      type: 'JOB_COMPLETED',
-      jobId: job._id,
-      saveId: resultSaveId,
-    });
+    // "Ready" means read, not handed off. A video save is still in media
+    // processing here; mediaProcessor sends the notification when it finishes.
+    const stillProcessing = resultSaveId
+      ? (await Save.findById(resultSaveId).select('processingStatus').lean())?.processingStatus === 'processing'
+      : false;
+    if (!stillProcessing) {
+      await notificationService.sendJobNotification(job.userId, {
+        type: 'JOB_COMPLETED',
+        jobId: job._id,
+        saveId: resultSaveId,
+      });
+    }
   } catch (err) {
     logger.error(`[UploadWorker] Job ${job._id} error: ${err.message}`);
 

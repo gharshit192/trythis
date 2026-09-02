@@ -26,6 +26,21 @@ const TILES = {
   film:        { kind: 'learn', icon: 'film',  label: 'Film' },
   movie:       { kind: 'learn', icon: 'film',  label: 'Film' },
   show:        { kind: 'learn', icon: 'film',  label: 'Show' },
+  // The backend classifier's own labels (plural), alongside the legacy pills.
+  cafes:         { kind: 'place', icon: 'cup',      label: 'Cafe' },
+  restaurants:   { kind: 'food',  icon: 'bowl',     label: 'Restaurant' },
+  recipes:       { kind: 'food',  icon: 'pot',      label: 'Recipe' },
+  experiences:   { kind: 'place', icon: 'pin',      label: 'Experience' },
+  hotels:        { kind: 'place', icon: 'pin',      label: 'Stay' },
+  events:        { kind: 'place', icon: 'calendar', label: 'Event' },
+  entertainment: { kind: 'learn', icon: 'film',     label: 'Watch' },
+  productivity:  { kind: 'learn', icon: 'book',     label: 'Learn' },
+  startups:      { kind: 'learn', icon: 'globe',    label: 'Startups' },
+  finance:       { kind: 'learn', icon: 'trend',    label: 'Finance' },
+  fitness:       { kind: 'place', icon: 'locate',   label: 'Fitness' },
+  wellness:      { kind: 'place', icon: 'locate',   label: 'Wellness' },
+  general:       { kind: 'none',  icon: 'bookmark', label: 'Saved' },
+  other:         { kind: 'none',  icon: 'bookmark', label: 'Saved' },
 };
 const TILE_DEFAULT = { kind: 'none', icon: 'bookmark', label: 'Saved' };
 

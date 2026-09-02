@@ -20,6 +20,7 @@ const sarvamSpeech = require('../sarvamSpeech');
 const geminiText = require('../geminiText');
 const locationExtractor = require('../locationExtractor');
 const placeResolver = require('../placeResolver');
+const notificationService = require('../notificationService');
 const { looksLikeHallucination } = require('../../utils/hallucinationGuard');
 const typeToCategory = require('../../utils/structuredTypeToCategory');
 const { resolveCategory } = typeToCategory;
@@ -468,7 +469,17 @@ const processSave = async (saveId) => {
       update.processingStages = existing.processingStages;
     }
 
-    await Save.findByIdAndUpdate(saveId, update);
+    const doc = await Save.findByIdAndUpdate(saveId, update, { new: true }).select('userId').lean();
+
+    // This is the moment the reel is actually read (or given up on), so this is
+    // where the user hears about it — not when the worker handed it off.
+    if (doc?.userId && (status === 'done' || status === 'partial' || status === 'failed')) {
+      notificationService.sendJobNotification(doc.userId, {
+        type: status === 'failed' ? 'JOB_FAILED' : 'JOB_COMPLETED',
+        saveId,
+        message: status === 'failed' ? 'We could not read that reel. Open it and tap "Read it again".' : undefined,
+      }).catch((e) => logger.warn(`[mediaProcessor ${saveId}] ready notification failed: ${e.message}`));
+    }
   };
 
   // Collected during the run; any entry → final status becomes `partial` so the

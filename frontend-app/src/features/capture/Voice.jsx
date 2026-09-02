@@ -34,6 +34,8 @@ export default function Voice({ onNavigate, onBack }) {
   const [state, setState] = useState('idle');   // idle | recording | uploading | error
   const [seconds, setSeconds] = useState(0);
   const [error, setError] = useState(null);
+  const [typed, setTyped] = useState('');
+  const [typing, setTyping] = useState(false);
   const rec = useRef(null); const chunks = useRef([]); const stream = useRef(null); const speech = useRef(null);
 
   const stopAll = () => {
@@ -69,6 +71,15 @@ export default function Voice({ onNavigate, onBack }) {
   };
 
   const mmss = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+  const submitTyped = async () => {
+    if (!typed.trim()) return;
+    setState('uploading'); setError(null);
+    try {
+      const res = await api.createTextMemory(typed.trim());
+      if (res?.status === 'success') onNavigate('voice-result', { save: res.data });
+      else { setError(res?.error?.message || 'Could not read that.'); setState('error'); }
+    } catch (e) { setError(e.message); setState('error'); }
+  };
 
   return (
     <div className="wt-screen dark">
@@ -93,6 +104,12 @@ export default function Voice({ onNavigate, onBack }) {
         </p>
       </div>
       {error && <div className="wt-note error" style={{ marginTop: 14 }}>{error}</div>}
+      {typing && (
+        <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <textarea className="wt-input" autoFocus value={typed} onChange={(e) => setTyped(e.target.value)} placeholder="Type it instead — Hindi, English, mixed" style={{ minHeight: 96, background: 'rgba(255,255,255,.1)', border: '1px solid rgba(255,255,255,.16)', color: '#fff' }} />
+          <button type="button" onClick={submitTyped} disabled={!typed.trim() || state === 'uploading'} className="wt-btn sm on-dark">{state === 'uploading' ? 'Reading…' : 'Save note'}</button>
+        </div>
+      )}
 
       <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18 }}>
         <button type="button" aria-label={state === 'recording' ? 'Stop' : 'Record'} disabled={state === 'uploading'}
@@ -101,6 +118,7 @@ export default function Voice({ onNavigate, onBack }) {
           {state === 'recording' ? <span style={{ width: 26, height: 26, borderRadius: 6, background: '#E06A4F' }} /> : state === 'uploading' ? <span className="wt-spinner" /> : <span style={{ color: 'var(--teal-d)' }}><Icon name="mic" size={30} stroke={2} /></span>}
         </button>
         <span style={{ fontSize: 13.5, color: 'rgba(255,255,255,.6)' }}>{state === 'recording' ? 'Tap to stop. We\'ll sort out the rest.' : 'Tap to start'}</span>
+        {state !== 'recording' && !typing && <button type="button" onClick={() => setTyping(true)} style={{ background: 'none', border: 0, color: 'var(--sand)', fontSize: 13.5, fontWeight: 600, cursor: 'pointer' }}>Type it instead</button>}
       </div>
       <style>{'@keyframes wt-bob{0%,100%{transform:scaleY(.35)}50%{transform:scaleY(1)}}@media(prefers-reduced-motion:reduce){[style*="wt-bob"]{animation:none!important}}'}</style>
     </div>

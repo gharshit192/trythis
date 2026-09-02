@@ -10,6 +10,14 @@ const voice = {
     invalidateSaves();
     return handle(res);
   },
+  // Same route, no microphone: typed text takes the identical structuring path.
+  async createTextMemory(text) {
+    const fd = new FormData();
+    fd.append('text', text);
+    const res = await fetch(`${API_BASE_URL}/voice`, { method: 'POST', headers: authHeader(), body: fd });
+    invalidateSaves();
+    return handle(res);
+  },
 };
 
 export default voice;

@@ -27,7 +27,19 @@ export default function Extracting({ onNavigate, payload }) {
       const results = await Promise.all(jobIds.map((id) => api.getJobStatus(id).catch(() => null)));
       if (!alive) return;
       const next = {};
-      results.forEach((r, i) => { if (r) next[jobIds[i]] = r; });
+      for (let i = 0; i < results.length; i++) {
+        const r = results[i]; if (!r) continue;
+        // The job completes when the worker hands off; the reel is only *read*
+        // when the save leaves 'processing'. Report the save's state instead.
+        if (r.status === 'COMPLETED' && r.result?.saveId) {
+          const sv = await api.getSaveById(r.result.saveId).catch(() => null);
+          const ps = sv?.data?.processingStatus;
+          if (ps === 'processing' || ps === 'pending') r.status = 'PROCESSING';
+          if (sv?.data?.title) r.result.title = sv.data.title;
+        }
+        next[jobIds[i]] = r;
+      }
+      if (!alive) return;
       setJobs(next);
       setTick((t) => t + 1);
     };

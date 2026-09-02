@@ -137,7 +137,7 @@ const memoryFromAudio = async ({ audioPath, text }) => {
     memoryType: doc.memoryType,
     entities: { people: doc.people, place: doc.place, topic: doc.topic },
     resurfaceAt: doc.resurfaceAt,
-    processingStatus: 'completed',
+    processingStatus: 'done',
     confidence: doc.memoryType === 'note' ? 0.4 : 0.8,
     aiAnalysis: {
       summary: doc.summary,

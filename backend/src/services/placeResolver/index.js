@@ -5,10 +5,12 @@ const Place = require('../../models/Place');
 const logger = require('../../utils/logger');
 const { buildCanonicalKey } = require('../../utils/canonicalKey');
 
-const TRAVEL_CATEGORIES = ['travel', 'experience', 'experiences', 'hotels', 'hotel'];
+const TRAVEL_CATEGORIES = ['travel', 'hotels', 'hotel'];
 // Anything you go *to*. A recipe, a film or a jacket has a location only by
 // accident and must not become a place.
-const VENUE_CATEGORIES = ['cafe', 'restaurant', 'food', 'street_food', 'shopping', 'market', 'fashion', 'fitness', 'events', 'event'];
+// Both spellings: the legacy pills (cafe, restaurant) and the classifier's
+// plurals (cafes, restaurants, experiences, …) live in the same enum.
+const VENUE_CATEGORIES = ['cafe', 'cafes', 'restaurant', 'restaurants', 'food', 'street_food', 'shopping', 'market', 'fashion', 'fitness', 'wellness', 'events', 'event', 'experience', 'experiences', 'entertainment'];
 
 function isTravel(save) {
   const cat = String(save?.category || '').toLowerCase();
@@ -23,7 +25,8 @@ function isVenue(save) {
 
 function deriveCategory(save, tags = []) {
   const cat = String(save?.category || '').toLowerCase();
-  if (isVenue(save) && !isTravel(save)) return VENUE_CATEGORIES.includes(cat) ? cat : 'place';
+  const SINGULAR = { cafes: 'cafe', restaurants: 'restaurant', events: 'event', experiences: 'experience' };
+  if (isVenue(save) && !isTravel(save)) return VENUE_CATEGORIES.includes(cat) ? (SINGULAR[cat] || cat) : 'place';
   const t = tags.map((x) => String(x || '').toLowerCase());
   if (t.some((x) => /waterfall/.test(x))) return 'waterfall';
   if (t.some((x) => /beach/.test(x))) return 'beach';
