@@ -64,7 +64,13 @@ const initializeServer = async () => {
 
       // Start upload worker (runs in all modes)
       console.log('[DEBUG] Starting upload worker...');
-      uploadWorker.start();
+      // A local server pointed at production must not take production's jobs:
+      // it usually lacks ffmpeg/whisper/the AI keys and leaves saves half-read.
+      if (process.env.DISABLE_UPLOAD_WORKER === 'true') {
+        console.log('⏭️  Upload worker skipped (DISABLE_UPLOAD_WORKER=true)');
+      } else {
+        uploadWorker.start();
+      }
       console.log('✅ Upload worker started');
 
       // Re-queue saves stranded mid-pipeline by the last shutdown. processSave
