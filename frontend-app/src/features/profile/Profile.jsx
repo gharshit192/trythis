@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../../api';
 import Icon from '../../components/Icon';
+import PasswordInput from '../../components/PasswordInput';
 import Chip from '../../components/Chip';
 import Button from '../../components/Button';
 import SectionLabel from '../../components/SectionLabel';
@@ -126,8 +127,8 @@ export default function Profile({ onNavigate }) {
       {pw && (
         <div style={{ padding: '12px 0 4px', display: 'flex', flexDirection: 'column', gap: 10 }}>
           {pwMsg && <div className={`wt-note ${pwMsg.includes('updated') ? 'info' : 'error'}`}>{pwMsg}</div>}
-          <input className="wt-input" type="password" placeholder="Current password" value={cur} onChange={(e) => setCur(e.target.value)} autoComplete="current-password" />
-          <input className="wt-input" type="password" placeholder="New password" value={next} onChange={(e) => setNext(e.target.value)} autoComplete="new-password" />
+          <PasswordInput placeholder="Current password" value={cur} onChange={(e) => setCur(e.target.value)} autoComplete="current-password" />
+          <PasswordInput placeholder="New password" value={next} onChange={(e) => setNext(e.target.value)} autoComplete="new-password" />
           <Button small onClick={changePw}>Update</Button>
         </div>
       )}

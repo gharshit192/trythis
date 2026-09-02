@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import api from '../../api';
 import Icon from '../../components/Icon';
+import PasswordInput from '../../components/PasswordInput';
 import Button from '../../components/Button';
 
 export default function Signup({ onNavigate }) {
@@ -43,7 +44,7 @@ export default function Signup({ onNavigate }) {
         <div className="wt-field"><label className="wt-label" htmlFor="email">Email</label>
           <input id="email" className="wt-input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" required /></div>
         <div className="wt-field"><label className="wt-label" htmlFor="password">Password</label>
-          <input id="password" className="wt-input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 8 characters" autoComplete="new-password" required /></div>
+          <PasswordInput id="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 8 characters" autoComplete="new-password" required /></div>
         <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 16, alignItems: 'center' }}>
           <Button type="submit" disabled={loading}>{loading ? 'Creating…' : 'Continue'}</Button>
           <span style={{ fontSize: 14.5, color: 'var(--mute)' }}>Already have an account? <span className="wt-link" onClick={() => onNavigate('login')}>Sign in</span></span>

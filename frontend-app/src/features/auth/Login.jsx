@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import api from '../../api';
 import Icon from '../../components/Icon';
+import PasswordInput from '../../components/PasswordInput';
 import Button from '../../components/Button';
 
 export default function Login({ onNavigate }) {
@@ -114,7 +115,7 @@ export default function Login({ onNavigate }) {
           <div className="wt-field"><label className="wt-label" htmlFor="email">Email</label>
             <input id="email" className="wt-input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" required /></div>
           <div className="wt-field"><div className="row"><label className="wt-label" htmlFor="password">Password</label><span className="wt-link" style={{ fontSize: 13.5 }} onClick={goForgot}>Forgot?</span></div>
-            <input id="password" className="wt-input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" autoComplete="current-password" required /></div>
+            <PasswordInput id="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Your password" autoComplete="current-password" required /></div>
           <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 16, alignItems: 'center' }}>
             <Button type="submit" disabled={loading}>{loading ? 'Signing in…' : 'Sign in'}</Button>
             <span style={{ fontSize: 14.5, color: 'var(--mute)' }}>New here? <span className="wt-link" onClick={() => onNavigate('signup')}>Create an account</span></span>
@@ -144,9 +145,9 @@ export default function Login({ onNavigate }) {
           <div className="wt-field"><label className="wt-label" htmlFor="otp">Code</label>
             <input id="otp" className="wt-input" inputMode="numeric" value={otp} onChange={(e) => setOtp(e.target.value)} placeholder="123456" required /></div>
           <div className="wt-field"><label className="wt-label" htmlFor="newPassword">New password</label>
-            <input id="newPassword" className="wt-input" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="At least 8 characters" autoComplete="new-password" required /></div>
+            <PasswordInput id="newPassword" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="At least 8 characters" autoComplete="new-password" required /></div>
           <div className="wt-field"><label className="wt-label" htmlFor="confirmPassword">Confirm</label>
-            <input id="confirmPassword" className="wt-input" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} autoComplete="new-password" required /></div>
+            <PasswordInput id="confirmPassword" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} autoComplete="new-password" required /></div>
           <div style={{ marginTop: 'auto' }}><Button type="submit" disabled={loading}>{loading ? 'Updating…' : 'Update password'}</Button></div>
         </form>
       )}

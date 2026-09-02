@@ -176,6 +176,7 @@ const ADMIN_CSS = `
   .hint { font-size:12.5px; color:var(--faint); }
   .flash { padding:10px 14px; border-radius:10px; background:var(--teal-soft); color:var(--teal-d); margin-bottom:14px; font-size:14px; }
   .flash.err { background:#F6E3DF; color:#A6392F; }
+  .pw { position:relative; } .pw input { width:100%; padding-right:44px; } .pw button { position:absolute; right:6px; top:50%; transform:translateY(-50%); width:34px; height:34px; border:0; background:none; cursor:pointer; color:var(--faint); font-size:12px; font-weight:600; letter-spacing:.04em; }
   .login { max-width:420px; margin:80px auto; background:var(--card); border:1px solid var(--line); border-radius:16px; padding:30px; }
   .login h1 { font-family:'DM Serif Display',Georgia,serif; font-weight:400; font-size:28px; margin:0 0 4px; }
   .login p { color:var(--mute); margin:0 0 20px; font-size:14.5px; }
@@ -190,9 +191,9 @@ function renderLogin(error) {
     <h1>Blog admin</h1><p>One account writes here. The first sign-in sets its password.</p>
     ${error ? `<div class="flash err">${esc(error)}</div>` : ''}
     <div class="f"><label>Email</label><input name="email" type="email" autocomplete="username" required /></div>
-    <div class="f"><label>Password</label><input name="password" type="password" autocomplete="current-password" required /></div>
+    <div class="f"><label>Password</label><span class="pw"><input name="password" type="password" autocomplete="current-password" required /><button type="button" data-eye aria-label="Show password">SHOW</button></span></div>
     <button class="btn p" type="submit" style="width:100%">Sign in</button>
-  </form>${foot()}`;
+  </form><script>document.querySelectorAll('[data-eye]').forEach(function(b){b.addEventListener('click',function(){var i=b.previousElementSibling;var show=i.type==='password';i.type=show?'text':'password';b.textContent=show?'HIDE':'SHOW';});});</script>${foot()}`;
 }
 
 function renderAdmin({ posts, post, flash, error }) {
@@ -207,8 +208,8 @@ function renderAdmin({ posts, post, flash, error }) {
       ${posts.map((x) => `<a class="item${post && String(x._id) === String(post._id) ? ' on' : ''}" href="${base}/blog/admin/${esc(x.slug)}"><span class="pill${x.status === 'published' ? ' pub' : ''}">${x.status}</span><span>${esc(day(x.publishedAt || x.updatedAt))}</span><b>${esc(x.title)}</b></a>`).join('') || '<p class="hint">No posts yet — write the first one.</p>'}
       <details style="margin-top:16px"><summary class="hint" style="cursor:pointer">Change password</summary>
         <form method="post" action="${base}/blog/admin/password" style="display:flex;flex-direction:column;gap:8px;margin-top:10px">
-          <input name="current" type="password" placeholder="Current password" autocomplete="current-password" required style="font:inherit;padding:9px 10px;border:1px solid var(--line);border-radius:9px" />
-          <input name="next" type="password" placeholder="New password (8+)" autocomplete="new-password" minlength="8" required style="font:inherit;padding:9px 10px;border:1px solid var(--line);border-radius:9px" />
+          <span class="pw"><input name="current" type="password" placeholder="Current password" autocomplete="current-password" required style="font:inherit;padding:9px 10px;border:1px solid var(--line);border-radius:9px" /><button type="button" data-eye aria-label="Show password">SHOW</button></span>
+          <span class="pw"><input name="next" type="password" placeholder="New password (8+)" autocomplete="new-password" minlength="8" required style="font:inherit;padding:9px 10px;border:1px solid var(--line);border-radius:9px" /><button type="button" data-eye aria-label="Show password">SHOW</button></span>
           <button class="btn" type="submit">Update</button>
         </form></details>
     </aside>
@@ -237,7 +238,7 @@ function renderAdmin({ posts, post, flash, error }) {
     (function(){ var t=document.getElementById('title'), s=document.getElementById('slug'); if(!t||!s) return; var touched=!!s.value;
       s.addEventListener('input',function(){touched=!!s.value});
       t.addEventListener('input',function(){ if(touched) return; s.value=t.value.toLowerCase().normalize('NFKD').replace(/[\\u0300-\\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,80); }); })();
-  </script>${foot()}`;
+  </script><script>document.querySelectorAll('[data-eye]').forEach(function(b){b.addEventListener('click',function(){var i=b.previousElementSibling;var show=i.type==='password';i.type=show?'text':'password';b.textContent=show?'HIDE':'SHOW';});});</script>${foot()}`;
 }
 
 module.exports = { renderIndex, renderPost, renderLogin, renderAdmin, sitemap, feed, slugify, render, readingMinutes };
