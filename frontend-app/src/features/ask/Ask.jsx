@@ -76,8 +76,8 @@ export default function Ask({ onNavigate, onBack, payload }) {
   const fresh = () => { setConversationId(null); setMessages([]); setInput(''); };
 
   return (
-    <div className="wt-screen" style={{ paddingBottom: 96 }}>
-      <div className="wt-topbar">
+    <div className="wt-screen" style={{ paddingBottom: 96, paddingTop: 0 }}>
+      <div className="wt-topbar" style={{ position: 'sticky', top: 'calc(-1 * var(--pad-top))', zIndex: 5, background: 'var(--bg)', margin: '0 calc(-1 * var(--pad-screen)) 16px', padding: 'var(--pad-top) var(--pad-screen) 10px', borderBottom: '1px solid var(--line)' }}>
         <button type="button" className="wt-iconbtn" aria-label="Back" onClick={onBack}><Icon name="back" size={22} /></button>
         <span style={{ fontFamily: 'var(--font-display)', fontSize: 19, flex: 1, textAlign: 'center' }}>Ask Wanna Try</span>
         <button type="button" className="wt-iconbtn" aria-label="New chat" onClick={fresh} style={{ visibility: messages.length ? 'visible' : 'hidden' }}><Icon name="plus" size={22} /></button>

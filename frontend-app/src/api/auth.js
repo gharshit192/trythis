@@ -29,6 +29,15 @@ const auth = {
     return data;
   },
 
+  // Email verification (after signup; also from Me). See routes/auth.js.
+  async sendVerification() {
+    const res = await fetch(`${API_BASE_URL}/auth/send-verification`, { method: 'POST', headers: authHeader() });
+    return handle(res);
+  },
+  async verifyEmail(otp) {
+    const res = await fetch(`${API_BASE_URL}/auth/verify-email`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeader() }, body: JSON.stringify({ otp }) });
+    return handle(res);
+  },
   async forgotPassword(email) {
     const res = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
       method: 'POST',

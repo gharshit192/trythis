@@ -1,4 +1,6 @@
 const express = require('express');
+const authMiddleware = require('../middleware/auth');
+const Save = require('../models/Save');
 const router = express.Router();
 const Place = require('../models/Place');
 
@@ -37,11 +39,38 @@ router.get('/nearby', async (req, res) => {
 
 router.get('/:id', async (req, res) => {
   try {
-    const place = await Place.findById(req.params.id).lean();
+    // Opening a place counts as a view — Explore shows 'Saved 12 · 40 views'.
+    const place = await Place.findByIdAndUpdate(req.params.id, { $inc: { viewCount: 1 } }, { new: true }).lean();
     if (!place || place.status !== 'active') {
       return res.status(404).json({ status: 'error', error: { code: 'NOT_FOUND', message: 'Place not found' } });
     }
     res.json({ status: 'success', data: place });
+  } catch (e) {
+    res.status(500).json({ status: 'error', error: { code: 'SERVER_ERROR', message: e.message } });
+  }
+});
+
+// POST /places/:id/save — keep a seeded/shared place as one of your own saves.
+// Idempotent per user; the new save carries the place's take, tags and location
+// so it behaves like anything else you saved (nearby, Ask, reminders).
+router.post('/:id/save', authMiddleware, async (req, res) => {
+  try {
+    const place = await Place.findById(req.params.id).lean();
+    if (!place || place.status !== 'active') return res.status(404).json({ status: 'error', error: { code: 'NOT_FOUND', message: 'Place not found' } });
+    const existing = await Save.findOne({ userId: req.user.id, 'metadata.placeId': String(place._id), status: 'active' }).select('_id').lean();
+    if (existing) return res.json({ status: 'success', data: { saveId: existing._id, alreadySaved: true } });
+    const allowed = Save.schema.path('category').enumValues || [];
+    const category = allowed.includes(place.category) ? place.category : (allowed.includes('experience') ? 'experience' : allowed[0]);
+    const save = await Save.create({
+      userId: req.user.id, title: place.canonicalName, category, source: 'manual', contentType: 'manual',
+      url: null, tags: (place.vibeTags || []).slice(0, 8), intentStatus: 'saved', processingStatus: 'done',
+      description: place.aggregatedTake?.text || '',
+      aiAnalysis: { summary: place.aggregatedTake?.text || null, keyPoints: (place.aggregatedTake?.chips || []).slice(0, 6), confidence: 0.6 },
+      extractedLocation: { name: place.canonicalName, city: place.city, country: place.country, lat: place.geo?.lat ?? null, lng: place.geo?.lng ?? null },
+      metadata: { placeId: String(place._id), fromExplore: true },
+    });
+    await Place.updateOne({ _id: place._id }, { $inc: { saveCount: 1 } });
+    res.status(201).json({ status: 'success', data: { saveId: save._id, alreadySaved: false } });
   } catch (e) {
     res.status(500).json({ status: 'error', error: { code: 'SERVER_ERROR', message: e.message } });
   }

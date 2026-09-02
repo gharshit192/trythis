@@ -25,6 +25,7 @@ const placeSchema = new mongoose.Schema({
   },
 
   saveCount: { type: Number, default: 0, index: true },
+  viewCount: { type: Number, default: 0 },
   heroThumbnail: { type: String, default: null },
 
   googleReviews: { items: { type: Array, default: [] }, fetchedAt: { type: Date, default: null } },

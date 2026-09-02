@@ -18,7 +18,7 @@ export default function Signup({ onNavigate }) {
     try {
       const result = await api.signup(email, password, name);
       if (result.status === 'success') {
-        onNavigate('onboarding-city');
+        onNavigate('verify-email', { fromSignup: true, next: 'onboarding-city' });
       } else {
         setError(result.error?.message || 'Signup failed');
       }

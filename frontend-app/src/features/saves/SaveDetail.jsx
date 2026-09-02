@@ -38,12 +38,21 @@ const mapsHref = (save) => {
 const sourceLabel = (s) => ({ instagram: 'a reel', youtube: 'a video', tiktok: 'a video', web: 'an article', url: 'a link', pinterest: 'a pin', manual: 'a note', voice: 'a voice note' }[s] || 'a link');
 const handleOf = (save) => save?.metadata?.authorHandle || save?.author || save?.aiAnalysis?.author || null;
 
+// A short, opinionated starter set; 'Other…' adds anything. Tags feed search,
+// Ask and (later) auto-collections.
+const PRESET_TAGS = ['date night', 'weekend', 'with friends', 'family', 'solo', 'budget', 'splurge', 'quick', 'healthy', 'gift', 'work', 'must try'];
+
 export default function SaveDetail({ onNavigate, onBack, payload }) {
   const id = payload?.id;
   const [save, setSave] = useState(null);
   const [recs, setRecs] = useState([]);
   const [error, setError] = useState(null);
   const [menu, setMenu] = useState(false);
+  const [renameOpen, setRenameOpen] = useState(false);
+  const [draftTitle, setDraftTitle] = useState('');
+  const [tagsOpen, setTagsOpen] = useState(false);
+  const [draftTags, setDraftTags] = useState([]);
+  const [customTag, setCustomTag] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState('');
@@ -83,6 +92,17 @@ export default function SaveDetail({ onNavigate, onBack, payload }) {
     if ((save.notes || '') === note) return;
     const r = await api.patchSave(id, { notes: note }).catch(() => null);
     if (r?.status === 'success') { setSave(r.data); flash('Note saved'); }
+  };
+  const saveTitle = async () => {
+    const title = draftTitle.trim(); setRenameOpen(false);
+    if (!title || title === save.title) return;
+    const r = await api.patchSave(id, { title }).catch(() => null);
+    if (r?.status === 'success') { setSave(r.data); flash('Renamed'); } else flash('Could not rename');
+  };
+  const saveTags = async () => {
+    setTagsOpen(false);
+    const r = await api.patchSave(id, { tags: draftTags }).catch(() => null);
+    if (r?.status === 'success') { setSave(r.data); flash('Tags saved'); } else flash('Could not save tags');
   };
   const share = async () => {
     setMenu(false); setBusy(true);
@@ -128,9 +148,44 @@ export default function SaveDetail({ onNavigate, onBack, payload }) {
       <div onClick={(e) => e.stopPropagation()}>
         <div className="grab" />
         <button type="button" className="wt-menu-row" onClick={share}><Icon name="share" size={20} />Share</button>
+        <button type="button" className="wt-menu-row" onClick={() => { setMenu(false); setDraftTitle(save.title || ''); setRenameOpen(true); }}><Icon name="edit" size={20} />Rename</button>
+        <button type="button" className="wt-menu-row" onClick={() => { setMenu(false); setDraftTags(save.tags || []); setTagsOpen(true); }}><Icon name="folder" size={20} />Edit tags</button>
         {save.url && <a className="wt-menu-row" href={save.url} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}><Icon name="link" size={20} />Open the original</a>}
         {(save.processingStatus === 'failed' || save.processingStatus === 'partial' || save.source === 'voice') && <button type="button" className="wt-menu-row" onClick={retry}><Icon name="sparkle" size={20} />Read it again</button>}
         <button type="button" className="wt-menu-row danger" onClick={() => { setMenu(false); setConfirmDelete(true); }}><Icon name="close" size={20} />Delete</button>
+      </div>
+    </div>
+  );
+  const renameSheet = renameOpen && (
+    <div className="wt-sheet" onClick={() => setRenameOpen(false)}>
+      <div onClick={(e) => e.stopPropagation()}>
+        <div className="grab" />
+        <p style={{ fontFamily: 'var(--font-display)', fontSize: 20, margin: '0 0 12px' }}>Rename</p>
+        <input className="wt-input" autoFocus value={draftTitle} onChange={(e) => setDraftTitle(e.target.value)} maxLength={140} style={{ marginBottom: 12 }} onKeyDown={(e) => e.key === 'Enter' && saveTitle()} />
+        <div style={{ display: 'flex', gap: 10 }}>
+          <Button small variant="secondary" onClick={() => setRenameOpen(false)}>Cancel</Button>
+          <Button small onClick={saveTitle} disabled={!draftTitle.trim() || draftTitle.trim() === save.title}>Save</Button>
+        </div>
+      </div>
+    </div>
+  );
+  const tagsSheet = tagsOpen && (
+    <div className="wt-sheet" onClick={() => setTagsOpen(false)}>
+      <div onClick={(e) => e.stopPropagation()}>
+        <div className="grab" />
+        <p style={{ fontFamily: 'var(--font-display)', fontSize: 20, margin: '0 0 4px' }}>Tags</p>
+        <p className="wt-sub" style={{ marginBottom: 14 }}>A few that help you find it later. Pick, or add your own.</p>
+        <div className="wt-chips" style={{ flexWrap: 'wrap', marginBottom: 12 }}>
+          {[...new Set([...PRESET_TAGS, ...draftTags])].map((t) => <Chip key={t} small on={draftTags.includes(t)} onClick={() => setDraftTags((xs) => xs.includes(t) ? xs.filter((x) => x !== t) : [...xs, t])}>{t}</Chip>)}
+        </div>
+        <form onSubmit={(e) => { e.preventDefault(); const t = customTag.trim().toLowerCase().replace(/^#/, '').slice(0, 24); if (t && !draftTags.includes(t)) setDraftTags((xs) => [...xs, t]); setCustomTag(''); }} style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+          <input className="wt-input" value={customTag} onChange={(e) => setCustomTag(e.target.value)} placeholder="Other…" style={{ flex: 1 }} />
+          <Button small variant="secondary" type="submit" disabled={!customTag.trim()} style={{ width: 'auto', padding: '0 16px' }}>Add</Button>
+        </form>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <Button small variant="secondary" onClick={() => setTagsOpen(false)}>Cancel</Button>
+          <Button small onClick={saveTags}>Save tags</Button>
+        </div>
       </div>
     </div>
   );
@@ -149,7 +204,7 @@ export default function SaveDetail({ onNavigate, onBack, payload }) {
   );
 
   if (isTravel) {
-    return <>{menuSheet}{deleteSheet}<Trip save={save} onNavigate={onNavigate} onBack={onBack} onMore={() => setMenu(true)} onShare={share} statusControl={status} /></>;
+    return <>{menuSheet}{deleteSheet}{renameSheet}{tagsSheet}<Trip save={save} onNavigate={onNavigate} onBack={onBack} onMore={() => setMenu(true)} onShare={share} statusControl={status} /></>;
   }
 
   const summary = save.aiAnalysis?.summary && !looksHallucinated(save.aiAnalysis.summary) ? save.aiAnalysis.summary : (save.description && !looksHallucinated(save.description) ? save.description : null);
@@ -169,7 +224,7 @@ export default function SaveDetail({ onNavigate, onBack, payload }) {
 
   return (
     <div className="wt-screen">
-      {menuSheet}{deleteSheet}
+      {menuSheet}{deleteSheet}{renameSheet}{tagsSheet}
       {toast && <div style={{ position: 'fixed', left: '50%', bottom: 90, transform: 'translateX(-50%)', background: 'var(--ink)', color: '#fff', padding: '9px 14px', borderRadius: 10, fontSize: 13.5, zIndex: 70 }}>{toast}</div>}
 
       <div className="wt-topbar">

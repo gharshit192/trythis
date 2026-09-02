@@ -94,6 +94,7 @@ export default function Profile({ onNavigate }) {
       {note && <div className="wt-note info" style={{ marginTop: 12 }}>{note}</div>}
 
       <div style={{ marginTop: 24 }}><SectionLabel>Account</SectionLabel></div>
+      {user.emailVerified === false && <Row icon="bell" kind="shop" title="Verify your email" sub="For password reset and nudges by mail" onClick={() => onNavigate('verify-email', { next: 'profile' })} right={<Icon name="forward" size={18} style={{ color: 'var(--faint)' }} />} />}
       <Row icon="lock" title="Change password" onClick={() => setPw((v) => !v)} right={<Icon name="forward" size={18} style={{ color: 'var(--faint)' }} />} />
       {pw && (
         <div style={{ padding: '12px 0 4px', display: 'flex', flexDirection: 'column', gap: 10 }}>

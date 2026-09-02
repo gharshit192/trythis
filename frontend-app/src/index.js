@@ -8,6 +8,10 @@ import { configureCapacitorRuntime } from './lib/capacitorRuntime';
 
 configureCapacitorRuntime();
 
+// Wake the API before React even mounts: on a sleeping free-tier server this
+// buys the first real request a few seconds. Fire-and-forget.
+try { fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:4000'}/health`, { mode: 'cors', cache: 'no-store' }).catch(() => {}); } catch {}
+
 // Register the service worker early so it's ready when the user opts into push.
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {

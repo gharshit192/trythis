@@ -12,6 +12,39 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+// One way out for every email. Resend (RESEND_API_KEY) first — no SDK, just
+// their REST call; SMTP if that's what's configured; otherwise log and report
+// false so callers can tell the user the mail did not go.
+const sendEmail = async ({ to, subject, html, text }) => {
+  const from = process.env.RESEND_FROM || process.env.EMAIL_FROM || 'Wanna Try <onboarding@resend.dev>';
+  if (process.env.RESEND_API_KEY) {
+    const r = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from, to: [to], subject, html, text }),
+    });
+    if (!r.ok) { logger.error(`[email] resend ${r.status}: ${(await r.text()).slice(0, 200)}`); return false; }
+    return true;
+  }
+  if (process.env.SMTP_HOST) {
+    await transporter.sendMail({ from, to, subject, html, text });
+    return true;
+  }
+  logger.warn(`[email] no RESEND_API_KEY or SMTP_HOST — not sending "${subject}" to ${to}`);
+  return false;
+};
+
+const sendVerificationEmail = async (user, otp) => sendEmail({
+  to: user.email,
+  subject: `${otp} is your Wanna Try code`,
+  text: `Your Wanna Try verification code is ${otp}. It expires in 15 minutes.`,
+  html: `<div style="font-family:-apple-system,system-ui,sans-serif;max-width:480px;margin:0 auto;padding:28px 24px;color:#15201E">
+    <p style="font-size:20px;font-family:Georgia,serif;color:#0A5A59;margin:0 0 18px">Wanna Try</p>
+    <p style="font-size:15px;margin:0 0 14px">Hi${user.name ? ` ${user.name.split(' ')[0]}` : ''}, here's your code:</p>
+    <p style="font-size:34px;letter-spacing:.3em;font-weight:600;margin:0 0 14px;color:#0E7C7B">${otp}</p>
+    <p style="font-size:13.5px;color:#6E7B78;margin:0">It expires in 15 minutes. If you didn't sign up, ignore this.</p></div>`,
+});
+
 const sendNotificationEmail = async (user, notification) => {
   try {
     if (!user.email) {
@@ -65,6 +98,8 @@ const sendNotificationEmail = async (user, notification) => {
 };
 
 module.exports = {
+  sendEmail,
+  sendVerificationEmail,
   sendNotificationEmail,
   transporter,
 };

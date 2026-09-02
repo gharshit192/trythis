@@ -9,7 +9,7 @@ import Chip from '../../components/Chip';
 // go to the async pipeline and land on the "reading your reels" screen.
 const MODES = [
   { key: 'links',  icon: 'link',      kind: 'learn', title: 'Paste links',        text: 'Reels, Shorts, articles — one per line' },
-  { key: 'shots',  icon: 'image',     kind: 'shop',  title: 'Upload screenshots', text: 'Menus, chats, lists — we read the text' },
+  { key: 'shots',  icon: 'image',     kind: 'shop',  title: 'Upload bills & screenshots', text: 'Bills, invoices, menus, chats — we read them and remind you' },
   { key: 'voice',  icon: 'mic',       kind: 'place', title: 'Remember this',      text: 'Say it in Hindi, English or mixed' },
   { key: 'share',  icon: 'instagram', kind: 'food',  title: 'Share from Instagram', text: 'Open a reel → Share → Wanna Try' },
 ];
@@ -60,8 +60,29 @@ function CollectionPick({ collections, value, onChange }) {
   );
 }
 
+const platformOf = (u) => /instagram\.com/.test(u) ? { label: 'Instagram', icon: 'instagram' }
+  : /youtu\.?be/.test(u) ? { label: /shorts\//.test(u) ? 'Short' : 'YouTube', icon: 'play' }
+  : /tiktok\.com/.test(u) ? { label: 'TikTok', icon: 'play' }
+  : /pinterest\./.test(u) ? { label: 'Pinterest', icon: 'image' }
+  : /(zomato|swiggy|dineout|eazydiner)\./.test(u) ? { label: 'Restaurant', icon: 'bowl' }
+  : /(amazon|flipkart|myntra|nykaa|ajio|meesho)\./.test(u) ? { label: 'Shop', icon: 'bag' }
+  : /maps\.(google|app)|goo\.gl\/maps|g\.co\/kgs/.test(u) ? { label: 'Map', icon: 'pin' }
+  : { label: 'Link', icon: 'link' };
+
 function Links({ onBack, onNavigate, collections, onboarding }) {
   const [text, setText] = useState('');
+  const [pasted, setPasted] = useState(false);
+  // One tap instead of long-press → paste: read the clipboard, keep only the links,
+  // dedupe against what's already in the box.
+  const pasteFromClipboard = async () => {
+    try {
+      const clip = await navigator.clipboard.readText();
+      const found = urlsIn(clip);
+      if (!found.length) { setError(clip.trim() ? 'No links in your clipboard — copy a reel or an article first.' : 'Your clipboard is empty.'); return; }
+      setError(null); setPasted(true);
+      setText((t) => [...new Set([...urlsIn(t), ...found])].join('\n'));
+    } catch { setError("Couldn't read the clipboard — paste into the box instead."); }
+  };
   const [col, setCol] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
@@ -86,10 +107,29 @@ function Links({ onBack, onNavigate, collections, onboarding }) {
         <button type="button" className="wt-iconbtn" aria-label="Back" onClick={onBack}><Icon name="back" size={22} /></button>
       </div>
       <h1 className="wt-title lg" style={{ marginBottom: 9 }}>Paste links</h1>
-      <p className="wt-sub" style={{ marginBottom: 22 }}>As many as you like, one per line. We read each one.</p>
+      <p className="wt-sub" style={{ marginBottom: 18 }}>Copy a reel, a Short, an article — or a whole chat full of them. We pick out every link.</p>
       {error && <div className="wt-note error">{error}</div>}
-      <textarea className="wt-input" autoFocus value={text} onChange={(e) => setText(e.target.value)} placeholder={'https://www.instagram.com/reel/…\nhttps://youtube.com/shorts/…'} style={{ minHeight: 150, marginBottom: 12 }} />
-      <span style={{ fontSize: 13, color: 'var(--faint)', marginBottom: 18 }}>{urls.length ? `${urls.length} link${urls.length === 1 ? '' : 's'} found` : ' '}</span>
+      {navigator.clipboard?.readText && (
+        <button type="button" onClick={pasteFromClipboard}
+          style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', marginBottom: 12, padding: '13px 14px', borderRadius: 12, background: 'var(--teal-soft)', border: 0, color: 'var(--teal-d)', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' }}>
+          <Icon name="link" size={18} />
+          <span style={{ flex: 1, fontSize: 14.5, fontWeight: 500 }}>{pasted ? 'Paste again from clipboard' : 'Paste from clipboard'}</span>
+          <Icon name="forward" size={16} />
+        </button>
+      )}
+      <textarea className="wt-input" autoFocus={!navigator.clipboard?.readText} value={text} onChange={(e) => setText(e.target.value)} placeholder={'https://www.instagram.com/reel/…\nhttps://youtube.com/shorts/…'} style={{ minHeight: 120, marginBottom: 12 }} />
+      {urls.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 18 }}>
+          {urls.slice(0, 8).map((u) => { const p = platformOf(u); return (
+            <div key={u} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', borderRadius: 11, background: 'var(--card)', border: '1px solid var(--line)' }}>
+              <span style={{ color: 'var(--teal)' }}><Icon name={p.icon} size={17} /></span>
+              <span style={{ fontSize: 13.5, fontWeight: 600, flexShrink: 0 }}>{p.label}</span>
+              <span style={{ fontSize: 12.5, color: 'var(--faint)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{u.replace(/^https?:\/\/(www\.)?/, '')}</span>
+              <button type="button" aria-label="Remove" onClick={() => setText((t) => t.split(/\s+/).filter((x) => x !== u).join('\n'))} style={{ background: 'none', border: 0, color: 'var(--faint)', cursor: 'pointer', padding: 0, display: 'flex' }}><Icon name="close" size={16} /></button>
+            </div>); })}
+          {urls.length > 8 && <span style={{ fontSize: 13, color: 'var(--faint)' }}>and {urls.length - 8} more</span>}
+        </div>
+      )}
       <CollectionPick collections={collections} value={col} onChange={setCol} />
       <div style={{ marginTop: 'auto' }}>
         <Button onClick={submit} disabled={busy || !urls.length}>{busy ? 'Sending…' : urls.length > 1 ? `Read ${urls.length} links` : 'Read it'}</Button>
@@ -128,7 +168,7 @@ function Shots({ onBack, onNavigate, collections }) {
       <div className="wt-topbar">
         <button type="button" className="wt-iconbtn" aria-label="Back" onClick={onBack}><Icon name="back" size={22} /></button>
       </div>
-      <h1 className="wt-title lg" style={{ marginBottom: 9 }}>Upload screenshots</h1>
+      <h1 className="wt-title lg" style={{ marginBottom: 9 }}>Bills, invoices,<br />screenshots</h1>
       <p className="wt-sub" style={{ marginBottom: 22 }}>Up to ten. A menu, a chat, a list — we read every line.</p>
       {error && <div className="wt-note error">{error}</div>}
       <input ref={input} type="file" accept="image/png,image/jpeg,image/webp" multiple hidden onChange={(e) => pick(e.target.files)} />

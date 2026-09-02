@@ -36,6 +36,7 @@ const MultiExtract = lazy(() => import('../features/capture/MultiExtract'));
 const Voice = lazy(() => import('../features/capture/Voice'));
 const VoiceResult = lazy(() => import('../features/capture/VoiceResult'));
 const Ask = lazy(() => import('../features/ask/Ask'));
+const VerifyEmail = lazy(() => import('../features/auth/VerifyEmail'));
 const SaveDetail = lazy(() => import('../features/saves/SaveDetail'));
 const Itinerary = lazy(() => import('../features/saves/Itinerary'));
 const Profile = lazy(() => import('../features/profile/Profile'));
@@ -187,7 +188,7 @@ function App() {
     // Onboarding flow disabled — no forced redirect after login/signup.
 
     // Check if trying to access protected screen without auth
-    const protectedScreens = ['home', 'save-detail', 'savedList', 'search', 'collections', 'saved', 'tried', 'place', 'profile', 'notifications', 'nearby', 'explore', 'itinerary', 'extracting', 'starter', 'multi-extract', 'voice', 'voice-result', 'ask'];
+    const protectedScreens = ['home', 'save-detail', 'savedList', 'search', 'collections', 'saved', 'tried', 'place', 'profile', 'notifications', 'nearby', 'explore', 'itinerary', 'extracting', 'starter', 'multi-extract', 'voice', 'voice-result', 'ask', 'verify-email'];
     if (protectedScreens.includes(screen) && !localStorage.getItem('auth_token')) {
       setCurrentScreen('welcome');
       return;
@@ -285,6 +286,7 @@ function App() {
     'voice': <Voice {...props} />,
     'voice-result': <VoiceResult {...props} />,
     'ask': <Ask {...props} />,
+    'verify-email': <VerifyEmail {...props} />,
     'screenshot-summary': <ScreenshotSummary {...props} sessionId={payload?.sessionId} summary={payload?.summary} thumbnails={payload?.thumbnails || []} saveId={payload?.saveId} autoSaved={payload?.autoSaved} />,
     'collections': <Collections {...props} />,
     'collection-detail': <CollectionDetail {...props} />,

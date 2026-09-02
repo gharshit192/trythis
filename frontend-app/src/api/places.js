@@ -1,4 +1,4 @@
-import { API_BASE_URL, handle } from './client';
+import { API_BASE_URL, authHeader, handle, invalidateSaves } from './client';
 
 const places = {
   async getPlace(id) {
@@ -13,6 +13,13 @@ const places = {
 
   async getTrendingPlaces(limit = 10) {
     const res = await fetch(`${API_BASE_URL}/places/trending?limit=${limit}`);
+    return handle(res);
+  },
+
+  // Keep a seeded/shared place as one of your own saves (Explore's bookmark).
+  async savePlace(id) {
+    const res = await fetch(`${API_BASE_URL}/places/${id}/save`, { method: 'POST', headers: authHeader() });
+    invalidateSaves();
     return handle(res);
   },
 

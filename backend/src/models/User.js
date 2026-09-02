@@ -38,6 +38,9 @@ const userSchema = new mongoose.Schema(
       deviceType: String,
       location: String,
     },
+    emailVerified: { type: Boolean, default: false },
+    emailVerifyOtp: { type: String, default: null },
+    emailVerifyExpires: { type: Date, default: null },
     passwordResetOtp: { type: String, default: null },
     passwordResetExpires: { type: Date, default: null },
 

@@ -5,6 +5,7 @@ const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const User = require('../models/User');
 const authMiddleware = require('../middleware/auth');
+const { sendVerificationEmail } = require('../services/emailService');
 const { loginLimiter, signupLimiter, forgotPasswordLimiter } = require('../middleware/rateLimiter');
 const logger = require('../utils/logger');
 
@@ -104,10 +105,11 @@ router.post('/signup', signupLimiter, async (req, res) => {
     );
 
     logger.info(`✅ User signed up: ${email}`);
+    issueVerificationCode(user).catch((e) => logger.warn(`[auth] verification mail failed: ${e.message}`));
     res.status(201).json({
       status: 'success',
       data: {
-        user: { id: user._id, email: user.email, name: user.name, createdAt: user.createdAt, onboarding: user.onboarding },
+        user: { id: user._id, email: user.email, name: user.name, createdAt: user.createdAt, onboarding: user.onboarding, emailVerified: false },
         token,
       },
     });
@@ -170,7 +172,7 @@ router.post('/login', loginLimiter, async (req, res) => {
     res.json({
       status: 'success',
       data: {
-        user: { id: user._id, email: user.email, name: user.name, createdAt: user.createdAt, onboarding: user.onboarding },
+        user: { id: user._id, email: user.email, name: user.name, emailVerified: user.emailVerified !== false, createdAt: user.createdAt, onboarding: user.onboarding },
         token,
       },
     });
@@ -180,6 +182,57 @@ router.post('/login', loginLimiter, async (req, res) => {
       status: 'error',
       error: { code: 'SERVER_ERROR', message: 'Login failed' },
     });
+  }
+});
+
+
+// ── Email verification: 6-digit code, 15 minutes, hashed at rest (same shape
+// as password reset). Send returns whether a mail actually went out so the
+// app can say so instead of pretending.
+const issueVerificationCode = async (user) => {
+  const otp = generateOtp();
+  user.emailVerifyOtp = await bcrypt.hash(otp, 10);
+  user.emailVerifyExpires = new Date(Date.now() + OTP_TTL_MS);
+  await user.save();
+  const sent = await sendVerificationEmail(user, otp);
+  if (!sent) logger.info(`🔑 Email verification code for ${user.email}: ${otp}`);
+  return { sent, otp };
+};
+
+router.post('/send-verification', authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ status: 'error', error: { code: 'NOT_FOUND', message: 'User not found' } });
+    if (user.emailVerified) return res.json({ status: 'success', data: { verified: true, sent: false } });
+    const { sent, otp } = await issueVerificationCode(user);
+    const data = { verified: false, sent };
+    if (!isProd()) data.otp = otp;
+    res.json({ status: 'success', data });
+  } catch (e) {
+    res.status(500).json({ status: 'error', error: { code: 'SERVER_ERROR', message: e.message } });
+  }
+});
+
+router.post('/verify-email', authMiddleware, async (req, res) => {
+  try {
+    const otp = String(req.body?.otp || '').trim();
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ status: 'error', error: { code: 'NOT_FOUND', message: 'User not found' } });
+    if (user.emailVerified) return res.json({ status: 'success', data: { verified: true } });
+    const bypass = !isProd() && otp === DEV_BYPASS_OTP;
+    if (!bypass) {
+      if (!user.emailVerifyOtp || !user.emailVerifyExpires || user.emailVerifyExpires < new Date()) {
+        return res.status(400).json({ status: 'error', error: { code: 'OTP_EXPIRED', message: 'That code has expired. Send a new one.' } });
+      }
+      if (!(await bcrypt.compare(otp, user.emailVerifyOtp))) {
+        return res.status(400).json({ status: 'error', error: { code: 'OTP_INVALID', message: "That code doesn't match." } });
+      }
+    }
+    user.emailVerified = true; user.emailVerifyOtp = null; user.emailVerifyExpires = null;
+    await user.save();
+    res.json({ status: 'success', data: { verified: true } });
+  } catch (e) {
+    res.status(500).json({ status: 'error', error: { code: 'SERVER_ERROR', message: e.message } });
   }
 });
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import api from '../../api';
 import Chip from '../../components/Chip';
 import SearchBar from '../../components/SearchBar';
@@ -47,6 +47,17 @@ export default function Saved({ onNavigate, payload, nearbySaves = [] }) {
   const needle = q.trim().toLowerCase();
   const matches = (s) => !needle || [s.title, s.extractedLocation?.name, s.extractedLocation?.city, s.aiAnalysis?.summary, ...(s.tags || [])]
     .filter(Boolean).join(' ').toLowerCase().includes(needle);
+  // Long lists render a page at a time; the sentinel at the bottom loads the next
+  // page as it scrolls into view — no button.
+  const PAGE = 20;
+  const [limit, setLimit] = useState(PAGE);
+  const sentinel = useRef(null);
+  useEffect(() => { setLimit(PAGE); }, [tab, kind, q]);
+  useEffect(() => {
+    const el = sentinel.current; if (!el) return undefined;
+    const io = new IntersectionObserver((es) => { if (es.some((e) => e.isIntersecting)) setLimit((l) => l + PAGE); }, { rootMargin: '200px' });
+    io.observe(el); return () => io.disconnect();
+  });
   const rows = saves
     .filter(matches)
     .filter((s) => (s.intentStatus || 'saved') === tab)
@@ -86,10 +97,11 @@ export default function Saved({ onNavigate, payload, nearbySaves = [] }) {
           title={needle ? 'Nothing matches' : tab === 'tried' ? 'Nothing tried yet' : tab === 'planned' ? 'Nothing planned' : 'Nothing saved yet'}
           text={needle ? 'Try a place, a dish, a creator, or a word from the reel.' : tab === 'tried' ? 'When you go, mark it tried on the item and it lands here.' : tab === 'planned' ? 'Move a save to Planning when you mean to go soon.' : 'Share a reel or paste a link to start your list.'}
           action={tab === 'saved' ? 'Add a save' : undefined} onAction={() => onNavigate('add-save')} />
-      ) : rows.map((s) => (
+      ) : rows.slice(0, limit).map((s) => (
         <ListRow key={s._id} category={s.category} title={s.title} meta={metaOf(s)} trail={shortAge(s.createdAt)}
           onClick={() => onNavigate('save-detail', { id: s._id })} />
       ))}
+      {rows.length > limit && <div ref={sentinel} style={{ padding: 18, textAlign: 'center', fontSize: 13, color: 'var(--faint)' }}>{rows.length - limit} more…</div>}
     </div>
   );
 }
