@@ -24,9 +24,9 @@ const INTEREST_CATS = { cafes: ['cafe'], street_food: ['street_food', 'food'], r
 router.get('/picks', authMiddleware, async (req, res) => {
   try {
     const User = require('../models/User');
-    const me = await User.findById(req.user.id).select('interests preferences location').lean();
+    const me = await User.findById(req.user.id).select('interests preferences location settings.location').lean();
     const limit = Math.min(parseInt(req.query.limit) || 15, 40);
-    const city = (req.query.city || me?.location?.city || '').trim();
+    const city = (req.query.city || me?.location?.city || me?.settings?.location?.city || '').trim();
     const mine = new Set((await Save.find({ userId: req.user.id, status: 'active', 'metadata.placeId': { $exists: true } }).select('metadata.placeId').lean()).map((s) => String(s.metadata.placeId)));
     const q = { status: 'active' };
     if (city) q.city = new RegExp(city.split(/[\s,]+/)[0], 'i');
