@@ -24,7 +24,7 @@ Status against `wannatry-revamp-brief.md` as of 2 Sep 2026 (commits `a73443e` �
 | 20 | Import "10 cafes" → checklist → save selected | Done | Extraction returns `places[]`; item page shows **We found N places in this reel** picker → separate saves in a collection named after the reel |
 | 21 | Screenshot import: identify, show, let user correct | Done / Partly | Screenshot pipeline + detail screen; correction = Rename / Edit tags / note (no field-level edit yet) |
 | 22 | AI invisible, embedded | Done | Reasons, picks, nudges, plan, "why you might like it" (heuristic, no chat). Ask exists but is optional and grounded |
-| 23 | Wanna Try screen: "N things waiting", categories, list/map/collections | Partly | "Your Wanna Try — N things waiting for you · N tried", kind chips, Collections link. **Map: later** |
+| 23 | Wanna Try screen: "N things waiting", categories, list/map/collections | Done | "Wanna Try — N things waiting for you · N tried", kind chips, **List ⇄ Map** (Leaflet/OpenStreetMap, pins by category, status filter, tap for the item), Collections |
 | 24 | Saved item card: title, category, location, price, date, status | Done | List rows (no thumbnails by design): category · place · price, age, status tabs |
 | 25 | Item detail: why you saved it, why you might like it, useful info, actions | Done | Why you saved it (note/summary), **Why you might like it**, key points, recipe/place/product/event/trip sections, Directions/Open/Cook, Plan, Share, Tried |
 | 26 | Planning: date, people, budget, nearby, related | Partly | Planning status + date chips (reminder that morning), trip planner for travel saves, weekend plan for nearby saves; people/budget come from preferences rather than per-plan |
@@ -42,9 +42,9 @@ Status against `wannatry-revamp-brief.md` as of 2 Sep 2026 (commits `a73443e` �
 | 44–45 | Metrics: saved→tried | Partly | Tried rate on Me; no analytics dashboard |
 | 46 | Monetisation | Later | — |
 | 47 | MVP scope | Done | All MVP core + discovery + AI items are present |
-| 48 | Phase 2: share extension, collections, map, weekend planner, prices, sharing | Partly | Share target ✓, collections ✓, weekend planner ✓, price tracking (product) ✓; **map** and friend sharing later |
+| 48 | Phase 2: share extension, collections, map, weekend planner, prices, sharing | Partly | Share target ✓, collections ✓, weekend planner ✓, map ✓, price tracking (product) ✓; friend sharing later |
 | 49 | Phase 3: booking, marketplace, Pro | Later | — |
-| 50 | 37 screens | Partly | Not built: Map, Friends, Collaborative plan, Trending page, Category pages. Everything else exists |
+| 50 | 37 screens | Partly | Not built: Friends, Collaborative plan, Trending page, Category pages. Everything else exists (Map added) |
 | 51 | One connected flow | Done | Discover → save → item → plan/weekend → tried → Your 2026 → picks |
 
 ## Also shipped today, outside the brief
@@ -54,5 +54,5 @@ Status against `wannatry-revamp-brief.md` as of 2 Sep 2026 (commits `a73443e` �
 - Preferences: diet / budget / company / nudge time — used by Ask, trip plans, weekend plan, nudge timing.
 
 ## Still open
-- Map view (§23), Trending page and sub-category pages (§12, §18), shared/collaborative collections (§32), friends (§33–34), analytics (§44).
+- Trending page and sub-category pages (§12, §18), shared/collaborative collections (§32), friends (§33–34), analytics (§44). Map view (§23) shipped.
 - Render deploys lag pushes by 1–2 h on the free tier; Starter upgrade recommended.

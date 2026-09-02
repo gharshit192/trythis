@@ -42,11 +42,11 @@ product brief is in [`research/revamp-brief-status.md`](research/revamp-brief-st
 - **Phase 2 — Nearby & the personal layer:** done in the PWA. Seeded city
   places + everyone's saves in one nearby index; Discover with reasons; Starter
   picks, Made for you, Surprise me; weekend plan from your own saves; trip
-  plans with stays and transport; Ask (grounded in your saves); preferences
-  (diet, budget, company, nudge time, vibes); Your 2026.
+  plans with stays and transport; map view of your saves; Ask (grounded in
+  your saves); preferences (budget, company, nudge time, vibes); Your 2026.
   Geofenced native nudges (Capacitor) remain the native-app step
   ([ADR 0007](adr/0007-dual-frontend-capacitor-pwa.md)).
-- **Phase 3 — Remaining brief items (next):** map view on Wanna Try; Trending
+- **Phase 3 — Remaining brief items (next):** Trending
   and sub-category pages in Discover; shared and collaborative collections;
   friends ("your friend wants to try the same place"); a saved→tried metrics
   view; learning from skipped recommendations.
