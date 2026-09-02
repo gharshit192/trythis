@@ -163,6 +163,23 @@ const extractAndOcrFrames = async (mp4Path, { count = 4, durationSeconds, langs 
       return { index: i, text };
     });
 
+    // Tesseract reads printed text; a reel's overlays are usually styled type
+    // it returns nothing for. Empty is not "no text" — it is "could not read".
+    // Escalate a few spread-out frames to Claude Vision (cost-capped) before
+    // concluding the reel has no on-screen text. Music-only reels with place
+    // names on screen have their entire content here.
+    const totalRead = perFrame.reduce((n, f) => n + (f.text || '').trim().length, 0);
+    const VISION_MAX = parseInt(process.env.FRAME_VISION_MAX || '3', 10);
+    if (totalRead < 20 && VISION_MAX > 0 && process.env.ANTHROPIC_API_KEY) {
+      const step = Math.max(1, Math.floor(frames.length / VISION_MAX));
+      const picks = frames.map((f, i) => i).filter((i) => i % step === 0).slice(0, VISION_MAX);
+      logger.info(`frameExtractor: tesseract read ${totalRead} chars across ${frames.length} frames; asking Claude Vision for ${picks.length}`);
+      await mapLimit(picks, 3, async (i) => {
+        const claudeText = await ocrFrameWithClaude(frames[i]);
+        if (claudeText) perFrame[i].text = claudeText;
+      });
+    }
+
     const lines = [];
     let lastText = null;
     for (const { index, text } of perFrame) {

@@ -723,7 +723,7 @@ const processSave = async (saveId) => {
         };
 
         // P3: replace generic "Video by X" title when we have a better signal.
-        const betterTitle = pickBetterTitle(fresh.title, analysis);
+        const betterTitle = pickBetterTitle(fresh.title, analysis, fresh.description);
         if (betterTitle) update.title = betterTitle;
 
         // P4/P1-#4: derive category from structuredData.type (Claude path).
@@ -838,7 +838,7 @@ const processSave = async (saveId) => {
 // product, event, place, destination). The summary makes a poor title — it's
 // a full sentence — so we deliberately do NOT fall back to it. Generic
 // "Video by <handle>" reads better than a 80-char truncated summary.
-const pickBetterTitle = (currentTitle, analysis) => {
+const pickBetterTitle = (currentTitle, analysis, description = '') => {
   const isGeneric = !currentTitle
     // A bare URL is the most generic title there is, and it was missing from
     // this list — so saves whose metadata stage never ran (anything recovered
@@ -859,9 +859,16 @@ const pickBetterTitle = (currentTitle, analysis) => {
     sd.place?.name ||
     null;
 
-  // Nothing structured to name it by. A trimmed summary still beats a URL,
-  // which tells the user nothing at all.
-  if (!candidate && /^\s*https?:\/\//i.test(currentTitle || '') && analysis?.summary) {
+  // Nothing structured to name it by. The caption's first real line is what
+  // the creator called it; failing that, the summary's first clause. Either
+  // beats "Video by <handle>" or a bare URL, which tell the user nothing.
+  if (!candidate && description) {
+    const firstLine = String(description).split(/\n+/)
+      .map((l) => l.replace(/^[\s•\-–*·]+/, '').replace(/\s*#[\p{L}\p{N}_]+/gu, '').trim())
+      .find((l) => l.length >= 8 && !/^(comment|follow|credits?)\b/i.test(l));
+    if (firstLine) candidate = firstLine;
+  }
+  if (!candidate && analysis?.summary) {
     const firstClause = String(analysis.summary).split(/[.!?\n]/)[0].trim();
     if (firstClause.length >= 12) candidate = firstClause;
   }
