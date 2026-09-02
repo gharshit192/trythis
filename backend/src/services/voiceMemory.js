@@ -48,20 +48,30 @@ const transcribeWithGroq = async (wavPath) => {
   return { text, language, original: originalText !== text ? originalText : null };
 };
 
-const SYSTEM = `You turn a short spoken note into a structured memory for a "remember this" app.
+const SYSTEM = `You turn a spoken note into a structured memory for a "remember this" app. Keep EVERY concrete detail the person said — places in order, days, timings, transport, stays, money, names. Nothing they said should be lost.
 Return ONLY JSON:
 {
-  "title": string,                 // ≤ 60 chars, the memory as a headline ("Rahul — EV startup, met at Goa airport")
-  "memoryType": "person"|"place"|"idea"|"task"|"note",
+  "title": string,                 // ≤ 60 chars, the memory as a headline
+  "memoryType": "person"|"place"|"idea"|"task"|"plan"|"note",   // "plan" = a trip or an outing being planned
   "people": string[],              // names mentioned, [] if none
-  "place": string|null,            // a place name if one is central
+  "place": string|null,            // the main place if one is central
+  "places": string[],              // every place named, in the order they were said
   "topic": string|null,            // what it is about, ≤ 80 chars
-  "summary": string,               // one sentence, in the user's own terms
+  "summary": string,               // 1–2 sentences, in the user's own terms
+  "keyPoints": string[],           // 3–10 short factual bullets, ≤ 90 chars each, one detail per bullet, in the order said. For a plan: one bullet per leg/day with timings and stays.
+  "amounts": string[],             // money mentioned, e.g. "Rs 24,618 on Flipkart Axis card", [] if none
+  "itinerary": {                   // ONLY for a plan that involves travel; else null
+    "destination": string,         // e.g. "Kasol, Himachal"
+    "durationDays": number|null,
+    "stops": string[],             // ordered legs, e.g. "Delhi → Kasol (stay 1 day)"
+    "estimatedCost": string|null,
+    "bestSeason": string|null
+  }|null,
   "timeSignal": string|null,       // the user's own words for when, e.g. "six months", "next March", "someday", or null
   "relative": {"unit":"day"|"week"|"month"|"year","n":number}|null,  // ONLY if timeSignal is a relative duration
   "absoluteDate": "YYYY-MM-DD"|null // ONLY if the user named a specific date/month; never invent one
 }
-Never invent people, places or dates that are not in the note.`;
+Never invent people, places, amounts or dates that are not in the note.`;
 
 // "next March" → the coming March 1; "someday" → null.
 const resolveResurfaceAt = ({ relative, absoluteDate }, now = new Date()) => {
@@ -83,17 +93,29 @@ const resolveResurfaceAt = ({ relative, absoluteDate }, now = new Date()) => {
 
 const structure = async (transcript, now) => {
   const msg = await client.messages.create({
-    model: MODEL, max_tokens: 600, temperature: 0, system: SYSTEM,
+    model: MODEL, max_tokens: 1500, temperature: 0, system: SYSTEM,   // the richer schema (key points, stops) overran 600 and truncated the JSON
     messages: [{ role: 'user', content: `Today is ${now.toISOString().slice(0, 10)}.\nNote (English translation of what was said):\n${transcript}` }],
   });
   const parsed = parseJsonSafely(msg?.content?.[0]?.text || '') || {};
+  const strs = (a, n = 10, len = 120) => (Array.isArray(a) ? a.map((x) => String(x).trim()).filter(Boolean).slice(0, n).map((x) => x.slice(0, len)) : []);
+  const it = parsed.itinerary && typeof parsed.itinerary === 'object' && parsed.itinerary.destination ? parsed.itinerary : null;
   return {
     title: String(parsed.title || transcript.slice(0, 60)).trim(),
-    memoryType: ['person', 'place', 'idea', 'task', 'note'].includes(parsed.memoryType) ? parsed.memoryType : 'note',
-    people: Array.isArray(parsed.people) ? parsed.people.map(String).slice(0, 10) : [],
+    memoryType: ['person', 'place', 'idea', 'task', 'plan', 'note'].includes(parsed.memoryType) ? parsed.memoryType : (it ? 'plan' : 'note'),
+    people: strs(parsed.people, 10, 60),
     place: parsed.place ? String(parsed.place).slice(0, 120) : null,
+    places: strs(parsed.places, 20, 80),
     topic: parsed.topic ? String(parsed.topic).slice(0, 120) : null,
-    summary: String(parsed.summary || transcript).slice(0, 400),
+    summary: String(parsed.summary || transcript).slice(0, 500),
+    keyPoints: strs(parsed.keyPoints, 10, 120),
+    amounts: strs(parsed.amounts, 6, 80),
+    itinerary: it ? {
+      destination: String(it.destination).slice(0, 80),
+      duration: it.durationDays ? `${it.durationDays} day${it.durationDays === 1 ? '' : 's'}` : null,
+      highlights: strs(it.stops, 12, 120),
+      estimatedCost: it.estimatedCost ? String(it.estimatedCost).slice(0, 60) : null,
+      bestSeason: it.bestSeason ? String(it.bestSeason).slice(0, 60) : null,
+    } : null,
     timeSignal: parsed.timeSignal ? String(parsed.timeSignal).slice(0, 60) : null,
     resurfaceAt: resolveResurfaceAt(parsed, now),
   };
@@ -135,27 +157,44 @@ const memoryFromAudio = async ({ audioPath, text }) => {
     doc = await structure(transcript, now);
   } catch (err) {
     logger.warn(`[voiceMemory] structuring failed, saving as plain note: ${err.message}`);
-    doc = { title: transcript.slice(0, 60), memoryType: 'note', people: [], place: null, topic: null, summary: transcript.slice(0, 400), timeSignal: null, resurfaceAt: null };
+    doc = { title: transcript.slice(0, 60), memoryType: 'note', people: [], place: null, places: [], topic: null, summary: transcript.slice(0, 400), keyPoints: [], amounts: [], itinerary: null, timeSignal: null, resurfaceAt: null };
   }
 
+  const isTrip = !!doc.itinerary;
   return {
     title: doc.title,
     source: 'voice',
     contentType: 'voice',
-    category: doc.memoryType === 'place' ? 'experience' : 'other',
+    category: isTrip ? 'travel' : doc.memoryType === 'place' ? 'experience' : 'other',
     memoryType: doc.memoryType,
-    entities: { people: doc.people, place: doc.place, topic: doc.topic },
+    entities: { people: doc.people, place: doc.place || doc.places[0] || null, topic: doc.topic },
+    tags: [...new Set([...doc.places.map((p) => p.toLowerCase()), ...(isTrip ? ['trip-plan'] : [])])].slice(0, 12),
     resurfaceAt: doc.resurfaceAt,
     processingStatus: 'done',
     confidence: doc.memoryType === 'note' ? 0.4 : 0.8,
     aiAnalysis: {
       summary: doc.summary,
-      keyPoints: [],
+      keyPoints: [...doc.keyPoints, ...doc.amounts.filter((a) => !doc.keyPoints.some((k) => k.includes(a)))].slice(0, 12),
       timeSignal: doc.timeSignal,
+      // A spoken trip plan is a travel save: the Trip layout, "Plan this trip"
+      // and the PDF all work from structuredData.itinerary.
+      structuredData: isTrip
+        ? { type: 'itinerary', itinerary: doc.itinerary, recipe: null, product: null, event: null, place: null }
+        : { type: 'other', recipe: null, product: null, itinerary: null, event: null, place: null },
       transcription: { text: transcript, source, detectedLanguage: language, originalText: original },
       processedAt: now,
     },
   };
 };
 
-module.exports = { memoryFromAudio, __test__: { resolveResurfaceAt } };
+// Re-read an existing memory from its stored transcript (after the extractor
+// improves). Returns the same field set minus transcription/source.
+const restructureFromTranscript = async (save) => {
+  const transcript = save?.aiAnalysis?.transcription?.text;
+  if (!transcript) { const e = new Error('No transcript stored for this note.'); e.code = 'EMPTY'; throw e; }
+  const fields = await memoryFromAudio({ text: transcript });
+  fields.aiAnalysis.transcription = save.aiAnalysis.transcription;   // keep the original record
+  return fields;
+};
+
+module.exports = { memoryFromAudio, restructureFromTranscript, __test__: { resolveResurfaceAt } };

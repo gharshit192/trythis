@@ -18,6 +18,12 @@ const voice = {
     invalidateSaves();
     return handle(res);
   },
+  // Re-read a voice note from its stored transcript with the current extractor.
+  async rebuildVoiceNote(id) {
+    const res = await fetch(`${API_BASE_URL}/voice/${id}/rebuild`, { method: 'POST', headers: authHeader() });
+    invalidateSaves();
+    return handle(res);
+  },
 };
 
 export default voice;

@@ -365,7 +365,7 @@ router.get('/', async (req, res) => {
     // Use projection to load only feed-relevant fields (3-5x faster than full document).
     // MongoDB loads entire document by default; this limits to display fields only.
     const saves = await Save.find({ userId: req.user.id, status: 'active' })
-      .select('title thumbnail image category contentType tags intentStatus plannedFor triedAt rating createdAt source url aiAnalysis isTemplate extractedLocation')
+      .select('title thumbnail image category contentType tags intentStatus plannedFor triedAt rating createdAt source url aiAnalysis isTemplate extractedLocation memoryType entities resurfaceAt tripPlan.days tripPlan.generatedAt')
       .sort({
         createdAt: -1,
       });
@@ -1459,6 +1459,20 @@ router.get('/:id/export-pdf', validateObjectId('id'), async (req, res) => {
           doc.fontSize(11).font('Helvetica').fillColor('#000000').text(`• ${line}`, { indent: 12 });
           if (tip) doc.fontSize(9.5).font('Helvetica-Oblique').fillColor(MUTED).text(`from your reel: ${tip}`, { indent: 24 });
         }
+      }
+      // Stays and transport — the same links the app offers, so the PDF is
+      // a complete hand-off, not just the day list.
+      const stays = (plan.destinations || []).flatMap((d) => (d.stays || []).map((x) => ({ ...x, dest: d.name })));
+      const there = (plan.destinations || []).flatMap((d) => (d.gettingThere || []).map((x) => ({ ...x, dest: d.name })));
+      if (stays.length) {
+        doc.moveDown(0.6);
+        doc.fontSize(12).font('Helvetica-Bold').fillColor('#000000').text('Stays');
+        for (const x of stays) doc.fontSize(10.5).font('Helvetica').fillColor('#000000').text(`• ${x.provider}${x.tier ? ` — ${x.tier}` : ''}${x.approx ? ` — ${x.approx}` : ''} (${x.dest})`, { indent: 12, link: x.url, underline: false });
+      }
+      if (there.length) {
+        doc.moveDown(0.6);
+        doc.fontSize(12).font('Helvetica-Bold').fillColor('#000000').text('Getting there');
+        for (const x of there) doc.fontSize(10.5).font('Helvetica').fillColor('#000000').text(`• ${x.mode}${x.provider ? ` via ${x.provider}` : ''}${x.approx ? ` — ${x.approx}` : ''} (${x.dest})`, { indent: 12, link: x.url, underline: false });
       }
       if (plan.warnings?.length) {
         doc.moveDown(0.4);

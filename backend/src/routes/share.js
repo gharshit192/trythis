@@ -47,6 +47,45 @@ router.get('/api/:shareId', async (req, res) => {
 });
 
 // GET /:shareId — Public HTML preview page with OG meta tags
+
+// Everything the pipeline extracted, as HTML, in the same order the app shows
+// it: the whole point of sharing a save is that the other person gets the
+// recipe, the plan, the place — not a title and three bullets.
+const sectionsHtml = (save, esc) => {
+  const sd = save.aiAnalysis?.structuredData || {};
+  const h = [];
+  const section = (title, inner) => { if (inner) h.push(`<div class="key-points"><h3>${esc(title)}</h3>${inner}</div>`); };
+  const list = (items, numbered) => {
+    const xs = (items || []).filter(Boolean);
+    if (!xs.length) return '';
+    return `<${numbered ? 'ol' : 'ul'} style="margin:0;padding-left:${numbered ? '1.2rem' : '0'};list-style:${numbered ? 'decimal' : 'none'};">${xs.map((x) => `<li style="margin:0.4rem 0;color:#333;">${esc(String(x))}</li>`).join('')}</${numbered ? 'ol' : 'ul'}>`;
+  };
+  const facts = (pairs) => { const xs = pairs.filter(([, v]) => v != null && v !== ''); return xs.length ? `<p style="color:#555;margin:0 0 .5rem;">${xs.map(([k, v]) => `<strong>${esc(k)}:</strong> ${esc(String(v))}`).join(' · ')}</p>` : ''; };
+
+  const r = sd.recipe;
+  if (r?.isRecipe) section('Recipe', facts([['Time', r.cookingTime], ['Serves', r.servings], ['Cuisine', r.cuisine]]) + (r.ingredients?.length ? `<h4 style="margin:.6rem 0 .3rem;font-size:.85rem;">Ingredients</h4>${list(r.ingredients)}` : '') + (r.steps?.length ? `<h4 style="margin:.8rem 0 .3rem;font-size:.85rem;">Steps</h4>${list(r.steps, true)}` : ''));
+  const p = sd.product;
+  if (p && (p.name || p.price != null)) section('Product', facts([['Name', p.name], ['Brand', p.brand], ['Price', p.price != null ? `₹${p.price}` : null]]) + list(p.availableItems));
+  const e = sd.event;
+  if (e && (e.eventName || e.venue)) section('Event', facts([['What', e.eventName], ['Where', e.venue], ['When', e.eventDate ? new Date(e.eventDate).toDateString() : null], ['Tickets', e.price != null ? `₹${e.price}` : null]]));
+  const pl = sd.place;
+  if (pl && (pl.address || pl.cuisine || pl.priceRange)) section('The place', facts([['Cuisine', pl.cuisine], ['Price', pl.priceRange], ['Address', pl.address]]));
+  const it = sd.itinerary;
+  if (it && (it.highlights?.length || it.destination)) section('Trip', facts([['Destination', it.destination], ['Days', it.duration], ['Budget', it.estimatedCost], ['Best in', it.bestSeason]]) + list(it.highlights));
+  const plan = save.tripPlan?.data;
+  if (plan?.dailyPlan?.length) {
+    const days = plan.dailyPlan.map((d) => `<h4 style="margin:.8rem 0 .2rem;font-size:.9rem;">Day ${d.day} — ${esc(d.theme || '')}${d.stayArea ? ` <span style="font-weight:400;color:#777;">(stay: ${esc(d.stayArea)})</span>` : ''}</h4>${list((d.stops || []).map((x) => `${x.place}${x.notes ? ` — ${x.notes}` : ''}`))}`).join('');
+    const link = (x, label) => `<li style="margin:.3rem 0;"><a href="${esc(x.url)}" style="color:#0E7C7B;">${esc(label)}</a></li>`;
+    const stays = (plan.destinations || []).flatMap((d) => (d.stays || []).map((x) => link(x, `${x.provider}${x.tier ? ` — ${x.tier}` : ''} (${d.name})`)));
+    const there = (plan.destinations || []).flatMap((d) => (d.gettingThere || []).map((x) => link(x, `${x.mode}${x.provider ? ` via ${x.provider}` : ''} (${d.name})`)));
+    section(plan.tripTitle || 'Day-by-day plan', facts([['Budget', plan.estimatedBudgetInr ? `about ₹${Number(plan.estimatedBudgetInr).toLocaleString('en-IN')}` : null]]) + days
+      + (stays.length ? `<h4 style="margin:.9rem 0 .2rem;font-size:.85rem;">Stays</h4><ul style="list-style:none;padding:0;margin:0;">${stays.join('')}</ul>` : '')
+      + (there.length ? `<h4 style="margin:.9rem 0 .2rem;font-size:.85rem;">Getting there</h4><ul style="list-style:none;padding:0;margin:0;">${there.join('')}</ul>` : ''));
+  }
+  if (save.source === 'voice') section('From a voice note', facts([['Who', (save.entities?.people || []).join(', ')], ['Where', save.entities?.place], ['About', save.entities?.topic]]) + (save.aiAnalysis?.transcription?.text ? `<p style="color:#555;font-style:italic;margin:.4rem 0 0;">“${esc(save.aiAnalysis.transcription.text.slice(0, 600))}”</p>` : ''));
+  return h.join('');
+};
+
 router.get('/:shareId', async (req, res) => {
   try {
     const { shareId } = req.params;
@@ -117,7 +156,7 @@ router.get('/:shareId', async (req, res) => {
             <div style="text-align: center; padding: 2rem;">
               <h1 style="margin: 0 0 0.5rem 0; color: #333;">Shared Save Not Found</h1>
               <p style="margin: 0; color: #666;">This save may have been removed or the link is invalid.</p>
-              <a href="https://trythis.app" style="display: inline-block; margin-top: 1.5rem; padding: 0.75rem 1.5rem; background: #1B3A2F; color: white; text-decoration: none; border-radius: 8px;">Try TryThis</a>
+              <a href="https://trythis.app" style="display: inline-block; margin-top: 1.5rem; padding: 0.75rem 1.5rem; background: #0E7C7B; color: white; text-decoration: none; border-radius: 8px;">Try TryThis</a>
             </div>
           </body>
         </html>
@@ -154,7 +193,7 @@ router.get('/:shareId', async (req, res) => {
 
     // Build key points HTML
     const keyPointsHtml = (save.aiAnalysis?.keyPoints || [])
-      .slice(0, 3)
+      .slice(0, 10)
       .map(point => `<li style="margin: 0.5rem 0; color: #555;">${escapeHtml(point)}</li>`)
       .join('');
 
@@ -261,7 +300,7 @@ router.get('/:shareId', async (req, res) => {
         padding: 1rem;
         background: #f9f9f9;
         border-radius: 8px;
-        border-left: 3px solid #1B3A2F;
+        border-left: 3px solid #0E7C7B;
       }
 
       .key-points h3 {
@@ -317,12 +356,12 @@ router.get('/:shareId', async (req, res) => {
       }
 
       .cta-button-primary {
-        background: #1B3A2F;
+        background: #0E7C7B;
         color: white;
       }
 
       .cta-button-primary:hover {
-        background: #142a22;
+        background: #0A5A59;
       }
 
       .cta-button-secondary {
@@ -377,14 +416,15 @@ router.get('/:shareId', async (req, res) => {
           ${description ? `<div class="description">${escapeHtml(description)}</div>` : ''}
 
           ${keyPointsHtml ? `<div class="key-points"><h3>Key Points</h3><ul>${keyPointsHtml}</ul></div>` : ''}
+          ${sectionsHtml(save, escapeHtml)}
 
           ${tagsHtml ? `<div class="tags"><span class="tags-label">Tags</span><div class="tags-container">${tagsHtml}</div></div>` : ''}
 
           ${save.url ? `<div class="cta-section">
             <a href="${escapeHtml(save.url)}" target="_blank" rel="noopener noreferrer" class="cta-button cta-button-primary">View Original</a>
-            <a href="https://trythis.app" target="_blank" rel="noopener noreferrer" class="cta-button cta-button-secondary">Try TryThis</a>
+            
           </div>` : `<div class="cta-section">
-            <a href="https://trythis.app" target="_blank" rel="noopener noreferrer" class="cta-button cta-button-primary">Try TryThis</a>
+            
           </div>`}
 
           <div class="sharer">Shared by ${escapeHtml(sharer)} on TryThis</div>

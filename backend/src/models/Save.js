@@ -211,7 +211,7 @@ const intentItemSchema = new mongoose.Schema({
 
   // Voice / text memories (ADR 0016). A memory is a save with no URL: what the
   // user said, who/where/what it was about, and when it should come back.
-  memoryType: { type: String, enum: ['person', 'place', 'idea', 'task', 'note', null], default: null },
+  memoryType: { type: String, enum: ['person', 'place', 'idea', 'task', 'plan', 'note', null], default: null },
   entities: {
     people: { type: [String], default: undefined },
     place: { type: String, default: null },

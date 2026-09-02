@@ -94,7 +94,16 @@ export default function SaveDetail({ onNavigate, onBack, payload }) {
       else flash(r?.error?.message || 'Could not share');
     } catch {} finally { setBusy(false); }
   };
-  const retry = async () => { setMenu(false); const r = await api.retrySave(id).catch(() => null); flash(r?.status === 'success' ? 'Reading it again…' : 'Retry failed'); };
+  const retry = async () => {
+    setMenu(false);
+    if (save.source === 'voice') {
+      flash('Re-reading your note…');
+      const r = await api.rebuildVoiceNote(id).catch(() => null);
+      if (r?.status === 'success') { setSave(r.data); flash('Updated'); } else flash(r?.error?.message || 'Could not re-read');
+      return;
+    }
+    const r = await api.retrySave(id).catch(() => null); flash(r?.status === 'success' ? 'Reading it again…' : 'Retry failed');
+  };
   const remove = async () => {
     setBusy(true);
     const r = await api.deleteSave(id).catch(() => null);
@@ -120,7 +129,7 @@ export default function SaveDetail({ onNavigate, onBack, payload }) {
         <div className="grab" />
         <button type="button" className="wt-menu-row" onClick={share}><Icon name="share" size={20} />Share</button>
         {save.url && <a className="wt-menu-row" href={save.url} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}><Icon name="link" size={20} />Open the original</a>}
-        {(save.processingStatus === 'failed' || save.processingStatus === 'partial') && <button type="button" className="wt-menu-row" onClick={retry}><Icon name="sparkle" size={20} />Read it again</button>}
+        {(save.processingStatus === 'failed' || save.processingStatus === 'partial' || save.source === 'voice') && <button type="button" className="wt-menu-row" onClick={retry}><Icon name="sparkle" size={20} />Read it again</button>}
         <button type="button" className="wt-menu-row danger" onClick={() => { setMenu(false); setConfirmDelete(true); }}><Icon name="close" size={20} />Delete</button>
       </div>
     </div>

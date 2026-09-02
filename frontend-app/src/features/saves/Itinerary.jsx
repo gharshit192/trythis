@@ -18,7 +18,17 @@ export default function Itinerary({ onNavigate, onBack, payload }) {
   const downloadPdf = async () => { setPdfBusy(true); try { await api.exportSavePdf(id, title || plan?.tripTitle); } catch (e) { setError(e.message || 'PDF export failed'); } finally { setPdfBusy(false); } };
   const sharePlan = async () => {
     if (!plan) return;
-    const text = [plan.tripTitle || title, ...(plan.dailyPlan || []).map((d) => `Day ${d.day} — ${d.theme}: ${(d.stops || []).map((x) => x.place).join(', ')}`), '', 'Planned with Wanna Try'].join('\n');
+    const stays = (plan.destinations || []).flatMap((d) => (d.stays || []).map((x) => `${x.provider}${x.tier ? ` (${x.tier})` : ''}: ${x.url}`));
+    const there = (plan.destinations || []).flatMap((d) => (d.gettingThere || []).map((x) => `${x.mode}${x.provider ? ` via ${x.provider}` : ''}: ${x.url}`));
+    const text = [
+      plan.tripTitle || title,
+      plan.estimatedBudgetInr ? `About ₹${Number(plan.estimatedBudgetInr).toLocaleString('en-IN')}` : null,
+      '',
+      ...(plan.dailyPlan || []).map((d) => `Day ${d.day} — ${d.theme}${d.stayArea ? ` (stay: ${d.stayArea})` : ''}\n${(d.stops || []).map((x) => `  • ${x.place}${x.notes ? ` — ${x.notes}` : ''}`).join('\n')}`),
+      ...(stays.length ? ['', 'Stays', ...stays.map((l) => `  • ${l}`)] : []),
+      ...(there.length ? ['', 'Getting there', ...there.map((l) => `  • ${l}`)] : []),
+      '', 'Planned with Wanna Try',
+    ].filter((l) => l !== null).join('\n');
     try {
       const r = await api.shareSave(id);
       const url = r?.data?.shareUrl || r?.shareUrl;
@@ -117,8 +127,9 @@ export default function Itinerary({ onNavigate, onBack, payload }) {
 
       {plan && !building && (
         <div style={{ marginTop: 'auto', paddingTop: 16, display: 'flex', gap: 10 }}>
-          <Button small onClick={onBack}>Done</Button>
-          <Button small variant="secondary" style={{ width: 'auto', padding: '0 18px' }} onClick={() => setPickDays((v) => !v)}>Change days</Button>
+          <Button small onClick={onBack} style={{ flex: 1 }}>Done</Button>
+          <Button small variant="secondary" icon="share" onClick={sharePlan} style={{ width: 'auto', padding: '0 16px' }}>Share plan</Button>
+          <Button small variant="secondary" onClick={() => setPickDays((v) => !v)} style={{ width: 'auto', padding: '0 14px' }}>Days</Button>
         </div>
       )}
     </div>

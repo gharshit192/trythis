@@ -7,7 +7,7 @@ const multer = require('multer');
 const router = express.Router();
 const Save = require('../models/Save');
 const authMiddleware = require('../middleware/auth');
-const { memoryFromAudio } = require('../services/voiceMemory');
+const { memoryFromAudio, restructureFromTranscript } = require('../services/voiceMemory');
 const autoCollectionEngine = require('../services/autoCollectionEngine');
 const logger = require('../utils/logger');
 
@@ -40,6 +40,24 @@ router.post('/', upload.single('audio'), async (req, res) => {
     res.status(code).json({ status: 'error', error: { code: err.code || 'VOICE_FAILED', message: code === 400 ? err.message : (/not set/.test(err.message) ? 'Speech-to-text is not configured on this server.' : 'Could not read that note. Try again.') } });
   } finally {
     if (audioPath) fs.unlink(audioPath, () => {});
+  }
+});
+
+// POST /voice/:id/rebuild — re-read a note from its transcript with the current extractor.
+router.post('/:id/rebuild', async (req, res) => {
+  try {
+    const save = await Save.findOne({ _id: req.params.id, userId: req.user.id, source: 'voice' });
+    if (!save) return res.status(404).json({ status: 'error', error: { code: 'NOT_FOUND', message: 'Voice note not found' } });
+    const fields = await restructureFromTranscript(save);
+    const keepReminder = save.resurfaceAt && !fields.resurfaceAt ? { resurfaceAt: save.resurfaceAt } : {};
+    Object.assign(save, fields, keepReminder);
+    await save.save();
+    try { await autoCollectionEngine.assignSave(save); } catch { /* non-fatal */ }
+    res.json({ status: 'success', data: save });
+  } catch (err) {
+    const code = err.code === 'EMPTY' ? 400 : 500;
+    logger.error(`[voice] rebuild failed: ${err.message}`);
+    res.status(code).json({ status: 'error', error: { code: err.code || 'VOICE_FAILED', message: code === 400 ? err.message : 'Could not re-read that note.' } });
   }
 });
 
