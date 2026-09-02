@@ -39,6 +39,7 @@ const Ask = lazy(() => import('../features/ask/Ask'));
 const VerifyEmail = lazy(() => import('../features/auth/VerifyEmail'));
 const StarterPicks = lazy(() => import('../features/onboarding/StarterPicks'));
 const YearRecap = lazy(() => import('../features/profile/YearRecap'));
+const WeekendPlan = lazy(() => import('../features/plans/WeekendPlan'));
 const SaveDetail = lazy(() => import('../features/saves/SaveDetail'));
 const Itinerary = lazy(() => import('../features/saves/Itinerary'));
 const Profile = lazy(() => import('../features/profile/Profile'));
@@ -190,7 +191,7 @@ function App() {
     // Onboarding flow disabled — no forced redirect after login/signup.
 
     // Check if trying to access protected screen without auth
-    const protectedScreens = ['home', 'save-detail', 'savedList', 'search', 'collections', 'saved', 'tried', 'place', 'profile', 'notifications', 'nearby', 'explore', 'itinerary', 'extracting', 'starter', 'multi-extract', 'voice', 'voice-result', 'ask', 'verify-email', 'starter-picks', 'year-recap'];
+    const protectedScreens = ['home', 'save-detail', 'savedList', 'search', 'collections', 'saved', 'tried', 'place', 'profile', 'notifications', 'nearby', 'explore', 'itinerary', 'extracting', 'starter', 'multi-extract', 'voice', 'voice-result', 'ask', 'verify-email', 'starter-picks', 'year-recap', 'weekend-plan'];
     if (protectedScreens.includes(screen) && !localStorage.getItem('auth_token')) {
       setCurrentScreen('welcome');
       return;
@@ -291,6 +292,7 @@ function App() {
     'verify-email': <VerifyEmail {...props} />,
     'starter-picks': <StarterPicks {...props} />,
     'year-recap': <YearRecap {...props} />,
+    'weekend-plan': <WeekendPlan {...props} />,
     'screenshot-summary': <ScreenshotSummary {...props} sessionId={payload?.sessionId} summary={payload?.summary} thumbnails={payload?.thumbnails || []} saveId={payload?.saveId} autoSaved={payload?.autoSaved} />,
     'collections': <Collections {...props} />,
     'collection-detail': <CollectionDetail {...props} />,

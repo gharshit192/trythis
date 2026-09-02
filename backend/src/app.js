@@ -18,6 +18,7 @@ const placesRoutes = require('./routes/places');
 const voiceRoutes = require('./routes/voice');
 const askRoutes = require('./routes/ask');
 const blogRoutes = require('./routes/blog');
+const plansRoutes = require('./routes/plans');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
@@ -71,6 +72,7 @@ app.use('/recommendations', recommendationsRoutes);
 app.use('/places', placesRoutes);   // was only in routes/index.js, which nothing mounted
 app.use('/voice', voiceRoutes);     // ADR 0016
 app.use('/ask', askRoutes);         // ADR 0017
+app.use('/plans', plansRoutes);     // weekend plans from your saves
 // Order matters: both routers below apply authMiddleware to everything they
 // see, so any route that must skip user auth has to be mounted ahead of them.
 // pushPublicRoutes first: /notifications/resubscribe comes from the service

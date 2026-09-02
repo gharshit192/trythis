@@ -25,6 +25,15 @@ export default function Home({ onNavigate, payload, nearbySaves = [] }) {
   const [templates, setTemplates] = useState([]);
   const [popular, setPopular] = useState([]);
   const [forYou, setForYou] = useState([]);
+  // Plan this weekend (brief §27): only offered when 2+ saved places are within 10 km.
+  const [weekend, setWeekend] = useState(null);   // { count, lat, lng }
+  useEffect(() => {
+    if (loading || saves.length < 2 || !navigator.geolocation || localStorage.getItem('location_requested') !== 'true') return;
+    navigator.geolocation.getCurrentPosition((p) => {
+      const { latitude: lat, longitude: lng } = p.coords;
+      api.weekendCandidates(lat, lng).then((r) => { if (r?.status === 'success' && r.data.count >= 2) setWeekend({ count: r.data.count, lat, lng }); }).catch(() => {});
+    }, () => {}, { timeout: 8000, maximumAge: 300000 });
+  }, [loading, saves.length]);
   const [copying, setCopying] = useState(null);
   // Surprise me (brief §15): one pick at a time from places you haven't saved, with a reason.
   const [surprise, setSurprise] = useState(null);       // null | 'loading' | { pool, i }
@@ -183,6 +192,18 @@ export default function Home({ onNavigate, payload, nearbySaves = [] }) {
             </div>
           )}
         </>
+      )}
+
+      {weekend && (
+        <button type="button" onClick={() => onNavigate('weekend-plan', { lat: weekend.lat, lng: weekend.lng })}
+          style={{ display: 'flex', alignItems: 'center', gap: 14, width: '100%', marginBottom: 24, padding: '16px 16px', borderRadius: 14, background: 'var(--teal-d)', border: 0, color: '#fff', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' }}>
+          <span style={{ width: 40, height: 40, borderRadius: 20, background: 'rgba(255,255,255,.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--sand)', flexShrink: 0 }}><Icon name="calendar" size={20} /></span>
+          <span style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <span style={{ fontFamily: 'var(--font-display)', fontSize: 19, lineHeight: 1.15 }}>Plan this weekend</span>
+            <span style={{ fontSize: 13.5, color: 'rgba(255,255,255,.75)' }}>{weekend.count} things you saved are within 10 km. We'll put three in order.</span>
+          </span>
+          <Icon name="forward" size={18} />
+        </button>
       )}
 
       {forYou.length > 0 && (
