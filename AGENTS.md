@@ -122,6 +122,17 @@ seeds/ utils/ Seed scripts and shared helpers (logger, etc).
   guess as certain. Surface "needs review" rather than silently picking one
   uncertain reading.
 
+## Voice & Text Memories
+
+See [ADR 0016](docs/adr/0016-voice-capture-to-structured-memory.md).
+
+- `POST /voice` (multipart `audio`, or `text`) → `services/voiceMemory.js` →
+  a `Save` with `source: 'voice'`, `memoryType`, `entities`, `resurfaceAt`.
+- The model returns a *relative* time phrase; **the server resolves the date**.
+  Never let the model pick an absolute date it was not told.
+- A structuring failure still saves a plain `note` with the transcript. Never
+  drop what the user said.
+
 ## Extraction Rules
 
 The link/video pipeline turns a URL into a structured save. See
@@ -188,6 +199,9 @@ See [`docs/notifications.md`](docs/notifications.md),
   delivered via Web Push (VAPID) / email. Delivery is idempotent.
 - The product moat is **timing** — resurfacing a save when it matters. Trigger
   logic is core; treat it as such (tests, honest confidence, no spam).
+- **A memory's `resurfaceAt` is a promise.** The `resurface_due` trigger fires
+  it once, on the date, and stamps `resurfacedAt` so it can never double-send.
+  It is distinct from the age-based `resurface` trigger (ADR 0016).
 - **Production scheduling requires an external cron** hitting
   `POST /notifications/run` with the `x-cron-secret` header (`CRON_SECRET`) —
   in-process node-cron never fires on hosts that sleep when idle (Render free

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import './theme.css';
 import './legacy.css';
 import api from '../api';
@@ -8,23 +8,19 @@ import InstallPrompt from '../components/InstallPrompt';
 import PushSetup from '../components/PushSetup';
 import BadgeSync from '../components/BadgeSync';
 import Login from '../features/auth/Login';
+import Welcome from '../features/auth/Welcome';
 import Signup from '../features/auth/Signup';
 import Home from '../features/home/Home';
 import SavedList from '../features/saves/SavedList';
-import AddSave from '../features/capture/AddSave';
 import Collections from '../features/collections/Collections';
-import SaveDetail from '../features/saves/SaveDetail';
 import Saved from '../features/saves/Saved';
 import Tried from '../features/saves/Tried';
 import Search from '../features/search/Search';
-import Profile from '../features/profile/Profile';
 import Onboarding from '../features/onboarding/Onboarding';
 import OnboardingCity from '../features/onboarding/OnboardingCity';
 import OnboardingInterests from '../features/onboarding/OnboardingInterests';
 import OnboardingImport from '../features/onboarding/OnboardingImport';
 import NotificationPermission from '../features/onboarding/NotificationPermission';
-import Notifications from '../features/notifications/Notifications';
-import ScreenshotSummary from '../features/saves/ScreenshotSummary';
 import Explore from '../features/explore/Explore';
 import Place from '../features/explore/Place';
 import CollectionDetail from '../features/collections/CollectionDetail';
@@ -32,9 +28,22 @@ import DemoSaves from '../features/onboarding/DemoSaves';
 import FirstSaveSuccess from '../features/onboarding/FirstSaveSuccess';
 import ShareIntake from '../features/capture/ShareIntake';
 
+// Code-split: heavy or rarely-first screens load on demand (ADR 0012).
+const AddSave = lazy(() => import('../features/capture/AddSave'));
+const Extracting = lazy(() => import('../features/capture/Extracting'));
+const Starter = lazy(() => import('../features/capture/Starter'));
+const MultiExtract = lazy(() => import('../features/capture/MultiExtract'));
+const Voice = lazy(() => import('../features/capture/Voice'));
+const VoiceResult = lazy(() => import('../features/capture/VoiceResult'));
+const SaveDetail = lazy(() => import('../features/saves/SaveDetail'));
+const Itinerary = lazy(() => import('../features/saves/Itinerary'));
+const Profile = lazy(() => import('../features/profile/Profile'));
+const Notifications = lazy(() => import('../features/notifications/Notifications'));
+const ScreenshotSummary = lazy(() => import('../features/saves/ScreenshotSummary'));
+
 function App() {
   const [authChecked, setAuthChecked] = useState(false);
-  const [currentScreen, setCurrentScreen] = useState('login');
+  const [currentScreen, setCurrentScreen] = useState('welcome');
   const [payload, setPayload] = useState(null);
   const [saves, setSaves] = useState([]);
   const [nearbySaves, setNearbySaves] = useState([]);
@@ -127,7 +136,7 @@ function App() {
       } else {
         // Save it right after login instead of losing the share.
         localStorage.setItem('pending_share', JSON.stringify(shared));
-        setCurrentScreen('login');
+        setCurrentScreen('welcome');
       }
       setAuthChecked(true);
       return;
@@ -164,10 +173,10 @@ function App() {
       } catch {
         // Corrupted storage — clear and restart
         localStorage.clear();
-        setCurrentScreen('login');
+        setCurrentScreen('welcome');
       }
     } else {
-      setCurrentScreen('login');
+      setCurrentScreen('welcome');
     }
     setAuthChecked(true);
   }, []);
@@ -177,9 +186,9 @@ function App() {
     // Onboarding flow disabled — no forced redirect after login/signup.
 
     // Check if trying to access protected screen without auth
-    const protectedScreens = ['home', 'save-detail', 'savedList', 'search', 'collections', 'saved', 'tried', 'place', 'profile', 'notifications', 'nearby', 'explore'];
+    const protectedScreens = ['home', 'save-detail', 'savedList', 'search', 'collections', 'saved', 'tried', 'place', 'profile', 'notifications', 'nearby', 'explore', 'itinerary', 'extracting', 'starter', 'multi-extract', 'voice', 'voice-result'];
     if (protectedScreens.includes(screen) && !localStorage.getItem('auth_token')) {
-      setCurrentScreen('login');
+      setCurrentScreen('welcome');
       return;
     }
 
@@ -237,20 +246,10 @@ function App() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: 'var(--paper)'
+        background: 'var(--bg)'
       }}>
-        <div style={{
-          width: 56,
-          height: 56,
-          borderRadius: 6,
-          background: 'var(--rust)',
-          transform: 'rotate(-4deg)',
-          border: '2px dashed rgba(255,255,255,.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center'
-        }}>
-          <span style={{ fontSize: 26 }}>🔖</span>
+        <div style={{ width: 56, height: 56, borderRadius: 14, background: 'var(--teal)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6 4h12a1 1 0 0 1 1 1v15l-7-4-7 4V5a1 1 0 0 1 1-1z" /></svg>
         </div>
       </div>
     );
@@ -262,6 +261,7 @@ function App() {
   const isAuthenticated = !!localStorage.getItem('auth_token');
 
   const screenMap = {
+    'welcome': <Welcome {...props} />,
     'login': <Login {...props} />,
     'signup': <Signup {...props} />,
     'onboarding': <Onboarding {...props} />,
@@ -277,13 +277,19 @@ function App() {
     'add-save': <AddSave {...props} />,
     'share-intake': <ShareIntake {...props} />,
     'save-detail': <SaveDetail {...props} />,
+    'itinerary': <Itinerary {...props} />,
+    'extracting': <Extracting {...props} />,
+    'starter': <Starter {...props} />,
+    'multi-extract': <MultiExtract {...props} />,
+    'voice': <Voice {...props} />,
+    'voice-result': <VoiceResult {...props} />,
     'screenshot-summary': <ScreenshotSummary {...props} sessionId={payload?.sessionId} summary={payload?.summary} thumbnails={payload?.thumbnails || []} saveId={payload?.saveId} autoSaved={payload?.autoSaved} />,
     'collections': <Collections {...props} />,
     'collection-detail': <CollectionDetail {...props} />,
     'nearby': <Explore {...props} nearbySaves={nearbySaves} />,
     'explore': <Explore {...props} nearbySaves={nearbySaves} />,
     'place': <Place {...props} />,
-    'saved': <Saved {...props} />,
+    'saved': <Saved {...props} nearbySaves={nearbySaves} />,
     'tried': <Tried {...props} />,
     'search': <Search {...props} />,
     'notifications': <Notifications {...props} />,
@@ -307,7 +313,7 @@ function App() {
       }}>
         {/* Screen Content */}
         <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', overscrollBehaviorX: 'none', display: 'flex', flexDirection: 'column' }}>
-          {screenMap[currentScreen] || screenMap['login']}
+          <Suspense fallback={<div className="wt-screen" />}>{screenMap[currentScreen] || screenMap['welcome']}</Suspense>
         </div>
 
         {/* Bottom Navigation - shown on main screens */}

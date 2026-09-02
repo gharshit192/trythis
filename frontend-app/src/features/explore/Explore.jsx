@@ -5,7 +5,7 @@ import Chip from '../../components/Chip';
 import ListRow from '../../components/ListRow';
 import EmptyState from '../../components/EmptyState';
 import { formatDistance } from '../../lib/format';
-import { getCategoryTile, INTERESTS } from '../../lib/categoryMeta';
+import { getCategoryTile } from '../../lib/categoryMeta';
 
 // Explore replaces the Nearby tab (ADR 0015). One screen, every category; the
 // chips are filters over three real sources — your saves, seeded places, and
@@ -13,8 +13,9 @@ import { getCategoryTile, INTERESTS } from '../../lib/categoryMeta';
 const RADIUS_M = 5000;
 const CHIPS = [
   { id: 'near',     label: 'Near you' },
+  { id: 'foryou',   label: 'For you' },
   { id: 'planned',  label: 'This weekend' },
-  { id: 'place',    label: 'Places' },
+  { id: 'place',    label: 'Cafes & places' },
   { id: 'food',     label: 'Food' },
   { id: 'shop',     label: 'Shopping' },
   { id: 'learn',    label: 'Watch & read' },
@@ -26,10 +27,17 @@ export default function Explore({ onNavigate, nearbySaves = [] }) {
   const [near, setNear] = useState(nearbySaves);
   const [places, setPlaces] = useState([]);
   const [geo, setGeo] = useState('asking'); // asking | ok | denied
+  const [forYou, setForYou] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.getSaves().then((r) => { if (r?.status === 'success') setSaves(r.data || []); });
+    api.getSaves().then((r) => {
+      if (r?.status !== 'success') return;
+      const list = r.data || [];
+      setSaves(list);
+      const latest = list.filter((s) => s.intentStatus !== 'tried')[0];
+      if (latest) api.getRecommendations(latest._id).then((x) => x?.status === 'success' && setForYou((x.data || []).map((p) => ({ ...p, because: latest.title })))).catch(() => {});
+    });
     if (!navigator.geolocation) { setGeo('denied'); setLoading(false); return; }
     navigator.geolocation.getCurrentPosition(async (pos) => {
       const { latitude: lat, longitude: lng } = pos.coords;
@@ -63,6 +71,13 @@ export default function Explore({ onNavigate, nearbySaves = [] }) {
       }));
       return [...own, ...seeded];
     }
+    if (chip === 'foryou') {
+      return forYou.slice(0, 20).map((s) => ({
+        key: s._id, category: s.category, title: s.title,
+        meta: s.extractedLocation?.name || s.extractedLocation?.city || getCategoryTile(s.category).label,
+        reason: `Because you saved ${s.because}`, saved: true, onClick: () => onNavigate('save-detail', { id: s._id }),
+      }));
+    }
     const pool = saves.filter((s) => s.intentStatus !== 'dismissed' && s.intentStatus !== 'tried');
     const pick = chip === 'planned'
       ? pool.filter((s) => s.intentStatus === 'planned')
@@ -76,7 +91,7 @@ export default function Explore({ onNavigate, nearbySaves = [] }) {
 
   const subtitle = chip === 'near'
     ? (geo === 'denied' ? 'Turn on location to see what is close' : `Within ${RADIUS_M / 1000} km · ${rows.length} place${rows.length === 1 ? '' : 's'}`)
-    : `${rows.length} saved`;
+    : chip === 'foryou' ? (rows.length ? `${rows.length} picked from what you saved` : 'Save a few things and this fills in') : `${rows.length} saved`;
 
   return (
     <div className="wt-screen has-nav">
@@ -100,7 +115,6 @@ export default function Explore({ onNavigate, nearbySaves = [] }) {
           trailIcon={<Icon name="bookmark" size={20} fill={r.saved ? 'currentColor' : 'none'} style={{ color: r.saved ? 'var(--teal)' : 'var(--ink)' }} />}
           onClick={r.onClick} />
       ))}
-      {INTERESTS.length === 0 && null}
     </div>
   );
 }

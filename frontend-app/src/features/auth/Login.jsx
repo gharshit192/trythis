@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import api from '../../api';
+import Icon from '../../components/Icon';
+import Button from '../../components/Button';
 
 export default function Login({ onNavigate }) {
   // 'login' | 'forgot' | 'reset'
@@ -98,101 +100,56 @@ export default function Login({ onNavigate }) {
   };
 
   return (
-    <div className="phone-frame">
-      <div style={{ padding: '48px 28px 32px', flex: 1, display: 'flex', flexDirection: 'column', background: 'var(--paper)' }}>
-        <div style={{ textAlign: 'center', marginBottom: '36px', marginTop: '24px' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '56px', height: '56px', background: 'var(--coral)', borderRadius: '16px', marginBottom: '14px' }}>
-            <i className="ti ti-bookmark" style={{ fontSize: '28px', color: 'var(--linen)' }}></i>
-          </div>
-          <p className="display" style={{ fontSize: '25px', marginBottom: '4px' }}>Wanna Try</p>
-          <p style={{ fontSize: '14px', color: 'var(--slate)', marginTop: '4px', fontStyle: 'italic' }}>See it · Save it · Try it</p>
-        </div>
-
-        {mode === 'login' && (
-          <>
-            <div style={{ marginBottom: '24px' }}>
-              <h1 className="display" style={{ fontSize: '28px', marginBottom: '6px' }}>Welcome back</h1>
-              <p style={{ fontSize: '15px', color: 'var(--slate)' }}>Sign in to pick up where you left off.</p>
-            </div>
-
-            <p className="label">Email</p>
-            <input type="email" className="input" style={{ marginBottom: '14px' }} placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} disabled={loading} />
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '6px' }}>
-              <span className="label" style={{ marginBottom: '0' }}>Password</span>
-              <button type="button" onClick={goForgot} disabled={loading} style={{ background: 'transparent', border: 'none', padding: 0, fontSize: '14px', color: 'var(--amber-link, var(--coral))', fontWeight: '500', cursor: 'pointer' }}>Forgot?</button>
-            </div>
-            <input type="password" className="input" style={{ marginBottom: '20px' }} placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} disabled={loading} />
-
-            {info  && <div style={{ color: 'var(--coral)', marginBottom: '10px', fontSize: '14px' }}>{info}</div>}
-            {error && <div style={{ color: 'var(--error,#d33)', marginBottom: '10px', fontSize: '14px' }}>{error}</div>}
-
-            <button className="btn-primary" onClick={handleLogin} disabled={loading}>
-              {loading ? 'Signing in…' : 'Sign in'}
-            </button>
-
-            <p style={{ textAlign: 'center', marginTop: 'auto', paddingTop: '32px', fontSize: '15px', color: 'var(--slate)' }}>
-              New here? <span style={{ color: 'var(--ink)', fontWeight: '500', cursor: 'pointer' }} onClick={() => onNavigate('signup')}>Create an account</span>
-            </p>
-          </>
-        )}
-
-        {mode === 'forgot' && (
-          <>
-            <div style={{ marginBottom: '20px' }}>
-              <h1 className="display" style={{ fontSize: '25px', marginBottom: '6px' }}>Forgot password?</h1>
-              <p style={{ fontSize: '14px', color: 'var(--slate)' }}>Enter your email and we'll send a 6-digit code to reset it.</p>
-            </div>
-
-            <p className="label">Email</p>
-            <input type="email" className="input" style={{ marginBottom: '16px' }} placeholder="you@example.com" value={resetEmail} onChange={(e) => setResetEmail(e.target.value)} disabled={loading} />
-
-            {error && <div style={{ color: 'var(--error,#d33)', marginBottom: '10px', fontSize: '14px' }}>{error}</div>}
-
-            <button className="btn-primary" onClick={handleForgotSubmit} disabled={loading}>
-              {loading ? 'Sending…' : 'Send code'}
-            </button>
-            <button className="btn-secondary" style={{ marginTop: 10 }} onClick={goLogin} disabled={loading}>
-              Back to sign in
-            </button>
-          </>
-        )}
-
-        {mode === 'reset' && (
-          <>
-            <div style={{ marginBottom: '20px' }}>
-              <h1 className="display" style={{ fontSize: '25px', marginBottom: '6px' }}>Enter the code</h1>
-              <p style={{ fontSize: '14px', color: 'var(--slate)' }}>
-                We sent a 6-digit code to <strong>{resetEmail}</strong>. Codes expire in 15 minutes.
-              </p>
-            </div>
-
-            {devOtp && process.env.NODE_ENV !== 'production' && (
-              <div style={{ background: 'var(--linen)', borderRadius: 8, padding: '8px 10px', marginBottom: 14, fontSize: 13, color: 'var(--slate)' }}>
-                <strong>Dev mode:</strong> code is <code style={{ fontFamily: 'monospace', color: 'var(--coral)' }}>{devOtp}</code>
-              </div>
-            )}
-
-            <p className="label">6-digit code</p>
-            <input type="text" inputMode="numeric" maxLength={6} className="input" style={{ marginBottom: 14, letterSpacing: 4, fontVariantNumeric: 'tabular-nums' }} placeholder="123456" value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))} disabled={loading} />
-
-            <p className="label">New password</p>
-            <input type="password" className="input" style={{ marginBottom: 14 }} placeholder="Min 8 chars, uppercase + number" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} disabled={loading} />
-
-            <p className="label">Confirm password</p>
-            <input type="password" className="input" style={{ marginBottom: 16 }} placeholder="Re-enter new password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} disabled={loading} />
-
-            {error && <div style={{ color: 'var(--error,#d33)', marginBottom: '10px', fontSize: '14px' }}>{error}</div>}
-
-            <button className="btn-primary" onClick={handleResetSubmit} disabled={loading}>
-              {loading ? 'Updating…' : 'Reset password'}
-            </button>
-            <button className="btn-secondary" style={{ marginTop: 10 }} onClick={() => setMode('forgot')} disabled={loading}>
-              Use a different email
-            </button>
-          </>
-        )}
+    <div className="wt-screen">
+      <div className="wt-topbar">
+        <button type="button" className="wt-iconbtn" aria-label="Back" onClick={() => (mode === 'login' ? onNavigate('welcome') : goLogin())}><Icon name="back" size={22} /></button>
       </div>
+
+      {mode === 'login' && (
+        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+          <h1 className="wt-title lg" style={{ fontSize: 33, marginBottom: 9 }}>Welcome back</h1>
+          <p className="wt-sub" style={{ marginBottom: 26 }}>Sign in to pick up where you left off.</p>
+          {error && <div className="wt-note error">{error}</div>}
+          {info && <div className="wt-note info">{info}</div>}
+          <div className="wt-field"><label className="wt-label" htmlFor="email">Email</label>
+            <input id="email" className="wt-input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" required /></div>
+          <div className="wt-field"><div className="row"><label className="wt-label" htmlFor="password">Password</label><span className="wt-link" style={{ fontSize: 13.5 }} onClick={goForgot}>Forgot?</span></div>
+            <input id="password" className="wt-input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" autoComplete="current-password" required /></div>
+          <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 16, alignItems: 'center' }}>
+            <Button type="submit" disabled={loading}>{loading ? 'Signing in…' : 'Sign in'}</Button>
+            <span style={{ fontSize: 14.5, color: 'var(--mute)' }}>New here? <span className="wt-link" onClick={() => onNavigate('signup')}>Create an account</span></span>
+          </div>
+        </form>
+      )}
+
+      {mode === 'forgot' && (
+        <form onSubmit={handleForgotSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+          <h1 className="wt-title lg" style={{ fontSize: 33, marginBottom: 9 }}>Forgot password?</h1>
+          <p className="wt-sub" style={{ marginBottom: 26 }}>We'll send a 6-digit code to your email.</p>
+          {error && <div className="wt-note error">{error}</div>}
+          {info && <div className="wt-note info">{info}</div>}
+          <div className="wt-field"><label className="wt-label" htmlFor="resetEmail">Email</label>
+            <input id="resetEmail" className="wt-input" type="email" value={resetEmail} onChange={(e) => setResetEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" required /></div>
+          <div style={{ marginTop: 'auto' }}><Button type="submit" disabled={loading}>{loading ? 'Sending…' : 'Send code'}</Button></div>
+        </form>
+      )}
+
+      {mode === 'reset' && (
+        <form onSubmit={handleResetSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+          <h1 className="wt-title lg" style={{ fontSize: 33, marginBottom: 9 }}>Set a new password</h1>
+          <p className="wt-sub" style={{ marginBottom: 26 }}>Enter the code we sent to {resetEmail}.</p>
+          {error && <div className="wt-note error">{error}</div>}
+          {info && <div className="wt-note info">{info}</div>}
+          {devOtp && <div className="wt-note info"><strong>Dev mode:</strong> code is <code>{devOtp}</code></div>}
+          <div className="wt-field"><label className="wt-label" htmlFor="otp">Code</label>
+            <input id="otp" className="wt-input" inputMode="numeric" value={otp} onChange={(e) => setOtp(e.target.value)} placeholder="123456" required /></div>
+          <div className="wt-field"><label className="wt-label" htmlFor="newPassword">New password</label>
+            <input id="newPassword" className="wt-input" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="At least 8 characters" autoComplete="new-password" required /></div>
+          <div className="wt-field"><label className="wt-label" htmlFor="confirmPassword">Confirm</label>
+            <input id="confirmPassword" className="wt-input" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} autoComplete="new-password" required /></div>
+          <div style={{ marginTop: 'auto' }}><Button type="submit" disabled={loading}>{loading ? 'Updating…' : 'Update password'}</Button></div>
+        </form>
+      )}
     </div>
   );
 }

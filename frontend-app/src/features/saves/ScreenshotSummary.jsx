@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import api from '../../api';
+import Icon from '../../components/Icon';
 
 const CATEGORY_ICONS = {
   'cafe': '☕',
@@ -151,28 +152,17 @@ export default function ScreenshotSummary({ sessionId, summary: initialSummary, 
   };
 
   return (
-    <div style={{ background: 'var(--colors-surface-surface-0, white)', minHeight: '100vh', paddingBottom: 20 }}>
-      {/* Header with back & screenshot count */}
-      <div style={{ padding: '12px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '0.5px solid var(--colors-stroke-tertiary, #eee)' }}>
-        <button
-          onClick={() => onNavigate('home')}
-          style={{ width: 32, height: 32, background: 'var(--colors-surface-surface-1, #f5f5f5)', borderRadius: '50%', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 15 }}>
-          ←
-        </button>
-        <span style={{ fontSize: 13, color: 'var(--colors-type-tertiary, #888)' }}>
-          {summary.totalScreenshots || 0} screenshots
-        </span>
-        <button
-          onClick={handleShareImage}
-          style={{ width: 32, height: 32, background: 'var(--colors-surface-surface-1, #f5f5f5)', borderRadius: '50%', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: 15 }}>
-          ⤴
-        </button>
+    <div className="wt-screen" style={{ padding: 0 }}>
+      <div className="wt-topbar" style={{ padding: 'var(--pad-top) var(--pad-screen) 0', marginBottom: 8 }}>
+        <button type="button" className="wt-iconbtn" aria-label="Back" onClick={() => onNavigate('home')}><Icon name="back" size={22} /></button>
+        <span style={{ fontSize: 13, color: 'var(--faint)' }}>{summary.totalScreenshots || 0} screenshots</span>
+        <button type="button" className="wt-iconbtn" aria-label="Share" onClick={handleShareImage}><Icon name="share" size={21} /></button>
       </div>
 
       {/* Intro section */}
       <div style={{ padding: '16px 20px 12px' }}>
-        <h1 style={{ fontSize: 23, fontWeight: 600, margin: '0 0 4px', lineHeight: 1.3 }}>
-          Your screenshot dump,<br/>made sense of
+        <h1 className="wt-title" style={{ marginBottom: 4 }}>
+          Your screenshots,<br/>made sense of
         </h1>
         <p style={{ fontSize: 13, color: 'var(--colors-type-tertiary, #888)', margin: 0 }}>
           Sorted into {summary.categories?.length || 0} groups by Wanna Try · just now

@@ -14,10 +14,11 @@ const TABS = [
 ];
 const KINDS = [
   { id: 'all',   label: 'All' },
-  { id: 'place', label: 'Places' },
+  { id: 'near',  label: 'Near me' },
+  { id: 'place', label: 'Cafes & places' },
   { id: 'food',  label: 'Food' },
   { id: 'shop',  label: 'Shopping' },
-  { id: 'learn', label: 'Watch & read' },
+  { id: 'learn', label: 'Watch' },
 ];
 const shortAge = (d) => {
   const days = Math.floor((Date.now() - new Date(d)) / 86400000);
@@ -27,7 +28,8 @@ const shortAge = (d) => {
   return `${Math.floor(days / 30)}mo`;
 };
 
-export default function Saved({ onNavigate, payload }) {
+export default function Saved({ onNavigate, payload, nearbySaves = [] }) {
+  const nearIds = new Set(nearbySaves.map((s) => s._id));
   const [tab, setTab] = useState(payload?.tab || 'saved');
   const [kind, setKind] = useState('all');
   const [saves, setSaves] = useState([]);
@@ -42,7 +44,7 @@ export default function Saved({ onNavigate, payload }) {
   const counts = Object.fromEntries(TABS.map((t) => [t.id, saves.filter((s) => (s.intentStatus || 'saved') === t.id).length]));
   const rows = saves
     .filter((s) => (s.intentStatus || 'saved') === tab)
-    .filter((s) => kind === 'all' || getCategoryTile(s.category).kind === kind);
+    .filter((s) => kind === 'all' || (kind === 'near' ? nearIds.has(s._id) : getCategoryTile(s.category).kind === kind));
 
   const metaOf = (s) => {
     const t = getCategoryTile(s.category);

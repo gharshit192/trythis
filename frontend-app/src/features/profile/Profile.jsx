@@ -1,400 +1,112 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useState, useEffect } from 'react';
 import api from '../../api';
+import Icon from '../../components/Icon';
+import Button from '../../components/Button';
+import SectionLabel from '../../components/SectionLabel';
 import { enablePushNotifications, disablePushNotifications, getPushState } from '../../lib/push';
 
-const APP_VERSION = 'v1.0';
-
-const fmtDate = (d) => {
-  if (!d) return '—';
-  const dt = new Date(d);
-  return dt.toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
+const PUSH_COPY = {
+  denied: 'Notifications are blocked in your browser settings.',
+  unsupported: 'This browser can\'t receive push notifications.',
+  'no-key': 'Push isn\'t configured on the server yet.',
+  error: 'Could not turn notifications on. Try again.',
 };
 
+// Me: the numbers that matter (tried rate first), two switches, account.
 export default function Profile({ onNavigate }) {
-  const [user, setUser] = useState(null);
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
   const [saves, setSaves] = useState([]);
-  const [collections, setCollections] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  // Notification & Location settings
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const [locationEnabled, setLocationEnabled] = useState(false);
-  const [settingsSaving, setSettingsSaving] = useState(false);
-  // What this browser can actually do: 'on' | 'off' | 'blocked' | 'unsupported'.
-  // Kept separate from notificationsEnabled (the server-side preference) because
-  // they disagree often — a user can want notifications while their browser
-  // refuses to deliver them, and the row has to say so instead of showing "On".
-  const [pushState, setPushState] = useState('off');
-  const [pushNote, setPushNote] = useState(null);
-
-  // Modals
-  const [confirmLogout, setConfirmLogout] = useState(false);
-  const [showAbout, setShowAbout] = useState(false);
-  const [showChangePw, setShowChangePw] = useState(false);
-  const [pwCurrent, setPwCurrent] = useState('');
-  const [pwNew, setPwNew] = useState('');
-  const [pwConfirm, setPwConfirm] = useState('');
-  const [pwError, setPwError] = useState(null);
-  const [pwInfo, setPwInfo] = useState(null);
-  const [pwSaving, setPwSaving] = useState(false);
+  const [push, setPush] = useState('off');
+  const [note, setNote] = useState(null);
+  const [loc, setLoc] = useState(localStorage.getItem('location_requested') === 'true');
+  const [pw, setPw] = useState(false);
+  const [cur, setCur] = useState(''); const [next, setNext] = useState(''); const [pwMsg, setPwMsg] = useState(null);
 
   useEffect(() => {
-    const storedUser = JSON.parse(localStorage.getItem('user') || 'null');
-    setUser(storedUser);
-    // Initialize settings from user data
-    if (storedUser) {
-      setNotificationsEnabled(storedUser.notificationsEnabled ?? true);
-      setLocationEnabled(storedUser.locationEnabled ?? false);
-    }
-    setPushState(getPushState());
-
     const ctrl = new AbortController();
-    (async () => {
-      try {
-        const [s, c] = await Promise.all([
-          api.getSaves({ signal: ctrl.signal }),
-          api.getCollections({ signal: ctrl.signal }),
-        ]);
-        if (ctrl.signal.aborted) return;
-        if (s.status === 'success') setSaves(s.data || []);
-        if (c.status === 'success') setCollections(c.data || []);
-      } catch (err) {
-        if (err.name !== 'AbortError') console.warn('Profile load failed', err);
-      } finally {
-        if (!ctrl.signal.aborted) setLoading(false);
-      }
-    })();
+    api.getSaves({ signal: ctrl.signal }).then((r) => r?.status === 'success' && setSaves(r.data || []));
+    setPush(getPushState());
     return () => ctrl.abort();
   }, []);
 
-  const stats = useMemo(() => deriveStats(saves), [saves]);
+  const tried = saves.filter((s) => s.intentStatus === 'tried').length;
+  const planned = saves.filter((s) => s.intentStatus === 'planned').length;
+  const rate = saves.length ? Math.round((tried / saves.length) * 100) : 0;
 
-  const handleLogout = () => {
-    api.logout();
-    onNavigate('login');
+  const togglePush = async () => {
+    setNote(null);
+    if (push === 'on') { await disablePushNotifications(); setPush(getPushState()); api.updateSettings({ notificationsEnabled: false }).catch(() => {}); return; }
+    const r = await enablePushNotifications();
+    setPush(getPushState());
+    if (r?.ok === false || r?.reason) setNote(PUSH_COPY[r.reason] || PUSH_COPY.error);
+    else api.updateSettings({ notificationsEnabled: true }).catch(() => {});
   };
-
-  const resetPwForm = () => {
-    setPwCurrent(''); setPwNew(''); setPwConfirm('');
-    setPwError(null); setPwInfo(null);
+  const toggleLoc = () => {
+    if (loc) { setLoc(false); localStorage.setItem('location_requested', 'denied'); api.updateSettings({ locationEnabled: false }).catch(() => {}); return; }
+    navigator.geolocation?.getCurrentPosition(async (p) => {
+      await api.updateLocation(p.coords.latitude, p.coords.longitude, null).catch(() => {});
+      await api.updateSettings({ locationEnabled: true }).catch(() => {});
+      localStorage.setItem('location_requested', 'true'); setLoc(true);
+    }, () => setNote('Location is blocked in your browser settings.'), { timeout: 10000 });
   };
-
-  const PUSH_FAILURE_COPY = {
-    denied: 'Notifications are blocked for this site. Allow them in your browser or phone settings, then try again.',
-    unsupported: 'This browser can\'t do notifications. On iPhone, add Wanna Try to your Home Screen first.',
-    'no-key': 'Push isn\'t configured on the server yet — nothing to turn on.',
-    error: 'Couldn\'t turn notifications on. Please try again.',
+  const changePw = async () => {
+    setPwMsg(null);
+    if (next.length < 8) return setPwMsg('New password needs 8+ characters.');
+    const r = await api.changePassword(cur, next);
+    setPwMsg(r?.status === 'success' ? 'Password updated.' : (r?.error?.message || 'Could not update.'));
+    if (r?.status === 'success') { setCur(''); setNext(''); setPw(false); }
   };
+  const logout = () => { api.logout(); onNavigate('welcome'); };
 
-  const handleNotificationsToggle = async () => {
-    setSettingsSaving(true);
-    setPushNote(null);
-    try {
-      const newValue = !notificationsEnabled;
-
-      if (newValue) {
-        // Ask the browser BEFORE persisting the preference. This click is the
-        // user gesture the permission prompt needs, and if it fails the toggle
-        // must not end up reading "On" against a device that will never be
-        // delivered to.
-        const result = await enablePushNotifications();
-        setPushState(getPushState());
-        if (!result.ok) {
-          setPushNote(PUSH_FAILURE_COPY[result.reason] || PUSH_FAILURE_COPY.error);
-          return;
-        }
-      } else {
-        await disablePushNotifications();
-        setPushState(getPushState());
-      }
-
-      await api.updateSettings({ notificationsEnabled: newValue });
-      setNotificationsEnabled(newValue);
-      // Update localStorage
-      const updatedUser = { ...user, notificationsEnabled: newValue };
-      setUser(updatedUser);
-      localStorage.setItem('user', JSON.stringify(updatedUser));
-    } catch (err) {
-      console.error('Failed to update notifications setting', err);
-      setPushNote(PUSH_FAILURE_COPY.error);
-    } finally {
-      setSettingsSaving(false);
-    }
-  };
-
-  const handleLocationToggle = async () => {
-    if (locationEnabled) {
-      // Turning off location
-      setSettingsSaving(true);
-      try {
-        await api.updateSettings({ locationEnabled: false });
-        setLocationEnabled(false);
-        const updatedUser = { ...user, locationEnabled: false };
-        setUser(updatedUser);
-        localStorage.setItem('user', JSON.stringify(updatedUser));
-      } catch (err) {
-        console.error('Failed to update location setting', err);
-      } finally {
-        setSettingsSaving(false);
-      }
-    } else {
-      // Turning on location — request geolocation first
-      if (!navigator.geolocation) {
-        alert('Geolocation is not supported by your browser.');
-        return;
-      }
-
-      navigator.geolocation.getCurrentPosition(
-        async (pos) => {
-          const { latitude: lat, longitude: lng } = pos.coords;
-          setSettingsSaving(true);
-          try {
-            await api.updateLocation(lat, lng, null);
-            await api.updateSettings({ locationEnabled: true });
-            setLocationEnabled(true);
-            const updatedUser = { ...user, locationEnabled: true };
-            setUser(updatedUser);
-            localStorage.setItem('user', JSON.stringify(updatedUser));
-          } catch (err) {
-            console.error('Failed to enable location', err);
-          } finally {
-            setSettingsSaving(false);
-          }
-        },
-        (err) => {
-          console.error('Geolocation permission denied', err);
-          alert('Location permission required. Please enable it in your browser settings.');
-        },
-        { timeout: 10000 }
-      );
-    }
-  };
-
-  const handleChangePassword = async () => {
-    setPwError(null); setPwInfo(null);
-    if (!pwCurrent || !pwNew || !pwConfirm) return setPwError('All fields are required.');
-    if (pwNew.length < 6) return setPwError('New password must be at least 6 characters.');
-    if (pwNew !== pwConfirm) return setPwError('New passwords do not match.');
-    if (pwCurrent === pwNew) return setPwError('New password must differ from the current one.');
-    setPwSaving(true);
-    try {
-      const res = await api.changePassword(pwCurrent, pwNew);
-      if (res.status === 'success') {
-        setPwInfo('Password updated.');
-        setPwCurrent(''); setPwNew(''); setPwConfirm('');
-        setTimeout(() => { setShowChangePw(false); resetPwForm(); }, 900);
-      } else {
-        setPwError(res.error?.message || 'Failed to change password.');
-      }
-    } catch (err) {
-      setPwError(err.message || 'Failed to change password.');
-    } finally {
-      setPwSaving(false);
-    }
-  };
-
-  const initials = (user?.name || user?.email || 'U')
-    .split(/[\s@]+/)
-    .map((w) => w[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
-
-  const memberSince = user?.createdAt
-    || (saves.length ? saves[saves.length - 1].createdAt : null);
+  const Switch = ({ on, onClick }) => (
+    <button type="button" role="switch" aria-checked={on} onClick={onClick} style={{ width: 46, height: 28, borderRadius: 14, border: 0, background: on ? 'var(--teal)' : 'var(--card-2)', position: 'relative', cursor: 'pointer', flexShrink: 0 }}>
+      <span style={{ position: 'absolute', top: 3, left: on ? 21 : 3, width: 22, height: 22, borderRadius: 11, background: '#fff', transition: 'left .15s', boxShadow: '0 1px 3px rgba(0,0,0,.2)' }} />
+    </button>
+  );
+  const Row = ({ icon, kind = 'none', title, sub, right, onClick }) => (
+    <div className="wt-row" style={{ cursor: onClick ? 'pointer' : 'default' }} onClick={onClick}>
+      <span className={`wt-tile ${kind}`}><Icon name={icon} size={20} /></span>
+      <div className="wt-row-body"><span style={{ fontSize: 15.5, fontWeight: 600 }}>{title}</span>{sub && <span className="wt-row-meta">{sub}</span>}</div>
+      <div className="wt-row-trail">{right}</div>
+    </div>
+  );
 
   return (
-    <>
-      <div style={{ display: 'flex', flexDirection: 'column', width: '100%', flex: 1, overflowY: 'auto', position: 'relative' }}>
-        <div className="pf-hdr">
-          <span className="pf-htitle">Profile</span>
-          <span className="pf-hico">⚙️</span>
+    <div className="wt-screen has-nav">
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 22 }}>
+        <div style={{ width: 52, height: 52, borderRadius: 26, background: 'var(--sand)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 19, fontWeight: 600, color: '#6B5747' }}>{(user.name || '?')[0]}</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <h1 className="wt-title" style={{ fontSize: 26 }}>{user.name || 'You'}</h1>
+          <span style={{ fontSize: 13.5, color: 'var(--mute)' }}>{user.email}</span>
         </div>
-
-        {/* Identity */}
-        <div className="pf-av">
-          <div className="pf-circle">{initials}</div>
-          <div className="pf-name">{user?.name || 'Unnamed'}</div>
-          <div className="pf-email">{user?.email || ''}</div>
-          {memberSince && (
-            <p style={{ fontSize: 12, color: 'var(--mute)', marginTop: 4 }}>
-              <i className="ti ti-calendar" style={{ marginRight: 4 }}></i>
-              Member since {fmtDate(memberSince)}
-            </p>
-          )}
-        </div>
-
-        {/* Headline stats */}
-        <div className="pf-stats">
-          <div className="pf-stat"><div className="pf-snum">{loading ? '…' : stats.totalSaves}</div><div className="pf-slbl">Saves</div></div>
-          <div className="pf-stat"><div className="pf-snum">{loading ? '…' : stats.topCategories.length}</div><div className="pf-slbl">Categories</div></div>
-          <div className="pf-stat"><div className="pf-snum">{loading ? '…' : collections.length}</div><div className="pf-slbl">Collections</div></div>
-        </div>
-
-        {/* Settings */}
-        <div className="pf-section">
-          <div className="pf-sitems">
-            {/* Four states, not two. 'blocked' and 'unsupported' can't be
-                resolved by tapping, so the row stops being a toggle and explains
-                itself instead. */}
-            {pushState === 'blocked' || pushState === 'unsupported' ? (
-              <div className="pf-item" style={{ cursor: 'default' }}>
-                <span className="pf-iname">🔔 Notifications</span>
-                <span className="pf-ival" style={{ color: 'var(--mute)' }}>
-                  {pushState === 'blocked' ? 'Blocked' : 'Unavailable'}
-                </span>
-              </div>
-            ) : (
-              <div className="pf-item" onClick={settingsSaving ? undefined : handleNotificationsToggle} style={{ cursor: settingsSaving ? 'not-allowed' : 'pointer', opacity: settingsSaving ? 0.6 : 1 }}>
-                <span className="pf-iname">🔔 Notifications</span>
-                <span className="pf-ival" style={{ color: notificationsEnabled && pushState === 'on' ? 'var(--cook)' : 'var(--mute)' }}>
-                  {notificationsEnabled && pushState === 'on' ? 'On' : 'Off'}
-                </span>
-              </div>
-            )}
-            {pushNote && (
-              <div style={{ padding: '8px 14px 12px', fontSize: 13, lineHeight: 1.45, color: 'var(--slate)' }}>
-                {pushNote}
-              </div>
-            )}
-            <div className="pf-item" onClick={settingsSaving ? undefined : handleLocationToggle} style={{ cursor: settingsSaving ? 'not-allowed' : 'pointer', opacity: settingsSaving ? 0.6 : 1 }}>
-              <span className="pf-iname">📍 Nearby radius</span>
-              <span className="pf-ival">{locationEnabled ? '2 km ›' : 'Off ›'}</span>
-            </div>
-            <div className="pf-item" onClick={() => onNavigate('collections')}>
-              <span className="pf-iname">🗂️ Categories</span>
-              <span className="pf-ival">{loading ? '… ' : stats.topCategories.length} active ›</span>
-            </div>
-            <div className="pf-item" onClick={() => { window.location.href = 'mailto:support@wannatry.app?subject=Wanna%20Try%20Feedback'; }}>
-              <span className="pf-iname">💬 Help & Feedback</span>
-              <span className="pf-ival">↗</span>
-            </div>
-            <div className="pf-item" onClick={() => setShowAbout(true)}>
-              <span className="pf-iname">ℹ️ About Wanna Try</span>
-              <span className="pf-ival">{APP_VERSION} ›</span>
-            </div>
-            <div className="pf-item" onClick={() => { resetPwForm(); setShowChangePw(true); }}>
-              <span className="pf-iname">🔒 Change password</span>
-              <span className="pf-ival">›</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="pf-logout" onClick={() => setConfirmLogout(true)}>Log out</div>
-        <div style={{ height: 24 }} />
       </div>
 
-      {confirmLogout && (
-          <div
-            onClick={() => setConfirmLogout(false)}
-            style={{ position: 'absolute', inset: 0, background: 'rgba(14,14,12,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: 24 }}
-          >
-            <div
-              onClick={(e) => e.stopPropagation()}
-              style={{ background: 'var(--paper)', borderRadius: 16, padding: 20, width: '100%', maxWidth: 320, boxShadow: '0 8px 24px rgba(0,0,0,0.18)' }}
-            >
-              <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'rgba(211,51,51,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
-                <i className="ti ti-logout" style={{ fontSize: 21, color: 'var(--error,#d33)' }}></i>
-              </div>
-              <h3 className="display" style={{ fontSize: 18, textAlign: 'center', marginBottom: 6 }}>Log out of Wanna Try?</h3>
-              <p style={{ fontSize: 14, color: 'var(--slate)', textAlign: 'center', marginBottom: 16 }}>
-                You'll need your email and password to sign back in.
-              </p>
-              <button
-                className="btn-primary"
-                style={{ background: 'var(--error,#d33)' }}
-                onClick={handleLogout}
-              >
-                Log out
-              </button>
-              <button
-                className="btn-secondary"
-                style={{ marginTop: 8 }}
-                onClick={() => setConfirmLogout(false)}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        )}
+      <div className="wt-stat-grid" style={{ marginBottom: 24 }}>
+        <div className="wt-stat"><span className="k">Tried</span><span className="v">{tried}</span></div>
+        <div className="wt-stat"><span className="k">Planning</span><span className="v">{planned}</span></div>
+        <div className="wt-stat"><span className="k">Tried rate</span><span className="v">{rate}%</span></div>
+      </div>
 
-        {showChangePw && (
-          <div
-            onClick={() => !pwSaving && (setShowChangePw(false), resetPwForm())}
-            style={{ position: 'absolute', inset: 0, background: 'rgba(14,14,12,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: 24 }}
-          >
-            <div
-              onClick={(e) => e.stopPropagation()}
-              style={{ background: 'var(--paper)', borderRadius: 16, padding: 20, width: '100%', maxWidth: 340, boxShadow: '0 8px 24px rgba(0,0,0,0.18)' }}
-            >
-              <h3 className="display" style={{ fontSize: 19, marginBottom: 6 }}>Change password</h3>
-              <p style={{ fontSize: 13, color: 'var(--slate)', marginBottom: 14 }}>Enter your current password and a new one.</p>
+      <SectionLabel>Wanna Try can</SectionLabel>
+      <Row icon="bell" kind="place" title="Nudge me" sub={push === 'on' ? 'When something\'s worth it. Never more than one a day.' : 'Off — you\'ll only see them in the app'} right={<Switch on={push === 'on'} onClick={togglePush} />} />
+      <Row icon="pin" kind="food" title="Know where I am" sub={loc ? 'For "near you" and the nearby nudge' : 'Off — nearby is off too'} right={<Switch on={loc} onClick={toggleLoc} />} />
+      {note && <div className="wt-note info" style={{ marginTop: 12 }}>{note}</div>}
 
-              <p className="label">Current password</p>
-              <input type="password" className="input" style={{ marginBottom: 10 }} placeholder="Current password" value={pwCurrent} onChange={(e) => setPwCurrent(e.target.value)} disabled={pwSaving} />
+      <div style={{ marginTop: 24 }}><SectionLabel>Account</SectionLabel></div>
+      <Row icon="lock" title="Change password" onClick={() => setPw((v) => !v)} right={<Icon name="forward" size={18} style={{ color: 'var(--faint)' }} />} />
+      {pw && (
+        <div style={{ padding: '12px 0 4px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {pwMsg && <div className={`wt-note ${pwMsg.includes('updated') ? 'info' : 'error'}`}>{pwMsg}</div>}
+          <input className="wt-input" type="password" placeholder="Current password" value={cur} onChange={(e) => setCur(e.target.value)} autoComplete="current-password" />
+          <input className="wt-input" type="password" placeholder="New password" value={next} onChange={(e) => setNext(e.target.value)} autoComplete="new-password" />
+          <Button small onClick={changePw}>Update</Button>
+        </div>
+      )}
+      <Row icon="folder" kind="learn" title="Collections" onClick={() => onNavigate('collections')} right={<Icon name="forward" size={18} style={{ color: 'var(--faint)' }} />} />
 
-              <p className="label">New password</p>
-              <input type="password" className="input" style={{ marginBottom: 10 }} placeholder="At least 6 characters" value={pwNew} onChange={(e) => setPwNew(e.target.value)} disabled={pwSaving} />
-
-              <p className="label">Confirm new password</p>
-              <input type="password" className="input" style={{ marginBottom: 14 }} placeholder="Re-enter new password" value={pwConfirm} onChange={(e) => setPwConfirm(e.target.value)} disabled={pwSaving} />
-
-              {pwInfo  && <p style={{ color: 'var(--coral)', fontSize: 14, marginBottom: 8 }}>{pwInfo}</p>}
-              {pwError && <p style={{ color: 'var(--error,#d33)', fontSize: 14, marginBottom: 8 }}>{pwError}</p>}
-
-              <button className="btn-primary" onClick={handleChangePassword} disabled={pwSaving}>
-                {pwSaving ? 'Saving…' : 'Update password'}
-              </button>
-              <button
-                className="btn-secondary"
-                style={{ marginTop: 8 }}
-                onClick={() => { setShowChangePw(false); resetPwForm(); }}
-                disabled={pwSaving}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        )}
-
-        {showAbout && (
-          <div
-            onClick={() => setShowAbout(false)}
-            style={{ position: 'absolute', inset: 0, background: 'rgba(14,14,12,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: 24 }}
-          >
-            <div
-              onClick={(e) => e.stopPropagation()}
-              style={{ background: 'var(--paper)', borderRadius: 16, padding: 20, width: '100%', maxWidth: 320, boxShadow: '0 8px 24px rgba(0,0,0,0.18)', textAlign: 'center' }}
-            >
-              <div className="pf-circle" style={{ margin: '0 auto 12px' }}>🔖</div>
-              <h3 className="display" style={{ fontSize: 19, marginBottom: 4 }}>Wanna Try</h3>
-              <p style={{ fontSize: 13, color: 'var(--slate)', marginBottom: 10 }}>See it. Save it. Try it.</p>
-              <p style={{ fontSize: 13, color: 'var(--mute)', marginBottom: 16 }}>{APP_VERSION}</p>
-              <button className="btn-secondary" onClick={() => setShowAbout(false)}>Close</button>
-            </div>
-          </div>
-        )}
-    </>
+      <div style={{ marginTop: 'auto', paddingTop: 24 }}>
+        <Button variant="ghost" onClick={logout}>Sign out</Button>
+      </div>
+    </div>
   );
-}
-
-// ── helpers ───────────────────────────────────────────────────────────────────
-function deriveStats(saves) {
-  // Exclude template/demo saves from all stats
-  const realSaves = saves.filter(s => !s.isTemplate);
-
-  const categories = {};
-  for (const s of realSaves) {
-    const cat = s.category || 'other';
-    categories[cat] = (categories[cat] || 0) + 1;
-  }
-
-  const topCategories = Object.entries(categories)
-    .sort((a, b) => b[1] - a[1])
-    .map(([key, count]) => ({ key, count }));
-
-  return {
-    totalSaves: realSaves.length,
-    topCategories,
-  };
 }

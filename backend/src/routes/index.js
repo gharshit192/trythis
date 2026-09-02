@@ -14,6 +14,7 @@ router.use('/search', require('./search'));
 router.use('/recommendations', require('./recommendations'));
 router.use('/places', require('./places'));
 router.use('/notifications', require('./notifications'));
+router.use('/voice', require('./voice'));
 router.use('/admin', require('./admin'));
 
 module.exports = router;

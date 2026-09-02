@@ -8,7 +8,8 @@ import notifications from './notifications';
 import places from './places';
 import onboarding from './onboarding';
 import uploads from './uploads';
+import voice from './voice';
 
-const api = { ...auth, ...saves, ...collections, ...search, ...notifications, ...places, ...onboarding, ...uploads };
+const api = { ...auth, ...saves, ...collections, ...search, ...notifications, ...places, ...onboarding, ...uploads, ...voice };
 
 export default api;

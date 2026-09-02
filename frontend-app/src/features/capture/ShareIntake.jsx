@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import api from '../../api';
+import Icon from '../../components/Icon';
+import Button from '../../components/Button';
 
 // Web Share Target landing: Android's share sheet opens the installed PWA at
 // /share-target?url=…&text=…&title=… (see public/manifest.json). This screen
@@ -55,78 +57,23 @@ export default function ShareIntake({ onNavigate, payload }) {
 
   const goHome = () => onNavigate('home');
 
+  const copy = {
+    saving:    { title: 'Saving…',        text: 'Reading the link. You can close this — we\'ll finish in the background.' },
+    saved:     { title: 'Saved',          text: 'It\'s in your list. We\'ll tell you when it\'s been read.' },
+    duplicate: { title: 'Already saved',  text: 'You had this one. Nothing was added twice.' },
+    error:     { title: 'Couldn\'t save', text: detail },
+  }[state];
+
   return (
-    <div className="phone-frame">
-      <div style={{ background: 'var(--linen)', minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
-        <div className="qs-sheet">
-          <div className="qs-handle"></div>
-
-          {state === 'saving' && (
-            <div style={{ textAlign: 'center', padding: '12px 0' }}>
-              <div
-                style={{
-                  width: 48, height: 48, background: 'var(--rust)', borderRadius: 14,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  margin: '0 auto 16px', animation: 'si-spin 1s linear infinite',
-                }}
-              >
-                <i className="ti ti-loader" style={{ fontSize: 25, color: '#fff' }}></i>
-              </div>
-              <div className="qs-st" style={{ marginBottom: 6 }}>Saving…</div>
-              <div className="qs-ex">One sec — grabbing what you shared.</div>
-            </div>
-          )}
-
-          {state === 'saved' && (
-            <>
-              <div className="qs-sr">
-                <div className="qs-check">✓</div>
-                <div className="qs-st">Saved to Wanna Try!</div>
-              </div>
-              <div className="qs-ex" style={{ textAlign: 'center', marginBottom: 16 }}>
-                We're analysing it in the background — it'll show up in your Saves shortly.
-              </div>
-              <div className="qs-btns">
-                <button className="qs-bp" onClick={goHome}>Go to Saves</button>
-              </div>
-            </>
-          )}
-
-          {state === 'duplicate' && (
-            <>
-              <div className="qs-sr">
-                <div className="qs-check">✓</div>
-                <div className="qs-st">Already saved</div>
-              </div>
-              <div className="qs-ex" style={{ textAlign: 'center', marginBottom: 16 }}>
-                This one's in your Saves already.
-              </div>
-              <div className="qs-btns">
-                <button className="qs-bp" onClick={goHome}>Go to Saves</button>
-              </div>
-            </>
-          )}
-
-          {state === 'error' && (
-            <>
-              <div className="qs-sr">
-                <div className="qs-st">Couldn't save that</div>
-              </div>
-              <div className="qs-ex" style={{ textAlign: 'center', marginBottom: 16 }}>{detail}</div>
-              <div className="qs-btns">
-                <button className="qs-bp" onClick={() => onNavigate('add-save')}>Add manually</button>
-                <button className="qs-bs" onClick={goHome}>Go to app</button>
-              </div>
-            </>
-          )}
-        </div>
-
-        <style>{`
-          @keyframes si-spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-          }
-        `}</style>
+    <div className="wt-screen" style={{ justifyContent: 'center', alignItems: 'center', textAlign: 'center' }}>
+      <div style={{ width: 72, height: 72, borderRadius: 36, background: state === 'error' ? '#F7E5E3' : 'var(--teal-soft)', color: state === 'error' ? '#A6392F' : 'var(--teal)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
+        {state === 'saving' ? <span className="wt-spinner" /> : <Icon name={state === 'error' ? 'close' : 'check'} size={32} stroke={2.2} />}
+      </div>
+      <h1 className="wt-title" style={{ marginBottom: 8 }}>{copy.title}</h1>
+      <p className="wt-sub" style={{ maxWidth: 280, marginBottom: 28 }}>{copy.text}</p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%', maxWidth: 300 }}>
+        <Button small onClick={goHome}>Open Wanna Try</Button>
+        {state === 'error' && <Button small variant="secondary" onClick={() => onNavigate('add-save')}>Add it another way</Button>}
       </div>
     </div>
   );

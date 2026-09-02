@@ -12,6 +12,7 @@ const priceDrop = require('./triggers/priceDrop');
 const travelIntelligence = require('./triggers/travelIntelligence');
 const weekendReminder = require('./triggers/weekendReminder');
 const resurface = require('./triggers/resurface');
+const resurfaceDue = require('./triggers/resurfaceDue');
 
 // Personalization
 const personaEngine = require('./personalization/userPersona');
@@ -67,6 +68,7 @@ async function evaluateNotifications(userId, context = {}) {
       { name: 'travel_intelligence', module: travelIntelligence },
       { name: 'weekend_reminder', module: weekendReminder },
       { name: 'resurface', module: resurface },
+      { name: 'resurface_due', module: resurfaceDue },
     ].filter((t) => !shouldSuppressTrigger(engagementProfile, t.name));
 
     // Gather candidates in parallel

@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import api from '../../api';
+import Icon from '../../components/Icon';
+import Button from '../../components/Button';
 
 export default function Signup({ onNavigate }) {
   const [name, setName] = useState('');
@@ -28,61 +30,25 @@ export default function Signup({ onNavigate }) {
   };
 
   return (
-    <div className="phone-frame">
-      <div style={{ padding: '40px 28px 32px', background: 'var(--paper)', flex: 1, display: 'flex', flexDirection: 'column' }}>
-        <div style={{ textAlign: 'center', marginBottom: '28px', marginTop: '16px' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '48px', height: '48px', background: 'var(--coral)', borderRadius: '14px', marginBottom: '12px' }}>
-            <i className="ti ti-bookmark" style={{ fontSize: '25px', color: 'var(--linen)' }}></i>
-          </div>
-          <p className="display" style={{ fontSize: '21px' }}>Wanna Try</p>
-        </div>
-
-        <div style={{ marginBottom: '22px' }}>
-          <h1 className="display" style={{ fontSize: '26px', marginBottom: '6px' }}>Create your account</h1>
-          <p style={{ fontSize: '15px', color: 'var(--slate)' }}>Start saving the things you don't want to forget.</p>
-        </div>
-
-        <p className="label">Full name</p>
-        <input
-          type="text"
-          className="input"
-          style={{ marginBottom: '14px' }}
-          placeholder="Your name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
-
-        <p className="label">Email</p>
-        <input
-          type="email"
-          className="input"
-          style={{ marginBottom: '14px' }}
-          placeholder="you@example.com"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-
-        <p className="label">Password</p>
-        <input
-          type="password"
-          className="input focused"
-          style={{ marginBottom: '22px' }}
-          placeholder="••••••••"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-
-        {error && <div style={{ color: 'var(--error)', marginBottom: '12px', fontSize: '14px' }}>{error}</div>}
-
-        <button className="btn-primary" onClick={handleSignup} disabled={loading}>
-          {loading ? 'Creating account...' : 'Create account'}
-          <i className="ti ti-arrow-right" style={{ fontSize: '17px' }}></i>
-        </button>
-
-        <p style={{ textAlign: 'center', marginTop: 'auto', paddingTop: '24px', fontSize: '15px', color: 'var(--slate)' }}>
-          Already have an account? <span style={{ color: 'var(--ink)', fontWeight: '500', cursor: 'pointer' }} onClick={() => onNavigate('login')}>Sign in</span>
-        </p>
+    <div className="wt-screen">
+      <div className="wt-topbar">
+        <button type="button" className="wt-iconbtn" aria-label="Back" onClick={() => onNavigate('welcome')}><Icon name="back" size={22} /></button>
       </div>
+      <form onSubmit={handleSignup} style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+        <h1 className="wt-title lg" style={{ fontSize: 33, marginBottom: 9 }}>Create your account</h1>
+        <p className="wt-sub" style={{ marginBottom: 26 }}>Two questions after this, then you're in.</p>
+        {error && <div className="wt-note error">{error}</div>}
+        <div className="wt-field"><label className="wt-label" htmlFor="name">Name</label>
+          <input id="name" className="wt-input" value={name} onChange={(e) => setName(e.target.value)} placeholder="What should we call you?" autoComplete="name" required /></div>
+        <div className="wt-field"><label className="wt-label" htmlFor="email">Email</label>
+          <input id="email" className="wt-input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" required /></div>
+        <div className="wt-field"><label className="wt-label" htmlFor="password">Password</label>
+          <input id="password" className="wt-input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="At least 8 characters" autoComplete="new-password" required /></div>
+        <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 16, alignItems: 'center' }}>
+          <Button type="submit" disabled={loading}>{loading ? 'Creating…' : 'Continue'}</Button>
+          <span style={{ fontSize: 14.5, color: 'var(--mute)' }}>Already have an account? <span className="wt-link" onClick={() => onNavigate('login')}>Sign in</span></span>
+        </div>
+      </form>
     </div>
   );
 }

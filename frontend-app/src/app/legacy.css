@@ -2,7 +2,7 @@
    Each block dies with the screen that uses it (ADR 0012/0013). Do not add to this file.
    The Tabler icon-font import lives here for the same reason: it goes when the last
    `ti-*` class does. */
-@import url('https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/tabler-icons.min.css');
+/* Tabler icon font: loaded async from public/index.html (non-blocking). */
 
 /* Typography */
 .display { font-family: var(--font-display); font-weight: 400; letter-spacing: 0; }

@@ -133,7 +133,7 @@ const intentItemSchema = new mongoose.Schema({
   // Source attribution
   source: {
     type: String,
-    enum: ['instagram', 'youtube', 'tiktok', 'pinterest', 'web', 'manual', 'screenshot', 'url'],
+    enum: ['instagram', 'youtube', 'tiktok', 'pinterest', 'web', 'manual', 'screenshot', 'url', 'voice'],
     default: 'web',
   },
   author: String,
@@ -144,7 +144,7 @@ const intentItemSchema = new mongoose.Schema({
   // Content shape
   contentType: {
     type: String,
-    enum: ['video', 'image', 'article', 'product', 'manual'],
+    enum: ['video', 'image', 'article', 'product', 'manual', 'voice'],
     default: 'article',
   },
 
@@ -206,6 +206,20 @@ const intentItemSchema = new mongoose.Schema({
   // that says whether a save was *good*, not merely clicked (ADR 0015).
   rating: { type: Number, min: 1, max: 5, default: null },
   triedNote: { type: String, default: null },
+
+  // Voice / text memories (ADR 0016). A memory is a save with no URL: what the
+  // user said, who/where/what it was about, and when it should come back.
+  memoryType: { type: String, enum: ['person', 'place', 'idea', 'task', 'note', null], default: null },
+  entities: {
+    people: { type: [String], default: undefined },
+    place: { type: String, default: null },
+    topic: { type: String, default: null },
+  },
+  // Absolute date the memory should resurface ("in six months" → a date;
+  // "someday" → null). One notification trigger fires on it.
+  resurfaceAt: { type: Date, default: null, index: true },
+  resurfacedAt: { type: Date, default: null },
+  audioUrl: { type: String, default: null },
 
   // AI enrichment
   aiAnalysis: aiAnalysisSchema,

@@ -1,242 +1,49 @@
 import { useState, useEffect, useRef } from 'react';
 import api from '../../api';
-import { getCategoryBucket, getBucketMeta, CATEGORY_FILTERS } from '../../lib/categoryMeta';
+import Icon from '../../components/Icon';
+import ListRow from '../../components/ListRow';
+import SearchBar from '../../components/SearchBar';
+import Chip from '../../components/Chip';
+import EmptyState from '../../components/EmptyState';
+import { getCategoryTile } from '../../lib/categoryMeta';
 import { relativeTime } from '../../lib/format';
 
-const SUGGESTED_SEARCHES = [
-  'Goa trip',
-  'café near me',
-  'recipes',
-  'weekend plans',
-  'travel ideas',
-];
+// Search everything you saved. Local match first (instant), server search for
+// the deeper text (transcripts, OCR) after a short pause.
+const KINDS = [['all', 'All'], ['place', 'Places'], ['food', 'Food'], ['shop', 'Shopping'], ['learn', 'Watch & read']];
 
-
-const getSubLabel = (save, meta) => {
-  const loc = save.extractedLocation?.city || save.extractedLocation?.name;
-  if (loc) return `${meta.label} · ${loc}`;
-  const src = save.source ? save.source[0].toUpperCase() + save.source.slice(1) : 'Saved';
-  return `${meta.label} · ${src} · ${relativeTime(save.createdAt)}`;
-};
-
-// Group a list of saves by category bucket (Eat/Travel/Shop/Cook/Learn/Saved),
-// preserving the order buckets first appear in.
-const groupByBucket = (items) => {
-  const groups = new Map();
-  for (const item of items) {
-    const bucket = getCategoryBucket(item.category);
-    if (!groups.has(bucket)) groups.set(bucket, []);
-    groups.get(bucket).push(item);
-  }
-  return [...groups.entries()].map(([bucket, bucketItems]) => ({ bucket, meta: getBucketMeta(bucket), items: bucketItems }));
-};
-
-function ResultGroups({ items, onNavigate }) {
-  return (
-    <div className="srch-results">
-      {groupByBucket(items).map(({ bucket, meta, items: groupItems }) => (
-        <div key={bucket}>
-          <div className="srch-cat-hdr">{meta.emoji} {meta.label}</div>
-          {groupItems.map((save) => (
-            <div key={save._id} className="srch-item" onClick={() => onNavigate('save-detail', { id: save._id })}>
-              <div className="srch-dot" style={{ background: meta.color }}></div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div className="srch-iname">{save.title}</div>
-                <div className="srch-isub">{getSubLabel(save, meta)}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-export default function Search({ onNavigate, payload }) {
-  const [query, setQuery] = useState('');
-  const [results, setResults] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [searched, setSearched] = useState(false);
+export default function Search({ onNavigate, onBack }) {
+  const [q, setQ] = useState('');
+  const [kind, setKind] = useState('all');
   const [saves, setSaves] = useState([]);
-  const [recentSearches, setRecentSearches] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem('trythis_recent_searches') || '[]');
-    } catch {
-      return [];
-    }
-  });
-  const searchTimeoutRef = useRef(null);
+  const [remote, setRemote] = useState(null);
+  const timer = useRef(null);
 
-  // Load all saves on mount for category browse
+  useEffect(() => { api.getSaves().then((r) => r?.status === 'success' && setSaves(r.data || [])); }, []);
   useEffect(() => {
-    const fetchSaves = async () => {
-      try {
-        const res = await api.getSaves();
-        if (res.status === 'success') setSaves(res.data);
-      } catch (err) {
-        // Silent fail
-      }
-    };
-    fetchSaves();
-  }, []);
+    clearTimeout(timer.current);
+    if (q.trim().length < 2) { setRemote(null); return; }
+    timer.current = setTimeout(() => api.search(q.trim()).then((r) => setRemote(r?.status === 'success' ? (r.data?.saves || []) : null)).catch(() => {}), 350);
+    return () => clearTimeout(timer.current);
+  }, [q]);
 
-  const runSearch = async (q) => {
-    const term = (q ?? query).trim();
-    if (!term) {
-      setResults([]);
-      setSearched(false);
-      return;
-    }
-
-    // Save to recent searches
-    if (!recentSearches.includes(term)) {
-      const updated = [term, ...recentSearches].slice(0, 5);
-      setRecentSearches(updated);
-      localStorage.setItem('trythis_recent_searches', JSON.stringify(updated));
-    }
-
-    setLoading(true);
-    setSearched(true);
-    try {
-      const res = await api.search(term);
-      setResults(res.status === 'success' ? res.data?.saves || [] : []);
-    } catch (err) {
-      setResults([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleInputChange = (e) => {
-    const value = e.target.value;
-    setQuery(value);
-
-    // Clear timeout
-    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
-
-    // Debounce search
-    if (value.trim()) {
-      searchTimeoutRef.current = setTimeout(() => {
-        runSearch(value);
-      }, 300);
-    } else {
-      setResults([]);
-      setSearched(false);
-    }
-  };
-
-  const clearSearch = () => {
-    setQuery('');
-    setResults([]);
-    setSearched(false);
-  };
-
-  const removeRecentSearch = (search, e) => {
-    e.stopPropagation();
-    const updated = recentSearches.filter(s => s !== search);
-    setRecentSearches(updated);
-    localStorage.setItem('trythis_recent_searches', JSON.stringify(updated));
-  };
-
-  // Counts per bucket (Eat/Travel/Shop/Cook/Learn/Saved) for the browse grid
-  const bucketCounts = saves.reduce((acc, s) => {
-    const bucket = getCategoryBucket(s.category);
-    acc[bucket] = (acc[bucket] || 0) + 1;
-    return acc;
-  }, {});
-  const browseBuckets = CATEGORY_FILTERS
-    .filter((f) => f.id !== 'all')
-    .map((f) => ({ id: f.id, meta: getBucketMeta(f.id), count: bucketCounts[f.id] || 0 }))
-    .filter((b) => b.count > 0);
+  const needle = q.trim().toLowerCase();
+  const local = needle ? saves.filter((s) => [s.title, s.aiAnalysis?.summary, ...(s.tags || []), s.extractedLocation?.city].filter(Boolean).join(' ').toLowerCase().includes(needle)) : saves;
+  const merged = [...local, ...(remote || []).filter((r) => !local.some((l) => l._id === r._id))];
+  const rows = merged.filter((s) => kind === 'all' || getCategoryTile(s.category).kind === kind).slice(0, 60);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
-      <div className="h-header">
-        <div className="h-greet">Find anything</div>
-        <div className="h-title">Search your saves</div>
+    <div className="wt-screen has-nav">
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 16 }}>
+        <button type="button" className="wt-iconbtn" aria-label="Back" onClick={onBack}><Icon name="back" size={22} /></button>
+        <SearchBar value={q} onChange={setQ} autoFocus placeholder={`Search ${saves.length} things you saved`} style={{ flex: 1 }} />
       </div>
-
-      {/* Search bar */}
-      <div className="srch-bar-active">
-        <span>🔍</span>
-        <input
-          type="text"
-          className="srch-q"
-          placeholder="Cafés in Bangalore, Goa trip, recipes..."
-          value={query}
-          onChange={handleInputChange}
-          onKeyDown={(e) => e.key === 'Enter' && runSearch()}
-          autoFocus
-        />
-        {query && <button className="srch-x" onClick={clearSearch}>✕</button>}
+      <div className="wt-chips" style={{ marginBottom: 6 }}>
+        {KINDS.map(([id, label]) => <Chip key={id} small on={kind === id} onClick={() => setKind(id)}>{label}</Chip>)}
       </div>
-
-      {/* Content */}
-      <div style={{ flex: 1, paddingBottom: 16 }}>
-        {loading ? (
-          <div style={{ padding: 24, textAlign: 'center', color: 'var(--mute)', fontSize: 15 }}>
-            Searching…
-          </div>
-        ) : !searched ? (
-          <>
-            {/* Browse by category */}
-            {browseBuckets.length > 0 && (
-              <>
-                <div className="srch-sec">Browse by category</div>
-                <div className="srch-chips">
-                  {browseBuckets.map(({ id, meta, count }) => (
-                    <button key={id} className={`chip ${meta.chipClass}`} onClick={() => onNavigate('savedList', { filter: id, title: meta.label })}>
-                      {meta.emoji} {meta.label} · {count}
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
-
-            {/* Recent / suggested searches */}
-            <div className="srch-sec">{recentSearches.length > 0 ? 'Recent searches' : 'Try searching for'}</div>
-            <div className="srch-chips">
-              {(recentSearches.length > 0 ? recentSearches : SUGGESTED_SEARCHES).map((search) => (
-                <div key={search} className="srch-chip" onClick={() => { setQuery(search); runSearch(search); }}>
-                  {search}
-                  {recentSearches.length > 0 && (
-                    <span style={{ color: '#AAA' }} onClick={(e) => removeRecentSearch(search, e)}>✕</span>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {/* Quick filters */}
-            <div className="srch-sec">Quick filters</div>
-            <div className="srch-chips">
-              {['Near me', 'This weekend', 'Unvisited', 'With recipe'].map((filter) => (
-                <div key={filter} className="srch-chip" onClick={() => { setQuery(filter); runSearch(filter); }}>
-                  {filter}
-                </div>
-              ))}
-            </div>
-
-            {/* From your saves */}
-            {saves.length > 0 && (
-              <>
-                <div className="srch-sec">From your saves</div>
-                <ResultGroups items={saves.slice(0, 12)} onNavigate={onNavigate} />
-              </>
-            )}
-          </>
-        ) : results.length === 0 ? (
-          <div style={{ padding: 24, textAlign: 'center' }}>
-            <i className="ti ti-search" style={{ fontSize: 48, color: 'var(--hairline-soft)', display: 'block', marginBottom: 16 }}></i>
-            <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--ink)', marginBottom: 4 }}>No saves found</div>
-            <div style={{ fontSize: 14, color: 'var(--mute)' }}>Try searching for a place, recipe, or category</div>
-          </div>
-        ) : (
-          <>
-            <div className="srch-sec">{results.length} result{results.length !== 1 ? 's' : ''} for "{query}"</div>
-            <ResultGroups items={results} onNavigate={onNavigate} />
-          </>
-        )}
-      </div>
+      {rows.length === 0
+        ? <EmptyState title={needle ? 'Nothing matches' : 'Nothing saved yet'} text={needle ? 'Try a place, a dish, a creator, or a word from the reel.' : 'Share a reel or paste a link to start.'} />
+        : rows.map((s) => <ListRow key={s._id} category={s.category} title={s.title} meta={[getCategoryTile(s.category).label, s.extractedLocation?.city].filter(Boolean).join(' · ')} trail={relativeTime(s.createdAt)} onClick={() => onNavigate('save-detail', { id: s._id })} />)}
     </div>
   );
 }
