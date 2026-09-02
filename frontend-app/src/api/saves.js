@@ -34,6 +34,13 @@ const saves = {
     return dedupedGet(`${API_BASE_URL}/saves/${id}`, { headers: authHeader() });
   },
 
+  // A list reel → separate saves for the chosen places (POST /saves/:id/split).
+  async splitSave(id, indices) {
+    const res = await fetch(`${API_BASE_URL}/saves/${id}/split`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeader() }, body: JSON.stringify({ indices }) });
+    invalidateSaves();
+    return handle(res);
+  },
+
   // AI "Discover More" insights — generated on tap (travel saves), cached 24h.
   async getInsights(id) {
     const res = await fetch(`${API_BASE_URL}/saves/${id}/insights`, {

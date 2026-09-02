@@ -24,6 +24,7 @@ export default function Home({ onNavigate, payload, nearbySaves = [] }) {
   // empty, so a returning user never pays for them.
   const [templates, setTemplates] = useState([]);
   const [popular, setPopular] = useState([]);
+  const [forYou, setForYou] = useState([]);
   const [copying, setCopying] = useState(null);
   // Surprise me (brief §15): one pick at a time from places you haven't saved, with a reason.
   const [surprise, setSurprise] = useState(null);       // null | 'loading' | { pool, i }
@@ -52,6 +53,10 @@ export default function Home({ onNavigate, payload, nearbySaves = [] }) {
     }
   };
   useEffect(() => { load(!!payload?.refresh); }, [payload?.refresh]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (loading || !saves.length) return;
+    api.getPicks(4).then((r) => r?.status === 'success' && setForYou((r.data || []).slice(0, 3))).catch(() => {});
+  }, [loading, saves.length]);
   useEffect(() => {
     if (loading || saves.length) return;
     api.getTemplateSaves().then((r) => r?.status === 'success' && setTemplates((r.data || []).slice(0, 6))).catch(() => {});
@@ -178,6 +183,16 @@ export default function Home({ onNavigate, payload, nearbySaves = [] }) {
             </div>
           )}
         </>
+      )}
+
+      {forYou.length > 0 && (
+        <section style={{ marginBottom: 24 }}>
+          <SectionLabel action="More" onAction={() => onNavigate('explore')}>Made for you</SectionLabel>
+          {forYou.map((p) => (
+            <ListRow key={p._id} category={p.category} title={p.canonicalName} meta={[p.city, ...(p.aggregatedTake?.chips || []).slice(0, 2)].filter(Boolean).join(' · ')}
+              reason={p.reason} onClick={() => onNavigate('place', { id: p._id })} />
+          ))}
+        </section>
       )}
 
       {planning.length > 0 && (

@@ -89,6 +89,9 @@ const aiAnalysisSchema = new mongoose.Schema({
   // text. Specifically useful when the transcript is missing or hallucinated
   // — gives the user concrete takeaways even without speech audio.
   keyPoints: [String],
+  // A reel that lists several venues ("10 cafes in Delhi") — one entry each, so
+  // the user can pick which become their own saves (POST /saves/:id/split).
+  places: { type: [{ name: String, area: String, city: String, whatFor: String, price: String, note: String }], default: undefined },
   structuredData: {
     type: {
       // Open string — NOT an enum. Video saves use a fixed set (recipe/product/

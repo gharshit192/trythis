@@ -718,6 +718,7 @@ const processSave = async (saveId) => {
           'aiAnalysis.summary': analysis.summary,
           'aiAnalysis.keyPoints': Array.isArray(analysis.keyPoints) ? analysis.keyPoints : [],
           'aiAnalysis.structuredData': analysis.structuredData,
+          'aiAnalysis.places': Array.isArray(analysis.places) && analysis.places.length >= 2 ? analysis.places : [],
           'aiAnalysis.processedAt': new Date(),
           'aiAnalysis.flags': analysis._flags || {},
         };

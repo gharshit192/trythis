@@ -68,7 +68,8 @@ export default function Saved({ onNavigate, payload, nearbySaves = [] }) {
     const where = s.extractedLocation?.name || s.extractedLocation?.city;
     const price = s.aiAnalysis?.structuredData?.place?.priceRange || (s.aiAnalysis?.structuredData?.product?.price ? `₹${s.aiAnalysis.structuredData.product.price}` : null);
     if (tab === 'tried' && s.rating) return [t.label, '★'.repeat(s.rating), s.triedAt ? relativeTime(s.triedAt) : null].filter(Boolean).join(' · ');
-    return [t.label, where, price].filter(Boolean).join(' · ');
+    const inside = s.aiAnalysis?.places?.length >= 2 ? `${s.aiAnalysis.places.length} places inside${s.metadata?.splitAt ? ', saved' : ''}` : null;
+    return [t.label, where, price, inside].filter(Boolean).join(' · ');
   };
 
   return (

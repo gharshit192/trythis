@@ -1745,6 +1745,50 @@ router.post('/:id/insights', async (req, res) => {
 
 // ─── "Plan this trip" — transport + stays + itinerary for travel saves ───────
 // POST /saves/:id/plan  body: { origin? }  (origin city; falls back to profile)
+// POST /saves/:id/split { indices: [0,2,5] } — a list reel becomes separate saves
+// (one per chosen place) grouped in a collection named after the reel. Each
+// child carries the reel's url/source so "open the original" still works, and
+// goes through the place resolver so it joins nearby. Idempotent per place.
+router.post('/:id/split', async (req, res) => {
+  try {
+    const parent = await Save.findOne({ _id: req.params.id, userId: req.user.id, status: 'active' });
+    if (!parent) return res.status(404).json({ status: 'error', error: { code: 'NOT_FOUND', message: 'Save not found' } });
+    const places = parent.aiAnalysis?.places || [];
+    if (places.length < 2) return res.status(400).json({ status: 'error', error: { code: 'NOT_A_LIST', message: 'This save has no list of places to split.' } });
+    const wanted = Array.isArray(req.body?.indices) ? [...new Set(req.body.indices.map(Number).filter((i) => i >= 0 && i < places.length))] : places.map((_, i) => i);
+    if (!wanted.length) return res.status(400).json({ status: 'error', error: { code: 'VALIDATION_ERROR', message: 'Pick at least one place.' } });
+    const Collection = require('../models/Collection');
+    const listName = String(parent.title || 'From a reel').replace(/^Instagram Reel .*/i, 'From a reel').slice(0, 60);
+    let collection = await Collection.findOne({ userId: req.user.id, name: listName });
+    if (!collection) collection = await Collection.create({ userId: req.user.id, name: listName, description: parent.url || '', saves: [] });
+    const made = []; const existing = [];
+    for (const i of wanted) {
+      const p = places[i];
+      const dup = await Save.findOne({ userId: req.user.id, status: 'active', 'metadata.parentSaveId': String(parent._id), 'metadata.placeIndex': i }).select('_id').lean();
+      if (dup) { existing.push(dup._id); continue; }
+      const child = await Save.create({
+        userId: req.user.id, title: p.name, url: parent.url || null, source: parent.source, contentType: parent.contentType,
+        category: parent.category, tags: (parent.tags || []).slice(0, 8), intentStatus: 'saved', processingStatus: 'done', confidence: parent.confidence,
+        description: [p.whatFor, p.note].filter(Boolean).join(' — '),
+        aiAnalysis: { summary: [p.whatFor ? `Go for ${p.whatFor}.` : null, p.note].filter(Boolean).join(' ') || `From "${parent.title}".`, keyPoints: [p.whatFor, p.price, p.note].filter(Boolean), structuredData: { type: 'place', place: { name: p.name, address: p.area || null, city: p.city || parent.extractedLocation?.city || null, priceRange: p.price || null } }, confidence: parent.confidence },
+        extractedLocation: { name: p.name, city: p.city || parent.extractedLocation?.city || null, country: parent.extractedLocation?.country || null },
+        metadata: { parentSaveId: String(parent._id), placeIndex: i, fromList: parent.title },
+        collections: [collection._id],
+      });
+      made.push(child._id);
+      setImmediate(() => { try { require('../services/placeResolver').resolvePlaceForSave(child).catch(() => {}); } catch {} });
+    }
+    const all = [...made, ...existing];
+    await Collection.updateOne({ _id: collection._id }, { $addToSet: { saves: { $each: all } } });
+    parent.metadata = { ...(parent.metadata || {}), listOf: places.length, splitAt: new Date(), splitCount: await Save.countDocuments({ userId: req.user.id, status: 'active', 'metadata.parentSaveId': String(parent._id) }) };
+    parent.markModified('metadata'); await parent.save();
+    res.status(201).json({ status: 'success', data: { saveIds: all, created: made.length, collectionId: collection._id, collectionName: collection.name } });
+  } catch (e) {
+    logger.error(`[split] ${e.message}`);
+    res.status(500).json({ status: 'error', error: { code: 'SPLIT_FAILED', message: e.message } });
+  }
+});
+
 router.post('/:id/plan', async (req, res) => {
   try {
     const save = await Save.findById(req.params.id);

@@ -53,6 +53,18 @@ export default function SaveDetail({ onNavigate, onBack, payload }) {
   const [tagsOpen, setTagsOpen] = useState(false);
   const [draftTags, setDraftTags] = useState([]);
   const [customTag, setCustomTag] = useState('');
+  // List reels (brief §20): pick which of the places become your own saves.
+  const [picked, setPicked] = useState(null);   // null = all selected
+  const [splitting, setSplitting] = useState(false);
+  const splitNow = async (places) => {
+    const idx = picked === null ? places.map((_, i) => i) : [...picked];
+    if (!idx.length || splitting) return;
+    setSplitting(true);
+    const r = await api.splitSave(id, idx).catch(() => null);
+    setSplitting(false);
+    if (r?.status === 'success') onNavigate('starter', { saveIds: r.data.saveIds, collectionName: r.data.collectionName });
+    else flash(r?.error?.message || 'Could not save those');
+  };
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState('');
@@ -220,6 +232,28 @@ export default function SaveDetail({ onNavigate, onBack, payload }) {
     : sd.recipe?.isRecipe ? { label: 'Cook this', icon: 'pot', onClick: () => setNoteOpen(true) }
     : save.url ? { label: 'Open', icon: 'link', href: save.url } : null;
   const handle = handleOf(save);
+  const whyLine = (() => {
+    const me = (() => { try { return JSON.parse(localStorage.getItem('user') || '{}'); } catch { return {}; } })();
+    const pr = me.preferences || {}; const interests = me.interests || [];
+    const kind = tile.kind; const bits = [];
+    const INT = { cafes: ['cafe'], street_food: ['street_food', 'food'], restaurants: ['restaurant'], trips: ['travel', 'hotel'], recipes: ['recipe', 'cooking'], shopping: ['shopping', 'home-decor'], fashion: ['fashion', 'beauty'], films: ['film', 'movie', 'show'], books: ['book'], experiences: ['experience'], fitness: ['fitness'], gadgets: ['tech'] };
+    const hit = interests.find((i) => (INT[i] || []).includes(save.category));
+    if (hit) bits.push(`you said you want more ${hit.replace('_', ' ')}`);
+    const price = sd.place?.priceRange || (sd.product?.price ? `₹${sd.product.price}` : null);
+    const n = price ? parseInt(String(price).replace(/[^0-9]/g, ''), 10) : NaN;
+    if (pr.budget === 'low' && n && n <= 500) bits.push('it fits your budget');
+    if (pr.budget === 'high' && n && n >= 1500) bits.push("it's the kind of splurge you like");
+    const text = [save.title, save.aiAnalysis?.summary, ...(save.tags || []), ...(save.aiAnalysis?.keyPoints || [])].join(' ').toLowerCase();
+    if (pr.diet === 'veg' && /\bveg|vegetarian|paneer|dal\b/.test(text) && !/non-veg|chicken|mutton/.test(text)) bits.push("it's veg-friendly");
+    if (pr.company === 'friends' && /group|friends|table for|sharing|party/.test(text)) bits.push('it works for a group');
+    if (pr.company === 'partner' && /date|romantic|rooftop|sunset|candle/.test(text)) bits.push('it reads like a date');
+    if ((pr.vibes || []).includes('hidden-gems') && /hidden|secret|lesser.known|quiet/.test(text)) bits.push("it's a quiet one");
+    if ((pr.vibes || []).includes('adventurous') && /trek|hike|kayak|camp|climb/.test(text)) bits.push("it's your kind of adventure");
+    if (!bits.length && kind === 'place' && me.location?.city && save.extractedLocation?.city && me.location.city.toLowerCase().includes(save.extractedLocation.city.toLowerCase().split(' ')[0])) bits.push("it's in your city");
+    if (!bits.length) return null;
+    const line = bits.slice(0, 2).join(', and ');
+    return line.charAt(0).toUpperCase() + line.slice(1) + '.';
+  })();
   const processing = ['pending', 'processing', 'failed', 'partial'].includes(save.processingStatus);
 
   return (
@@ -265,6 +299,32 @@ export default function SaveDetail({ onNavigate, onBack, payload }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 20 }}>
           <SectionLabel>Why you saved it</SectionLabel>
           <p style={{ fontSize: 15.5, lineHeight: 1.55, margin: 0 }}>{summary}</p>
+        </div>
+      )}
+      {(save.aiAnalysis?.places || []).length >= 2 && !save.metadata?.splitAt && (() => { const places = save.aiAnalysis.places; const sel = picked === null ? new Set(places.map((_, i) => i)) : picked; return (
+        <section style={{ marginBottom: 24, padding: '14px 14px 12px', borderRadius: 14, background: 'var(--teal-soft)' }}>
+          <SectionLabel>We found {places.length} places in this reel</SectionLabel>
+          <p style={{ fontSize: 13.5, color: 'var(--teal-d)', margin: '4px 0 10px' }}>Each one you keep becomes its own save — with nearby, reminders and Ask.</p>
+          {places.map((p, i) => (
+            <button key={i} type="button" onClick={() => setPicked((cur) => { const n = new Set(cur === null ? places.map((_, k) => k) : cur); n.has(i) ? n.delete(i) : n.add(i); return n; })}
+              style={{ display: 'flex', gap: 12, alignItems: 'flex-start', width: '100%', padding: '9px 0', border: 0, borderBottom: '1px solid rgba(14,124,123,.15)', background: 'none', textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit' }}>
+              <span style={{ width: 22, height: 22, borderRadius: 6, border: `1.5px solid ${sel.has(i) ? 'var(--teal)' : 'var(--faint)'}`, background: sel.has(i) ? 'var(--teal)' : 'transparent', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>{sel.has(i) && <Icon name="check" size={14} stroke={2.5} />}</span>
+              <span style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
+                <span style={{ fontSize: 15.5, fontWeight: 600, color: 'var(--ink)' }}>{p.name}</span>
+                <span style={{ fontSize: 13, color: 'var(--mute)' }}>{[p.area || p.city, p.whatFor, p.price].filter(Boolean).join(' · ')}</span>
+              </span>
+            </button>
+          ))}
+          <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
+            <Button small onClick={() => splitNow(places)} disabled={splitting || sel.size === 0}>{splitting ? 'Saving…' : `Save ${sel.size === places.length ? 'all' : sel.size}`}</Button>
+            <Button small variant="secondary" onClick={() => setPicked(sel.size === places.length ? new Set() : null)} style={{ width: 'auto', padding: '0 14px' }}>{sel.size === places.length ? 'None' : 'All'}</Button>
+          </div>
+        </section>); })()}
+      {save.metadata?.splitAt && <div className="wt-note info" style={{ marginBottom: 20 }}>{save.metadata.splitCount || ''} place{save.metadata.splitCount === 1 ? '' : 's'} from this reel are in your list{save.metadata.listOf ? ` (${save.metadata.listOf} found)` : ''}.</div>}
+      {whyLine && (
+        <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: 22, fontSize: 14.5, lineHeight: 1.45, color: 'var(--teal-d)' }}>
+          <span style={{ color: 'var(--cat-food)', flexShrink: 0, marginTop: 2 }}><Icon name="star" size={16} /></span>
+          <span><b style={{ fontWeight: 600 }}>Why you might like it.</b> {whyLine}</span>
         </div>
       )}
       <SaveSections save={save} />

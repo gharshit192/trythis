@@ -110,12 +110,14 @@ Given a video/article's transcript and metadata, return ONLY valid JSON in this 
     "itinerary": {"destination": str|null, "duration": str|null, "highlights": [], "bestSeason": str|null, "estimatedCost": str|null},
     "event": {"eventName": str|null, "venue": str|null, "eventDate": str|null, "ticketUrl": str|null, "price": num|null, "currency": str|null},
     "place": {"name": str|null, "address": str|null, "city": str|null, "country": str|null, "priceRange": str|null, "cuisine": str|null, "bookingUrl": str|null}
-  }
+  },
+  "places": [{"name": str, "area": str|null, "city": str|null, "whatFor": str|null, "price": str|null, "note": str|null}]
 }
 
 Rules:
 - Pick exactly ONE type. Set others to null.
 - keyPoints: 3-6 short factual bullets, each ≤90 chars. NO marketing fluff.
+- places: ONLY when the content lists several distinct venues/spots ("10 cafes in Delhi", "5 weekend getaways", "best street food in Chandni Chowk"): one entry per venue actually named, in the order mentioned, max 12. whatFor = the one thing to go for; price = what was said (e.g. "₹300 for two"); note ≤80 chars. Otherwise [].
 - audioTags: 4-10 lowercase hyphenated tags. NEVER: business, support, service, deal, offer, available.
 - Do NOT invent data if transcript is empty.
 - Return ONLY JSON. No markdown. No explanation.`;
@@ -184,6 +186,7 @@ Rules:
       keyPoints: Array.isArray(parsed.keyPoints) ? parsed.keyPoints.slice(0, 6) : [],
       audioTags: Array.isArray(parsed.audioTags) ? parsed.audioTags.slice(0, 12) : [],
       structuredData: parsed.structuredData || { type: 'other', recipe: null, product: null, itinerary: null, event: null, place: null },
+      places: Array.isArray(parsed.places) ? parsed.places.filter((p) => p && p.name).slice(0, 12).map((p) => ({ name: String(p.name).slice(0, 80), area: p.area || null, city: p.city || null, whatFor: p.whatFor || null, price: p.price || null, note: p.note ? String(p.note).slice(0, 120) : null })) : [],
       confidence: 0.9,
       language: 'en',
       _provider: 'claude',
