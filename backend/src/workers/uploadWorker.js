@@ -197,15 +197,26 @@ async function processLinkJob(job) {
     processedAt: new Date(),
   };
 
+  // The analyzer takes { transcript, title, description, … }. This call used to
+  // pass { text, context } — fields it never reads — so the model saw nothing,
+  // returned the caption as the summary with no key points, and the tags
+  // derived from those key points were empty. Every metadata-only save
+  // (which is every reel whose video cannot be fetched) was flat because of it.
+  let analyzed = null;
   try {
-    const analyzed = await audioAnalyzer.extractAnalysis({
-      text: `${metadata.title || ''}\n${metadata.description || ''}`,
-      context: { category, contentType, source: sourceFromUrl },
+    analyzed = await audioAnalyzer.extractAnalysis({
+      transcript: '',
+      title: metadata.title || '',
+      description: metadata.description || '',
+      source: sourceFromUrl,
+      category,
+      authorHandle: extra.channel || extractedAuthor || undefined,
     });
     if (analyzed) {
       aiAnalysisData = {
         summary: analyzed.summary || metadata.description || '',
-        keyPoints: analyzed.keyPoints || [],
+        keyPoints: Array.isArray(analyzed.keyPoints) ? analyzed.keyPoints : [],
+        audioTags: Array.isArray(analyzed.audioTags) ? analyzed.audioTags : [],
         structuredData: analyzed.structuredData || null,
         processedAt: new Date(),
       };
@@ -214,10 +225,32 @@ async function processLinkJob(job) {
     logger.warn(`[processLinkJob] audioAnalyzer failed: ${err.message}`);
   }
 
-  // Extract tags from analysis
-  const tags = aiAnalysisData.keyPoints
-    ? aiAnalysisData.keyPoints.map(kp => kp.toLowerCase().replace(/\s+/g, '-')).slice(0, 12)
-    : (Array.isArray(extra.tags) ? extra.tags.slice(0, 12) : []);
+  // Key points fallback: a caption written as bullets ("• Keep 4–6 days…") is
+  // already a list of key points; never leave them empty when the caption has them.
+  if (!aiAnalysisData.keyPoints.length && metadata.description) {
+    aiAnalysisData.keyPoints = metadata.description.split(/\n+/)
+      .map((l) => l.replace(/^[\s•\-–*·]+/, '').trim())
+      .filter((l) => l.length >= 12 && l.length <= 140 && !/^#/.test(l) && !/^(comment|follow|credits?)\b/i.test(l))
+      .slice(0, 6);
+  }
+
+  // Tags: the model's tags, else the caption's hashtags, else the provider's.
+  const hashtags = (metadata.description || '').match(/#[\p{L}\p{N}_]+/gu) || [];
+  const tags = (aiAnalysisData.audioTags || []).length
+    ? aiAnalysisData.audioTags.map((t) => String(t).toLowerCase().trim().replace(/\s+/g, '-')).slice(0, 12)
+    : hashtags.length
+      ? [...new Set(hashtags.map((h) => h.slice(1).toLowerCase()))].slice(0, 12)
+      : (Array.isArray(extra.tags) ? extra.tags.slice(0, 12) : []);
+  delete aiAnalysisData.audioTags;
+
+  // Title: the provider's "Video by <handle>" / "Instagram Reel <id>" is not a
+  // title. Prefer the model's, then the caption's first real line.
+  const genericTitle = !metadata.title || /^(video by|instagram (reel|post)|reel by)\b/i.test(metadata.title);
+  if (genericTitle) {
+    const firstLine = (metadata.description || '').split(/\n+/).map((l) => l.replace(/^[\s•\-–*·]+/, '').trim()).find((l) => l.length >= 8 && !/^#/.test(l));
+    const better = (analyzed?.title && !/^(video by|instagram)/i.test(analyzed.title) ? analyzed.title : null) || (firstLine ? firstLine.replace(/\s*#[\p{L}\p{N}_]+/gu, '').trim().slice(0, 90) : null);
+    if (better) metadata.title = better;
+  }
 
   // Determine if this is a video that needs async processing
   const isVideoSource = url && /(?:instagram\.com|tiktok\.com|youtube\.com|youtu\.be|vimeo\.com|facebook\.com|fb\.watch|twitter\.com|x\.com|reddit\.com)/i.test(url);
