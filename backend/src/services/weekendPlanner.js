@@ -26,9 +26,18 @@ const nextWeekendDay = () => {
 
 // Candidates: located, not tried/dismissed, within RADIUS_KM of the origin.
 async function candidates(userId, origin) {
-  const saves = await Save.find({ userId, status: 'active', intentStatus: { $in: ['saved', 'planned'] }, 'extractedLocation.lat': { $ne: null }, 'extractedLocation.lng': { $ne: null } })
-    .select('title category intentStatus createdAt plannedFor extractedLocation aiAnalysis.summary aiAnalysis.structuredData.place aiAnalysis.keyPoints tags').lean();
-  return saves.map((s) => ({ ...s, distanceKm: km(origin, { lat: s.extractedLocation.lat, lng: s.extractedLocation.lng }) })).filter((s) => s.distanceKm <= RADIUS_KM).sort((a, b) => a.distanceKm - b.distanceKm);
+  // Coordinates come from the save itself or from the Place it was resolved
+  // to (placeResolver geocodes the place; most reels never carry lat/lng).
+  const saves = await Save.find({ userId, status: 'active', intentStatus: { $in: ['saved', 'planned'] }, $or: [{ 'extractedLocation.lat': { $ne: null } }, { placeId: { $ne: null } }] })
+    .select('title category intentStatus createdAt plannedFor extractedLocation placeId aiAnalysis.summary aiAnalysis.structuredData.place aiAnalysis.keyPoints tags')
+    .populate('placeId', 'geo city canonicalName').lean();
+  return saves.map((s) => {
+    const lat = s.extractedLocation?.lat ?? s.placeId?.geo?.lat ?? null;
+    const lng = s.extractedLocation?.lng ?? s.placeId?.geo?.lng ?? null;
+    if (lat == null || lng == null) return null;
+    const extractedLocation = { ...(s.extractedLocation || {}), lat, lng, city: s.extractedLocation?.city || s.placeId?.city || null, name: s.extractedLocation?.name || s.placeId?.canonicalName || null };
+    return { ...s, placeId: s.placeId?._id || s.placeId, extractedLocation, distanceKm: km(origin, { lat, lng }) };
+  }).filter((s) => s && s.distanceKm <= RADIUS_KM).sort((a, b) => a.distanceKm - b.distanceKm);
 }
 
 // Pick 3 (2–4) that make a day: planned ones first, then variety of kinds, then the oldest.
