@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import api from '../../api';
+import Icon from '../../components/Icon';
 import Chip from '../../components/Chip';
 import SearchBar from '../../components/SearchBar';
 import ListRow from '../../components/ListRow';
@@ -76,7 +77,10 @@ export default function Saved({ onNavigate, payload, nearbySaves = [] }) {
     <div className="wt-screen has-nav">
       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 16 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><h1 className="wt-title">Your Wanna Try</h1>{saves.length > 0 && <span style={{ fontSize: 13.5, color: 'var(--mute)' }}>{counts.saved + counts.planned} thing{counts.saved + counts.planned === 1 ? '' : 's'} waiting for you · {counts.tried} tried</span>}</div>
-        <span style={{ fontSize: 13.5, fontWeight: 500, color: 'var(--teal)', cursor: 'pointer' }} onClick={() => onNavigate('collections')}>Collections</span>
+        <span style={{ display: 'flex', gap: 14 }}>
+          <span style={{ fontSize: 13.5, fontWeight: 500, color: 'var(--teal)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }} onClick={() => onNavigate('saved-map')}><Icon name="pin" size={15} />Map</span>
+          <span style={{ fontSize: 13.5, fontWeight: 500, color: 'var(--teal)', cursor: 'pointer' }} onClick={() => onNavigate('collections')}>Collections</span>
+        </span>
       </div>
 
       <div style={{ display: 'flex', borderBottom: '1px solid var(--line)', marginBottom: 14 }}>

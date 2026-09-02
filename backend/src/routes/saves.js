@@ -386,6 +386,29 @@ router.get('/', async (req, res) => {
 // GET /nearby — Fetch saves near user's current location.
 // MUST be declared before `/:id`, otherwise "nearby" is treated as an :id and
 // validateObjectId rejects it with 400.
+// GET /saves/map — every located save as a pin. Coordinates come from the
+// save itself or from the Place it was resolved to; saves with neither are
+// counted so the map can say "12 of 33 have a location".
+router.get('/map', authMiddleware, async (req, res) => {
+  try {
+    const saves = await Save.find({ userId: req.user.id, status: 'active' })
+      .select('title category intentStatus rating plannedFor extractedLocation placeId aiAnalysis.structuredData.place.priceRange createdAt')
+      .populate('placeId', 'geo city canonicalName').lean();
+    const pins = [];
+    for (const s of saves) {
+      const lat = s.extractedLocation?.lat ?? s.placeId?.geo?.lat ?? null;
+      const lng = s.extractedLocation?.lng ?? s.placeId?.geo?.lng ?? null;
+      if (lat == null || lng == null) continue;
+      pins.push({ _id: s._id, title: s.title, category: s.category, intentStatus: s.intentStatus || 'saved', rating: s.rating || null, plannedFor: s.plannedFor || null, createdAt: s.createdAt,
+        lat, lng, name: s.extractedLocation?.name || s.placeId?.canonicalName || null, city: s.extractedLocation?.city || s.placeId?.city || null,
+        priceRange: s.aiAnalysis?.structuredData?.place?.priceRange || null, precise: !!(s.extractedLocation?.name || s.placeId) });
+    }
+    res.json({ status: 'success', data: { pins, total: saves.length } });
+  } catch (e) {
+    res.status(500).json({ status: 'error', error: { code: 'SERVER_ERROR', message: e.message } });
+  }
+});
+
 router.get('/nearby', authMiddleware, async (req, res) => {
   try {
     const { lat, lng, radiusMetres = 1000 } = req.query;

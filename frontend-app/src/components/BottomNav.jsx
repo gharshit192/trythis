@@ -5,7 +5,7 @@ const TABS = [
   { key: 'home',    label: 'Home',    icon: 'home',     match: ['home', 'home-empty'] },
   { key: 'explore', label: 'Discover', icon: 'compass',  match: ['explore', 'nearby'] },
   null,
-  { key: 'saved',   label: 'Wanna Try', icon: 'bookmark', match: ['saved', 'savedList', 'collections', 'collection-detail'] },
+  { key: 'saved',   label: 'Wanna Try', icon: 'bookmark', match: ['saved', 'saved-map', 'savedList', 'collections', 'collection-detail'] },
   { key: 'profile', label: 'Me',      icon: 'user',     match: ['profile'] },
 ];
 

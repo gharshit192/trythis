@@ -34,6 +34,12 @@ const saves = {
     return dedupedGet(`${API_BASE_URL}/saves/${id}`, { headers: authHeader() });
   },
 
+  // Pins for the map view (GET /saves/map).
+  async getSavesMap() {
+    const res = await fetch(`${API_BASE_URL}/saves/map`, { headers: authHeader() });
+    return handle(res);
+  },
+
   // A list reel → separate saves for the chosen places (POST /saves/:id/split).
   async splitSave(id, indices) {
     const res = await fetch(`${API_BASE_URL}/saves/${id}/split`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeader() }, body: JSON.stringify({ indices }) });

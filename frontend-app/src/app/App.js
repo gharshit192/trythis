@@ -40,6 +40,7 @@ const VerifyEmail = lazy(() => import('../features/auth/VerifyEmail'));
 const StarterPicks = lazy(() => import('../features/onboarding/StarterPicks'));
 const YearRecap = lazy(() => import('../features/profile/YearRecap'));
 const WeekendPlan = lazy(() => import('../features/plans/WeekendPlan'));
+const SavedMap = lazy(() => import('../features/saves/SavedMap'));
 const SaveDetail = lazy(() => import('../features/saves/SaveDetail'));
 const Itinerary = lazy(() => import('../features/saves/Itinerary'));
 const Profile = lazy(() => import('../features/profile/Profile'));
@@ -191,7 +192,7 @@ function App() {
     // Onboarding flow disabled — no forced redirect after login/signup.
 
     // Check if trying to access protected screen without auth
-    const protectedScreens = ['home', 'save-detail', 'savedList', 'search', 'collections', 'saved', 'tried', 'place', 'profile', 'notifications', 'nearby', 'explore', 'itinerary', 'extracting', 'starter', 'multi-extract', 'voice', 'voice-result', 'ask', 'verify-email', 'starter-picks', 'year-recap', 'weekend-plan'];
+    const protectedScreens = ['home', 'save-detail', 'savedList', 'search', 'collections', 'saved', 'tried', 'place', 'profile', 'notifications', 'nearby', 'explore', 'itinerary', 'extracting', 'starter', 'multi-extract', 'voice', 'voice-result', 'ask', 'verify-email', 'starter-picks', 'year-recap', 'weekend-plan', 'saved-map'];
     if (protectedScreens.includes(screen) && !localStorage.getItem('auth_token')) {
       setCurrentScreen('welcome');
       return;
@@ -293,6 +294,7 @@ function App() {
     'starter-picks': <StarterPicks {...props} />,
     'year-recap': <YearRecap {...props} />,
     'weekend-plan': <WeekendPlan {...props} />,
+    'saved-map': <SavedMap {...props} />,
     'screenshot-summary': <ScreenshotSummary {...props} sessionId={payload?.sessionId} summary={payload?.summary} thumbnails={payload?.thumbnails || []} saveId={payload?.saveId} autoSaved={payload?.autoSaved} />,
     'collections': <Collections {...props} />,
     'collection-detail': <CollectionDetail {...props} />,
@@ -307,7 +309,7 @@ function App() {
   };
 
   // Screens that should show the bottom nav
-  const hasBottomNav = ['home', 'home-empty', 'nearby', 'explore', 'search', 'collections', 'saved', 'profile', 'savedList', 'notifications'].includes(currentScreen);
+  const hasBottomNav = ['home', 'home-empty', 'nearby', 'explore', 'search', 'collections', 'saved', 'saved-map', 'profile', 'savedList', 'notifications'].includes(currentScreen);
 
   return (
     <div className="app-shell-outer" style={{ width: '100%', display: 'flex', justifyContent: 'center', background: 'transparent' }}>
