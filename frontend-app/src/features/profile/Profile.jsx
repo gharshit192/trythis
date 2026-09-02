@@ -39,7 +39,7 @@ export default function Profile({ onNavigate }) {
     setPush(getPushState());
     api.getMe().then((r) => { const u = r?.data?.user || r?.data; if (u?.preferences) { setPrefs(u.preferences); try { localStorage.setItem('user', JSON.stringify({ ...user, ...u, id: user.id || u._id })); } catch {} } }).catch(() => {});
     return () => ctrl.abort();
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const tried = saves.filter((s) => s.intentStatus === 'tried').length;
   const planned = saves.filter((s) => s.intentStatus === 'planned').length;
