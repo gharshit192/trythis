@@ -42,9 +42,9 @@ export default function YearRecap({ onBack }) {
         <p style={{ fontSize: 15, color: 'rgba(255,255,255,.75)', lineHeight: 1.5 }}>Nothing marked tried yet this year. {waiting ? `${waiting} things are waiting — pick one for this weekend.` : 'Save something, go, and mark it tried.'}</p>
       ) : (
         <>
-          <div className="wt-stat-grid" style={{ marginBottom: 22 }}>
+          <div className="wt-stat-grid" style={{ marginBottom: 22, background: 'transparent', gap: 10 }}>
             {Object.entries(byKind).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k, n]) => (
-              <div key={k} className="wt-stat" style={{ background: 'rgba(255,255,255,.1)', border: '1px solid rgba(255,255,255,.18)', color: '#fff' }}><span className="k" style={{ color: 'var(--sand)' }}>{KIND_LABEL[k]}</span><span className="v">{n}</span></div>
+              <div key={k} className="wt-stat" style={{ background: 'rgba(255,255,255,.12)', border: '1px solid rgba(255,255,255,.22)', color: '#fff', borderRadius: 12 }}><span className="k" style={{ color: 'var(--sand)' }}>{KIND_LABEL[k]}</span><span className="v">{n}</span></div>
             ))}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 15, color: 'rgba(255,255,255,.85)', marginBottom: 24 }}>
