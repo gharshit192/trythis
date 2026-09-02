@@ -391,7 +391,12 @@ router.get('/:shareId', async (req, res) => {
         </div>
       </div>
     </div>
-  </body>
+        <div style="max-width:560px;margin:0 auto;padding:8px 20px 40px;display:flex;flex-direction:column;gap:10px;">
+        <a href="${app}/?open=${shareId}" style="display:block;text-align:center;padding:15px;border-radius:12px;background:#0E7C7B;color:#fff;font-weight:600;text-decoration:none;font-size:16px;">Open in Wanna Try</a>
+        <a href="${app}/?signup=1" style="display:block;text-align:center;padding:14px;border-radius:12px;background:#fff;border:1px solid #E7E2DA;color:#15201E;font-weight:500;text-decoration:none;font-size:15px;">Create a free account</a>
+        <p style="text-align:center;font-size:12.5px;color:#9BA5A2;margin:6px 0 0;">Shared from Wanna Try — save it, and it comes back when you can go.</p>
+      </div>
+    </body>
 </html>`;
 
     res.type('text/html').send(html);
@@ -410,12 +415,7 @@ router.get('/:shareId', async (req, res) => {
             <h1 style="margin: 0 0 0.5rem 0; color: #333;">Something went wrong</h1>
             <p style="margin: 0; color: #666;">Please try again later.</p>
           </div>
-              <div style="max-width:560px;margin:0 auto;padding:8px 20px 40px;display:flex;flex-direction:column;gap:10px;">
-        <a href="${app}/?open=${shareId}" style="display:block;text-align:center;padding:15px;border-radius:12px;background:#0E7C7B;color:#fff;font-weight:600;text-decoration:none;font-size:16px;">Open in Wanna Try</a>
-        <a href="${app}/?signup=1" style="display:block;text-align:center;padding:14px;border-radius:12px;background:#fff;border:1px solid #E7E2DA;color:#15201E;font-weight:500;text-decoration:none;font-size:15px;">Create a free account</a>
-        <p style="text-align:center;font-size:12.5px;color:#9BA5A2;margin:6px 0 0;">Shared from Wanna Try — save it, and it comes back when you can go.</p>
-      </div>
-</body>
+        </body>
       </html>
     `);
   }
