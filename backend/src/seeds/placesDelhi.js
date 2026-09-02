@@ -1,18 +1,11 @@
 // One city, deep (ADR 0014): a hand-checked Delhi list for Explore's "near
-// you" and "popular" before organic saves fill them in. Coordinates come from
-// the project's cached geocoder (OpenStreetMap by default), never typed in.
+// you" and "popular" before organic saves fill them in.
 //
 //   ENV_FILE=.env.prod-local node src/seeds/placesDelhi.js
 //
 // Idempotent: keyed on canonicalKey; re-running updates the take and tags.
-require('dotenv').config({ path: require('path').join(__dirname, '../../.env') });
-if (process.env.ENV_FILE) require('dotenv').config({ path: require('path').join(__dirname, '../../', process.env.ENV_FILE), override: true });
-const mongoose = require('mongoose');
-const Place = require('../models/Place');
-const { geocode } = require('../services/geocoder');
-const { buildCanonicalKey } = require('../utils/canonicalKey');
+const { seedCity } = require('./lib/seedPlaces');
 
-const CITY = 'Delhi';
 // [name, area, category, vibeTags, one-line take]
 const PLACES = [
   // cafes
@@ -97,28 +90,4 @@ const PLACES = [
   ['Sanjay Van', 'Vasant Kunj', 'experience', ['forest', 'birding', 'walk'], 'Ridge forest with ruins and birds; go with someone.'],
 ];
 
-async function main() {
-  const uri = process.env.DATABASE_URL || 'mongodb://localhost:27017/trythis';
-  await mongoose.connect(uri, process.env.MONGODB_DB ? { dbName: process.env.MONGODB_DB } : {});
-  let created = 0, updated = 0, approx = 0, missed = 0;
-  for (const [name, area, category, vibeTags, take] of PLACES) {
-    let geo = await geocode(`${name}, ${area}, ${CITY}`).catch(() => null);
-    let region = area;
-    if (!geo) { geo = await geocode(`${area}, ${CITY}`).catch(() => null); if (geo) approx += 1; }
-    if (!geo) { missed += 1; console.log(`  ✗ no coordinates: ${name}`); }
-    const key = buildCanonicalKey({ name, city: CITY, country: 'India' });
-    const doc = {
-      canonicalName: name, canonicalKey: key, aliases: [`${name}, ${area}`],
-      city: CITY, region, country: 'India',
-      geo: { lat: geo?.lat ?? null, lng: geo?.lng ?? null },
-      category, vibeTags,
-      aggregatedTake: { text: take, chips: vibeTags.slice(0, 3), generatedAt: new Date(), sourceCount: 0 },
-      source: 'seed', status: 'active',
-    };
-    const r = await Place.updateOne({ canonicalKey: key }, { $set: doc, $setOnInsert: { saveCount: 0 } }, { upsert: true });
-    if (r.upsertedCount) created += 1; else updated += 1;
-  }
-  console.log(`\nDelhi seed: ${created} created, ${updated} updated, ${approx} at area-level coordinates, ${missed} without coordinates (of ${PLACES.length})`);
-  await mongoose.disconnect();
-}
-main().catch((e) => { console.error(e); process.exit(1); });
+seedCity({ city: 'Delhi', places: PLACES }).catch((e) => { console.error(e); process.exit(1); });
