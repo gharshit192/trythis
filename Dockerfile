@@ -4,7 +4,9 @@ FROM node:20-alpine AS whisper-builder
 
 RUN apk add --no-cache git build-base cmake
 
-RUN git clone --depth 1 https://github.com/ggerganov/whisper.cpp /tmp/wcpp \
+# Pinned so this layer is byte-identical between builds and the layer cache
+# actually hits; bump deliberately.
+RUN git clone --depth 1 --branch v1.7.6 https://github.com/ggerganov/whisper.cpp /tmp/wcpp \
  && cd /tmp/wcpp \
  && cmake -B build \
       -DCMAKE_BUILD_TYPE=Release \

@@ -1,0 +1,22 @@
+# Render builds the API from the repo root. Without this file every deploy
+# uploaded ~1.1 GB of node_modules and the whole frontend as build context
+# before a single layer ran — the main reason a push took 1–2 h to go live.
+**/node_modules
+frontend-app
+docs
+.github
+.git
+*.md
+*.log
+.env*
+!backend/.env.example
+backend/uploads
+backend/tmp
+backend/secrets
+backend/coverage
+backend/test
+backend/tests
+**/*.test.js
+.vision-usage.json
+package.json
+package-lock.json

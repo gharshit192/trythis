@@ -28,14 +28,56 @@ categories the extraction pipeline classifies into.
 
 ## Phased plan
 
-- **Phase 0 — Fix what's broken:** reliable save loop, extraction quality,
-  notification delivery.
-- **Phase 1 — Core save loop:** capture (share-sheet), structured extraction,
-  collections, resurfacing.
-- **Phase 2 — Nearby & location:** geofenced "you saved this near here"
-  resurfacing (a native/Capacitor capability — see
-  [ADR 0007](adr/0007-dual-frontend-capacitor-pwa.md)).
-- **Phase 3 — Monetization.**
+Status as of 2 Sep 2026. The detailed section-by-section audit against the
+product brief is in [`research/revamp-brief-status.md`](research/revamp-brief-status.md).
+
+- **Phase 0 — Fix what's broken:** done. Reliable save loop, extraction with
+  captions + audio + frame OCR + Claude Vision, push delivery, share pages.
+- **Phase 1 — Core save loop:** done. Share sheet / paste / clipboard /
+  screenshots / voice / typed capture; structured extraction (recipe, place,
+  product, event, trip, list-of-places); collections (manual + auto); intent
+  lifecycle (Want to try → Planning → Tried, with rating, note, who-with);
+  resurfacing (planned-day, "still waiting", nudges with a morning/evening
+  preference).
+- **Phase 2 — Nearby & the personal layer:** done in the PWA. Seeded city
+  places + everyone's saves in one nearby index; Discover with reasons; Starter
+  picks, Made for you, Surprise me; weekend plan from your own saves; trip
+  plans with stays and transport; Ask (grounded in your saves); preferences
+  (diet, budget, company, nudge time, vibes); Your 2026.
+  Geofenced native nudges (Capacitor) remain the native-app step
+  ([ADR 0007](adr/0007-dual-frontend-capacitor-pwa.md)).
+- **Phase 3 — Remaining brief items (next):** map view on Wanna Try; Trending
+  and sub-category pages in Discover; shared and collaborative collections;
+  friends ("your friend wants to try the same place"); a saved→tried metrics
+  view; learning from skipped recommendations.
+- **Phase 4 — Monetisation:** affiliate on stays, tickets and shopping links
+  already carried by saves; **Wanna Try Pro** (unlimited imports, AI plans,
+  price tracking, collaborative planning); curated business presence in
+  Discover only where it stays trustworthy.
+
+## Business strategy
+
+- **Positioning.** Not a bookmark manager, not a travel app, not a feed, not a
+  chatbot: *the place where "I want to try that" becomes "I tried it."* Against
+  Instagram's Saved tab we win on details and timing; against travel planners
+  (e.g. Gumo) we win on breadth (food, shopping, recipes, bills, notes) and on
+  Hindi/Indian content.
+- **North star.** Things actually tried per user per month; secondary,
+  saved→tried conversion. Not saves, not sessions.
+- **Growth loops built into the product.** (1) Every shared item, plan and
+  recipe is a public page ending in "Open in Wanna Try / Create a free
+  account". (2) The journal at `/blog` targets the searches people already
+  make (save Instagram reels, bill reminder app, weekend plans Delhi, budget
+  trip plan) and ends every post with install steps for Android and iPhone.
+  (3) "Share your year" and shared weekend plans carry the app to friends.
+- **Launch focus.** Delhi NCR first (seeded places for Delhi and Gurugram),
+  reels-heavy 20–35 audience; creators add "save this in Wanna Try" to
+  captions; one city page for search traffic; measure saves per user in week
+  one and first tried within 30 days.
+- **Cost posture.** Claude Haiku for extraction and plans, Sonnet only for
+  memory/Ask; free STT first (Groq/Sarvam), whisper tiny as fallback; cost caps
+  on paid vision. Render Starter (no sleep) is the one infra spend worth making
+  now.
 
 ## Core flow
 
