@@ -146,7 +146,7 @@ export default function SaveDetail({ onNavigate, onBack, payload }) {
     : sd.recipe?.isRecipe ? { label: 'Cook this', icon: 'pot', onClick: () => setNoteOpen(true) }
     : save.url ? { label: 'Open', icon: 'link', href: save.url } : null;
   const handle = handleOf(save);
-  const processing = save.processingStatus && !['completed'].includes(save.processingStatus);
+  const processing = ['pending', 'processing', 'failed', 'partial'].includes(save.processingStatus);
 
   return (
     <div className="wt-screen">
@@ -169,7 +169,7 @@ export default function SaveDetail({ onNavigate, onBack, payload }) {
       <h1 className="wt-title lg" style={{ marginBottom: 10 }}>{title}</h1>
       <div style={{ fontSize: 14.5, color: 'var(--mute)', marginBottom: 22, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
         <span>{meta || `Saved ${relativeTime(save.createdAt).toLowerCase()}`}</span>
-        {processing && <span style={{ padding: '3px 9px', borderRadius: 999, fontSize: 11.5, fontWeight: 600, background: 'var(--teal-soft)', color: 'var(--teal-d)' }}>{save.processingStatus === 'failed' ? 'Couldn\'t read it' : 'Still reading'}</span>}
+        {processing && <span style={{ padding: '3px 9px', borderRadius: 999, fontSize: 11.5, fontWeight: 600, background: 'var(--teal-soft)', color: 'var(--teal-d)' }}>{save.processingStatus === 'failed' ? 'Couldn\'t read it' : save.processingStatus === 'partial' ? 'Partly read' : 'Still reading'}</span>}
       </div>
 
       <div style={{ marginBottom: 24 }}>{status}</div>

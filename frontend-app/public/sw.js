@@ -8,7 +8,7 @@
    worker only updates when its bytes change, so an edit below that leaves this
    constant alone can sit unshipped on an installed PWA. Bump it whenever you
    touch this file. */
-const VERSION = 'wt-sw-v2';
+const VERSION = 'wt-sw-v3';
 
 /* The API lives on a different origin than the app, and this file isn't built by
    CRA so it can't read REACT_APP_API_URL. push.js therefore registers the worker

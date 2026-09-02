@@ -57,7 +57,7 @@ export default function Trip({ save, onNavigate, onBack, onMore, statusControl }
       {save?.aiAnalysis?.summary && (
         <p style={{ fontSize: 15, lineHeight: 1.55, color: 'var(--mute)', margin: '0 0 20px' }}>{save.aiAnalysis.summary}</p>
       )}
-      <SaveSections save={save} />
+      <SaveSections save={save} hideItinerary />
 
       {planned
         ? <Banner icon="calendar">Your {plannedDays ? `${plannedDays}-day ` : ''}plan is saved with this trip — planned {new Date(save.tripPlan.generatedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}.</Banner>

@@ -46,7 +46,7 @@ function Rows({ label, items, numbered }) {
   );
 }
 
-export default function SaveSections({ save, hideKeyPoints }) {
+export default function SaveSections({ save, hideKeyPoints, hideItinerary }) {
   const [openTranscript, setOpenTranscript] = useState(false);
   const ai = save?.aiAnalysis || {};
   const sd = ai.structuredData || {};
@@ -54,7 +54,11 @@ export default function SaveSections({ save, hideKeyPoints }) {
   const points = (ai.keyPoints || []).filter((k) => k && !looksHallucinated(k));
   const t = ai.transcription || {};
   const transcript = t.text && !looksHallucinated(t.text) ? t.text : null;
-  const lang = t.detectedLanguage && t.detectedLanguage !== 'en' ? (LANG[t.detectedLanguage] || t.detectedLanguage) : null;
+  const code = String(t.detectedLanguage || '').toLowerCase().slice(0, 2);
+  const langName = code && code !== 'en' ? (LANG[code] || t.detectedLanguage) : null;
+  // Devanagari on screen means the original; Latin text for a Hindi reel means it was translated.
+  const translated = langName && transcript && !/[\u0900-\u097F]/.test(transcript);
+  const lang = langName ? `${langName}${translated ? ', translated' : ''}` : null;
 
   return (
     <>
@@ -104,7 +108,7 @@ export default function SaveSections({ save, hideKeyPoints }) {
         </section>
       )}
 
-      {itinerary && (itinerary.highlights?.length || itinerary.perDestinationCosts?.length) && (
+      {!hideItinerary && itinerary && (itinerary.highlights?.length || itinerary.perDestinationCosts?.length) && (
         <section style={{ marginBottom: 20 }}>
           <div style={{ marginTop: 4 }}><Facts items={[['Days', itinerary.duration], ['Budget', itinerary.estimatedCost], ['Best in', itinerary.bestSeason]]} /></div>
           <Rows label="Highlights" items={itinerary.highlights} />
@@ -117,7 +121,7 @@ export default function SaveSections({ save, hideKeyPoints }) {
       {transcript && (
         <section style={{ marginBottom: 20 }}>
           <button type="button" onClick={() => setOpenTranscript((v) => !v)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', background: 'none', border: 0, padding: 0, cursor: 'pointer' }}>
-            <SectionLabel>What the reel said{lang ? ` · ${lang}, translated` : ''}</SectionLabel>
+            <SectionLabel>What the reel said{lang ? ` · ${lang}` : ''}</SectionLabel>
             <span style={{ color: 'var(--faint)', transform: openTranscript ? 'rotate(90deg)' : 'none', transition: 'transform .15s' }}><Icon name="forward" size={16} /></span>
           </button>
           <p style={{ fontSize: 14.5, lineHeight: 1.6, color: 'var(--mute)', margin: '6px 0 0', ...(openTranscript ? {} : { display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }) }}>{transcript}</p>
