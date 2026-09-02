@@ -64,9 +64,9 @@ export default function SavedMap({ onNavigate }) {
   const counted = data ? data.pins.filter((p) => status === 'all' || p.intentStatus === status).length : 0;
   return (
     <div className="wt-screen has-nav" style={{ padding: 0, overflow: 'hidden', position: 'relative' }}>
-      <div style={{ padding: 'var(--pad-top) var(--pad-screen) 10px', display: 'flex', flexDirection: 'column', gap: 10, background: 'var(--bg)', zIndex: 2 }}>
+      <div style={{ padding: 'var(--pad-top) var(--pad-screen) 10px', display: 'flex', flexDirection: 'column', gap: 10, background: 'var(--bg)', zIndex: 1000, position: 'relative' }}>
         <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
-          <h1 className="wt-title">Your Wanna Try</h1>
+          <h1 className="wt-title" style={{ whiteSpace: 'nowrap' }}>Wanna Try</h1>
           <button type="button" className="wt-link" onClick={() => onNavigate('saved')} style={{ background: 'none', border: 0, fontSize: 13.5, fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}><Icon name="bookmark" size={15} />List</button>
         </div>
         <div className="wt-chips">
@@ -76,11 +76,11 @@ export default function SavedMap({ onNavigate }) {
       </div>
       <div ref={mapEl} style={{ flex: 1, minHeight: 320, background: 'var(--card-2)' }} />
       <button type="button" aria-label="Where am I" onClick={locate}
-        style={{ position: 'absolute', right: 16, bottom: active ? 210 : 122, width: 44, height: 44, borderRadius: 22, border: '1px solid var(--line)', background: 'var(--card)', color: 'var(--teal)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(21,32,30,.12)', cursor: 'pointer', zIndex: 3 }}>
+        style={{ position: 'absolute', right: 16, bottom: active ? 210 : 122, width: 44, height: 44, borderRadius: 22, border: '1px solid var(--line)', background: 'var(--card)', color: 'var(--teal)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(21,32,30,.12)', cursor: 'pointer', zIndex: 1000 }}>
         <Icon name="locate" size={20} />
       </button>
       {active && (
-        <div style={{ position: 'absolute', left: 12, right: 12, bottom: 104, background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 14, padding: '12px 14px', boxShadow: '0 8px 24px rgba(21,32,30,.14)', zIndex: 3, display: 'flex', gap: 12, alignItems: 'center' }}>
+        <div style={{ position: 'absolute', left: 12, right: 12, bottom: 104, background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 14, padding: '12px 14px', boxShadow: '0 8px 24px rgba(21,32,30,.14)', zIndex: 1000, display: 'flex', gap: 12, alignItems: 'center' }}>
           <span className={`wt-tile ${getCategoryTile(active.category).kind}`}><Icon name={getCategoryTile(active.category).icon} size={20} /></span>
           <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
             <span className="wt-row-title" style={{ fontSize: 16.5 }}>{active.title}</span>
@@ -91,7 +91,7 @@ export default function SavedMap({ onNavigate }) {
         </div>
       )}
       {data && data.pins.length === 0 && (
-        <div style={{ position: 'absolute', left: 24, right: 24, top: '45%', textAlign: 'center', zIndex: 3, background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 14, padding: 16 }}>
+        <div style={{ position: 'absolute', left: 24, right: 24, top: '45%', textAlign: 'center', zIndex: 1000, background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 14, padding: 16 }}>
           <p style={{ fontFamily: 'var(--font-display)', fontSize: 20, margin: '0 0 6px' }}>Nothing on the map yet</p>
           <p className="wt-sub" style={{ margin: 0 }}>Saves with a place get a pin. Save a cafe or a trip and it shows up here.</p>
         </div>
