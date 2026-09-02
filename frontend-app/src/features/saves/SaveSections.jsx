@@ -121,7 +121,7 @@ export default function SaveSections({ save, hideKeyPoints, hideItinerary }) {
       {transcript && (
         <section style={{ marginBottom: 20 }}>
           <button type="button" onClick={() => setOpenTranscript((v) => !v)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', background: 'none', border: 0, padding: 0, cursor: 'pointer' }}>
-            <SectionLabel>What the reel said{lang ? ` · ${lang}` : ''}</SectionLabel>
+            <SectionLabel>{save?.source === 'voice' ? 'What you said' : 'What the reel said'}{lang ? ` · ${lang}` : ''}</SectionLabel>
             <span style={{ color: 'var(--faint)', transform: openTranscript ? 'rotate(90deg)' : 'none', transition: 'transform .15s' }}><Icon name="forward" size={16} /></span>
           </button>
           <p style={{ fontSize: 14.5, lineHeight: 1.6, color: 'var(--mute)', margin: '6px 0 0', ...(openTranscript ? {} : { display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }) }}>{transcript}</p>

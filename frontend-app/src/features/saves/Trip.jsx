@@ -29,7 +29,7 @@ export default function Trip({ save, onNavigate, onBack, onMore, statusControl }
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
         <span style={{ width: 8, height: 8, borderRadius: 4, background: 'var(--teal)' }} />
         <span className="wt-eyebrow" style={{ fontSize: 12, letterSpacing: '.1em' }}>Trip</span>
-        <span style={{ fontSize: 12, color: 'var(--faint)' }}>· from {reels} reel{reels === 1 ? '' : 's'}</span>
+        <span style={{ fontSize: 12, color: 'var(--faint)' }}>· {save?.source === 'voice' ? 'from your voice note' : `from ${reels} reel${reels === 1 ? '' : 's'}`}</span>
       </div>
       <h1 className="wt-title lg" style={{ marginBottom: 20 }}>{save?.title}</h1>
       {statusControl && <div style={{ marginBottom: 12 }}>{statusControl}</div>}
@@ -49,7 +49,7 @@ export default function Trip({ save, onNavigate, onBack, onMore, statusControl }
 
       {places.length > 0 && (
         <section style={{ marginBottom: 20 }}>
-          <SectionLabel>{places.length} place{places.length === 1 ? '' : 's'}, from your reels</SectionLabel>
+          <SectionLabel>{save?.source === 'voice' ? `${places.length} leg${places.length === 1 ? '' : 's'}, as you said them` : `${places.length} place${places.length === 1 ? '' : 's'}, from your reels`}</SectionLabel>
           {places.slice(0, 5).map((p) => (
             <div key={p.name} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 0', borderBottom: '1px solid var(--line)' }}>
               <span style={{ width: 7, height: 7, borderRadius: 4, background: KIND_HUE[p.kind], flexShrink: 0 }} />
