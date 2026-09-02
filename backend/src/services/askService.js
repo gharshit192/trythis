@@ -101,7 +101,7 @@ async function ask({ userId, question, conversationId, user }) {
   const city = user?.location?.city || user?.settings?.location?.city;
   const pr = user?.preferences || {};
   const BUDGET = { low: 'keeps it cheap (₹)', mid: 'mid-range (₹₹)', high: 'happy to splurge (₹₹₹)' };
-  const prefLine = [pr.diet ? `eats ${pr.diet}` : null, pr.budget ? BUDGET[pr.budget] : null, pr.company ? `usually goes with ${pr.company === 'partner' ? 'their partner' : pr.company === 'solo' ? 'no one — solo' : pr.company}` : null].filter(Boolean).join('; ');
+  const prefLine = [user?.interests?.length ? `into ${user.interests.slice(0, 6).join(', ')}` : null, pr.vibes?.length ? `likes it ${pr.vibes.slice(0, 4).join(', ')}` : null, pr.diet ? `eats ${pr.diet}` : null, pr.budget ? BUDGET[pr.budget] : null, pr.company ? `usually goes with ${pr.company === 'partner' ? 'their partner' : pr.company === 'solo' ? 'no one — solo' : pr.company}` : null].filter(Boolean).join('; ');
   const prompt = `Today: ${today}${city ? `. User's city: ${city}` : ''}.${prefLine ? ` About the user: ${prefLine}. Weigh these when choosing between saves; say so when it matters.` : ''} Saved items: ${saves.length}${picked.length < saves.length ? ` (showing the ${picked.length} most relevant)` : ''}.\n\nSAVES:\n${index || '(nothing saved yet)'}\n\n${history ? `CONVERSATION SO FAR:\n${history}\n\n` : ''}User: ${q}`;
 
   let out = null;

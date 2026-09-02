@@ -536,7 +536,7 @@ router.patch('/:id', validateObjectId('id'), async (req, res) => {
 // Intent lifecycle: change intentStatus and (optionally) plannedFor / triedAt.
 router.patch('/:id/intent', validateObjectId('id'), async (req, res) => {
   try {
-    const { intentStatus, plannedFor, triedAt, rating, triedNote } = req.body;
+    const { intentStatus, plannedFor, triedAt, rating, triedNote, triedWith } = req.body;
     const save = await Save.findById(req.params.id);
     if (!save || save.userId.toString() !== req.user.id) {
       return res.status(404).json({ status: 'error', error: { code: 'NOT_FOUND', message: 'Save not found' } });
@@ -559,6 +559,7 @@ router.patch('/:id/intent', validateObjectId('id'), async (req, res) => {
       save.rating = r;
     }
     if (triedNote !== undefined) save.triedNote = triedNote ? String(triedNote).slice(0, 1000) : null;
+    if (triedWith !== undefined) save.triedWith = ['partner', 'friends', 'family', 'solo'].includes(triedWith) ? triedWith : null;
     await save.save();
     logger.info(`Save ${save._id} intent → ${save.intentStatus}`);
     res.json({ status: 'success', data: save });

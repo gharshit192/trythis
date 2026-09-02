@@ -17,6 +17,11 @@ const places = {
   },
 
   // Keep a seeded/shared place as one of your own saves (Explore's bookmark).
+  // Starter picks / Surprise me: places in your city ranked by what you said you like, each with a reason.
+  async getPicks(limit = 15) {
+    const res = await fetch(`${API_BASE_URL}/places/picks?limit=${limit}`, { headers: authHeader() });
+    return handle(res);
+  },
   async savePlace(id) {
     const res = await fetch(`${API_BASE_URL}/places/${id}/save`, { method: 'POST', headers: authHeader() });
     invalidateSaves();

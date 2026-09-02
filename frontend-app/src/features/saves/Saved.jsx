@@ -74,7 +74,7 @@ export default function Saved({ onNavigate, payload, nearbySaves = [] }) {
   return (
     <div className="wt-screen has-nav">
       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 16 }}>
-        <h1 className="wt-title">Saved</h1>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}><h1 className="wt-title">Your Wanna Try</h1>{saves.length > 0 && <span style={{ fontSize: 13.5, color: 'var(--mute)' }}>{counts.saved + counts.planned} thing{counts.saved + counts.planned === 1 ? '' : 's'} waiting for you · {counts.tried} tried</span>}</div>
         <span style={{ fontSize: 13.5, fontWeight: 500, color: 'var(--teal)', cursor: 'pointer' }} onClick={() => onNavigate('collections')}>Collections</span>
       </div>
 

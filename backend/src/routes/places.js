@@ -17,6 +17,49 @@ router.get('/trending', async (req, res) => {
   }
 });
 
+// GET /places/picks?limit=15 — starter recommendations for a signed-in user:
+// their city first, ranked by what they said they like, each with a reason.
+// Excludes places already in their list. Used by onboarding and Surprise me.
+const INTEREST_CATS = { cafes: ['cafe'], street_food: ['street_food', 'food'], restaurants: ['restaurant'], trips: ['travel', 'hotel'], recipes: ['recipe', 'cooking'], shopping: ['shopping', 'home-decor'], fashion: ['fashion', 'beauty'], films: ['film', 'movie', 'show'], books: ['book'], experiences: ['experience'], fitness: ['fitness'], gadgets: ['tech'] };
+router.get('/picks', authMiddleware, async (req, res) => {
+  try {
+    const User = require('../models/User');
+    const me = await User.findById(req.user.id).select('interests preferences location').lean();
+    const limit = Math.min(parseInt(req.query.limit) || 15, 40);
+    const city = (req.query.city || me?.location?.city || '').trim();
+    const mine = new Set((await Save.find({ userId: req.user.id, status: 'active', 'metadata.placeId': { $exists: true } }).select('metadata.placeId').lean()).map((s) => String(s.metadata.placeId)));
+    const q = { status: 'active' };
+    if (city) q.city = new RegExp(city.split(/[\s,]+/)[0], 'i');
+    let places = await Place.find(q).sort({ saveCount: -1, updatedAt: -1 }).limit(120).lean();
+    if (places.length < 8) places = places.concat(await Place.find({ status: 'active', _id: { $nin: places.map((p) => p._id) } }).sort({ saveCount: -1 }).limit(60).lean());
+    const wantCats = new Set((me?.interests || []).flatMap((i) => INTEREST_CATS[i] || []));
+    const vibes = new Set(me?.preferences?.vibes || []);
+    const budget = me?.preferences?.budget;
+    const interestLabel = (cat) => Object.entries(INTEREST_CATS).find(([, cats]) => cats.includes(cat))?.[0]?.replace('_', ' ');
+    const scored = places.filter((p) => !mine.has(String(p._id))).map((p) => {
+      let score = Math.log1p(p.saveCount || 0);
+      const reasons = [];
+      if (wantCats.has(p.category)) { score += 3; reasons.push(`Because you picked ${interestLabel(p.category)}`); }
+      const chips = [...(p.aggregatedTake?.chips || []), ...(p.vibeTags || [])].join(' ').toLowerCase();
+      if (vibes.has('hidden-gems') && (p.saveCount || 0) <= 3) { score += 1.5; reasons.push('A quiet one — few people have found it'); }
+      if (vibes.has('trending') && (p.saveCount || 0) >= 5) { score += 1.5; reasons.push(`Saved by ${p.saveCount} people this month`); }
+      if (vibes.has('budget') && /₹[0-9]{2,3}\b|cheap|budget|pocket/.test(chips)) { score += 1; reasons.push('Easy on the pocket'); }
+      if (vibes.has('romantic') && /date|romantic|sunset|rooftop|candle/.test(chips)) { score += 1; reasons.push('Good for a date'); }
+      if (vibes.has('relaxing') && /quiet|calm|garden|slow|lazy/.test(chips)) { score += 1; reasons.push('Slow and quiet'); }
+      if (vibes.has('adventurous') && /trek|hike|kayak|climb|camp|adventure/.test(chips)) { score += 1; reasons.push('For the adventurous side'); }
+      if (budget === 'low' && /₹[0-9]{2,3}\b/.test(chips)) score += 0.5;
+      if (!reasons.length) reasons.push(p.saveCount >= 5 ? `Saved by ${p.saveCount} people` : p.aggregatedTake?.text ? p.aggregatedTake.text.split(/(?<=[.;!])\s/)[0].slice(0, 90) : `Worth a look in ${p.city || 'your city'}`);
+      return { ...p, reason: reasons[0], score: score + Math.random() * 0.3 };
+    }).sort((a, b) => b.score - a.score);
+    // Mix categories so the list doesn't open with eight cafes.
+    const out = []; const seen = {};
+    for (const p of scored) { seen[p.category] = (seen[p.category] || 0) + 1; if (seen[p.category] <= 4) out.push(p); if (out.length >= limit) break; }
+    res.json({ status: 'success', data: out.map(({ score, ...p }) => p), city: city || null });
+  } catch (e) {
+    res.status(500).json({ status: 'error', error: { code: 'SERVER_ERROR', message: e.message } });
+  }
+});
+
 router.get('/nearby', async (req, res) => {
   try {
     const { lat, lng, radiusMetres = 5000 } = req.query;

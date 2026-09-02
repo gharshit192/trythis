@@ -6,16 +6,20 @@ import { INTERESTS, KIND_HUE } from '../../lib/categoryMeta';
 import { Progress } from './OnboardingCity';
 
 // Question 2 of 2 (ADR 0014). Budget, group type and the rest are inferred later.
+const VIBES = [['hidden-gems', 'Hidden gems'], ['trending', 'Trending'], ['budget', 'Budget-friendly'], ['premium', 'Premium'], ['relaxing', 'Relaxing'], ['adventurous', 'Adventurous'], ['social', 'Social'], ['romantic', 'Romantic']];
+
 export default function OnboardingInterests({ onNavigate }) {
   const [on, setOn] = useState(new Set());
+  const [vibes, setVibes] = useState(new Set());
+  const toggleVibe = (id) => setVibes((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
   const [saving, setSaving] = useState(false);
   const toggle = (id) => setOn((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
 
   const next = async () => {
     setSaving(true);
-    try { await api.updateOnboarding({ interests: [...on], currentStep: 2 }); } catch {}
+    try { await api.updateOnboarding({ interests: [...on], vibes: [...vibes], currentStep: 2 }); } catch {}
     setSaving(false);
-    onNavigate('onboarding-import');
+    onNavigate('starter-picks');
   };
 
   return (
@@ -28,6 +32,11 @@ export default function OnboardingInterests({ onNavigate }) {
         {INTERESTS.map((i) => (
           <Chip key={i.id} select on={on.has(i.id)} dot={KIND_HUE[i.kind]} onClick={() => toggle(i.id)}>{i.label}</Chip>
         ))}
+      </div>
+
+      <p className="wt-label" style={{ marginTop: 26, marginBottom: 10 }}>And the vibe?</p>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+        {VIBES.map(([id, label]) => <Chip key={id} small on={vibes.has(id)} onClick={() => toggleVibe(id)}>{label}</Chip>)}
       </div>
 
       <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 13 }}>

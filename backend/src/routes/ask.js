@@ -14,7 +14,7 @@ router.post('/', async (req, res) => {
   const question = String(req.body?.question || '').trim();
   if (question.length < 2) return res.status(400).json({ status: 'error', error: { code: 'VALIDATION_ERROR', message: 'question required' } });
   try {
-    const user = await User.findById(req.user.id).select('location settings.location preferences').lean();
+    const user = await User.findById(req.user.id).select('location settings.location preferences interests').lean();
     const data = await ask({ userId: req.user.id, question, conversationId: req.body?.conversationId || null, user });
     res.json({ status: 'success', data });
   } catch (err) {

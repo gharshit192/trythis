@@ -208,6 +208,7 @@ const intentItemSchema = new mongoose.Schema({
   // that says whether a save was *good*, not merely clicked (ADR 0015).
   rating: { type: Number, min: 1, max: 5, default: null },
   triedNote: { type: String, default: null },
+  triedWith: { type: String, enum: ['partner', 'friends', 'family', 'solo', null], default: null },
 
   // Voice / text memories (ADR 0016). A memory is a save with no URL: what the
   // user said, who/where/what it was about, and when it should come back.

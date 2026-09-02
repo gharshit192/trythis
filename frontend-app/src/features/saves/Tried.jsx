@@ -12,13 +12,14 @@ export default function Tried({ onNavigate, onBack, payload }) {
   const { id, title, createdAt, triedCount } = payload || {};
   const [rating, setRating] = useState(0);
   const [note, setNote] = useState('');
+  const [withWho, setWithWho] = useState(null);
   const [saving, setSaving] = useState(false);
 
   const done = async () => {
     if (!id) return onBack?.();
     setSaving(true);
     try {
-      await api.updateIntent(id, { intentStatus: 'tried', rating: rating || null, triedNote: note.trim() || null });
+      await api.updateIntent(id, { intentStatus: 'tried', rating: rating || null, triedNote: note.trim() || null, triedWith: withWho });
     } finally {
       setSaving(false);
       onNavigate('saved', { tab: 'tried', refresh: true });
@@ -53,6 +54,12 @@ export default function Tried({ onNavigate, onBack, payload }) {
         <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--sand)', minHeight: 20 }}>{LABELS[rating]}</span>
       </div>
 
+      <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap', marginTop: 22 }}>
+        {[['partner', 'Partner'], ['friends', 'Friends'], ['family', 'Family'], ['solo', 'Solo']].map(([v, t]) => (
+          <button key={v} type="button" onClick={() => setWithWho(withWho === v ? null : v)}
+            style={{ padding: '8px 14px', borderRadius: 999, border: `1px solid ${withWho === v ? 'var(--sand)' : 'rgba(255,255,255,.3)'}`, background: withWho === v ? 'var(--sand)' : 'transparent', color: withWho === v ? 'var(--teal-d)' : 'rgba(255,255,255,.85)', fontSize: 13.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>{t}</button>
+        ))}
+      </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, height: 52, padding: '0 16px', borderRadius: 12, background: 'rgba(255,255,255,.1)', border: '1px solid rgba(255,255,255,.16)', marginTop: 26, color: 'rgba(255,255,255,.6)' }}>
         <Icon name="edit" size={17} stroke={1.9} />
         <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="A note for future you"

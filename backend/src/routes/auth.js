@@ -539,6 +539,7 @@ router.patch('/me/onboarding', authMiddleware, async (req, res) => {
     if (typeof currentStep === 'number') patch['onboarding.currentStep'] = currentStep;
     if (firstSaveAt) patch['onboarding.firstSaveAt'] = new Date(firstSaveAt);
     if (Array.isArray(interests)) patch.interests = interests.map(String).slice(0, 30);
+    if (Array.isArray(req.body.vibes)) patch['preferences.vibes'] = req.body.vibes.map(String).slice(0, 10);
     if (typeof city === 'string') patch['location.city'] = city.trim().slice(0, 80) || null;
 
     const user = await User.findByIdAndUpdate(

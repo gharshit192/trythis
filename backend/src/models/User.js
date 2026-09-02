@@ -31,6 +31,8 @@ const userSchema = new mongoose.Schema(
       budget: { type: String, enum: ['low', 'mid', 'high', null], default: null },
       company: { type: String, enum: ['partner', 'friends', 'family', 'solo', null], default: null },
       nudgeTime: { type: String, enum: ['morning', 'evening', null], default: null },
+      // Onboarding 'vibe' chips: hidden-gems, trending, budget, premium, relaxing, adventurous, social, romantic
+      vibes: { type: [String], default: [] },
       notifications: {
         enabled: { type: Boolean, default: true },
         frequency: { type: String, enum: ['realtime', 'daily', 'weekly'], default: 'daily' },

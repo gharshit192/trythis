@@ -136,7 +136,7 @@ export default function Explore({ onNavigate, nearbySaves = [] }) {
 
   return (
     <div className="wt-screen has-nav">
-      <h1 className="wt-title" style={{ marginBottom: 16 }}>Explore</h1>
+      <h1 className="wt-title" style={{ marginBottom: 16 }}>Discover</h1>
       <div className="wt-chips" style={{ marginBottom: 18 }}>
         {CHIPS.map((c) => <Chip key={c.id} on={chip === c.id} onClick={() => setChip(c.id)}>{c.label}</Chip>)}
       </div>

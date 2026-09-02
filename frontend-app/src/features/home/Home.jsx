@@ -4,7 +4,6 @@ import Icon from '../../components/Icon';
 import ListRow from '../../components/ListRow';
 import SectionLabel from '../../components/SectionLabel';
 import SearchBar from '../../components/SearchBar';
-import Banner from '../../components/Banner';
 import Button from '../../components/Button';
 import { relativeTime, formatDistance } from '../../lib/format';
 
@@ -26,6 +25,21 @@ export default function Home({ onNavigate, payload, nearbySaves = [] }) {
   const [templates, setTemplates] = useState([]);
   const [popular, setPopular] = useState([]);
   const [copying, setCopying] = useState(null);
+  // Surprise me (brief §15): one pick at a time from places you haven't saved, with a reason.
+  const [surprise, setSurprise] = useState(null);       // null | 'loading' | { pool, i }
+  const [surpriseSaved, setSurpriseSaved] = useState(false);
+  const openSurprise = async () => {
+    setSurprise('loading'); setSurpriseSaved(false);
+    const r = await api.getPicks(12).catch(() => null);
+    const pool = r?.status === 'success' ? r.data : [];
+    setSurprise({ pool, i: 0 });
+  };
+  const another = () => { setSurpriseSaved(false); setSurprise((s) => (s && s.pool ? { pool: s.pool, i: (s.i + 1) % Math.max(1, s.pool.length) } : s)); };
+  const keepSurprise = async () => {
+    const p = surprise?.pool?.[surprise.i]; if (!p) return;
+    const r = await api.savePlace(p._id).catch(() => null);
+    if (r?.status === 'success') { setSurpriseSaved(true); load(true); }
+  };
 
   const load = async (force = false) => {
     try {
@@ -54,9 +68,7 @@ export default function Home({ onNavigate, payload, nearbySaves = [] }) {
   const now = Date.now();
   const planning = live.filter((s) => s.intentStatus === 'planned' || now - new Date(s.createdAt) < 2 * DAY).slice(0, 3);
   const near = nearbySaves.filter((s) => !planning.find((p) => p._id === s._id)).slice(0, 3);
-  const old = live
-    .filter((s) => s.intentStatus === 'saved' && now - new Date(s.createdAt) > 60 * DAY)
-    .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))[0];
+  const waiting = live.filter((s) => s.intentStatus === 'saved' && now - new Date(s.createdAt) > 60 * DAY).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)).slice(0, 3);
   const city = user?.location?.city || user?.settings?.location?.city;
   const day = new Date().toLocaleDateString(undefined, { weekday: 'long' });
 
@@ -84,6 +96,33 @@ export default function Home({ onNavigate, payload, nearbySaves = [] }) {
           <span style={{ flex: 1, fontSize: 14.5, fontWeight: 500 }}>Ask about anything you saved</span>
           <Icon name="forward" size={16} />
         </button>
+      )}
+      <button type="button" onClick={openSurprise}
+        style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', marginTop: saves.length ? -14 : -14, marginBottom: 24, padding: '11px 14px', borderRadius: 12, background: 'var(--card)', border: '1px solid var(--line)', color: 'var(--ink)', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' }}>
+        <span style={{ color: 'var(--cat-food)' }}><Icon name="star" size={18} /></span>
+        <span style={{ flex: 1, fontSize: 14.5, fontWeight: 500 }}>Surprise me</span>
+        <span style={{ fontSize: 12.5, color: 'var(--faint)' }}>one thing, near you</span>
+      </button>
+      {surprise && (
+        <div className="wt-sheet" onClick={() => setSurprise(null)}>
+          <div onClick={(e) => e.stopPropagation()}>
+            <div className="grab" />
+            {surprise === 'loading' ? <p className="wt-sub">Picking one…</p> : !surprise.pool?.length ? (
+              <><p style={{ fontFamily: 'var(--font-display)', fontSize: 20, margin: '0 0 6px' }}>Nothing to surprise you with yet</p><p className="wt-sub" style={{ marginBottom: 16 }}>Set your city in Me, or save a few things and try again.</p><Button small variant="secondary" onClick={() => setSurprise(null)}>Close</Button></>
+            ) : (() => { const p = surprise.pool[surprise.i]; return (
+              <>
+                <span className="wt-eyebrow" style={{ color: 'var(--cat-food)', marginBottom: 10 }}>You might like this</span>
+                <p style={{ fontFamily: 'var(--font-display)', fontSize: 26, lineHeight: 1.1, margin: '0 0 6px' }}>{p.canonicalName}</p>
+                <p className="wt-row-meta" style={{ margin: '0 0 8px' }}>{[p.city, ...(p.aggregatedTake?.chips || []).slice(0, 2)].filter(Boolean).join(' · ')}</p>
+                <p style={{ fontSize: 14.5, color: 'var(--teal-d)', margin: '0 0 18px' }}>✨ {p.reason}</p>
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <Button small onClick={surpriseSaved ? another : keepSurprise} icon={surpriseSaved ? 'check' : 'bookmark'}>{surpriseSaved ? 'Saved — next' : 'Wanna try'}</Button>
+                  <Button small variant="secondary" onClick={another} style={{ width: 'auto', padding: '0 16px' }}>Show me another</Button>
+                </div>
+                <button type="button" className="wt-link" onClick={() => { setSurprise(null); onNavigate('place', { id: p._id }); }} style={{ background: 'none', border: 0, marginTop: 14, fontSize: 13.5, cursor: 'pointer', padding: 0 }}>See the details</button>
+              </>); })()}
+          </div>
+        </div>
       )}
 
       {!loading && saves.length === 0 && (
@@ -159,11 +198,14 @@ export default function Home({ onNavigate, payload, nearbySaves = [] }) {
         </section>
       )}
 
-      {old && (
-        <Banner warm label={`Saved ${relativeTime(old.createdAt).toLowerCase()}`} onClick={() => open(old)}
-          trailing={<Icon name="forward" size={18} />}>
-          <span style={{ fontFamily: 'var(--font-display)', fontSize: 17, lineHeight: 1.25, color: 'var(--ink)' }}>{old.title}</span>
-        </Banner>
+      {waiting.length > 0 && (
+        <section style={{ marginBottom: 24 }}>
+          <SectionLabel action="All" onAction={() => onNavigate('saved')}>Still waiting for you</SectionLabel>
+          {waiting.map((s) => (
+            <ListRow key={s._id} category={s.category} title={s.title} meta={metaOf(s)}
+              reason={`Saved ${relativeTime(s.createdAt).toLowerCase()}. Still want to try it?`} onClick={() => open(s)} />
+          ))}
+        </section>
       )}
     </div>
   );

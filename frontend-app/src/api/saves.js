@@ -152,11 +152,11 @@ const saves = {
     window.URL.revokeObjectURL(url);
   },
 
-  async updateIntent(id, { intentStatus, plannedFor, triedAt, rating, triedNote } = {}) {
+  async updateIntent(id, { intentStatus, plannedFor, triedAt, rating, triedNote, triedWith } = {}) {
     const res = await fetch(`${API_BASE_URL}/saves/${id}/intent`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', ...authHeader() },
-      body: JSON.stringify({ intentStatus, plannedFor, triedAt, rating, triedNote }),
+      body: JSON.stringify({ intentStatus, plannedFor, triedAt, rating, triedNote, triedWith }),
     });
     invalidateSaves();
     return handle(res);

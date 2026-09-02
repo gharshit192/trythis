@@ -104,6 +104,8 @@ export default function Profile({ onNavigate }) {
       <Row icon="pin" kind="food" title="Know where I am" sub={loc ? 'For "near you" and the nearby nudge' : 'Off — nearby is off too'} right={<Switch on={loc} onClick={toggleLoc} />} />
       {note && <div className="wt-note info" style={{ marginTop: 12 }}>{note}</div>}
 
+      <Row icon="star" kind="food" title={`Your ${new Date().getFullYear()}`} sub={tried ? `${tried} tried so far — see the year` : 'Everything you try this year, in one place'} onClick={() => onNavigate('year-recap')} right={<Icon name="forward" size={18} style={{ color: 'var(--faint)' }} />} />
+
       <div style={{ marginTop: 24 }}><SectionLabel>About you</SectionLabel></div>
       <p style={{ fontSize: 13.5, color: 'var(--mute)', margin: '4px 0 10px', lineHeight: 1.45 }}>Ask, trip plans and nudges use these. Tap again to clear.</p>
       {[
