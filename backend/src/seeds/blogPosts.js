@@ -170,6 +170,9 @@ No listicle. Three saves, sorted by distance, one of them cooked at home. Save w
   },
 ];
 
+module.exports = { POSTS };
+if (require.main !== module) return;
+
 (async () => {
   const uri = process.env.DATABASE_URL || 'mongodb://localhost:27017/trythis';
   // Atlas URIs carry no db name; without dbName this would seed the default `test` db.
