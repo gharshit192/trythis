@@ -52,14 +52,19 @@ const initializeServer = async () => {
       dbConnected = true;
       console.log(`✅ Database connected (${dbConnectTime}ms)`);
 
-      try {
-        console.log('[DEBUG] Connecting to Redis...');
-        const startRedisTime = Date.now();
-        await redisClient.connect();
-        const redisConnectTime = Date.now() - startRedisTime;
-        console.log(`✅ Redis connected (${redisConnectTime}ms)`);
-      } catch (err) {
-        console.warn(`⚠️  Redis not available, continuing without it: ${err.message}`);
+      // Nothing reads Redis today (the queue is Mongo-polled). Only attempt it
+      // when a URL is configured — the default localhost attempt cost every
+      // cold start a connect timeout for no benefit.
+      if (process.env.REDIS_URL) {
+        try {
+          const startRedisTime = Date.now();
+          await redisClient.connect();
+          console.log(`✅ Redis connected (${Date.now() - startRedisTime}ms)`);
+        } catch (err) {
+          console.warn(`⚠️  Redis not available, continuing without it: ${err.message}`);
+        }
+      } else {
+        console.log('⏭️  Redis skipped (no REDIS_URL)');
       }
 
       // Start upload worker (runs in all modes)
