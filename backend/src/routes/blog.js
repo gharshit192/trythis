@@ -5,7 +5,9 @@ const express = require('express');
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const rateLimit = require('express-rate-limit');
+const bcrypt = require('bcrypt');
 const Post = require('../models/Post');
+const AdminUser = require('../models/AdminUser');
 const page = require('../services/blogPage');
 const { publicBaseUrl } = require('../utils/publicUrl');
 const logger = require('../utils/logger');
@@ -21,23 +23,46 @@ const isAdmin = (req) => { try { return jwt.verify(readCookie(req), process.env.
 const requireAdmin = (req, res, next) => (isAdmin(req) ? next() : res.redirect(`${publicBaseUrl()}/blog/admin/login`));
 const loginLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 10, standardHeaders: true, legacyHeaders: false });
 
-const configured = () => !!(process.env.BLOG_ADMIN_EMAIL && process.env.BLOG_ADMIN_PASSWORD);
+// The one email allowed to claim the admin account. Not a secret — the
+// password is chosen at first sign-in and stored hashed; there is no env.
+const BOOTSTRAP_EMAIL = 'wannatry@admin.com';
 
 // ── Admin
-router.get('/admin/login', (req, res) => res.type('html').send(page.renderLogin(configured() ? null : 'Admin login is not configured on this server (BLOG_ADMIN_EMAIL / BLOG_ADMIN_PASSWORD).')));
-router.post('/admin/login', loginLimiter, form, (req, res) => {
-  const { email, password } = req.body || {};
-  if (!configured() || !safeEq(String(email || '').toLowerCase(), String(process.env.BLOG_ADMIN_EMAIL).toLowerCase()) || !safeEq(password, process.env.BLOG_ADMIN_PASSWORD)) {
-    return res.status(401).type('html').send(page.renderLogin("That email and password don't match."));
+router.get('/admin/login', (req, res) => res.type('html').send(page.renderLogin(null)));
+router.post('/admin/login', loginLimiter, form, async (req, res) => {
+  const email = String(req.body?.email || '').trim().toLowerCase();
+  const password = String(req.body?.password || '');
+  const fail = () => res.status(401).type('html').send(page.renderLogin("That email and password don't match."));
+  try {
+    let admin = await AdminUser.findOne({ email });
+    if (!admin) {
+      // First run: no admin exists yet → the bootstrap email claims it with this password.
+      if (email !== BOOTSTRAP_EMAIL || (await AdminUser.countDocuments()) > 0) return fail();
+      if (password.length < 8) return res.status(400).type('html').send(page.renderLogin('First sign-in sets the password — use at least 8 characters.'));
+      admin = await AdminUser.create({ email, passwordHash: await bcrypt.hash(password, 10) });
+      logger.info(`[blog admin] account created for ${email}`);
+    } else if (!(await bcrypt.compare(password, admin.passwordHash))) return fail();
+    admin.lastLoginAt = new Date(); await admin.save();
+    const token = jwt.sign({ role: 'blog-admin', aid: String(admin._id) }, process.env.JWT_SECRET, { expiresIn: '12h' });
+    res.setHeader('Set-Cookie', `${COOKIE}=${token}; ${cookieOpts()}`);
+    res.redirect(`${publicBaseUrl()}/blog/admin`);
+  } catch (e) {
+    logger.error(`[blog admin] login failed: ${e.message}`);
+    res.status(500).type('html').send(page.renderLogin('Something went wrong. Try again.'));
   }
-  const token = jwt.sign({ role: 'blog-admin' }, process.env.JWT_SECRET, { expiresIn: '12h' });
-  res.setHeader('Set-Cookie', `${COOKIE}=${token}; ${cookieOpts()}`);
-  res.redirect(`${publicBaseUrl()}/blog/admin`);
+});
+router.post('/admin/password', requireAdmin, form, async (req, res) => {
+  const { current, next } = req.body || {};
+  const admin = await AdminUser.findOne({});
+  if (!admin || !(await bcrypt.compare(String(current || ''), admin.passwordHash))) return res.redirect(`${publicBaseUrl()}/blog/admin?err=${encodeURIComponent('Current password is wrong.')}`);
+  if (String(next || '').length < 8) return res.redirect(`${publicBaseUrl()}/blog/admin?err=${encodeURIComponent('New password needs 8+ characters.')}`);
+  admin.passwordHash = await bcrypt.hash(String(next), 10); await admin.save();
+  res.redirect(`${publicBaseUrl()}/blog/admin?ok=pw`);
 });
 router.post('/admin/logout', (req, res) => { res.setHeader('Set-Cookie', `${COOKIE}=; Path=/blog; HttpOnly; Max-Age=0`); res.redirect(`${publicBaseUrl()}/blog/admin/login`); });
 
 const listForAdmin = () => Post.find({}).sort({ updatedAt: -1 }).select('title slug status publishedAt updatedAt').lean();
-router.get('/admin', requireAdmin, async (req, res) => res.type('html').send(page.renderAdmin({ posts: await listForAdmin(), post: null, flash: req.query.ok ? 'Saved.' : null })));
+router.get('/admin', requireAdmin, async (req, res) => res.type('html').send(page.renderAdmin({ posts: await listForAdmin(), post: null, flash: req.query.ok === 'pw' ? 'Password changed.' : req.query.ok ? 'Saved.' : null, error: req.query.err || null })));
 router.get('/admin/:slug', requireAdmin, async (req, res) => {
   const post = await Post.findOne({ slug: req.params.slug }).lean();
   if (!post) return res.redirect(`${publicBaseUrl()}/blog/admin`);

@@ -153,8 +153,8 @@ See [ADR 0018](docs/adr/0018-blog-is-server-rendered-from-the-api.md).
 - Public pages are server-rendered by the API (`routes/blog.js`,
   `services/blogPage.js`); the SPA has no blog screens. Keep canonical/OG/JSON-LD
   intact and the "get the app" block at the end of every post.
-- Only the env account (`BLOG_ADMIN_EMAIL`/`BLOG_ADMIN_PASSWORD`) writes.
-  Never wire app users or hardcoded credentials into the admin.
+- Only the `AdminUser` row writes (claimed by the first sign-in with the
+  bootstrap email). Never wire app users or hardcoded passwords into the admin.
 
 ## Extraction Rules
 

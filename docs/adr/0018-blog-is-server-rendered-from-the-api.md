@@ -19,11 +19,14 @@ from a laptop, not an app user.
 2. **Posts are Markdown in Mongo** (`models/Post.js`); the rendered HTML is
    stored at save time so a page is one read. Keywords drive the eyebrow, the
    chips, and "keep reading" (overlap ranking).
-3. **One admin account, from env** — `BLOG_ADMIN_EMAIL` /
-   `BLOG_ADMIN_PASSWORD` — never an app user, never in the repo. The web
-   admin at `/blog/admin` is a login + two-pane writer (list, editor), plain
-   forms, a 12-hour HttpOnly cookie signed with `JWT_SECRET`, login
-   rate-limited. Drafts preview with `?preview=1` while signed in.
+3. **One admin account, in the database** (`models/AdminUser.js`) — never an
+   app user, no env, no secret in the repo. The first sign-in with the
+   bootstrap email (`wannatry@admin.com`, a constant in `routes/blog.js`)
+   creates the account with the password typed, bcrypt-hashed; after that it
+   is a normal login with change-password. The web admin at `/blog/admin` is a
+   login + two-pane writer (list, editor), plain forms, a 12-hour HttpOnly
+   cookie signed with `JWT_SECRET`, login rate-limited. Drafts preview with
+   `?preview=1` while signed in.
 4. **Every post ends in the same block**: the app, Android install steps,
    iPhone "Add to Home Screen" steps. The blog exists to move readers into the
    app; the block is not optional.

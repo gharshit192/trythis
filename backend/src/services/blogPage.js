@@ -187,7 +187,7 @@ function renderLogin(error) {
   return `${adminHead('Sign in')}
   <div class="nav"><a class="brand" href="${esc(publicBaseUrl())}/blog">Wanna Try <small>Admin</small></a></div>
   <form class="login" method="post" action="${esc(publicBaseUrl())}/blog/admin/login">
-    <h1>Blog admin</h1><p>One account writes here. Everyone else reads.</p>
+    <h1>Blog admin</h1><p>One account writes here. The first sign-in sets its password.</p>
     ${error ? `<div class="flash err">${esc(error)}</div>` : ''}
     <div class="f"><label>Email</label><input name="email" type="email" autocomplete="username" required /></div>
     <div class="f"><label>Password</label><input name="password" type="password" autocomplete="current-password" required /></div>
@@ -205,6 +205,12 @@ function renderAdmin({ posts, post, flash, error }) {
     <aside class="side">
       <a class="new" href="${base}/blog/admin">+ New post</a>
       ${posts.map((x) => `<a class="item${post && String(x._id) === String(post._id) ? ' on' : ''}" href="${base}/blog/admin/${esc(x.slug)}"><span class="pill${x.status === 'published' ? ' pub' : ''}">${x.status}</span><span>${esc(day(x.publishedAt || x.updatedAt))}</span><b>${esc(x.title)}</b></a>`).join('') || '<p class="hint">No posts yet — write the first one.</p>'}
+      <details style="margin-top:16px"><summary class="hint" style="cursor:pointer">Change password</summary>
+        <form method="post" action="${base}/blog/admin/password" style="display:flex;flex-direction:column;gap:8px;margin-top:10px">
+          <input name="current" type="password" placeholder="Current password" autocomplete="current-password" required style="font:inherit;padding:9px 10px;border:1px solid var(--line);border-radius:9px" />
+          <input name="next" type="password" placeholder="New password (8+)" autocomplete="new-password" minlength="8" required style="font:inherit;padding:9px 10px;border:1px solid var(--line);border-radius:9px" />
+          <button class="btn" type="submit">Update</button>
+        </form></details>
     </aside>
     <form class="editor" method="post" action="${base}/blog/admin/save">
       <h1>${isNew ? 'New post' : 'Edit post'}</h1>
