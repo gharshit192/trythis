@@ -54,20 +54,34 @@ const runCmd = (cmd, args, timeoutMs) => new Promise((resolve, reject) => {
   });
 });
 
+// One short ffmpeg call per frame, seeking straight to the timestamp. The old
+// single call ran an `fps` filter over the whole video, which decodes every
+// frame — on a small CPU (Render free tier) a 60 s reel blew the 90 s budget
+// and the stage died with "ffmpeg timeout". Seeking decodes only from the
+// nearest keyframe, so each frame costs well under a second; a slow frame
+// costs one frame, not the stage.
+const FRAME_TIMEOUT = 20 * 1000;
 const extractFrames = async (mp4Path, count, durationSeconds, outDir) => {
-  const fps = Math.max(0.01, count / Math.max(durationSeconds, 1));
-  const outPattern = path.join(outDir, 'frame-%03d.jpg');
-  await runCmd('ffmpeg', [
-    '-y', '-i', mp4Path,
-    '-vf', `fps=${fps},scale=1080:-2`,
-    '-frames:v', String(count),
-    '-q:v', '3',  // slightly higher quality for better OCR
-    outPattern,
-  ], FFMPEG_TIMEOUT);
-  return fs.readdirSync(outDir)
-    .filter((f) => f.startsWith('frame-') && f.endsWith('.jpg'))
-    .sort()
-    .map((f) => path.join(outDir, f));
+  const dur = Math.max(durationSeconds || 0, 1);
+  const n = Math.max(1, count);
+  const paths = [];
+  for (let i = 0; i < n; i++) {
+    // Spread across the video, avoiding the very first and last frames (logos, fades).
+    const t = ((i + 0.5) / n) * dur;
+    const out = path.join(outDir, `frame-${String(i + 1).padStart(3, '0')}.jpg`);
+    try {
+      await runCmd('ffmpeg', [
+        '-y', '-ss', t.toFixed(2), '-i', mp4Path,
+        '-frames:v', '1', '-vf', 'scale=720:-2', '-q:v', '3',
+        out,
+      ], FRAME_TIMEOUT);
+      if (fs.existsSync(out)) paths.push(out);
+    } catch (err) {
+      logger.warn(`frameExtractor: frame ${i + 1}/${n} at ${t.toFixed(1)}s failed: ${err.message}`);
+    }
+  }
+  if (!paths.length) throw new Error('ffmpeg produced no frames');
+  return paths;
 };
 
 const ocrFrame = async (framePath, langs) => {

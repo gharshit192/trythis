@@ -682,9 +682,11 @@ const processSave = async (saveId) => {
       const analysisInput = englishClean || '';
       const fresh = await Save.findById(saveId);
 
-      // FALLBACK: Thumbnail OCR when video download fails
-      // Extract text overlays from the cached thumbnail image
-      if (!frameOcr && !mp4Ready && fresh.thumbnail) {
+      // FALLBACK: Thumbnail OCR when the video could not be downloaded — or was
+      // downloaded but frame OCR failed. A music-only reel's whole message is
+      // its on-screen text, so one frame beats none.
+      const frameOcrFailed = !!fresh.processingStages?.frameOCR?.error;
+      if (!frameOcr && (!mp4Ready || frameOcrFailed) && fresh.thumbnail) {
         try {
           logger.info(`[mediaProcessor ${saveId}] attempting thumbnail OCR fallback`);
           const thumbnailRes = await frameExtractor.extractAndOcrFrames(fresh.thumbnail, {
