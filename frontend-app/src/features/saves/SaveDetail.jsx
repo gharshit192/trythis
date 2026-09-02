@@ -9,6 +9,8 @@ import { getCategoryTile } from '../../lib/categoryMeta';
 import { relativeTime } from '../../lib/format';
 import Trip from './Trip';
 import SaveSections from './SaveSections';
+import ReminderControl from '../../components/ReminderControl';
+import Chip from '../../components/Chip';
 
 // Screenshot saves keep their own (legacy) detail until it is rebuilt.
 const ScreenshotDetail = lazy(() => import('./ScreenshotDetail'));
@@ -68,6 +70,14 @@ export default function SaveDetail({ onNavigate, onBack, payload }) {
     const r = await api.updateIntent(id, { intentStatus: next }).catch(() => null);
     if (r?.status !== 'success') setSave((s) => ({ ...s, intentStatus: prev }));
   };
+  const setReminder = async (date) => {
+    const r = await api.patchSave(id, { resurfaceAt: date }).catch(() => null);
+    if (r?.status === 'success') { setSave(r.data); flash(date ? 'Reminder set' : 'Reminder off'); }
+  };
+  const setPlannedFor = async (date) => {
+    const r = await api.patchSave(id, { plannedFor: date }).catch(() => null);
+    if (r?.status === 'success') { setSave(r.data); flash(date ? 'Planned' : 'Plan cleared'); }
+  };
   const saveNote = async () => {
     setNoteOpen(false);
     if ((save.notes || '') === note) return;
@@ -97,7 +107,7 @@ export default function SaveDetail({ onNavigate, onBack, payload }) {
   if (!save) return <div className="wt-screen"><div className="wt-topbar"><button type="button" className="wt-iconbtn" onClick={onBack} aria-label="Back"><Icon name="back" size={22} /></button></div><div style={{ display: 'flex', gap: 12, alignItems: 'center', color: 'var(--mute)', fontSize: 14 }}><span className="wt-spinner" />Opening…</div></div>;
 
   if (save.contentType === 'image' || save.source === 'screenshot') {
-    return <Suspense fallback={<div className="wt-screen" />}><ScreenshotDetail save={save} onNavigate={onNavigate} /></Suspense>;
+    return <Suspense fallback={<div className="wt-screen" />}><ScreenshotDetail save={save} onNavigate={onNavigate} onBack={onBack} /></Suspense>;
   }
 
   const sd = save.aiAnalysis?.structuredData || {};
@@ -172,7 +182,20 @@ export default function SaveDetail({ onNavigate, onBack, payload }) {
         {processing && <span style={{ padding: '3px 9px', borderRadius: 999, fontSize: 11.5, fontWeight: 600, background: 'var(--teal-soft)', color: 'var(--teal-d)' }}>{save.processingStatus === 'failed' ? 'Couldn\'t read it' : save.processingStatus === 'partial' ? 'Partly read' : 'Still reading'}</span>}
       </div>
 
-      <div style={{ marginBottom: 24 }}>{status}</div>
+      <div style={{ marginBottom: save.intentStatus === 'planned' ? 12 : 24 }}>{status}</div>
+      {save.intentStatus === 'planned' && (
+        <div style={{ marginBottom: 24, padding: '13px 14px', borderRadius: 12, background: 'var(--teal-soft)', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--teal)' }}>When?</span>
+          {save.plannedFor && <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--teal-d)' }}>{new Date(save.plannedFor).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'short' })}</span>}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {[['This weekend', (() => { const d = new Date(); d.setDate(d.getDate() + ((6 - d.getDay() + 7) % 7 || 7)); return d; })()], ['Next week', (() => { const d = new Date(); d.setDate(d.getDate() + 7); return d; })()]].map(([label, d]) => (
+              <Chip key={label} small onClick={() => setPlannedFor(d.toISOString())}>{label}</Chip>
+            ))}
+            <label className="wt-chip sm" style={{ position: 'relative', overflow: 'hidden' }}>Pick a date<input type="date" onChange={(e) => e.target.value && setPlannedFor(new Date(`${e.target.value}T09:00:00`).toISOString())} style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer' }} /></label>
+            {save.plannedFor && <Chip small onClick={() => setPlannedFor(null)}>Clear</Chip>}
+          </div>
+        </div>
+      )}
 
       {summary && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 20 }}>
@@ -208,6 +231,8 @@ export default function SaveDetail({ onNavigate, onBack, payload }) {
           </button>
         )}
       </div>
+
+      <div style={{ marginTop: 10 }}><ReminderControl value={save.resurfaceAt} onChange={setReminder} /></div>
 
       {recs.length > 0 && (
         <section style={{ marginTop: 22 }}>

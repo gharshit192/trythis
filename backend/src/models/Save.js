@@ -76,6 +76,8 @@ const eventSchema = new mongoose.Schema({
 // and the English translation is the useful signal for downstream LLM + UI.
 const transcriptionSchema = new mongoose.Schema({
   text: String,
+  // Original-language text when `text` is a translation (voice notes keep both).
+  originalText: { type: String, default: null },
   source: { type: String, enum: ['sarvam', 'whisper', 'groq', 'claude', 'subtitles', 'ocr', 'auto_captions', 'auto_captions_hindi', 'auto_captions_other', 'none'] },
   detectedLanguage: String,
 }, { _id: false });

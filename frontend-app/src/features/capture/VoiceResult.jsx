@@ -4,6 +4,7 @@ import Icon from '../../components/Icon';
 import Button from '../../components/Button';
 import Banner from '../../components/Banner';
 import SectionLabel from '../../components/SectionLabel';
+import ReminderControl from '../../components/ReminderControl';
 
 // The document a voice note became: who / where / about / remind me, the
 // transcript underneath with its language, and a preview of the reminder.
@@ -11,8 +12,9 @@ const KIND = { person: 'learn', place: 'place', idea: 'learn', task: 'food', not
 const fmt = (d) => d ? new Date(d).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' }) : null;
 
 export default function VoiceResult({ onNavigate, onBack, payload }) {
-  const save = payload?.save;
+  const [save, setSave] = useState(payload?.save);
   const [busy, setBusy] = useState(false);
+  const setReminder = async (date) => { const r = await api.patchSave(save._id, { resurfaceAt: date }).catch(() => null); if (r?.status === 'success') setSave(r.data); };
   if (!save) return <div className="wt-screen"><div className="wt-note error">Nothing to show.</div></div>;
 
   const ent = save.entities || {};
@@ -50,18 +52,17 @@ export default function VoiceResult({ onNavigate, onBack, payload }) {
             <span style={{ fontSize: 15.5 }}>{v}</span>
           </div>
         ))}
-        <div style={{ display: 'flex', gap: 14, padding: '12px 0', borderBottom: '1px solid var(--line)', alignItems: 'center' }}>
-          <span style={{ width: 88, flexShrink: 0, fontSize: 12, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--faint)' }}>Remind me</span>
-          {remind
-            ? <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}><span style={{ fontSize: 15.5, fontWeight: 600, color: 'var(--teal)' }}>{remind}</span>{timeWord && <span style={{ fontSize: 12.5, color: 'var(--faint)' }}>· "{timeWord}"</span>}</span>
-            : <span style={{ fontSize: 15.5, color: 'var(--faint)' }}>No date — we'll keep it findable</span>}
-        </div>
+      </div>
+      <div style={{ marginBottom: 20 }}>
+        <ReminderControl value={save.resurfaceAt} onChange={setReminder} />
+        {timeWord && remind && <span style={{ fontSize: 12.5, color: 'var(--faint)', display: 'block', marginTop: 6 }}>From what you said: "{timeWord}"</span>}
       </div>
 
       {transcript && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 16 }}>
           <SectionLabel>What you said</SectionLabel>
           <p style={{ fontSize: 15, lineHeight: 1.55, margin: 0, color: 'var(--mute)' }}>{transcript}</p>
+          {save.aiAnalysis?.transcription?.originalText && <p style={{ fontSize: 14.5, lineHeight: 1.55, margin: '4px 0 0', color: 'var(--faint)' }}>{save.aiAnalysis.transcription.originalText}</p>}
           <span style={{ fontSize: 12.5, color: 'var(--faint)' }}>{lang && lang !== 'en' ? `${lang === 'hi' ? 'Hindi' : lang}, translated · ` : ''}original audio kept</span>
         </div>
       )}

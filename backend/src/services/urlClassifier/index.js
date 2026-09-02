@@ -1,3 +1,6 @@
+// Reels, Shorts and clips are read in full; anything longer is caption-only —
+// a 20-minute vlog is not what this product is for and would cost minutes of CPU.
+const MAX_VIDEO_SECONDS = parseInt(process.env.MAX_VIDEO_SECONDS || '180', 10);
 // URL Classifier: determines content type and whether to attempt video download
 // Prevents unnecessary downloads for music streaming, DRM-protected, and large content
 
@@ -58,7 +61,7 @@ const classifyUrl = (url) => {
     return {
       type: 'youtube_video',
       shouldDownload: true,
-      maxDurationSeconds: 480, // 8 minutes hard limit
+      maxDurationSeconds: MAX_VIDEO_SECONDS,
       reason: 'youtube',
     };
   }
@@ -68,7 +71,7 @@ const classifyUrl = (url) => {
     return {
       type: 'instagram_reel',
       shouldDownload: true,
-      maxDurationSeconds: 180, // 3 minutes hard limit
+      maxDurationSeconds: MAX_VIDEO_SECONDS,
       reason: 'instagram',
     };
   }
@@ -78,7 +81,7 @@ const classifyUrl = (url) => {
     return {
       type: 'tiktok',
       shouldDownload: true,
-      maxDurationSeconds: 180, // 3 minutes hard limit
+      maxDurationSeconds: MAX_VIDEO_SECONDS,
       reason: 'tiktok',
     };
   }
@@ -88,7 +91,7 @@ const classifyUrl = (url) => {
     return {
       type: 'vimeo_video',
       shouldDownload: true,
-      maxDurationSeconds: 600, // 10 minutes
+      maxDurationSeconds: MAX_VIDEO_SECONDS,
       reason: 'vimeo',
     };
   }
@@ -98,7 +101,7 @@ const classifyUrl = (url) => {
     return {
       type: 'twitter_video',
       shouldDownload: true,
-      maxDurationSeconds: 300, // 5 minutes
+      maxDurationSeconds: MAX_VIDEO_SECONDS,
       reason: 'twitter',
     };
   }
@@ -108,7 +111,7 @@ const classifyUrl = (url) => {
     return {
       type: 'facebook_video',
       shouldDownload: true,
-      maxDurationSeconds: 600, // 10 minutes
+      maxDurationSeconds: MAX_VIDEO_SECONDS,
       reason: 'facebook',
     };
   }
@@ -118,7 +121,7 @@ const classifyUrl = (url) => {
     return {
       type: 'reddit_video',
       shouldDownload: true,
-      maxDurationSeconds: 300,
+      maxDurationSeconds: MAX_VIDEO_SECONDS,
       reason: 'reddit',
     };
   }

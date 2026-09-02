@@ -7,6 +7,7 @@ import { enablePushNotifications, disablePushNotifications, getPushState } from 
 
 const PUSH_COPY = {
   denied: 'Notifications are blocked in your browser settings.',
+  blocked: 'Notifications are blocked for this site — allow them in the browser\'s site settings, then try again.',
   unsupported: 'This browser can\'t receive push notifications.',
   'no-key': 'Push isn\'t configured on the server yet.',
   error: 'Could not turn notifications on. Try again.',

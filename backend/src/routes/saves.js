@@ -1,4 +1,5 @@
 const express = require('express');
+const { publicBaseUrl, appUrl } = require('../utils/publicUrl');
 const path = require('path');
 const os = require('os');
 const mongoose = require('mongoose');
@@ -474,7 +475,7 @@ router.patch('/:id', validateObjectId('id'), async (req, res) => {
       });
     }
 
-    const { title, notes, userNote, collectionIds, tags } = req.body;
+    const { title, notes, userNote, collectionIds, tags, resurfaceAt, plannedFor } = req.body;
     if (title) save.title = title;
     if (userNote !== undefined) save.userNote = userNote;
     if (notes !== undefined && userNote === undefined) save.userNote = notes; // back-compat
@@ -484,6 +485,24 @@ router.patch('/:id', validateObjectId('id'), async (req, res) => {
       save.collections = collectionIds;
     }
     if (tags) save.tags = tags;
+    // "Remind me" on any save (bills, voice notes, anything): a date, or null to clear.
+    // Clearing also resets resurfacedAt so a new date can fire again.
+    if (resurfaceAt !== undefined) {
+      const d = resurfaceAt ? new Date(resurfaceAt) : null;
+      if (d && Number.isNaN(d.getTime())) {
+        return res.status(400).json({ status: 'error', error: { code: 'VALIDATION_ERROR', message: 'resurfaceAt must be a date or null' } });
+      }
+      save.resurfaceAt = d;
+      save.resurfacedAt = null;
+    }
+    if (plannedFor !== undefined) {
+      const d = plannedFor ? new Date(plannedFor) : null;
+      if (d && Number.isNaN(d.getTime())) {
+        return res.status(400).json({ status: 'error', error: { code: 'VALIDATION_ERROR', message: 'plannedFor must be a date or null' } });
+      }
+      save.plannedFor = d;
+      if (d && save.intentStatus === 'saved') save.intentStatus = 'planned';
+    }
 
     await save.save();
 
@@ -669,7 +688,7 @@ router.post('/:id/share', validateObjectId('id'), async (req, res) => {
       return res.json({
         status: 'success',
         shareId: save.shareId,
-        shareUrl: `${process.env.BASE_URL || 'http://localhost:4000'}/s/${save.shareId}`,
+        shareUrl: `${publicBaseUrl()}/s/${save.shareId}`,
       });
     }
 
@@ -681,7 +700,7 @@ router.post('/:id/share', validateObjectId('id'), async (req, res) => {
     res.json({
       status: 'success',
       shareId,
-      shareUrl: `${process.env.BASE_URL || 'http://localhost:4000'}/s/${shareId}`,
+      shareUrl: `${publicBaseUrl()}/s/${shareId}`,
     });
   } catch (error) {
     logger.error(`Share save error: ${error.message}`);
@@ -1730,6 +1749,7 @@ router.post('/:id/plan', async (req, res) => {
     const prefs = { ...(req.body || {}), days: days || save.tripPlan?.days || undefined };
     const data = await planEngine.generatePlan(save, origin, prefs);
     save.tripPlan = { origin: origin || null, days: days || (data.dailyPlan?.length || null), generatedAt: new Date(), data };
+    if (save.intentStatus === 'saved') save.intentStatus = 'planned';   // a plan is the act of planning
     await save.save();
     res.json({ status: 'success', data: { ...data, generatedAt: save.tripPlan.generatedAt, cached: false } });
   } catch (err) {

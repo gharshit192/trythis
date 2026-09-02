@@ -198,28 +198,13 @@ const saves = {
   },
 
   // GET /saves/:id/export-pdf — any save, including its stored trip plan.
-  async exportSavePdf(saveId) { return this.exportScreenshotPdf(saveId); },
-
-  async exportScreenshotPdf(saveId) {
-    try {
-      const token = localStorage.getItem('auth_token');
-      const response = await fetch(`${API_BASE_URL}/saves/${saveId}/export-pdf`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      if (!response.ok) throw new Error('Export failed');
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.setAttribute('download', `screenshot-${Date.now()}.pdf`);
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-    } catch (err) {
-      throw new Error(err.message || 'Export failed');
-    }
+  // Delivered through the share sheet on phones, a download elsewhere.
+  async exportSavePdf(saveId, title = 'wanna-try') {
+    const { deliverPdf } = await import('../lib/pdf');
+    return deliverPdf(`/saves/${saveId}/export-pdf`, `${String(title).replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').slice(0, 40) || 'wanna-try'}.pdf`);
   },
+
+  async exportScreenshotPdf(saveId, title = 'screenshots') { return this.exportSavePdf(saveId, title); },
 
   async getRecommendations(saveId) {
     return dedupedGet(`${API_BASE_URL}/recommendations/${saveId}`, { headers: authHeader() });

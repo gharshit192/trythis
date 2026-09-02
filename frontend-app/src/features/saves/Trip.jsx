@@ -32,7 +32,14 @@ export default function Trip({ save, onNavigate, onBack, onMore, statusControl }
         <span style={{ fontSize: 12, color: 'var(--faint)' }}>· from {reels} reel{reels === 1 ? '' : 's'}</span>
       </div>
       <h1 className="wt-title lg" style={{ marginBottom: 20 }}>{save?.title}</h1>
-      {statusControl && <div style={{ marginBottom: 22 }}>{statusControl}</div>}
+      {statusControl && <div style={{ marginBottom: 12 }}>{statusControl}</div>}
+      {save?.intentStatus === 'planned' && (
+        <div style={{ marginBottom: 22, padding: '13px 14px', borderRadius: 12, background: 'var(--teal-soft)', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span style={{ color: 'var(--teal)' }}><Icon name="calendar" size={20} /></span>
+          <span style={{ flex: 1, fontSize: 14.5, color: 'var(--teal-d)', lineHeight: 1.4 }}>{planned ? `Your ${plannedDays ? `${plannedDays}-day ` : ''}plan is ready.` : 'Planning this trip — build the day-by-day plan below.'}</span>
+          {planned && <button type="button" className="wt-link" style={{ background: 'none', border: 0, fontSize: 13.5, cursor: 'pointer' }} onClick={() => onNavigate('itinerary', { id: save._id, title: save.title, destination: dest, days })}>See plan</button>}
+        </div>
+      )}
 
       <div className="wt-stat-grid" style={{ marginBottom: 22 }}>
         <div className="wt-stat"><span className="k">Days</span><span className="v">{days || '—'}</span></div>

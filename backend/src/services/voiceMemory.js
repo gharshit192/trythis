@@ -40,11 +40,12 @@ const transcribeWithGroq = async (wavPath) => {
   };
   const first = await call('transcriptions');
   const language = (first.language || 'unknown').slice(0, 2);
-  let text = String(first.text || '').trim();
+  const originalText = String(first.text || '').trim();
+  let text = originalText;
   if (text && language !== 'en') {
     try { const t = await call('translations'); if (t.text?.trim()) text = t.text.trim(); } catch { /* keep original-language text */ }
   }
-  return { text, language };
+  return { text, language, original: originalText !== text ? originalText : null };
 };
 
 const SYSTEM = `You turn a short spoken note into a structured memory for a "remember this" app.
@@ -104,20 +105,28 @@ const memoryFromAudio = async ({ audioPath, text }) => {
   let transcript = (text || '').trim();
   let language = 'en';
   let source = 'none';
+  let original = null;   // original-language text when the engine translated
   if (!transcript) {
     if (!isWav(audioPath)) { const e = new Error('Audio must be WAV (16 kHz mono).'); e.code = 'BAD_AUDIO'; throw e; }
-    try {
-      const t = await transcribeAudio(audioPath);         // Sarvam saaras: English out, language reported
-      transcript = (t.text || '').trim();
-      language = t.language || 'unknown';
-      source = 'sarvam';
-    } catch (err) {
-      logger.warn(`[voiceMemory] Sarvam failed (${err.message}); trying Groq Whisper`);
-      const t = await transcribeWithGroq(audioPath);       // throws if no key / nothing usable
-      transcript = (t.text || '').trim();
-      language = t.language || 'unknown';
-      source = 'groq';
+    // Whisper large-v3 (Groq) first: it is what reads reel audio well in
+    // production and handles Hinglish without paraphrasing. Sarvam is the
+    // fallback. Order is switchable with VOICE_STT_ORDER=sarvam,groq.
+    const order = (process.env.VOICE_STT_ORDER || 'groq,sarvam').split(',').map((x) => x.trim());
+    let lastErr = null;
+    for (const engine of order) {
+      try {
+        const t = engine === 'groq' ? await transcribeWithGroq(audioPath) : await transcribeAudio(audioPath);
+        transcript = (t.text || '').trim();
+        language = t.language || 'unknown';
+        source = engine;
+        original = t.original || null;
+        if (transcript) break;
+      } catch (err) {
+        lastErr = err;
+        logger.warn(`[voiceMemory] ${engine} failed (${err.message}); trying next`);
+      }
     }
+    if (!transcript && lastErr) throw lastErr;
   }
   if (!transcript) { const e = new Error('Nothing was heard in that note.'); e.code = 'EMPTY'; throw e; }
 
@@ -143,7 +152,7 @@ const memoryFromAudio = async ({ audioPath, text }) => {
       summary: doc.summary,
       keyPoints: [],
       timeSignal: doc.timeSignal,
-      transcription: { text: transcript, source, detectedLanguage: language },
+      transcription: { text: transcript, source, detectedLanguage: language, originalText: original },
       processedAt: now,
     },
   };

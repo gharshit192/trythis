@@ -8,6 +8,7 @@ const router = express.Router();
 const Save = require('../models/Save');
 const authMiddleware = require('../middleware/auth');
 const { memoryFromAudio } = require('../services/voiceMemory');
+const autoCollectionEngine = require('../services/autoCollectionEngine');
 const logger = require('../utils/logger');
 
 const upload = multer({
@@ -30,6 +31,7 @@ router.post('/', upload.single('audio'), async (req, res) => {
   try {
     const fields = await memoryFromAudio({ audioPath, text });
     const save = await Save.create({ ...fields, userId: req.user.id, intentStatus: 'saved' });
+    try { await autoCollectionEngine.assignSave(save); } catch (e) { logger.warn(`[voice] collection failed: ${e.message}`); }
     logger.info(`[voice] memory ${save._id} (${save.memoryType}) resurfaceAt=${save.resurfaceAt ? save.resurfaceAt.toISOString() : 'none'}`);
     res.status(201).json({ status: 'success', data: save });
   } catch (err) {

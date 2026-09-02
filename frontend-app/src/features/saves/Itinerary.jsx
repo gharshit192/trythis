@@ -13,8 +13,19 @@ export default function Itinerary({ onNavigate, onBack, payload }) {
   const [error, setError] = useState(null);
   const [building, setBuilding] = useState(true);
   const [pickDays, setPickDays] = useState(false);
+  const [tab, setTab] = useState('days');
   const [pdfBusy, setPdfBusy] = useState(false);
-  const downloadPdf = async () => { setPdfBusy(true); try { await api.exportSavePdf(id); } catch (e) { setError(e.message || 'PDF export failed'); } finally { setPdfBusy(false); } };
+  const downloadPdf = async () => { setPdfBusy(true); try { await api.exportSavePdf(id, title || plan?.tripTitle); } catch (e) { setError(e.message || 'PDF export failed'); } finally { setPdfBusy(false); } };
+  const sharePlan = async () => {
+    if (!plan) return;
+    const text = [plan.tripTitle || title, ...(plan.dailyPlan || []).map((d) => `Day ${d.day} — ${d.theme}: ${(d.stops || []).map((x) => x.place).join(', ')}`), '', 'Planned with Wanna Try'].join('\n');
+    try {
+      const r = await api.shareSave(id);
+      const url = r?.data?.shareUrl || r?.shareUrl;
+      if (navigator.share) await navigator.share({ title: plan.tripTitle || title, text, url });
+      else { await navigator.clipboard?.writeText(url ? `${text}\n${url}` : text); setError(null); }
+    } catch (e) { if (e?.name !== 'AbortError') setError('Could not share'); }
+  };
 
   const build = (opts = {}) => {
     setBuilding(true); setError(null);
@@ -37,7 +48,8 @@ export default function Itinerary({ onNavigate, onBack, payload }) {
         <button type="button" className="wt-iconbtn" aria-label="Back" onClick={onBack}><Icon name="back" size={22} /></button>
         <div className="acts">
           {current?.mapsLink && <a className="wt-iconbtn" href={current.mapsLink} target="_blank" rel="noreferrer" aria-label="Route on map"><Icon name="pin" size={21} /></a>}
-          {plan && <button type="button" className="wt-iconbtn" aria-label="Download PDF" onClick={downloadPdf} disabled={pdfBusy}><Icon name="share" size={21} /></button>}
+          {plan && <button type="button" className="wt-iconbtn" aria-label="Share plan" onClick={sharePlan}><Icon name="share" size={21} /></button>}
+          {plan && <button type="button" className="wt-iconbtn" aria-label="Download PDF" onClick={downloadPdf} disabled={pdfBusy}><Icon name="book" size={21} /></button>}
         </div>
       </div>
       <span className="wt-eyebrow" style={{ fontSize: 12, letterSpacing: '.1em' }}>Your plan</span>
@@ -58,9 +70,27 @@ export default function Itinerary({ onNavigate, onBack, payload }) {
           {[2, 3, 5, 7, 10].map((n) => <Chip key={n} small on={days.length === n} onClick={() => { setPickDays(false); build({ days: n, force: true }); }}>{n}</Chip>)}
         </div>
       )}
-      {error && <div className="wt-note error">{error}</div>}
+      {error && <div className="wt-note error" style={{ display: 'flex', alignItems: 'center', gap: 10 }}><span style={{ flex: 1 }}>{error}</span><button type="button" onClick={() => build({ force: true })} style={{ background: 'none', border: 0, color: 'inherit', fontWeight: 600, cursor: 'pointer' }}>Try again</button></div>}
 
-      {days.length > 0 && (
+      {plan && (
+        <div className="wt-tabs" style={{ marginBottom: 14 }}>
+          {[['days', 'Days'], ['stays', 'Stays'], ['there', 'Getting there']].map(([k, l]) => <button key={k} type="button" className={tab === k ? 'is-on' : ''} onClick={() => setTab(k)}>{l}</button>)}
+        </div>
+      )}
+      {plan && tab !== 'days' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 0, marginBottom: 12 }}>
+          {(plan.destinations || []).flatMap((d) => (tab === 'stays' ? (d.stays || []) : (d.gettingThere || [])).map((x, i) => (
+            <a key={`${d.name}-${i}`} href={x.url} target="_blank" rel="noreferrer" className="wt-row" style={{ textDecoration: 'none' }}>
+              <span className={`wt-tile ${tab === 'stays' ? 'place' : 'learn'}`}><Icon name={tab === 'stays' ? 'pin' : 'globe'} size={20} /></span>
+              <span className="wt-row-body"><span className="wt-row-title" style={{ fontSize: 17 }}>{x.provider || x.mode}</span><span className="wt-row-meta">{[x.tier, x.mode && x.provider ? x.mode : null, x.approx, d.name].filter(Boolean).join(' · ')}</span></span>
+              <span className="wt-row-trail"><Icon name="forward" size={16} /></span>
+            </a>
+          )))}
+          {!(plan.destinations || []).some((d) => (tab === 'stays' ? d.stays : d.gettingThere)?.length) && <p className="wt-sub" style={{ fontSize: 14.5 }}>Nothing here yet for this trip.</p>}
+          <p style={{ fontSize: 12.5, color: 'var(--faint)', margin: '12px 0 0' }}>Hotel picks and routes plug in here next.</p>
+        </div>
+      )}
+      {days.length > 0 && tab === 'days' && (
         <>
           <div className="wt-chips" style={{ marginBottom: 18 }}>
             {days.map((d) => <Chip key={d.day} small on={d.day === (current?.day)} onClick={() => setDay(d.day)}>Day {d.day}</Chip>)}
@@ -87,7 +117,7 @@ export default function Itinerary({ onNavigate, onBack, payload }) {
 
       {plan && !building && (
         <div style={{ marginTop: 'auto', paddingTop: 16, display: 'flex', gap: 10 }}>
-          <Button small onClick={() => onNavigate('save-detail', { id, refresh: true })}>Done</Button>
+          <Button small onClick={onBack}>Done</Button>
           <Button small variant="secondary" style={{ width: 'auto', padding: '0 18px' }} onClick={() => setPickDays((v) => !v)}>Change days</Button>
         </div>
       )}

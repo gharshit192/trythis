@@ -15,6 +15,7 @@ const CATEGORY_PRESETS = {
   article:   { name: 'Reading',    icon: '📰', color: '#6c757d' },
   listing:   { name: 'Lists',      icon: '📋', color: '#9d4edd' },
   place:     { name: 'Places',     icon: '📍', color: '#264653' },
+  voice:     { name: 'Voice notes', icon: '🎙️', color: '#0E7C7B' },
   other:     { name: 'Inbox',      icon: '📥', color: '#94a3b8' },
 };
 
@@ -27,6 +28,7 @@ const CATEGORY_TO_AUTO = {
 };
 
 const pickCategoryFromSave = (save) => {
+  if (save?.source === 'voice') return 'voice';   // every spoken/typed memory lands together
   const sd = save?.aiAnalysis?.structuredData;
   if (sd) {
     if (sd.recipe?.isRecipe) return 'recipe';

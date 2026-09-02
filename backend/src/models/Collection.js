@@ -49,7 +49,7 @@ const collectionSchema = new mongoose.Schema(
     },
     autoCategory: {
       type: String,
-      enum: ['recipe', 'product', 'itinerary', 'event', 'article', 'listing', 'place', 'other'],
+      enum: ['recipe', 'product', 'itinerary', 'event', 'article', 'listing', 'place', 'voice', 'other'],
       // No default — left undefined for manual collections.
     },
   },
