@@ -500,8 +500,15 @@ router.patch('/:id', validateObjectId('id'), async (req, res) => {
       if (d && Number.isNaN(d.getTime())) {
         return res.status(400).json({ status: 'error', error: { code: 'VALIDATION_ERROR', message: 'plannedFor must be a date or null' } });
       }
+      // Planning a day means being reminded that morning. The date arrives as
+      // the user's local 9:00, so it is already "morning" for them. An explicit
+      // reminder the user set separately is left alone; one that merely
+      // tracked the previous plan date moves with it.
+      const trackedPlan = save.resurfaceAt && save.plannedFor && save.resurfaceAt.getTime() === save.plannedFor.getTime();
       save.plannedFor = d;
       if (d && save.intentStatus === 'saved') save.intentStatus = 'planned';
+      if (d && (!save.resurfaceAt || trackedPlan || save.resurfaceAt < new Date())) { save.resurfaceAt = d; save.resurfacedAt = null; }
+      if (!d && trackedPlan) { save.resurfaceAt = null; save.resurfacedAt = null; }
     }
 
     await save.save();

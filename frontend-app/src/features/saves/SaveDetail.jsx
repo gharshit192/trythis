@@ -195,7 +195,7 @@ export default function SaveDetail({ onNavigate, onBack, payload }) {
       {save.intentStatus === 'planned' && (
         <div style={{ marginBottom: 24, padding: '13px 14px', borderRadius: 12, background: 'var(--teal-soft)', display: 'flex', flexDirection: 'column', gap: 10 }}>
           <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--teal)' }}>When?</span>
-          {save.plannedFor && <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--teal-d)' }}>{new Date(save.plannedFor).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'short' })}</span>}
+          {save.plannedFor && <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--teal-d)' }}>{new Date(save.plannedFor).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'short' })}<span style={{ display: 'block', fontSize: 12.5, fontWeight: 500, color: 'var(--teal)' }}>We'll remind you that morning.</span></span>}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             {[['This weekend', (() => { const d = new Date(); d.setDate(d.getDate() + ((6 - d.getDay() + 7) % 7 || 7)); return d; })()], ['Next week', (() => { const d = new Date(); d.setDate(d.getDate() + 7); return d; })()]].map(([label, d]) => (
               <Chip key={label} small onClick={() => setPlannedFor(d.toISOString())}>{label}</Chip>

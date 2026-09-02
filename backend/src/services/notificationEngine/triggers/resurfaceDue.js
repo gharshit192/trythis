@@ -20,13 +20,17 @@ const evaluate = async (userId) => {
       const where = save.entities?.place;
       const ago = Math.max(1, Math.round((Date.now() - new Date(save.createdAt)) / 86400000));
       const when = ago >= 60 ? `${Math.round(ago / 30)} months ago` : ago >= 14 ? `${Math.round(ago / 7)} weeks ago` : `${ago} days ago`;
-      const body = who
-        ? `You met ${who}${where ? ` at ${where}` : ''} ${when}. ${save.aiAnalysis?.timeSignal ? `You said "${save.aiAnalysis.timeSignal}".` : ''} Reconnect?`
-        : `${when} you said this mattered: "${save.aiAnalysis?.summary || save.title}". Now's the time.`;
+      const plannedToday = save.plannedFor && Math.abs(new Date(save.plannedFor) - new Date(save.resurfaceAt)) < 60000;
+      const spot = save.extractedLocation?.name || save.extractedLocation?.city;
+      const body = plannedToday
+        ? `You planned this for today${spot ? ` — ${spot}` : ''}. ${save.aiAnalysis?.structuredData?.place?.priceRange ? `${save.aiAnalysis.structuredData.place.priceRange}. ` : ''}Still on?`
+        : who
+          ? `You met ${who}${where ? ` at ${where}` : ''} ${when}. ${save.aiAnalysis?.timeSignal ? `You said "${save.aiAnalysis.timeSignal}".` : ''} Reconnect?`
+          : `${when} you said this mattered: "${save.aiAnalysis?.summary || save.title}". Now's the time.`;
       out.push({
-        type: 'resurface_due',
+        type: plannedToday ? 'planned_today' : 'resurface_due',
         category: save.category,
-        title: save.title,
+        title: plannedToday ? `Today: ${save.title}` : save.title,
         message: body.trim(),
         relatedSaveId: save._id,
         priority: 'high',
