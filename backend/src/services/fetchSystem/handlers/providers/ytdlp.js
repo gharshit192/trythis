@@ -2,6 +2,7 @@
 // Free, no API key. Spawns the yt-dlp CLI with --dump-single-json --skip-download.
 
 const { spawn } = require('child_process');
+const { cookieArgs } = require('../../../../utils/ytdlpCookies');
 const logger = require('../../../../utils/logger');
 
 const SUPPORTED = /(?:youtube\.com|youtu\.be|instagram\.com|tiktok\.com|twitter\.com|x\.com|vimeo\.com|reddit\.com|facebook\.com|fb\.watch|pinterest\.|soundcloud\.com|twitch\.tv|dailymotion\.com)/i;
@@ -21,6 +22,7 @@ const runYtdlp = (url) => new Promise((resolve, reject) => {
     '--retries', '1',
     '--no-call-home',
     '--extractor-args', 'youtube:player_client=ios,web',
+    ...cookieArgs(),
     url,
   ];
   let stdout = '';

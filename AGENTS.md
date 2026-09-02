@@ -145,6 +145,10 @@ The link/video pipeline turns a URL into a structured save. See
   confidence; a failed stage degrades quality, it does not break the save.
 - Feed the AI the **richest input available** before falling back (free captions
   before downloading video; article body before metadata-only).
+- **Instagram needs a session.** Many reels come back "requires authentication"
+  to a cookieless yt-dlp. Every yt-dlp call spreads `cookieArgs()` from
+  `utils/ytdlpCookies` (`YTDLP_COOKIES_FILE` or `YTDLP_COOKIES_B64`, a throwaway
+  account's cookies.txt). Never add a yt-dlp invocation without it.
 - Geo-blocked/private/failed media must fail softly with a partial result, not
   an error. Do not surface raw "partial/failed" as a trust-damaging badge when
   the data is actually usable.

@@ -4,13 +4,35 @@ import Icon from '../../components/Icon';
 
 // "Remember this" — speak in Hindi, English or mixed. Audio goes to the same
 // speech stack reel audio uses; Claude turns the transcript into a document
-// (ADR 0016). The live text is a browser hint only; the server's transcript wins.
+// (ADR 0016).
 const pickMime = () => ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg'].find((m) => window.MediaRecorder?.isTypeSupported?.(m)) || '';
+
+// MediaRecorder gives webm/opus (or mp4). The speech API needs real PCM WAV —
+// sending opus bytes labelled "wav" decodes as noise. Decode, resample to
+// 16 kHz mono, and write a WAV header ourselves; no server-side ffmpeg needed.
+const toWav16k = async (blob) => {
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const decoded = await ctx.decodeAudioData(await blob.arrayBuffer());
+  const rate = 16000;
+  const length = Math.ceil(decoded.duration * rate);
+  const off = new OfflineAudioContext(1, length, rate);
+  const src = off.createBufferSource();
+  src.buffer = decoded; src.connect(off.destination); src.start(0);
+  const mono = (await off.startRendering()).getChannelData(0);
+  const out = new DataView(new ArrayBuffer(44 + mono.length * 2));
+  const str = (o, t) => [...t].forEach((c, i) => out.setUint8(o + i, c.charCodeAt(0)));
+  str(0, 'RIFF'); out.setUint32(4, 36 + mono.length * 2, true); str(8, 'WAVE');
+  str(12, 'fmt '); out.setUint32(16, 16, true); out.setUint16(20, 1, true); out.setUint16(22, 1, true);
+  out.setUint32(24, rate, true); out.setUint32(28, rate * 2, true); out.setUint16(32, 2, true); out.setUint16(34, 16, true);
+  str(36, 'data'); out.setUint32(40, mono.length * 2, true);
+  for (let i = 0; i < mono.length; i++) { const v = Math.max(-1, Math.min(1, mono[i])); out.setInt16(44 + i * 2, v < 0 ? v * 0x8000 : v * 0x7fff, true); }
+  try { ctx.close(); } catch {}
+  return { wav: new Blob([out], { type: 'audio/wav' }), seconds: Math.round(decoded.duration) };
+};
 
 export default function Voice({ onNavigate, onBack }) {
   const [state, setState] = useState('idle');   // idle | recording | uploading | error
   const [seconds, setSeconds] = useState(0);
-  const [hint, setHint] = useState('');
   const [error, setError] = useState(null);
   const rec = useRef(null); const chunks = useRef([]); const stream = useRef(null); const speech = useRef(null);
 
@@ -32,9 +54,6 @@ export default function Voice({ onNavigate, onBack }) {
     r.onstop = upload;
     rec.current = r; r.start(250);
     setSeconds(0); setState('recording');
-    // Optional on-device hint while speaking; never sent to the server.
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (SR) { try { const s = new SR(); s.lang = 'hi-IN'; s.continuous = true; s.interimResults = true; s.onresult = (e) => setHint([...e.results].map((x) => x[0].transcript).join(' ')); s.start(); speech.current = s; } catch {} }
   };
   const stop = () => { setState('uploading'); try { rec.current?.stop(); } catch {} stopAll(); };
 
@@ -42,7 +61,8 @@ export default function Voice({ onNavigate, onBack }) {
     const blob = new Blob(chunks.current, { type: rec.current?.mimeType || 'audio/webm' });
     if (blob.size < 1000) { setError('That was too short. Try again.'); setState('error'); return; }
     try {
-      const res = await api.createVoiceSave(blob, seconds);
+      const { wav, seconds: dur } = await toWav16k(blob);
+      const res = await api.createVoiceSave(wav, dur || seconds);
       if (res?.status === 'success') onNavigate('voice-result', { save: res.data, seconds });
       else { setError(res?.error?.message || 'Could not read that. Try again.'); setState('error'); }
     } catch (e) { setError(e.message || 'Upload failed'); setState('error'); }
@@ -67,9 +87,9 @@ export default function Voice({ onNavigate, onBack }) {
       </div>
 
       <div style={{ padding: '18px 20px', borderRadius: 14, background: 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.14)', minHeight: 96 }}>
-        <span style={{ fontSize: 11.5, fontWeight: 600, letterSpacing: '.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,.5)', display: 'block', marginBottom: 8 }}>{state === 'uploading' ? 'Reading' : state === 'recording' ? 'Hearing' : 'Ready'}</span>
+        <span style={{ fontSize: 11.5, fontWeight: 600, letterSpacing: '.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,.5)', display: 'block', marginBottom: 8 }}>{state === 'uploading' ? 'Reading' : state === 'recording' ? 'Recording' : 'Ready'}</span>
         <p style={{ fontFamily: 'var(--font-display)', fontSize: 19, lineHeight: 1.4, margin: 0, color: '#fff' }}>
-          {state === 'uploading' ? 'Turning that into a note…' : hint || (state === 'recording' ? '…' : 'e.g. "Goa airport pe Rahul mila, EV startup bana raha hai, six months mein follow up karna hai"')}
+          {state === 'uploading' ? 'Turning that into a note…' : state === 'recording' ? 'Listening. Take your time.' : 'e.g. "Goa airport pe Rahul mila, EV startup bana raha hai, six months mein follow up karna hai"'}
         </p>
       </div>
       {error && <div className="wt-note error" style={{ marginTop: 14 }}>{error}</div>}

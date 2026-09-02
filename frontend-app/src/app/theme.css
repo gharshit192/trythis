@@ -92,6 +92,9 @@ body {
   overflow-y: auto;
 }
 .wt-screen.has-nav { padding-bottom: 110px; }
+/* Fixed-height children (search bar, chips, banners) must never be squashed by
+   overflowing content below them. */
+.wt-screen > * { flex-shrink: 0; }
 .wt-screen.dark { background: var(--teal-d); color: #fff; }
 
 .wt-title {

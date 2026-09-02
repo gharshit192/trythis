@@ -33,9 +33,9 @@ router.post('/', upload.single('audio'), async (req, res) => {
     logger.info(`[voice] memory ${save._id} (${save.memoryType}) resurfaceAt=${save.resurfaceAt ? save.resurfaceAt.toISOString() : 'none'}`);
     res.status(201).json({ status: 'success', data: save });
   } catch (err) {
-    const code = err.code === 'EMPTY' ? 400 : 500;
+    const code = ['EMPTY', 'BAD_AUDIO'].includes(err.code) ? 400 : 500;
     logger.error(`[voice] failed: ${err.message}`);
-    res.status(code).json({ status: 'error', error: { code: err.code || 'VOICE_FAILED', message: code === 400 ? err.message : 'Could not read that note. Try again.' } });
+    res.status(code).json({ status: 'error', error: { code: err.code || 'VOICE_FAILED', message: code === 400 ? err.message : (/not set/.test(err.message) ? 'Speech-to-text is not configured on this server.' : 'Could not read that note. Try again.') } });
   } finally {
     if (audioPath) fs.unlink(audioPath, () => {});
   }

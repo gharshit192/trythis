@@ -25,6 +25,7 @@ const typeToCategory = require('../../utils/structuredTypeToCategory');
 const { resolveCategory } = typeToCategory;
 const { classifyUrl } = require('../urlClassifier');
 const logger = require('../../utils/logger');
+const { cookieArgs } = require('../../utils/ytdlpCookies');
 
 // __dirname = backend/src/services/mediaProcessor → ../../.. = backend, then 'uploads'
 const UPLOADS_DIR = process.env.UPLOADS_DIR || path.join(__dirname, '..', '..', '..', 'uploads');
@@ -105,6 +106,7 @@ const downloadMergedMp4Graceful = async (sourceUrl, outPath) => new Promise((res
     '--max-filesize', '80m', // Safety limit: abort if file > 80MB
     '--extractor-args', 'youtube:player_client=ios,web',
     ...(isInstagram ? ['--extractor-args', 'instagram:max_requests=3,request_wait=1'] : []),
+    ...cookieArgs(),
     sourceUrl,
   ];
 
@@ -166,6 +168,7 @@ const downloadMergedMp4 = async (sourceUrl, outPath) => {
     '--fragment-retries', '5',
     '--extractor-args', 'youtube:player_client=ios,web',
     ...(isInstagram ? ['--extractor-args', 'instagram:max_requests=3,request_wait=1'] : []),
+    ...cookieArgs(),
     sourceUrl,
   ], YTDLP_TIMEOUT);
 };
@@ -194,6 +197,7 @@ const checkVideoDurationRemote = async (sourceUrl) => {
     const { stdout } = await runCmd('yt-dlp', [
       '--no-download',
       '--print', 'duration',
+      ...cookieArgs(),
       sourceUrl,
     ], 30 * 1000); // 30 second timeout for metadata fetch
     const duration = parseInt((stdout || '').trim());

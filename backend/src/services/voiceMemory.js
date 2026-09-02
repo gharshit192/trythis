@@ -8,6 +8,9 @@
 // a plain `note` carrying the raw transcript. Never fabricate a date: the model
 // returns a relative phrase and *we* resolve it, so "six months" is always six
 // months from the note's creation, not from whatever the model guessed.
+const fs = require('fs');
+const axios = require('axios');
+const FormData = require('form-data');
 const Anthropic = require('@anthropic-ai/sdk');
 const { transcribeAudio } = require('./sarvamSpeech');
 const { parseJsonSafely } = require('./claudeService');
@@ -15,6 +18,34 @@ const logger = require('../utils/logger');
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const MODEL = process.env.CLAUDE_MEMORY_MODEL || 'claude-sonnet-4-6';
+
+// The speech APIs are told the file is WAV; make sure it is. Opus bytes with a
+// .wav label decode as noise and come back as a confident, wrong transcript.
+const isWav = (p) => { try { const b = Buffer.alloc(12); const fd = fs.openSync(p, 'r'); fs.readSync(fd, b, 0, 12, 0); fs.closeSync(fd); return b.toString('ascii', 0, 4) === 'RIFF' && b.toString('ascii', 8, 12) === 'WAVE'; } catch { return false; } };
+
+// Fallback transcriber: Groq Whisper, language auto-detected, then translated
+// to English if it wasn't. Same model family reels use; no Hindi-recipe prompt
+// here because a voice note can be about anything.
+const transcribeWithGroq = async (wavPath) => {
+  const key = process.env.GROQ_API_KEY;
+  if (!key) throw new Error('GROQ_API_KEY not set');
+  const call = async (endpoint) => {
+    const fd = new FormData();
+    fd.append('file', fs.createReadStream(wavPath), { filename: 'audio.wav', contentType: 'audio/wav' });
+    fd.append('model', 'whisper-large-v3');
+    fd.append('response_format', 'verbose_json');
+    fd.append('temperature', '0');
+    const r = await axios.post(`https://api.groq.com/openai/v1/audio/${endpoint}`, fd, { headers: { Authorization: `Bearer ${key}`, ...fd.getHeaders() }, timeout: 60000, maxBodyLength: Infinity });
+    return r.data;
+  };
+  const first = await call('transcriptions');
+  const language = (first.language || 'unknown').slice(0, 2);
+  let text = String(first.text || '').trim();
+  if (text && language !== 'en') {
+    try { const t = await call('translations'); if (t.text?.trim()) text = t.text.trim(); } catch { /* keep original-language text */ }
+  }
+  return { text, language };
+};
 
 const SYSTEM = `You turn a short spoken note into a structured memory for a "remember this" app.
 Return ONLY JSON:
@@ -74,10 +105,19 @@ const memoryFromAudio = async ({ audioPath, text }) => {
   let language = 'en';
   let source = 'none';
   if (!transcript) {
-    const t = await transcribeAudio(audioPath);           // throws if nothing usable
-    transcript = (t.text || '').trim();
-    language = t.language || 'unknown';
-    source = 'sarvam';
+    if (!isWav(audioPath)) { const e = new Error('Audio must be WAV (16 kHz mono).'); e.code = 'BAD_AUDIO'; throw e; }
+    try {
+      const t = await transcribeAudio(audioPath);         // Sarvam saaras: English out, language reported
+      transcript = (t.text || '').trim();
+      language = t.language || 'unknown';
+      source = 'sarvam';
+    } catch (err) {
+      logger.warn(`[voiceMemory] Sarvam failed (${err.message}); trying Groq Whisper`);
+      const t = await transcribeWithGroq(audioPath);       // throws if no key / nothing usable
+      transcript = (t.text || '').trim();
+      language = t.language || 'unknown';
+      source = 'groq';
+    }
   }
   if (!transcript) { const e = new Error('Nothing was heard in that note.'); e.code = 'EMPTY'; throw e; }
 
