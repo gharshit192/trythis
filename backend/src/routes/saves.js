@@ -1767,7 +1767,9 @@ router.post('/:id/plan', async (req, res) => {
       return res.json({ status: 'success', data: { ...cached, generatedAt: save.tripPlan.generatedAt, cached: true } });
     }
 
-    const prefs = { ...(req.body || {}), days: days || save.tripPlan?.days || undefined };
+    const me = await User.findById(req.user.id).select('preferences').lean().catch(() => null);
+    const BUDGET = { low: 'budget', mid: 'mid-range', high: 'premium' };
+    const prefs = { budget: BUDGET[me?.preferences?.budget] || undefined, company: me?.preferences?.company || undefined, diet: me?.preferences?.diet || undefined, ...(req.body || {}), days: days || save.tripPlan?.days || undefined };
     const data = await planEngine.generatePlan(save, origin, prefs);
     save.tripPlan = { origin: origin || null, days: days || (data.dailyPlan?.length || null), generatedAt: new Date(), data };
     if (save.intentStatus === 'saved') save.intentStatus = 'planned';   // a plan is the act of planning

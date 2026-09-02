@@ -62,6 +62,8 @@ Status format: `Proposed - YYYY-MM-DD` / `Accepted - YYYY-MM-DD` /
   Memory Engine's first trigger. *Accepted*
 - [ADR 0017](0017-ask-is-grounded-in-your-saves.md) — Ask Wanna Try answers
   only from the user's own saves; compact index, cited answers, persisted threads
+- [ADR 0018](0018-blog-is-server-rendered-from-the-api.md) — Blog server-rendered by
+  the API for SEO; one env-configured web admin writes it
 
 ## Maintenance Rules
 

@@ -4,8 +4,16 @@
 const Save = require('../../../models/Save');
 const logger = require('../../../utils/logger');
 
+const User = require('../../../models/User');
+
+// IST hour, so 'morning' means the 9am run and 'evening' the 8pm run of the scheduler.
+const istHour = () => (new Date(Date.now() + 5.5 * 3600000)).getUTCHours();
+
 const evaluate = async (userId) => {
   try {
+    const me = await User.findById(userId).select('preferences.nudgeTime').lean().catch(() => null);
+    const pref = me?.preferences?.nudgeTime;
+    if ((pref === 'morning' && istHour() >= 13) || (pref === 'evening' && istHour() < 16)) return [];
     const due = await Save.find({
       userId,
       status: 'active',

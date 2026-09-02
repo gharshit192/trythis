@@ -12,6 +12,8 @@ const logger = require('../utils/logger');
 const OTP_TTL_MS = 15 * 60 * 1000;
 const generateOtp = () => crypto.randomInt(100000, 1000000).toString(); // 6-digit
 const isProd = () => process.env.NODE_ENV === 'production';
+// Who may write the blog: ADMIN_EMAILS=a@x.com,b@y.com
+const isAdminEmail = (email) => String(process.env.ADMIN_EMAILS || '').toLowerCase().split(',').map((x) => x.trim()).filter(Boolean).includes(String(email || '').toLowerCase());
 const DEV_BYPASS_OTP = '000001'; // accepted in non-prod only — convenience for testing without checking logs
 
 router.post('/signup', signupLimiter, async (req, res) => {
@@ -172,7 +174,7 @@ router.post('/login', loginLimiter, async (req, res) => {
     res.json({
       status: 'success',
       data: {
-        user: { id: user._id, email: user.email, name: user.name, emailVerified: user.emailVerified !== false, createdAt: user.createdAt, onboarding: user.onboarding },
+        user: { id: user._id, email: user.email, name: user.name, emailVerified: user.emailVerified !== false, isAdmin: isAdminEmail(user.email), createdAt: user.createdAt, onboarding: user.onboarding, preferences: user.preferences },
         token,
       },
     });
@@ -423,7 +425,7 @@ router.get('/me', authMiddleware, async (req, res) => {
 
     res.json({
       status: 'success',
-      data: user,
+      data: Object.assign(user.toObject(), { isAdmin: isAdminEmail(user.email) }),
     });
   } catch (error) {
     logger.error(`❌ Get user error: ${error.message}`);
@@ -509,10 +511,19 @@ router.patch('/settings', authMiddleware, async (req, res) => {
     if (typeof locationEnabled === 'boolean') {
       update.locationEnabled = locationEnabled;
     }
+    const PREFS = { diet: ['veg', 'non-veg', 'vegan', 'eggetarian'], budget: ['low', 'mid', 'high'], company: ['partner', 'friends', 'family', 'solo'], nudgeTime: ['morning', 'evening'] };
+    if (req.body.preferences && typeof req.body.preferences === 'object') {
+      for (const [k, allowed] of Object.entries(PREFS)) {
+        if (k in req.body.preferences) {
+          const v = req.body.preferences[k];
+          if (v === null || allowed.includes(v)) update[`preferences.${k}`] = v;
+        }
+      }
+    }
 
-    await User.findByIdAndUpdate(req.user.id, update);
+    const saved = await User.findByIdAndUpdate(req.user.id, update, { new: true }).select('preferences notificationsEnabled locationEnabled').lean();
 
-    res.json({ status: 'success', message: 'Settings updated' });
+    res.json({ status: 'success', message: 'Settings updated', data: saved });
   } catch (err) {
     logger.error(`❌ Settings update error: ${err.message}`);
     res.status(500).json({ status: 'error', error: { code: 'INTERNAL', message: err.message } });

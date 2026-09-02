@@ -146,6 +146,16 @@ See [ADR 0017](docs/adr/0017-ask-is-grounded-in-your-saves.md).
 - Every answer cites: `saveRefs` resolve to real saves the UI can open. If you
   change the index line format, keep `[#n]` numbering — that is the citation key.
 
+## Blog & the web admin
+
+See [ADR 0018](docs/adr/0018-blog-is-server-rendered-from-the-api.md).
+
+- Public pages are server-rendered by the API (`routes/blog.js`,
+  `services/blogPage.js`); the SPA has no blog screens. Keep canonical/OG/JSON-LD
+  intact and the "get the app" block at the end of every post.
+- Only the env account (`BLOG_ADMIN_EMAIL`/`BLOG_ADMIN_PASSWORD`) writes.
+  Never wire app users or hardcoded credentials into the admin.
+
 ## Extraction Rules
 
 The link/video pipeline turns a URL into a structured save. See

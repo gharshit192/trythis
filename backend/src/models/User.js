@@ -26,6 +26,11 @@ const userSchema = new mongoose.Schema(
     },
     preferences: {
       categories: [String],
+      // The four that change what the app does (Ask, trip plans, nudge timing).
+      diet: { type: String, enum: ['veg', 'non-veg', 'vegan', 'eggetarian', null], default: null },
+      budget: { type: String, enum: ['low', 'mid', 'high', null], default: null },
+      company: { type: String, enum: ['partner', 'friends', 'family', 'solo', null], default: null },
+      nudgeTime: { type: String, enum: ['morning', 'evening', null], default: null },
       notifications: {
         enabled: { type: Boolean, default: true },
         frequency: { type: String, enum: ['realtime', 'daily', 'weekly'], default: 'daily' },

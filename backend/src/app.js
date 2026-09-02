@@ -17,6 +17,7 @@ const shareRoutes = require('./routes/share');
 const placesRoutes = require('./routes/places');
 const voiceRoutes = require('./routes/voice');
 const askRoutes = require('./routes/ask');
+const blogRoutes = require('./routes/blog');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
@@ -80,6 +81,8 @@ app.use('/notifications', notificationsRoutes);
 app.use('/uploads', uploadsRoutes);
 app.use('/admin', adminRoutes);
 app.use('/s', shareRoutes);
+app.use('/blog', blogRoutes);        // ADR 0018 — public journal + web admin
+app.get('/robots.txt', (req, res) => res.type('text/plain').send(`User-agent: *\nAllow: /blog\nAllow: /s/\nDisallow: /blog/admin\nDisallow: /saves\nDisallow: /auth\nSitemap: ${require('./utils/publicUrl').publicBaseUrl()}/blog/sitemap.xml\n`));
 app.use(audioProcessingRoutes);  // mounts /saves/:id/process-audio etc. at root
 
 app.use((req, res) => {

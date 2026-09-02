@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../../api';
 import Icon from '../../components/Icon';
+import Chip from '../../components/Chip';
 import Button from '../../components/Button';
 import SectionLabel from '../../components/SectionLabel';
 import { enablePushNotifications, disablePushNotifications, getPushState } from '../../lib/push';
@@ -21,12 +22,22 @@ export default function Profile({ onNavigate }) {
   const [note, setNote] = useState(null);
   const [loc, setLoc] = useState(localStorage.getItem('location_requested') === 'true');
   const [pw, setPw] = useState(false);
+  // The four preferences that change what the app does (Ask, trip plans, nudge timing).
+  const [prefs, setPrefs] = useState(user.preferences || {});
+  const setPref = async (k, v) => {
+    const next = { ...prefs, [k]: prefs[k] === v ? null : v };
+    setPrefs(next);
+    const r = await api.updateSettings({ preferences: { [k]: next[k] } }).catch(() => null);
+    if (r?.status === 'success') { try { localStorage.setItem('user', JSON.stringify({ ...user, preferences: r.data?.preferences || next })); } catch {} }
+    else setNote('Could not save that preference.');
+  };
   const [cur, setCur] = useState(''); const [next, setNext] = useState(''); const [pwMsg, setPwMsg] = useState(null);
 
   useEffect(() => {
     const ctrl = new AbortController();
     api.getSaves({ signal: ctrl.signal }).then((r) => r?.status === 'success' && setSaves(r.data || []));
     setPush(getPushState());
+    api.getMe().then((r) => { const u = r?.data?.user || r?.data; if (u?.preferences) { setPrefs(u.preferences); try { localStorage.setItem('user', JSON.stringify({ ...user, ...u, id: user.id || u._id })); } catch {} } }).catch(() => {});
     return () => ctrl.abort();
   }, []);
 
@@ -92,6 +103,20 @@ export default function Profile({ onNavigate }) {
       <Row icon="bell" kind="place" title="Nudge me" sub={push === 'on' ? 'When something\'s worth it. Never more than one a day.' : 'Off — you\'ll only see them in the app'} right={<Switch on={push === 'on'} onClick={togglePush} />} />
       <Row icon="pin" kind="food" title="Know where I am" sub={loc ? 'For "near you" and the nearby nudge' : 'Off — nearby is off too'} right={<Switch on={loc} onClick={toggleLoc} />} />
       {note && <div className="wt-note info" style={{ marginTop: 12 }}>{note}</div>}
+
+      <div style={{ marginTop: 24 }}><SectionLabel>About you</SectionLabel></div>
+      <p style={{ fontSize: 13.5, color: 'var(--mute)', margin: '4px 0 10px', lineHeight: 1.45 }}>Ask, trip plans and nudges use these. Tap again to clear.</p>
+      {[
+        ['diet', 'I eat', [['veg', 'Veg'], ['non-veg', 'Non-veg'], ['eggetarian', 'Eggetarian'], ['vegan', 'Vegan']]],
+        ['budget', 'Budget', [['low', '₹'], ['mid', '₹₹'], ['high', '₹₹₹']]],
+        ['company', 'Usually with', [['partner', 'Partner'], ['friends', 'Friends'], ['family', 'Family'], ['solo', 'Solo']]],
+        ['nudgeTime', 'Nudge me in the', [['morning', 'Morning'], ['evening', 'Evening']]],
+      ].map(([k, label, opts]) => (
+        <div key={k} style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '10px 0', borderBottom: '1px solid var(--line)' }}>
+          <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--faint)' }}>{label}</span>
+          <div className="wt-chips">{opts.map(([v, t]) => <Chip key={v} small on={prefs[k] === v} onClick={() => setPref(k, v)}>{t}</Chip>)}</div>
+        </div>
+      ))}
 
       <div style={{ marginTop: 24 }}><SectionLabel>Account</SectionLabel></div>
       {user.emailVerified === false && <Row icon="bell" kind="shop" title="Verify your email" sub="For password reset and nudges by mail" onClick={() => onNavigate('verify-email', { next: 'profile' })} right={<Icon name="forward" size={18} style={{ color: 'var(--faint)' }} />} />}

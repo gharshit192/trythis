@@ -171,7 +171,7 @@ const generateDailyItinerary = async (save, origin, prefs = {}) => {
   const seed = extractPlanSeed(save);
   const days = Math.max(1, Math.min(parseInt(prefs.days || 5, 10) || 5, 10));
   const prompt = `Create a realistic ${days}-day itinerary from this saved travel reel/context.
-Use only places mentioned or clearly implied by the context. Group nearby places to minimize travel time and avoid backtracking over 2 hours. Respect prefs: budget=${prefs.budget || 'any'}, avoid_trek=${!!prefs.noTrek}.
+Use only places mentioned or clearly implied by the context. Group nearby places to minimize travel time and avoid backtracking over 2 hours. Respect prefs: budget=${prefs.budget || 'any'}, travelling=${prefs.company || 'unspecified'}, food=${prefs.diet || 'any'}, avoid_trek=${!!prefs.noTrek}.
 Return ONLY valid JSON:
 {
   "trip_title": string,
