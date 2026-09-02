@@ -60,6 +60,8 @@ Status format: `Proposed - YYYY-MM-DD` / `Accepted - YYYY-MM-DD` /
 - [ADR 0016](0016-voice-capture-to-structured-memory.md) — Voice capture →
   structured memory document with a `resurfaceAt` date; the LifeOS Future
   Memory Engine's first trigger. *Accepted*
+- [ADR 0017](0017-ask-is-grounded-in-your-saves.md) — Ask Wanna Try answers
+  only from the user's own saves; compact index, cited answers, persisted threads
 
 ## Maintenance Rules
 

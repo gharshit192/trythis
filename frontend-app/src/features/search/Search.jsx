@@ -41,6 +41,14 @@ export default function Search({ onNavigate, onBack }) {
       <div className="wt-chips" style={{ marginBottom: 6 }}>
         {KINDS.map(([id, label]) => <Chip key={id} small on={kind === id} onClick={() => setKind(id)}>{label}</Chip>)}
       </div>
+      {needle.length >= 3 && (
+        <button type="button" onClick={() => onNavigate('ask', { question: q.trim() })}
+          style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', margin: '6px 0 10px', padding: '11px 14px', borderRadius: 12, background: 'var(--teal-soft)', border: 0, color: 'var(--teal-d)', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' }}>
+          <Icon name="sparkle" size={18} />
+          <span style={{ flex: 1, fontSize: 14.5 }}>Ask Wanna Try: <b>“{q.trim()}”</b></span>
+          <Icon name="forward" size={16} />
+        </button>
+      )}
       {rows.length === 0
         ? <EmptyState title={needle ? 'Nothing matches' : 'Nothing saved yet'} text={needle ? 'Try a place, a dish, a creator, or a word from the reel.' : 'Share a reel or paste a link to start.'} />
         : rows.map((s) => <ListRow key={s._id} category={s.category} title={s.title} meta={[getCategoryTile(s.category).label, s.extractedLocation?.city].filter(Boolean).join(' · ')} trail={relativeTime(s.createdAt)} onClick={() => onNavigate('save-detail', { id: s._id })} />)}

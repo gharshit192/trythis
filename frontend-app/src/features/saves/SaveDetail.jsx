@@ -149,7 +149,7 @@ export default function SaveDetail({ onNavigate, onBack, payload }) {
   );
 
   if (isTravel) {
-    return <>{menuSheet}{deleteSheet}<Trip save={save} onNavigate={onNavigate} onBack={onBack} onMore={() => setMenu(true)} statusControl={status} /></>;
+    return <>{menuSheet}{deleteSheet}<Trip save={save} onNavigate={onNavigate} onBack={onBack} onMore={() => setMenu(true)} onShare={share} statusControl={status} /></>;
   }
 
   const summary = save.aiAnalysis?.summary && !looksHallucinated(save.aiAnalysis.summary) ? save.aiAnalysis.summary : (save.description && !looksHallucinated(save.description) ? save.description : null);

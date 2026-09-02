@@ -133,6 +133,19 @@ See [ADR 0016](docs/adr/0016-voice-capture-to-structured-memory.md).
 - A structuring failure still saves a plain `note` with the transcript. Never
   drop what the user said.
 
+## Ask (chat over your saves)
+
+See [ADR 0017](docs/adr/0017-ask-is-grounded-in-your-saves.md).
+
+- `POST /ask { question, conversationId? }` → `services/askService.js` →
+  `{ answer, references, followUps, conversationId }`; threads live in
+  `models/Conversation.js`.
+- The model answers **only from the user's saves** it is handed (one compact
+  line per save, ranked by overlap when there are more than 90). Never let it
+  recommend something the user did not save; a miss says so.
+- Every answer cites: `saveRefs` resolve to real saves the UI can open. If you
+  change the index line format, keep `[#n]` numbering — that is the citation key.
+
 ## Extraction Rules
 
 The link/video pipeline turns a URL into a structured save. See

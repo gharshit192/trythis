@@ -9,7 +9,8 @@ import places from './places';
 import onboarding from './onboarding';
 import uploads from './uploads';
 import voice from './voice';
+import ask from './ask';
 
-const api = { ...auth, ...saves, ...collections, ...search, ...notifications, ...places, ...onboarding, ...uploads, ...voice };
+const api = { ...auth, ...saves, ...collections, ...search, ...notifications, ...places, ...onboarding, ...uploads, ...voice, ...ask };
 
 export default api;

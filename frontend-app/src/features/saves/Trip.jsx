@@ -10,7 +10,7 @@ import SaveSections from './SaveSections';
 const dayCount = (duration = '') => (String(duration).match(/(\d+)\s*(day|night|d\b)/i) || [])[1] || null;
 const short = (s = '') => String(s).replace(/^(approx\.?|around|about)\s*/i, '').slice(0, 14);
 
-export default function Trip({ save, onNavigate, onBack, onMore, statusControl }) {
+export default function Trip({ save, onNavigate, onBack, onMore, onShare, statusControl }) {
   const it = save?.aiAnalysis?.structuredData?.itinerary || {};
   const dest = it.destination || save?.extractedLocation?.city || save?.title;
   const days = dayCount(it.duration);
@@ -24,7 +24,10 @@ export default function Trip({ save, onNavigate, onBack, onMore, statusControl }
     <div className="wt-screen">
       <div className="wt-topbar">
         <button type="button" className="wt-iconbtn" aria-label="Back" onClick={onBack}><Icon name="back" size={22} /></button>
-        <button type="button" className="wt-iconbtn" aria-label="More" onClick={onMore}><Icon name="more" size={21} /></button>
+        <div className="acts">
+          <button type="button" className="wt-iconbtn" aria-label="Share" onClick={onShare}><Icon name="share" size={21} /></button>
+          <button type="button" className="wt-iconbtn" aria-label="More" onClick={onMore}><Icon name="more" size={21} /></button>
+        </div>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
         <span style={{ width: 8, height: 8, borderRadius: 4, background: 'var(--teal)' }} />
@@ -72,6 +75,7 @@ export default function Trip({ save, onNavigate, onBack, onMore, statusControl }
 
       <div style={{ marginTop: 'auto', paddingTop: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
         <Button onClick={() => onNavigate('itinerary', { id: save._id, title: save.title, destination: dest, days })}>{planned ? 'See your plan' : 'Plan this trip'}</Button>
+        {(places.length > 0 || planned) && <Button variant="secondary" icon="share" onClick={onShare}>Share {planned ? 'the plan' : 'this trip'}</Button>}
         <Button variant="ghost" onClick={onBack}>Just keep it saved</Button>
       </div>
     </div>

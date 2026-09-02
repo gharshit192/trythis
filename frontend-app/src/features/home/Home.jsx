@@ -76,7 +76,15 @@ export default function Home({ onNavigate, payload, nearbySaves = [] }) {
         </button>
       </div>
 
-      <SearchBar placeholder={saves.length ? `Search ${saves.length} things you saved` : 'Search'} onClick={() => onNavigate('search')} style={{ marginBottom: 24 }} />
+      <SearchBar placeholder={saves.length ? `Search ${saves.length} things you saved` : 'Search'} onClick={() => onNavigate('search')} style={{ marginBottom: saves.length ? 10 : 24 }} />
+      {saves.length > 0 && (
+        <button type="button" onClick={() => onNavigate('ask')}
+          style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', marginBottom: 24, padding: '11px 14px', borderRadius: 12, background: 'var(--teal-soft)', border: 0, color: 'var(--teal-d)', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' }}>
+          <Icon name="sparkle" size={18} />
+          <span style={{ flex: 1, fontSize: 14.5, fontWeight: 500 }}>Ask about anything you saved</span>
+          <Icon name="forward" size={16} />
+        </button>
+      )}
 
       {!loading && saves.length === 0 && (
         <>
