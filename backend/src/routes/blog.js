@@ -72,14 +72,17 @@ router.post('/admin/save', requireAdmin, form, async (req, res) => {
   const b = req.body || {};
   try {
     if (b.action === 'delete' && b.id) { await Post.deleteOne({ _id: b.id }); return res.redirect(`${publicBaseUrl()}/blog/admin`); }
-    const title = String(b.title || '').trim();
+    // Forgive a whole Markdown file pasted into the title box: first line, no '#'.
+    let title = String(b.title || '').split('\n').map((l) => l.replace(/^#+\s*/, '').trim()).find(Boolean) || '';
+    let body = String(b.body || '');
+    if (/^#\s+/.test(body.trim())) { const lines = body.trim().split('\n'); const first = lines.shift().replace(/^#+\s*/, '').trim(); if (!title || title === first) title = title || first; body = lines.join('\n').replace(/^\s*_[^_\n]+_\s*\n/, '').replace(/^\s*\*\*Slug:\*\*.*\n(\*\*[^\n]*\n)*\s*---\s*\n?/m, '').trim(); }
     if (!title) throw new Error('A title is required.');
     const slug = page.slugify(b.slug || title) || page.slugify(title);
     const status = b.action === 'publish' ? 'published' : (b.status === 'published' ? 'published' : 'draft');
     const doc = {
-      title, slug, excerpt: String(b.excerpt || '').trim().slice(0, 220), body: String(b.body || ''), html: page.render(String(b.body || '')),
+      title, slug, excerpt: String(b.excerpt || '').trim().slice(0, 220), body, html: page.render(body),
       keywords: String(b.keywords || '').split(',').map((k) => k.trim().toLowerCase()).filter(Boolean).slice(0, 12),
-      coverEmoji: String(b.coverEmoji || '🔖').trim().slice(0, 4) || '🔖', status, readingMinutes: page.readingMinutes(b.body),
+      coverEmoji: String(b.coverEmoji || '🔖').trim().slice(0, 4) || '🔖', status, readingMinutes: page.readingMinutes(body),
     };
     const existing = b.id ? await Post.findById(b.id) : null;
     if (await Post.findOne({ slug, _id: { $ne: existing?._id } }).select('_id').lean()) throw new Error(`The slug "${slug}" is already used by another post.`);
