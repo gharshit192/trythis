@@ -68,7 +68,7 @@ Reference saves inline by their number like [#3]. Plain text only — no markdow
 Follow-ups are questions the user might ask you next about their saves (e.g. "Which of these is cheapest?"), never offers to do something for them.
 Reply in exactly this shape, nothing else:
 <answer>
-your answer here; list items start with "- "
+your answer here; each list item on its own line, starting with "- "
 </answer>
 <refs>3, 7</refs>
 <followups>
