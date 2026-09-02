@@ -55,6 +55,7 @@ app.get('/health', (req, res) => {
 app.get('/status', (req, res) => {
   res.json({
     env: process.env.NODE_ENV,
+    commit: (process.env.RENDER_GIT_COMMIT || process.env.GIT_COMMIT || '').slice(0, 7) || null,   // which build is live
     db: process.env.DATABASE_URL ? 'SET' : 'NOT SET',
     redis: process.env.REDIS_URL ? 'SET' : 'NOT SET',
     jwt: process.env.JWT_SECRET ? 'SET' : 'NOT SET',
