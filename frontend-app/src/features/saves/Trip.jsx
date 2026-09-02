@@ -16,6 +16,8 @@ export default function Trip({ save, onNavigate, onBack, onMore, statusControl }
   const places = (it.highlights || []).map((h) => ({ name: h, kind: /(thali|food|cafe|eat|restaurant|breakfast|dinner)/i.test(h) ? 'food' : 'place' }));
   const perDest = it.perDestinationCosts || [];
   const reels = Math.max(1, save?.sourceCount || 1);
+  const planned = !!save?.tripPlan?.data;
+  const plannedDays = save?.tripPlan?.data?.dailyPlan?.length;
 
   return (
     <div className="wt-screen">
@@ -55,10 +57,12 @@ export default function Trip({ save, onNavigate, onBack, onMore, statusControl }
         <p style={{ fontSize: 15, lineHeight: 1.55, color: 'var(--mute)', margin: '0 0 20px' }}>{save.aiAnalysis.summary}</p>
       )}
 
-      <Banner icon="sparkle">We can put these in order by day{it.estimatedCost ? `, keep it under ${short(it.estimatedCost)}` : ''}, and start from wherever you're staying. Takes about a minute.</Banner>
+      {planned
+        ? <Banner icon="calendar">Your {plannedDays ? `${plannedDays}-day ` : ''}plan is saved with this trip — planned {new Date(save.tripPlan.generatedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}.</Banner>
+        : <Banner icon="sparkle">We can put these in order by day{it.estimatedCost ? `, keep it under ${short(it.estimatedCost)}` : ''}, and start from wherever you're staying. Takes about a minute, once.</Banner>}
 
       <div style={{ marginTop: 'auto', paddingTop: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
-        <Button onClick={() => onNavigate('itinerary', { id: save._id, title: save.title, destination: dest, days })}>Plan this trip</Button>
+        <Button onClick={() => onNavigate('itinerary', { id: save._id, title: save.title, destination: dest, days })}>{planned ? 'See your plan' : 'Plan this trip'}</Button>
         <Button variant="ghost" onClick={onBack}>Just keep it saved</Button>
       </div>
     </div>

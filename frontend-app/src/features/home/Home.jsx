@@ -5,7 +5,7 @@ import ListRow from '../../components/ListRow';
 import SectionLabel from '../../components/SectionLabel';
 import SearchBar from '../../components/SearchBar';
 import Banner from '../../components/Banner';
-import EmptyState from '../../components/EmptyState';
+import Button from '../../components/Button';
 import { relativeTime, formatDistance } from '../../lib/format';
 
 const DAY = 86400000;
@@ -20,6 +20,12 @@ export default function Home({ onNavigate, payload, nearbySaves = [] }) {
   const [saves, setSaves] = useState([]);
   const [unread, setUnread] = useState(0);
   const [loading, setLoading] = useState(true);
+  // New-user supply (ADR 0014): curated template saves to copy in one tap, and
+  // places other people on Wanna Try have saved. Fetched only when the list is
+  // empty, so a returning user never pays for them.
+  const [templates, setTemplates] = useState([]);
+  const [popular, setPopular] = useState([]);
+  const [copying, setCopying] = useState(null);
 
   const load = async (force = false) => {
     try {
@@ -32,6 +38,17 @@ export default function Home({ onNavigate, payload, nearbySaves = [] }) {
     }
   };
   useEffect(() => { load(!!payload?.refresh); }, [payload?.refresh]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (loading || saves.length) return;
+    api.getTemplateSaves().then((r) => r?.status === 'success' && setTemplates((r.data || []).slice(0, 6))).catch(() => {});
+    api.getTrendingPlaces(6).then((r) => r?.status === 'success' && setPopular(r.data || [])).catch(() => {});
+  }, [loading, saves.length]);
+
+  const copyTemplate = async (t) => {
+    setCopying(t._id);
+    try { const r = await api.copyTemplateSave(t._id); if (r?.status === 'success') await load(true); }
+    finally { setCopying(null); }
+  };
 
   const live = saves.filter((s) => s.intentStatus !== 'dismissed' && s.intentStatus !== 'tried');
   const now = Date.now();
@@ -62,12 +79,58 @@ export default function Home({ onNavigate, payload, nearbySaves = [] }) {
       <SearchBar placeholder={saves.length ? `Search ${saves.length} things you saved` : 'Search'} onClick={() => onNavigate('search')} style={{ marginBottom: 24 }} />
 
       {!loading && saves.length === 0 && (
-        <EmptyState
-          title="Nothing here yet"
-          text="Share a reel, a link or a screenshot — or bring in everything you've already saved on Instagram."
-          action="Add your first save"
-          onAction={() => onNavigate('add-save')}
-        />
+        <>
+          {/* First-run: say what to do, in one card, with the two real ways in. */}
+          <div style={{ padding: '20px 18px', borderRadius: 14, background: 'var(--teal-d)', color: '#fff', marginBottom: 26 }}>
+            <span className="wt-eyebrow" style={{ color: 'var(--sand)', display: 'block', marginBottom: 8 }}>Start here</span>
+            <p style={{ fontFamily: 'var(--font-display)', fontSize: 22, lineHeight: 1.2, margin: '0 0 8px' }}>Save one thing you want to try.</p>
+            <p style={{ fontSize: 14.5, lineHeight: 1.5, margin: '0 0 16px', color: 'rgba(255,255,255,.78)' }}>A reel, a link, a screenshot, or just say it. We read it, keep the details, and bring it back when you can go.</p>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <Button small onDark onClick={() => onNavigate('add-save')} style={{ flex: 1 }}>Save something</Button>
+              <Button small onDark variant="secondary" onClick={() => onNavigate('voice')} style={{ width: 'auto', padding: '0 16px' }}>Say it</Button>
+            </div>
+          </div>
+
+          {templates.length > 0 && (
+            <section style={{ marginBottom: 24 }}>
+              <SectionLabel>Try one of these</SectionLabel>
+              {templates.map((t) => (
+                <ListRow key={t._id} category={t.category} title={t.title}
+                  meta={[t.extractedLocation?.city, t.aiAnalysis?.structuredData?.place?.priceRange].filter(Boolean).join(' · ') || 'Example save · tap + to keep it'}
+                  trailIcon={<span style={{ color: copying === t._id ? 'var(--faint)' : 'var(--teal)' }}><Icon name={copying === t._id ? 'clock' : 'plus'} size={20} stroke={2.2} /></span>}
+                  onClick={() => copying ? null : copyTemplate(t)} />
+              ))}
+            </section>
+          )}
+
+          {popular.length > 0 && (
+            <section style={{ marginBottom: 24 }}>
+              <SectionLabel action="Explore" onAction={() => onNavigate('explore')}>Popular on Wanna Try</SectionLabel>
+              {popular.map((p) => (
+                <ListRow key={p._id} category={p.category} title={p.canonicalName} meta={[p.city, ...(p.vibeTags || []).slice(0, 2)].filter(Boolean).join(' · ')}
+                  reason={p.saveCount > 1 ? `Saved by ${p.saveCount} people` : 'Saved by someone on Wanna Try'} onClick={() => onNavigate('place', { id: p._id })} />
+              ))}
+            </section>
+          )}
+
+          {templates.length === 0 && popular.length === 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {[
+                ['instagram', 'place', 'Share a reel', 'Open any reel → Share → Wanna Try. We pull out the place, price and what to order.'],
+                ['image', 'shop', 'Drop in screenshots', 'A menu, a chat, a list of places a friend sent — we read every line.'],
+                ['mic', 'food', 'Just say it', '"Goa airport pe Rahul mila, six months mein follow up" becomes a note that comes back on the day.'],
+              ].map(([icon, kind, title, text]) => (
+                <div key={title} style={{ display: 'flex', gap: 13, alignItems: 'flex-start' }}>
+                  <span className={`wt-tile ${kind}`}><Icon name={icon} size={20} /></span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <span style={{ fontSize: 15.5, fontWeight: 600 }}>{title}</span>
+                    <span className="wt-row-meta" style={{ fontSize: 13.5 }}>{text}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       {planning.length > 0 && (

@@ -1,4 +1,6 @@
 require('dotenv').config({ path: require('path').join(__dirname, '../../.env') });
+// ENV_FILE=.env.prod-local targets production, same as the server.
+if (process.env.ENV_FILE) require('dotenv').config({ path: require('path').join(__dirname, '../../', process.env.ENV_FILE), override: true });
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
@@ -178,7 +180,8 @@ const TEMPLATE_SAVES = [
 
 async function seed() {
   const uri = process.env.DATABASE_URL || 'mongodb://localhost:27017/trythis';
-  await mongoose.connect(uri);
+  // Atlas URIs carry no db name; without dbName this would seed the default `test` db.
+  await mongoose.connect(uri, process.env.MONGODB_DB ? { dbName: process.env.MONGODB_DB } : {});
   console.log('Connected to MongoDB');
 
   let systemUser = await User.findOne({ email: 'system@trythis.app' });

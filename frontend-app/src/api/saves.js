@@ -44,12 +44,15 @@ const saves = {
   },
 
   // "Plan this trip" — transport + stays + itinerary for travel saves.
-  async getPlan(id, origin) {
+  // Stored on the save after the first build; pass { force } or a new `days`
+  // to rebuild. Invalidates the list because the save now carries a plan.
+  async getPlan(id, origin, { days, force } = {}) {
     const res = await fetch(`${API_BASE_URL}/saves/${id}/plan`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...authHeader() },
-      body: JSON.stringify({ origin: origin || '' }),
+      body: JSON.stringify({ origin: origin || '', ...(days ? { days } : {}), ...(force ? { force: true } : {}) }),
     });
+    if (force || days) invalidateSaves();
     return handle(res);
   },
 
@@ -193,6 +196,9 @@ const saves = {
     });
     return handle(res);
   },
+
+  // GET /saves/:id/export-pdf — any save, including its stored trip plan.
+  async exportSavePdf(saveId) { return this.exportScreenshotPdf(saveId); },
 
   async exportScreenshotPdf(saveId) {
     try {

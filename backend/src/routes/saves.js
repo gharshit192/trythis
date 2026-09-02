@@ -1366,7 +1366,7 @@ router.get('/:id/export-pdf', validateObjectId('id'), async (req, res) => {
     res.setHeader('Content-Disposition', `attachment; filename="${safeName}-${Date.now()}.pdf"`);
     doc.pipe(res);
 
-    const ACCENT = '#1B3A2F';
+    const ACCENT = '#0E7C7B';
     const MUTED = '#666666';
     const BG_LIGHT = '#F5F5F0';
 
@@ -1417,6 +1417,36 @@ router.get('/:id/export-pdf', validateObjectId('id'), async (req, res) => {
     }
 
     // ── AGGREGATE ANALYSIS (multi-screenshot comparison) ──
+    // The stored trip plan (POST /saves/:id/plan), day by day. Only present on
+    // travel saves the user actually planned; nothing is generated here.
+    const plan = save.tripPlan?.data;
+    if (plan?.dailyPlan?.length) {
+      section(plan.tripTitle || 'Your plan');
+      const planMeta = [
+        `${plan.dailyPlan.length} day${plan.dailyPlan.length === 1 ? '' : 's'}`,
+        plan.estimatedBudgetInr ? `about ₹${Number(plan.estimatedBudgetInr).toLocaleString('en-IN')}` : null,
+        save.tripPlan.origin ? `from ${save.tripPlan.origin}` : null,
+        save.tripPlan.generatedAt ? `planned ${new Date(save.tripPlan.generatedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}` : null,
+      ].filter(Boolean).join(' · ');
+      doc.fontSize(10).font('Helvetica').fillColor(MUTED).text(planMeta);
+      const tips = new Map((plan.places || []).map((pl) => [String(pl.name || '').toLowerCase(), pl.tipFromReel]));
+      for (const day of plan.dailyPlan) {
+        doc.moveDown(0.6);
+        doc.fontSize(12).font('Helvetica-Bold').fillColor('#000000').text(`Day ${day.day} — ${day.theme || ''}`.trim());
+        if (day.stayArea) doc.fontSize(10).font('Helvetica').fillColor(MUTED).text(`Stay: ${day.stayArea}${day.travelTimeTotalHr ? ` · ${day.travelTimeTotalHr}h moving` : ''}`);
+        for (const stop of day.stops || []) {
+          const tip = tips.get(String(stop.place || '').toLowerCase());
+          const line = [stop.place, stop.durationHr ? `${stop.durationHr}h` : null, stop.notes].filter(Boolean).join(' — ');
+          doc.fontSize(11).font('Helvetica').fillColor('#000000').text(`• ${line}`, { indent: 12 });
+          if (tip) doc.fontSize(9.5).font('Helvetica-Oblique').fillColor(MUTED).text(`from your reel: ${tip}`, { indent: 24 });
+        }
+      }
+      if (plan.warnings?.length) {
+        doc.moveDown(0.4);
+        for (const w of plan.warnings) doc.fontSize(10).font('Helvetica').fillColor(MUTED).text(`Note: ${w}`, { indent: 12 });
+      }
+    }
+
     const agg = ai.aggregateAnalysis;
     if (agg) {
       if (agg.summary || agg.combinedSummary) {
@@ -1687,8 +1717,21 @@ router.post('/:id/plan', async (req, res) => {
       origin = user?.city || user?.location?.city || '';
     }
 
-    const data = await planEngine.generatePlan(save, origin, req.body || {});
-    res.json({ status: 'success', data });
+    // Serve the stored plan unless the caller asks to rebuild or changed what
+    // it was built from. Generating is slow (Claude + geocoding + weather) and
+    // non-deterministic — two opens must not produce two different trips.
+    const days = req.body?.days ? Math.max(1, Math.min(parseInt(req.body.days, 10) || 0, 10)) : null;
+    const cached = save.tripPlan?.data;
+    const sameInputs = cached && (save.tripPlan.origin || '') === origin && (days == null || save.tripPlan.days === days);
+    if (sameInputs && !req.body?.force) {
+      return res.json({ status: 'success', data: { ...cached, generatedAt: save.tripPlan.generatedAt, cached: true } });
+    }
+
+    const prefs = { ...(req.body || {}), days: days || save.tripPlan?.days || undefined };
+    const data = await planEngine.generatePlan(save, origin, prefs);
+    save.tripPlan = { origin: origin || null, days: days || (data.dailyPlan?.length || null), generatedAt: new Date(), data };
+    await save.save();
+    res.json({ status: 'success', data: { ...data, generatedAt: save.tripPlan.generatedAt, cached: false } });
   } catch (err) {
     const code = err.code || 'PLAN_ERROR';
     const httpStatus = code === 'NO_DESTINATION' ? 422 : 500;

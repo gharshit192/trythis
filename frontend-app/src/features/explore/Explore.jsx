@@ -37,6 +37,8 @@ export default function Explore({ onNavigate, nearbySaves = [] }) {
       setSaves(list);
       const latest = list.filter((s) => s.intentStatus !== 'tried')[0];
       if (latest) api.getRecommendations(latest._id).then((x) => x?.status === 'success' && setForYou((x.data || []).map((p) => ({ ...p, because: latest.title })))).catch(() => {});
+      // Nothing saved yet: "For you" is what other people on Wanna Try saved.
+      else api.getTrendingPlaces(20).then((x) => x?.status === 'success' && setForYou((x.data || []).map((p) => ({ ...p, title: p.canonicalName, isPlace: true })))).catch(() => {});
     });
     if (!navigator.geolocation) { setGeo('denied'); setLoading(false); return; }
     navigator.geolocation.getCurrentPosition(async (pos) => {
@@ -74,8 +76,9 @@ export default function Explore({ onNavigate, nearbySaves = [] }) {
     if (chip === 'foryou') {
       return forYou.slice(0, 20).map((s) => ({
         key: s._id, category: s.category, title: s.title,
-        meta: s.extractedLocation?.name || s.extractedLocation?.city || getCategoryTile(s.category).label,
-        reason: `Because you saved ${s.because}`, saved: true, onClick: () => onNavigate('save-detail', { id: s._id }),
+        meta: s.isPlace ? [s.city, ...(s.vibeTags || []).slice(0, 2)].filter(Boolean).join(' · ') : (s.extractedLocation?.name || s.extractedLocation?.city || getCategoryTile(s.category).label),
+        reason: s.isPlace ? (s.saveCount > 1 ? `Saved by ${s.saveCount} people` : 'Saved by someone on Wanna Try') : `Because you saved ${s.because}`,
+        saved: !s.isPlace, onClick: () => onNavigate(s.isPlace ? 'place' : 'save-detail', { id: s._id }),
       }));
     }
     const pool = saves.filter((s) => s.intentStatus !== 'dismissed' && s.intentStatus !== 'tried');

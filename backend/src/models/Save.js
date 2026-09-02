@@ -221,6 +221,15 @@ const intentItemSchema = new mongoose.Schema({
   resurfacedAt: { type: Date, default: null },
   audioUrl: { type: String, default: null },
 
+  // The generated trip plan, kept so "Plan this trip" costs one AI call, not one
+  // per open. Rebuilt only on request (force) or when origin/days change.
+  tripPlan: {
+    origin: { type: String, default: null },
+    days: { type: Number, default: null },
+    generatedAt: { type: Date, default: null },
+    data: { type: mongoose.Schema.Types.Mixed, default: null },
+  },
+
   // AI enrichment
   aiAnalysis: aiAnalysisSchema,
 

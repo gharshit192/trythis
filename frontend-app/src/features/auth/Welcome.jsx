@@ -25,7 +25,7 @@ export default function Welcome({ onNavigate }) {
           <Icon name="bookmark" size={22} stroke={1.7} />
           <span style={{ fontSize: 13, fontWeight: 600, letterSpacing: '.16em', textTransform: 'uppercase' }}>Wanna Try</span>
         </div>
-        <h1 className="wt-title" style={{ fontSize: 44, lineHeight: 1.04, letterSpacing: '-.01em', color: '#fff', marginBottom: 16 }}>Everything you<br />saved, actually<br />done.</h1>
+        <h1 className="wt-title" style={{ fontSize: 'clamp(34px, 12vw, 44px)', lineHeight: 1.04, letterSpacing: '-.01em', color: '#fff', marginBottom: 16 }}>Everything you<br />saved, actually<br />done.</h1>
         <p style={{ fontSize: 16.5, lineHeight: 1.5, color: 'rgba(255,255,255,.76)', margin: '0 0 32px', maxWidth: 300 }}>Send us a reel, a link, a screenshot. We read it, remember it, and bring it back when you can go.</p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
           <Button onDark onClick={() => onNavigate('signup')}>Get started</Button>

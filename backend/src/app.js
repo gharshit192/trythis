@@ -13,6 +13,8 @@ const uploadsRoutes = require('./routes/uploads');
 const audioProcessingRoutes = require('./routes/audioProcessing');
 const adminRoutes = require('./routes/admin');
 const shareRoutes = require('./routes/share');
+const placesRoutes = require('./routes/places');
+const voiceRoutes = require('./routes/voice');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
@@ -22,10 +24,16 @@ const app = express();
 // silences express-rate-limit's X-Forwarded-For validator.
 app.set('trust proxy', 1);
 
+// Allowed origins: the configured list, plus any localhost / 127.0.0.1 port so a
+// local build served from an arbitrary port (5050, 8081, …) can talk to a local
+// API without editing this file. Non-browser callers (no Origin) pass through.
+const ALLOWED_ORIGINS = process.env.CORS_ORIGINS
+  ? process.env.CORS_ORIGINS.split(',').map((s) => s.trim())
+  : [process.env.FRONTEND_URL || 'http://localhost:3000', 'https://trythis-frontend.vercel.app'];
+const isLocalOrigin = (o) => /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(o);
+
 app.use(cors({
-  origin: process.env.CORS_ORIGINS
-    ? process.env.CORS_ORIGINS.split(',').map((s) => s.trim())
-    : [process.env.FRONTEND_URL || 'http://localhost:3000', 'https://trythis-frontend.vercel.app', 'http://localhost:3000','http://localhost:3001','http://localhost:3002','http://localhost:3003'],
+  origin: (origin, cb) => cb(null, !origin || ALLOWED_ORIGINS.includes(origin) || isLocalOrigin(origin)),
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -55,6 +63,8 @@ app.use('/saves', savesRoutes);
 app.use('/collections', collectionsRoutes);
 app.use('/search', searchRoutes);
 app.use('/recommendations', recommendationsRoutes);
+app.use('/places', placesRoutes);   // was only in routes/index.js, which nothing mounted
+app.use('/voice', voiceRoutes);     // ADR 0016
 // Order matters: both routers below apply authMiddleware to everything they
 // see, so any route that must skip user auth has to be mounted ahead of them.
 // pushPublicRoutes first: /notifications/resubscribe comes from the service

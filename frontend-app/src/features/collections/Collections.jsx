@@ -13,8 +13,10 @@ export default function Collections({ onNavigate, onBack, payload }) {
   const [name, setName] = useState('');
   const addId = payload?.addSaveId || null;
 
-  const load = () => api.getCollections().then((r) => { if (r?.status === 'success') setCols(r.data || []); }).finally(() => setLoading(false));
-  useEffect(() => { load(); }, []);
+  const countOf = (c) => c.metadata?.itemCount ?? (c.saves || []).length;
+  // Fullest first — the collections you actually use sit at the top.
+  const load = () => api.getCollections().then((r) => { if (r?.status === 'success') setCols([...(r.data || [])].sort((a, b) => countOf(b) - countOf(a))); }).finally(() => setLoading(false));
+  useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const create = async () => {
     if (!name.trim()) return;
@@ -46,7 +48,7 @@ export default function Collections({ onNavigate, onBack, payload }) {
       {!loading && cols.length === 0 && <EmptyState title="No collections yet" text="Group saves by trip, city, mood — or let the engine do it as you save." action="Make one" onAction={() => setCreating(true)} />}
 
       {cols.map((c) => {
-        const n = c.metadata?.itemCount ?? (c.saves || []).length;
+        const n = countOf(c);
         return (
           <button key={c._id} type="button" className="wt-row" onClick={() => open(c)}>
             <span className="wt-tile place" style={{ background: c.isAuto ? 'var(--cat-learn-soft)' : undefined, color: c.isAuto ? 'var(--cat-learn)' : undefined }}><Icon name={c.isAuto ? 'sparkle' : 'folder'} size={20} /></span>

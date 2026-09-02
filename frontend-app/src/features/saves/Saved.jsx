@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../../api';
 import Chip from '../../components/Chip';
+import SearchBar from '../../components/SearchBar';
 import ListRow from '../../components/ListRow';
 import EmptyState from '../../components/EmptyState';
 import { relativeTime } from '../../lib/format';
@@ -32,6 +33,7 @@ export default function Saved({ onNavigate, payload, nearbySaves = [] }) {
   const nearIds = new Set(nearbySaves.map((s) => s._id));
   const [tab, setTab] = useState(payload?.tab || 'saved');
   const [kind, setKind] = useState('all');
+  const [q, setQ] = useState('');
   const [saves, setSaves] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -42,7 +44,11 @@ export default function Saved({ onNavigate, payload, nearbySaves = [] }) {
   }, [payload?.refresh]);
 
   const counts = Object.fromEntries(TABS.map((t) => [t.id, saves.filter((s) => (s.intentStatus || 'saved') === t.id).length]));
+  const needle = q.trim().toLowerCase();
+  const matches = (s) => !needle || [s.title, s.extractedLocation?.name, s.extractedLocation?.city, s.aiAnalysis?.summary, ...(s.tags || [])]
+    .filter(Boolean).join(' ').toLowerCase().includes(needle);
   const rows = saves
+    .filter(matches)
     .filter((s) => (s.intentStatus || 'saved') === tab)
     .filter((s) => kind === 'all' || (kind === 'near' ? nearIds.has(s._id) : getCategoryTile(s.category).kind === kind));
 
@@ -70,14 +76,15 @@ export default function Saved({ onNavigate, payload, nearbySaves = [] }) {
         ))}
       </div>
 
+      <SearchBar value={q} onChange={setQ} placeholder={`Search ${saves.length} saved`} style={{ marginBottom: 12 }} />
       <div className="wt-chips" style={{ marginBottom: 6 }}>
         {KINDS.map((k) => <Chip key={k.id} small on={kind === k.id} onClick={() => setKind(k.id)}>{k.label}</Chip>)}
       </div>
 
       {!loading && rows.length === 0 ? (
         <EmptyState
-          title={tab === 'tried' ? 'Nothing tried yet' : tab === 'planned' ? 'Nothing planned' : 'Nothing saved yet'}
-          text={tab === 'tried' ? 'When you go, mark it tried on the item and it lands here.' : tab === 'planned' ? 'Move a save to Planning when you mean to go soon.' : 'Share a reel or paste a link to start your list.'}
+          title={needle ? 'Nothing matches' : tab === 'tried' ? 'Nothing tried yet' : tab === 'planned' ? 'Nothing planned' : 'Nothing saved yet'}
+          text={needle ? 'Try a place, a dish, a creator, or a word from the reel.' : tab === 'tried' ? 'When you go, mark it tried on the item and it lands here.' : tab === 'planned' ? 'Move a save to Planning when you mean to go soon.' : 'Share a reel or paste a link to start your list.'}
           action={tab === 'saved' ? 'Add a save' : undefined} onAction={() => onNavigate('add-save')} />
       ) : rows.map((s) => (
         <ListRow key={s._id} category={s.category} title={s.title} meta={metaOf(s)} trail={shortAge(s.createdAt)}
