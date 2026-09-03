@@ -69,6 +69,18 @@ const mapYtdlpError = (stderr) => {
 };
 
 // ---- helpers ----
+// Stream a direct video URL to disk (Instagram CDN mp4). 80 MB cap, 60 s.
+const downloadDirect = (url, outPath) => new Promise((resolve, reject) => {
+  const axios = require('axios');
+  axios.get(url, { responseType: 'stream', timeout: 60000, maxContentLength: 80 * 1024 * 1024, headers: { 'User-Agent': 'Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 Chrome/120 Mobile Safari/537.36' } })
+    .then((res) => {
+      const ct = String(res.headers['content-type'] || '');
+      if (!/video|octet-stream/i.test(ct)) return reject(new Error(`not a video (${ct})`));
+      const out = fs.createWriteStream(outPath); let bytes = 0;
+      res.data.on('data', (c) => { bytes += c.length; if (bytes > 80 * 1024 * 1024) { res.data.destroy(new Error('too large')); } });
+      res.data.on('error', reject); out.on('error', reject); out.on('finish', resolve); res.data.pipe(out);
+    }).catch(reject);
+});
 // One vision read of a photo post image: the visible text verbatim, then what
 // the photo shows (place, dish, product, prices, signs). Feeds the same
 // analysis step as a transcript would.
@@ -559,7 +571,19 @@ const processSave = async (saveId) => {
     let downloadFailureReason = null;
     if (!downloadSkipped) {
       logger.info(`[mediaProcessor ${saveId}] downloading ${save.url}`);
-      const downloadResult = await downloadMergedMp4Graceful(save.url, mp4Path);
+      // Direct CDN URL from the metadata step (Instagram JSON) — one HTTP GET,
+      // no page scraping. Expires after a while, so anything but a clean file
+      // falls straight through to yt-dlp.
+      let downloadResult = null;
+      if (save.metadata?.videoUrl && Date.now() - new Date(save.metadata.videoUrlAt || 0).getTime() < 6 * 3600000) {
+        try {
+          const t0 = Date.now();
+          await downloadDirect(save.metadata.videoUrl, mp4Path);
+          if (fs.existsSync(mp4Path) && fs.statSync(mp4Path).size > 50 * 1024) { downloadResult = { success: true }; logger.info(`[mediaProcessor ${saveId}] direct download ok in ${Date.now() - t0}ms (${Math.round(fs.statSync(mp4Path).size / 1024)} KB)`); }
+          else fs.rmSync(mp4Path, { force: true });
+        } catch (err) { logger.warn(`[mediaProcessor ${saveId}] direct download failed, using yt-dlp: ${err.message}`); fs.rmSync(mp4Path, { force: true }); }
+      }
+      if (!downloadResult) downloadResult = await downloadMergedMp4Graceful(save.url, mp4Path);
       mp4Ready = downloadResult?.success === true && fs.existsSync(mp4Path);
       if (!mp4Ready) {
         downloadFailureReason = downloadResult?.reason
@@ -611,6 +635,16 @@ const processSave = async (saveId) => {
     }
 
     // Transcription + LLM enrichment (best-effort)
+    // On-screen text is read in parallel with speech: both only need the file.
+    // Languages default to English + Hindi when the audio language is unknown.
+    const framePromise = mp4Ready ? (async () => {
+      try {
+        const dur = await probeDurationSeconds(mp4Path);
+        const res = await frameExtractor.extractAndOcrFrames(mp4Path, { count: pickFrameCount(dur, save.category), durationSeconds: dur, langs: pickOcrLangs(null) });
+        return { text: res.mergedText || '', error: null };
+      } catch (err) { return { text: '', error: err.message }; }
+    })() : null;
+
     try {
       let raw = null;
 
@@ -685,19 +719,18 @@ const processSave = async (saveId) => {
       // Skip it when the transcript is rich; still run it for visual-only reels.
       const transcriptRich = englishClean && englishClean.trim().length >= 180;
       if (mp4Ready && transcriptRich) {
-        logger.info(`[mediaProcessor ${saveId}] frame OCR skipped — transcript already rich (${englishClean.length} chars)`);
+        const res = await framePromise;   // already running; keep what it found
+        frameOcr = res?.text || '';
+        logger.info(`[mediaProcessor ${saveId}] transcript rich (${englishClean.length} chars); frame text ${frameOcr.length} chars kept`);
         await Save.findByIdAndUpdate(saveId, {
           'processingStages.frameOCR': { completed: true, error: null, completedAt: new Date() },
+          ...(frameOcr ? { 'aiAnalysis.visualText': frameOcr.slice(0, 2000) } : {}),
         });
       } else if (mp4Ready) {
         try {
-          const dur = await probeDurationSeconds(mp4Path);
-          const res = await frameExtractor.extractAndOcrFrames(mp4Path, {
-            count: pickFrameCount(dur, save.category),
-            durationSeconds: dur,
-            langs: pickOcrLangs(raw.language),
-          });
-          frameOcr = res.mergedText || '';
+          const res = await framePromise;
+          if (res.error) throw new Error(res.error);
+          frameOcr = res.text || '';
           if (frameOcr) {
             logger.info(`[mediaProcessor ${saveId}] frame OCR: ${frameOcr.length} chars`);
             // Store raw OCR text for debugging (first 2000 chars)

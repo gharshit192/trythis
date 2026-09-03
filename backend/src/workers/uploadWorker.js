@@ -316,8 +316,8 @@ async function processLinkJob(job) {
   }
 
   // Photo posts: keep every image so the media processor can read all of them.
-  if (Array.isArray(extra.images) && extra.images.length) {
-    save.metadata = { ...(save.metadata || {}), images: extra.images.slice(0, 6), photoPost: !!extra.isPhotoPost };
+  if ((Array.isArray(extra.images) && extra.images.length) || extra.videoUrl) {
+    save.metadata = { ...(save.metadata || {}), images: (extra.images || []).slice(0, 6), photoPost: !!extra.isPhotoPost, ...(extra.videoUrl ? { videoUrl: extra.videoUrl, videoUrlAt: new Date() } : {}) };
     save.markModified('metadata');
     await save.save();
   }

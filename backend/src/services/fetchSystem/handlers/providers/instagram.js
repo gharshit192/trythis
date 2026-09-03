@@ -46,11 +46,13 @@ const tryJsonWithCookies = async (url) => {
     const images = (item.carousel_media || []).map(pick).filter(Boolean);
     const cover = pick(item) || images[0] || null;
     const isVideo = !!(item.video_versions?.length || item.is_video);
+    const videoUrl = item.video_versions?.[0]?.url || item.video_url || null;
     const allImages = images.length ? images : (cover ? [cover] : []);
     return {
       title: firstLine(caption).slice(0, 110) || (user ? `Post by @${user}` : 'Instagram post'),
       description: caption || '',
-      image: cover, images: allImages, isPhotoPost: !isVideo && allImages.length > 0,
+      image: cover, images: allImages, isPhotoPost: !isVideo && allImages.length > 0, videoUrl,
+      duration: item.video_duration || undefined,
       author: user, authorId: user, likeCount: item.like_count, commentCount: item.comment_count,
       uploadDate: item.taken_at ? new Date(item.taken_at * 1000).toISOString().slice(0, 10).replace(/-/g, '') : undefined,
       provider: 'instagram-json',

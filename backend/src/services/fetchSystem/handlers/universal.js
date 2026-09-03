@@ -48,6 +48,7 @@ const normalize = (raw, url) => {
       height: raw && raw.height,
       images: (raw && Array.isArray(raw.images) && raw.images.length) ? raw.images : (raw && raw.image ? [raw.image] : []),
       isPhotoPost: raw && raw.isPhotoPost,
+      videoUrl: raw && raw.videoUrl,
     },
     _ytdlpInfo: raw && raw._ytdlpInfo, // for downstream transcription + muxing
   };
@@ -58,7 +59,12 @@ const fetch = async (source) => {
   if (!url) throw new Error('url is required');
 
   let lastFallback = null;
-  for (const provider of PROVIDERS) {
+  // Instagram: the session JSON answers in ~1 s with caption, images and the
+  // direct video URL; the yt-dlp metadata pass took ~20 s for the same thing.
+  // Order the providers so the fast one is tried first; nothing is lost if it
+  // has no session — yt-dlp still runs next.
+  const ordered = /instagram\.com/i.test(url) ? [instagram, ...PROVIDERS.filter((p) => p !== instagram)] : PROVIDERS;
+  for (const provider of ordered) {
     if (!provider.match(url)) continue;
     try {
       const result = await provider.fetch(typeof source === 'string' ? url : source);
