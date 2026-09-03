@@ -26,11 +26,12 @@ const place = async (name, country = 'IN') => {
     const j = await getJson(`https://autocomplete.travelpayouts.com/places2?term=${encodeURIComponent(name)}&locale=en&types[]=city&types[]=airport`);
     const rows = Array.isArray(j) ? j : [];
     const norm = (x) => String(x || '').toLowerCase();
-    const hit = rows.find((p) => p.type === 'city' && p.country_code === country && norm(p.name).startsWith(norm(name)))
-      || rows.find((p) => p.type === 'city' && p.country_code === country)
-      || rows.find((p) => p.country_code === country)
-      || rows.find((p) => p.type === 'city' && norm(p.name) === norm(name))
-      || null;
+    // The name must match; the country only breaks ties (never turns Bangkok into Gangtok).
+    const named = rows.filter((p) => norm(p.name).startsWith(norm(name)) || norm(name).startsWith(norm(p.name)));
+    const hit = named.find((p) => p.type === 'city' && p.country_code === country)
+      || named.find((p) => p.type === 'city')
+      || named.find((p) => p.country_code === country)
+      || named[0] || null;
     if (hit) out = { code: hit.code, name: hit.name, country: hit.country_code };
   } catch (e) { logger.warn(`[travelpayouts] place lookup failed for ${name}: ${e.message}`); }
   placeCache.set(key, out); return out;
