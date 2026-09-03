@@ -16,13 +16,21 @@ const getJson = async (url) => {
 
 const placeCache = new Map();
 // "Manali" → { code: 'KUU', name, country } via the public autocomplete (no token).
-const place = async (name) => {
-  const key = String(name || '').toLowerCase().trim(); if (!key) return null;
+// India first: "Goa" must not become Genoa. Prefer a city in the wanted
+// country, then a name match, then whatever the autocomplete ranked first.
+const place = async (name, country = 'IN') => {
+  const key = `${String(name || '').toLowerCase().trim()}|${country}`; if (!name) return null;
   if (placeCache.has(key)) return placeCache.get(key);
   let out = null;
   try {
     const j = await getJson(`https://autocomplete.travelpayouts.com/places2?term=${encodeURIComponent(name)}&locale=en&types[]=city&types[]=airport`);
-    const hit = (j || []).find((p) => p.type === 'city') || (j || [])[0];
+    const rows = Array.isArray(j) ? j : [];
+    const norm = (x) => String(x || '').toLowerCase();
+    const hit = rows.find((p) => p.type === 'city' && p.country_code === country && norm(p.name).startsWith(norm(name)))
+      || rows.find((p) => p.type === 'city' && p.country_code === country)
+      || rows.find((p) => p.country_code === country)
+      || rows.find((p) => p.type === 'city' && norm(p.name) === norm(name))
+      || null;
     if (hit) out = { code: hit.code, name: hit.name, country: hit.country_code };
   } catch (e) { logger.warn(`[travelpayouts] place lookup failed for ${name}: ${e.message}`); }
   placeCache.set(key, out); return out;
@@ -53,7 +61,7 @@ const hotels = async ({ city, checkIn, nights = 1, adults = 2, limit = 8 }) => {
 // Cheapest fares origin → destination on a date (Aviasales prices_for_dates).
 const flights = async ({ origin, city, date, adults = 1, limit = 4 }) => {
   if (!configured() || !origin || !date) return [];
-  const [o, d] = await Promise.all([place(origin), place(city)]); if (!o?.code || !d?.code || o.code === d.code) return [];
+  const [o, d] = await Promise.all([place(origin, 'IN'), place(city, 'IN')]); if (!o?.code || !d?.code || o.code === d.code) return [];
   const j = await getJson(`https://api.travelpayouts.com/aviasales/v3/prices_for_dates?origin=${o.code}&destination=${d.code}&departure_at=${date}&currency=inr&limit=${limit}&sorting=price&direct=false&unique=false&one_way=true&token=${token()}`);
   return (j.data || []).map((f) => {
     const dep = String(f.departure_at || '').slice(11, 16); const hrs = f.duration ? `${Math.floor(f.duration / 60)}h${f.duration % 60 ? ` ${f.duration % 60}m` : ''}` : null;
