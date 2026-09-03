@@ -30,16 +30,16 @@ async function sendJobNotification(userId, payload) {
         } catch { /* non-fatal — fall back to generic copy */ }
       }
       if (saveTitle) extraMeta.saveTitle = saveTitle;
-      title = '✅ Upload ready!';
-      notifMessage = saveTitle ? `"${saveTitle}" is ready to view.` : 'Your save is ready to view.';
+      title = saveTitle ? 'Ready to read' : 'Your save is ready';
+      notifMessage = saveTitle ? `${saveTitle} — we read it. Open it for the details.` : 'We read it. Open the app for the details.';
       notificationType = 'upload_completed';
     } else if (type === 'JOB_FAILED') {
-      title = '❌ Upload failed';
-      notifMessage = message || 'We had trouble processing your upload. Please try again.';
+      title = "Couldn't read that one";
+      notifMessage = message || 'Something went wrong while reading your save. Open it and tap Read it again.';
       notificationType = 'upload_failed';
     } else if (type === 'JOB_QUEUED') {
-      title = '⏳ Processing…';
-      notifMessage = message || 'We\'re processing your upload — we\'ll notify you when it\'s ready.';
+      title = 'Reading your save';
+      notifMessage = message || 'Usually under a minute. We\'ll tell you when it\'s ready.';
       notificationType = 'upload_processing';
     } else {
       throw new Error(`Unknown notification type: ${type}`);

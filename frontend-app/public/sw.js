@@ -8,7 +8,7 @@
    worker only updates when its bytes change, so an edit below that leaves this
    constant alone can sit unshipped on an installed PWA. Bump it whenever you
    touch this file. */
-const VERSION = 'wt-sw-v3';
+const VERSION = 'wt-sw-v4';
 
 /* The API lives on a different origin than the app, and this file isn't built by
    CRA so it can't read REACT_APP_API_URL. push.js therefore registers the worker
@@ -36,6 +36,11 @@ self.addEventListener('push', (event) => {
     badge: '/logo192.png',
     data: { url: payload.url || '/', notificationId: payload.notificationId || null },
     tag: payload.notificationId || undefined, // collapse duplicates of the same notification
+    // Sound and vibration are the OS's call, but a notification must not ask
+    // to be silent — that is what kept iOS quiet.
+    silent: false,
+    vibrate: [90, 40, 90],
+    renotify: !!payload.notificationId,
   };
 
   event.waitUntil((async () => {
