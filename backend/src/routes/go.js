@@ -8,7 +8,7 @@ const OfferClick = require('../models/OfferClick');
 const { track } = require('../services/events');
 
 const router = express.Router();
-const HOME = { Hotellook: 'https://hotellook.com', aviasales: 'https://www.aviasales.com', 'Booking.com': 'https://www.booking.com', Agoda: 'https://www.agoda.com', MakeMyTrip: 'https://www.makemytrip.com', redBus: 'https://www.redbus.in', IRCTC: 'https://www.irctc.co.in', 'Google Flights': 'https://www.google.com/travel/flights' };
+const HOME = { Hotellook: 'https://hotellook.com', Aviasales: 'https://www.aviasales.com', aviasales: 'https://www.aviasales.com', Agoda: 'https://www.agoda.com', MakeMyTrip: 'https://www.makemytrip.com', Goibibo: 'https://www.goibibo.com', Cleartrip: 'https://www.cleartrip.com', OYO: 'https://www.oyorooms.com', redBus: 'https://www.redbus.in' };
 
 router.get('/:token', async (req, res) => {
   let p = null;

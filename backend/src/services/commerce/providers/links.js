@@ -5,19 +5,8 @@ const dash = (s) => String(s || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, 
 
 const checkOutOf = (checkIn, nights) => { const d = new Date(checkIn); d.setDate(d.getDate() + (nights || 1)); return d.toISOString().slice(0, 10); };
 
-// Booking.com: `ss` is a free-text search that resolves a hotel name; dates and guests fill in.
-const bookingUrl = (q, checkIn, nights, adults = 2) => {
-  const u = new URL('https://www.booking.com/searchresults.html');
-  u.searchParams.set('ss', q);
-  if (checkIn) { u.searchParams.set('checkin', checkIn); u.searchParams.set('checkout', checkOutOf(checkIn, nights)); }
-  u.searchParams.set('group_adults', String(adults)); u.searchParams.set('no_rooms', '1'); u.searchParams.set('group_children', '0');
-  if (process.env.BOOKING_AID) u.searchParams.set('aid', process.env.BOOKING_AID);
-  return u.toString();
-};
 // Agoda: textToSearch + dates + los (length of stay) opens results for the hotel/city.
 const agodaUrl = (q, checkIn, nights, adults = 2) => `https://www.agoda.com/search?textToSearch=${enc(q)}${checkIn ? `&checkIn=${checkIn}&los=${nights || 1}` : ''}&rooms=1&adults=${adults}&children=0${process.env.AGODA_CID ? `&cid=${process.env.AGODA_CID}` : ''}`;
-// Google Hotels: one page with every site's price for this exact hotel and dates.
-const googleHotelsUrl = (q, checkIn, nights) => `https://www.google.com/travel/search?q=${enc(q)}${checkIn ? `&dates=${checkIn},${checkOutOf(checkIn, nights)}` : ''}`;
 
 const ddmmyyyy = (iso) => { const [y, m, d] = iso.split('-'); return `${d}/${m}/${y}`; };
 // Cleartrip takes city + dates in the URL; MakeMyTrip, Goibibo and OYO have no
@@ -43,14 +32,15 @@ const wrap = (url) => {
 
 // "Compare booking options" rows for one hotel or one city — the partners Indian
 // users actually book on first, global ones after.
+// Only partners that pay us: Cuelinks sites, Agoda (direct), Hotellook (Travelpayouts marker).
+const hotellookUrl = (q, checkIn, nights, adults = 2) => `https://search.hotellook.com/hotels?destination=${enc(q)}${checkIn ? `&checkIn=${checkIn}&checkOut=${checkOutOf(checkIn, nights)}` : ''}&adults=${adults}&currency=inr&language=en${process.env.TRAVELPAYOUTS_MARKER ? `&marker=${process.env.TRAVELPAYOUTS_MARKER}` : ''}`;
 const stayOptions = (q, checkIn, nights, adults = 2, city = q) => [
   { provider: 'MakeMyTrip', deeplink: wrap(pinnedSearch('makemytrip.com/hotels', q)), note: 'via search' },
   { provider: 'Goibibo', deeplink: wrap(pinnedSearch('goibibo.com/hotels', q)), note: 'via search' },
   { provider: 'Cleartrip', deeplink: wrap(cleartripHotelsUrl(city, checkIn, nights, adults)) },
   { provider: 'OYO', deeplink: wrap(oyoUrl(city, checkIn, nights, adults)) },
-  { provider: 'Booking.com', deeplink: wrap(bookingUrl(q, checkIn, nights, adults)) },
   { provider: 'Agoda', deeplink: wrap(agodaUrl(q, checkIn, nights, adults)) },
-  { provider: 'Google Hotels', deeplink: googleHotelsUrl(q, checkIn, nights), note: 'all sites, one page' },
+  { provider: 'Hotellook', deeplink: hotellookUrl(q, checkIn, nights, adults), note: 'compares 70+ sites' },
 ];
 
 // Flights on the sites Indians use, with the date and route in the URL.
@@ -68,16 +58,15 @@ const transportOffers = ({ origin, city, domestic, date, oCode, dCode, adults = 
   const o = origin || '';
   const out = [];
   const fl = flightLinks({ oCode, dCode, origin: o, city, date, adults });
-  if (fl.length) out.push({ type: 'TRANSPORT', provider: 'MakeMyTrip', title: `Flights ${o} → ${city}`, description: 'Fares on MakeMyTrip · also Goibibo, Cleartrip', source: 'affiliate', metadata: { mode: 'flight' }, deeplink: fl[0].deeplink, options: fl.map((x) => ({ provider: x.provider, deeplink: x.deeplink })) });
-  else out.push({ type: 'TRANSPORT', provider: 'Google Flights', title: `Flights${o ? ` from ${o}` : ''} to ${city}`, description: 'Compare fares across airlines', source: 'utility', metadata: { mode: 'flight' },
-    deeplink: `https://www.google.com/travel/flights?q=${enc(`Flights from ${o || 'me'} to ${city}${date ? ` on ${date}` : ''}`)}` });
+  if (fl.length) {
+    const aviasales = oCode && dCode && date ? { provider: 'Aviasales', deeplink: `https://www.aviasales.com/search/${oCode}${date.slice(8, 10)}${date.slice(5, 7)}${dCode}${adults}${process.env.TRAVELPAYOUTS_MARKER ? `?marker=${process.env.TRAVELPAYOUTS_MARKER}` : ''}` } : null;
+    out.push({ type: 'TRANSPORT', provider: 'MakeMyTrip', title: `Flights ${o} → ${city}`, description: 'Fares on MakeMyTrip · also Goibibo, Cleartrip, Aviasales', source: 'affiliate', metadata: { mode: 'flight' }, deeplink: fl[0].deeplink, options: [...fl.map((x) => ({ provider: x.provider, deeplink: x.deeplink })), ...(aviasales ? [aviasales] : [])] });
+  }
   if (domestic) {
     out.push({ type: 'TRANSPORT', provider: 'redBus', title: `Bus${o ? ` ${o} → ${city}` : ` to ${city}`}`, description: 'Overnight and day buses, seat selection', source: 'affiliate', metadata: { mode: 'bus' },
       deeplink: wrap(o ? `https://www.redbus.in/bus-tickets/${dash(o)}-to-${dash(city)}${date ? `?onward=${ddmmyyyy(date).replace(/\//g, '-')}` : ''}` : `https://www.redbus.in/bus-tickets/${dash(city)}`) });
-    out.push({ type: 'TRANSPORT', provider: 'IRCTC', title: `Trains${o ? ` ${o} → ${city}` : ` to ${city}`}`, description: 'Book on IRCTC; check availability first', source: 'utility', metadata: { mode: 'train' },
-      deeplink: `https://www.irctc.co.in/nget/train-search` });
   }
   return out;
 };
 
-module.exports = { stayOptions, transportOffers, bookingUrl, googleHotelsUrl, wrap };
+module.exports = { stayOptions, transportOffers, hotellookUrl, wrap };

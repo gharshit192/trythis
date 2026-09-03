@@ -46,11 +46,11 @@ async function staysFor(dest, { checkIn, nights, adults, planHotels = [] }) {
   const suggested = planHotels.slice(0, 5).map((h) => ({
     type: 'HOTEL', provider: 'suggested', title: h.name, area: h.area || null, city, price: rupees(h.approx), currency: 'INR', priceLabel: h.approx || null,
     rating: null, description: h.tier ? `${h.tier} · from the plan` : 'From the plan', reason: h.area ? `Near ${h.area}` : `In ${city}`, source: 'suggested', placement: 'stay_options',
-    // Primary action: Google Hotels for the exact hotel (every site's price); compare rows below.
-    deeplink: links.googleHotelsUrl(`${h.name} ${city}`, checkIn, nights),
+    // Primary action: Hotellook for the exact hotel (compares sites, carries our marker); partner rows below.
+    deeplink: links.hotellookUrl(`${h.name} ${city}`, checkIn, nights, adults),
     options: links.stayOptions(`${h.name} ${city}`, checkIn, nights, adults, city),
   }));
-  const cityWide = { type: 'HOTEL', provider: 'links', title: `All stays in ${city}`, city, description: 'Every budget, live prices on the partner', reason: `Search ${city}`, source: 'affiliate', placement: 'stay_options', deeplink: links.bookingUrl(city, checkIn, nights, adults), options: links.stayOptions(city, checkIn, nights, adults, city) };
+  const cityWide = { type: 'HOTEL', provider: 'links', title: `All stays in ${city}`, city, description: 'Every budget, live prices on the partner', reason: `Search ${city}`, source: 'affiliate', placement: 'stay_options', deeplink: links.hotellookUrl(city, checkIn, nights, adults), options: links.stayOptions(city, checkIn, nights, adults, city) };
   return [...liveOffers, ...suggested, cityWide];
 }
 
