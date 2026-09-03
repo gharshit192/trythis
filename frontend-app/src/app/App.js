@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import './theme.css';
 import './legacy.css';
 import api from '../api';
+import { consumeNativeShare, onNativeShare } from '../lib/shareReceiver';
 
 import BottomNav from '../components/BottomNav';
 import InstallPrompt from '../components/InstallPrompt';
@@ -133,6 +134,25 @@ function App() {
     const storedUser = localStorage.getItem('user');
     const lastScreen = localStorage.getItem('last_screen');
 
+    // Native share sheet (Android app): same intake as the web share target.
+    // Arrives async from the bridge; the launched-by-share case wins over the
+    // last-screen restore below. Shares that land while the app is open go
+    // straight to share-intake. Images are never stashed for after-login
+    // (too big for localStorage); links and text are.
+    const takeNativeShare = (s) => {
+      if (!s) return;
+      if (localStorage.getItem('auth_token') && localStorage.getItem('user')) {
+        api.ping().catch(() => {});
+        setPayload(s);
+        setCurrentScreen('share-intake');
+      } else {
+        localStorage.setItem('pending_share', JSON.stringify({ url: s.url, text: s.text, title: s.title }));
+        setCurrentScreen('welcome');
+      }
+    };
+    consumeNativeShare().then(takeNativeShare).catch(() => {});
+    const offNativeShare = onNativeShare(takeNativeShare);
+
     const shared = consumeSharedContent();
     if (shared) {
       if (storedToken && storedUser) {
@@ -185,6 +205,7 @@ function App() {
       setCurrentScreen('welcome');
     }
     setAuthChecked(true);
+    return () => offNativeShare();
   }, []);
 
   // navigate(screen) or navigate(screen, payload)

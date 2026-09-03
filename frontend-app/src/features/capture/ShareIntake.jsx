@@ -21,9 +21,30 @@ export default function ShareIntake({ onNavigate, payload }) {
       const title = (payload?.title || '').trim();
       const text = (payload?.text || '').trim();
 
-      if (!url && !text && !title) {
+      const images = payload?.images || [];
+
+      if (!url && !text && !title && !images.length) {
         setState('error');
         setDetail('Nothing shareable was received.');
+        return;
+      }
+
+      // Shared screenshots (native share sheet): same path as Add → Bills & screenshots.
+      if (images.length) {
+        try {
+          const { imagesToFiles } = await import('../../lib/shareReceiver');
+          const fd = new FormData();
+          imagesToFiles(images).forEach((f) => fd.append('files', f));
+          if (title) fd.append('title', title);
+          const result = await api.analyzeScreenshotBundle(fd);
+          if (result?.status !== 'success') throw new Error(result?.error?.message || 'Could not read those.');
+          const saved = await api.saveScreenshotBundle(result.sessionId, result.summary);
+          const doc = saved?.save || saved?.data || null;
+          onNavigate('screenshot-summary', { sessionId: result.sessionId, summary: result.summary, saveId: doc?._id || null, autoSaved: !!doc?._id });
+        } catch (err) {
+          setState('error');
+          setDetail(err?.message || 'Could not read the shared images. Try again from the app.');
+        }
         return;
       }
 
@@ -53,7 +74,7 @@ export default function ShareIntake({ onNavigate, payload }) {
       }
     };
     run();
-  }, [payload]);
+  }, [payload]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const goHome = () => onNavigate('home');
 
