@@ -26,17 +26,20 @@ const { cookieHeaderFor } = require('../../../../utils/ytdlpCookies');
 // login wall without cookies). Works for reels too, and gives every carousel
 // image, not just the cover.
 const firstLine = (t) => String(t || '').split('\n').map((x) => x.trim()).find(Boolean) || '';
+let lastJsonFailure = null;   // 'no_cookies' | 'login_wall' | 'http_401' … read by the media processor's stage note
 const tryJsonWithCookies = async (url) => {
   const cookie = cookieHeaderFor('www.instagram.com');
-  if (!cookie) return null;
+  if (!cookie) { lastJsonFailure = 'no_cookies'; return null; }
   try {
     const clean = url.split('?')[0].replace(/\/$/, '') + '/';
     const { data } = await axios.get(`${clean}?__a=1&__d=dis`, {
       timeout: 8000, maxRedirects: 2,
       headers: { 'User-Agent': UA, Accept: 'application/json,*/*', Cookie: cookie, 'x-ig-app-id': '936619743392459', 'x-requested-with': 'XMLHttpRequest' },
     });
+    if (typeof data !== 'object' || data === null) { lastJsonFailure = 'login_wall'; return null; }   // HTML instead of JSON = session rejected
     const item = data?.items?.[0] || data?.graphql?.shortcode_media || null;
-    if (!item) return null;
+    if (!item) { lastJsonFailure = data?.require_login ? 'login_wall' : 'no_item'; return null; }
+    lastJsonFailure = null;
     const caption = item.caption?.text || item.edge_media_to_caption?.edges?.[0]?.node?.text || '';
     const user = item.user?.username || item.owner?.username || null;
     const pick = (m) => m?.image_versions2?.candidates?.[0]?.url || m?.display_url || null;
@@ -53,10 +56,12 @@ const tryJsonWithCookies = async (url) => {
       provider: 'instagram-json',
     };
   } catch (err) {
+    lastJsonFailure = err.response?.status ? `http_${err.response.status}` : 'network';
     logger.warn(`[instagram] json fetch failed: ${err.response?.status || err.message}`);
     return null;
   }
 };
+const jsonFailure = () => lastJsonFailure;
 
 // Strategy 1: Public oEmbed (deprecated for unauthenticated, often 403 — but cheap to try)
 const tryOembed = async (url) => {
