@@ -729,14 +729,35 @@ const processSave = async (saveId) => {
       // photo shows). A food photo has no text to OCR; the model still says
       // "a plate of butter chicken at a dhaba, ₹180 on the board".
       if (!frameOcr && isPhotoPost) {
-        const urls = photoImages.length ? photoImages : (fresh.thumbnail ? [fresh.thumbnail] : []);
+        // A retry, or a save made before photo posts were understood, has no
+        // images on it yet: fetch them now (Instagram JSON via the session
+        // cookies, else OG) and fill in the caption/title while we're at it.
+        let urls = photoImages.length ? photoImages : (fresh.thumbnail ? [fresh.thumbnail] : []);
+        let fetchNote = null;
+        if (!photoImages.length && /instagram\.com/i.test(fresh.url || '')) {
+          try {
+            const ig = await require('../fetchSystem/handlers/providers/instagram').fetch({ url: fresh.url });
+            if (ig?.images?.length) {
+              urls = ig.images.slice(0, 4);
+              const patch = { 'metadata.images': urls, 'metadata.photoPost': true, thumbnail: fresh.thumbnail || ig.image || null };
+              if (ig.description && (!fresh.description || /^instagram (post|reel)$/i.test(fresh.description))) patch.description = ig.description;
+              if (ig.title && /^instagram (post|reel)/i.test(fresh.title || '')) patch.title = ig.title;
+              if (fresh.contentType !== 'image') patch.contentType = 'image';
+              await Save.findByIdAndUpdate(saveId, patch);
+              Object.assign(fresh, { description: patch.description || fresh.description, title: patch.title || fresh.title });
+              logger.info(`[mediaProcessor ${saveId}] photo post images fetched on the fly: ${urls.length} (${ig.provider})`);
+            } else {
+              fetchNote = 'Instagram returned no images — the session cookies on the server are missing or expired.';
+            }
+          } catch (err) { fetchNote = `Instagram fetch failed: ${err.message}`; }
+        }
         const parts = [];
         for (const [i, u] of urls.entries()) {
           try { const t = await describePhoto(u); if (t) parts.push(urls.length > 1 ? `--- Image ${i + 1} ---\n${t}` : t); }
           catch (err) { logger.warn(`[mediaProcessor ${saveId}] photo read failed (${i + 1}): ${err.message}`); }
         }
         frameOcr = parts.join('\n\n');
-        await Save.findByIdAndUpdate(saveId, { 'processingStages.frameOCR': { completed: parts.length > 0, error: parts.length ? null : 'Could not read the photos.', completedAt: parts.length ? new Date() : null }, ...(frameOcr ? { 'aiAnalysis.visualText': frameOcr.slice(0, 4000) } : {}) });
+        await Save.findByIdAndUpdate(saveId, { 'processingStages.frameOCR': { completed: parts.length > 0, error: parts.length ? null : (fetchNote || (urls.length ? 'Could not read the photos.' : 'No images to read.')), completedAt: parts.length ? new Date() : null }, ...(frameOcr ? { 'aiAnalysis.visualText': frameOcr.slice(0, 4000) } : {}) });
         logger.info(`[mediaProcessor ${saveId}] photo post read: ${frameOcr.length} chars from ${parts.length}/${urls.length} image(s)`);
       }
       if (!frameOcr && !isPhotoPost && (!mp4Ready || frameOcrFailed) && fresh.thumbnail) {
