@@ -35,6 +35,7 @@ export default function SavedMap({ onNavigate }) {
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(map.current);
       map.current.attributionControl.setPrefix('');
       map.current.on('click', () => setActive(null));
+      window.addEventListener('resize', () => map.current && map.current.invalidateSize());
     }
     if (layer.current) layer.current.remove();
     layer.current = L.layerGroup().addTo(map.current);
@@ -63,7 +64,7 @@ export default function SavedMap({ onNavigate }) {
 
   const counted = data ? data.pins.filter((p) => status === 'all' || p.intentStatus === status).length : 0;
   return (
-    <div className="wt-screen has-nav" style={{ padding: 0, overflow: 'hidden', position: 'relative' }}>
+    <div className="wt-screen" style={{ padding: 0, overflow: 'hidden', position: 'relative', height: '100dvh', maxHeight: '100dvh', paddingBottom: 'calc(84px + env(safe-area-inset-bottom, 0px))', boxSizing: 'border-box' }}>
       <div style={{ padding: 'var(--pad-top) var(--pad-screen) 10px', display: 'flex', flexDirection: 'column', gap: 10, background: 'var(--bg)', zIndex: 1000, position: 'relative' }}>
         <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
           <h1 className="wt-title" style={{ whiteSpace: 'nowrap' }}>Wanna Try</h1>
@@ -74,13 +75,14 @@ export default function SavedMap({ onNavigate }) {
         </div>
         <span style={{ fontSize: 12.5, color: 'var(--faint)' }}>{data ? `${counted} on the map · ${data.total - data.pins.length} without a place` : 'Placing your saves…'}</span>
       </div>
-      <div ref={mapEl} style={{ flex: 1, minHeight: 320, background: 'var(--card-2)' }} />
+      <div style={{ flex: 1, minHeight: 0, position: 'relative', overflow: 'hidden', touchAction: 'none' }}>
+      <div ref={mapEl} style={{ position: 'absolute', inset: 0, background: 'var(--card-2)' }} />
       <button type="button" aria-label="Where am I" onClick={locate}
-        style={{ position: 'absolute', right: 16, bottom: active ? 210 : 122, width: 44, height: 44, borderRadius: 22, border: '1px solid var(--line)', background: 'var(--card)', color: 'var(--teal)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(21,32,30,.12)', cursor: 'pointer', zIndex: 1000 }}>
+        style={{ position: 'absolute', right: 16, bottom: active ? 118 : 18, width: 44, height: 44, borderRadius: 22, border: '1px solid var(--line)', background: 'var(--card)', color: 'var(--teal)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(21,32,30,.12)', cursor: 'pointer', zIndex: 1000 }}>
         <Icon name="locate" size={20} />
       </button>
       {active && (
-        <div style={{ position: 'absolute', left: 12, right: 12, bottom: 104, background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 14, padding: '12px 14px', boxShadow: '0 8px 24px rgba(21,32,30,.14)', zIndex: 1000, display: 'flex', gap: 12, alignItems: 'center' }}>
+        <div style={{ position: 'absolute', left: 12, right: 12, bottom: 12, background: 'var(--card)', border: '1px solid var(--line)', borderRadius: 14, padding: '12px 14px', boxShadow: '0 8px 24px rgba(21,32,30,.14)', zIndex: 1000, display: 'flex', gap: 12, alignItems: 'center' }}>
           <span className={`wt-tile ${getCategoryTile(active.category).kind}`}><Icon name={getCategoryTile(active.category).icon} size={20} /></span>
           <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
             <span className="wt-row-title" style={{ fontSize: 16.5 }}>{active.title}</span>
@@ -96,6 +98,7 @@ export default function SavedMap({ onNavigate }) {
           <p className="wt-sub" style={{ margin: 0 }}>Saves with a place get a pin. Save a cafe or a trip and it shows up here.</p>
         </div>
       )}
+      </div>
     </div>
   );
 }

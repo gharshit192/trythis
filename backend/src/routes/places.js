@@ -27,7 +27,8 @@ router.get('/picks', authMiddleware, async (req, res) => {
     const me = await User.findById(req.user.id).select('interests preferences location settings.location').lean();
     const limit = Math.min(parseInt(req.query.limit) || 15, 40);
     const city = (req.query.city || me?.location?.city || me?.settings?.location?.city || '').trim();
-    const mine = new Set((await Save.find({ userId: req.user.id, status: 'active', 'metadata.placeId': { $exists: true } }).select('metadata.placeId').lean()).map((s) => String(s.metadata.placeId)));
+    const mineSaves = await Save.find({ userId: req.user.id, status: 'active', $or: [{ 'metadata.placeId': { $exists: true } }, { placeId: { $ne: null } }] }).select('metadata.placeId placeId').lean();
+    const mine = new Set(mineSaves.flatMap((s) => [s.metadata?.placeId, s.placeId].filter(Boolean).map(String)));
     const q = { status: 'active' };
     if (city) q.city = new RegExp(city.split(/[\s,]+/)[0], 'i');
     let places = await Place.find(q).sort({ saveCount: -1, updatedAt: -1 }).limit(120).lean();
@@ -36,8 +37,13 @@ router.get('/picks', authMiddleware, async (req, res) => {
     const vibes = new Set(me?.preferences?.vibes || []);
     const budget = me?.preferences?.budget;
     const interestLabel = (cat) => Object.entries(INTEREST_CATS).find(([, cats]) => cats.includes(cat))?.[0]?.replace('_', ' ');
-    const scored = places.filter((p) => !mine.has(String(p._id))).map((p) => {
-      let score = Math.log1p(p.saveCount || 0);
+    // A pick must have something to say: a take or chips, and a real venue name
+    // (not a city standing in for one, which the resolver creates from bare
+    // "Hyderabad"-style saves).
+    const thin = (p) => !(p.aggregatedTake?.text || (p.aggregatedTake?.chips || []).length || (p.vibeTags || []).length);
+    const cityish = (p) => { const n = String(p.canonicalName || '').trim().toLowerCase(); return !n || n === String(p.city || '').trim().toLowerCase() || n === String(p.region || '').trim().toLowerCase() || /^[a-z\s]+,\s*[a-z\s]+$/.test(n) && !p.aggregatedTake?.text; };
+    const scored = places.filter((p) => !mine.has(String(p._id)) && !thin(p) && !cityish(p)).map((p) => {
+      let score = Math.log1p(p.saveCount || 0) + (p.source === 'seed' ? 1 : 0) + (p.aggregatedTake?.text ? 0.8 : 0);
       const reasons = [];
       if (wantCats.has(p.category)) { score += 3; reasons.push(`Because you picked ${interestLabel(p.category)}`); }
       const chips = [...(p.aggregatedTake?.chips || []), ...(p.vibeTags || [])].join(' ').toLowerCase();

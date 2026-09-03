@@ -127,7 +127,13 @@ export default function Home({ onNavigate, payload, nearbySaves = [] }) {
               <>
                 <span className="wt-eyebrow" style={{ color: 'var(--cat-food)', marginBottom: 10 }}>You might like this</span>
                 <p style={{ fontFamily: 'var(--font-display)', fontSize: 26, lineHeight: 1.1, margin: '0 0 6px' }}>{p.canonicalName}</p>
-                <p className="wt-row-meta" style={{ margin: '0 0 8px' }}>{[p.city, ...(p.aggregatedTake?.chips || []).slice(0, 2)].filter(Boolean).join(' · ')}</p>
+                <p className="wt-row-meta" style={{ margin: '0 0 10px' }}>{[p.category ? p.category.replace(/_/g, ' ') : null, p.city, p.saveCount ? `saved by ${p.saveCount}` : null].filter(Boolean).join(' · ')}</p>
+                {p.aggregatedTake?.text && <p style={{ fontSize: 15, lineHeight: 1.5, margin: '0 0 10px' }}>{p.aggregatedTake.text.length > 220 ? `${p.aggregatedTake.text.slice(0, 220).replace(/\s\S*$/, '')}…` : p.aggregatedTake.text}</p>}
+                {[...new Set([...(p.aggregatedTake?.chips || []), ...(p.vibeTags || [])])].length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
+                    {[...new Set([...(p.aggregatedTake?.chips || []), ...(p.vibeTags || [])])].slice(0, 6).map((c) => <span key={c} className="wt-chip sm" style={{ cursor: 'default', fontSize: 12.5 }}>{c}</span>)}
+                  </div>
+                )}
                 <p style={{ fontSize: 14.5, color: 'var(--teal-d)', margin: '0 0 18px' }}>✨ {p.reason}</p>
                 <div style={{ display: 'flex', gap: 10 }}>
                   <Button small onClick={surpriseSaved ? another : keepSurprise} icon={surpriseSaved ? 'check' : 'bookmark'}>{surpriseSaved ? 'Saved — next' : 'Wanna try'}</Button>
