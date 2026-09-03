@@ -38,6 +38,7 @@ export default function ShareIntake({ onNavigate, payload }) {
           if (title) fd.append('title', title);
           const result = await api.analyzeScreenshotBundle(fd);
           if (result?.status !== 'success') throw new Error(result?.error?.message || 'Could not read those.');
+          if (result.saveId) { onNavigate('save-detail', { id: result.saveId, refresh: Date.now() }); return; }
           const saved = await api.saveScreenshotBundle(result.sessionId, result.summary);
           const doc = saved?.save || saved?.data || null;
           onNavigate('screenshot-summary', { sessionId: result.sessionId, summary: result.summary, saveId: doc?._id || null, autoSaved: !!doc?._id });

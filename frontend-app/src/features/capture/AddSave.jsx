@@ -157,10 +157,13 @@ function Shots({ onBack, onNavigate, collections }) {
       if (col) fd.append('collectionId', col);
       const result = await api.analyzeScreenshotBundle(fd);
       if (result?.status !== 'success') throw new Error(result?.error?.message || 'Could not read those.');
+      if (leftRef.current) return;
+      // The save already exists on the server and the read continues there; the
+      // item page shows it finishing and the phone gets a push when it's done.
+      if (result.saveId) return onNavigate('save-detail', { id: result.saveId, refresh: Date.now() });
       setPhase('saving');
       const saved = await api.saveScreenshotBundle(result.sessionId, result.summary);
       const doc = saved?.save || saved?.data || null;
-      if (leftRef.current) return; // user chose to continue in the background; the save is in the list now
       onNavigate('screenshot-summary', { sessionId: result.sessionId, summary: result.summary, saveId: doc?._id || null, autoSaved: !!doc?._id });
     } catch (e) { if (!leftRef.current) { setError(e.message); setBusy(false); setPhase(null); } }
   };
@@ -170,7 +173,7 @@ function Shots({ onBack, onNavigate, collections }) {
   const [elapsed, setElapsed] = useState(0);
   const leftRef = useRef(false);
   useEffect(() => { if (!busy) { setElapsed(0); return undefined; } const t = setInterval(() => setElapsed((s) => s + 1), 1000); return () => clearInterval(t); }, [busy]);
-  const stage = phase === 'saving' ? 'Saving it to your list…' : elapsed < 4 ? `Uploading ${files.length} photo${files.length === 1 ? '' : 's'}…` : elapsed < 25 ? 'Reading the text — Hindi and English…' : elapsed < 60 ? 'Working out what it says…' : 'Almost there — a long document takes a minute or two…';
+  const stage = phase === 'saving' ? 'Saving it to your list…' : elapsed < 6 ? `Uploading ${files.length} photo${files.length === 1 ? '' : 's'}…` : 'Storing them — the read continues on the server…';
   const leave = () => { leftRef.current = true; onNavigate('home', { refresh: true }); };
 
   return (
@@ -211,7 +214,7 @@ function Shots({ onBack, onNavigate, collections }) {
             <span style={{ fontSize: 12.5, color: 'var(--teal)', fontVariantNumeric: 'tabular-nums' }}>{Math.floor(elapsed / 60) ? `${Math.floor(elapsed / 60)}m ` : ''}{elapsed % 60}s</span>
           </div>
           <div style={{ height: 4, borderRadius: 2, background: 'rgba(14,124,123,.18)', overflow: 'hidden' }}><div style={{ height: '100%', width: `${Math.min(92, 8 + elapsed * 2.2)}%`, background: 'var(--teal)', transition: 'width 1s linear' }} /></div>
-          <span style={{ fontSize: 12.5, color: 'var(--teal-d)' }}>Usually 20–60 seconds. You don't have to wait here.</span>
+          <span style={{ fontSize: 12.5, color: 'var(--teal-d)' }}>A few seconds. The reading itself finishes on the server; you'll get a notification.</span>
         </div>
       )}
       <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 10 }}>

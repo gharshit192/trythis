@@ -878,63 +878,68 @@ router.post('/screenshot-bundle',
 
       logger.info(`[screenshot-bundle] Processing ${files.length} files for user ${req.user.id}`);
 
+      // 1) Store the images and create the save NOW, so it is in the list within
+      //    seconds and survives the phone leaving, sleeping or losing the network.
+      const pipelineResult = await screenshotPipeline.processFiles(files, {
+        userId: req.user.id, title: req.body.title || '', source: 'screenshot_bundle', category: 'other',
+      });
+      const filePaths = pipelineResult.screenshots.map((s) => {
+        const filename = path.basename(s.url);
+        const localPath = path.join(screenshotPipeline.__dirs.FULL_DIR, filename);
+        return require('fs').existsSync(localPath) ? localPath : s.url;
+      });
+      const sessionId = uuidv4();
+      const thumbnails = pipelineResult.screenshots.map((s) => s.thumbnailUrl);
+      const save = await Save.create({
+        userId: req.user.id,
+        title: (req.body.title || '').trim() || (files.length === 1 ? 'Reading your screenshot…' : `Reading ${files.length} screenshots…`),
+        source: 'screenshot', contentType: 'image', category: 'other', status: 'active',
+        thumbnail: files.length === 1 ? (thumbnails[0] || null) : null,
+        processingStatus: 'processing',
+        screenshots: pipelineResult.screenshots.map((s, i) => ({ url: s.url, thumbnailUrl: s.thumbnailUrl, order: i })),
+        metadata: { screenshotCount: files.length, screenshotSessionId: sessionId, thumbnailCount: thumbnails.length, images: pipelineResult.screenshots.map((s) => s.url), userTitle: req.body.title || null, collectionId: req.body.collectionId || null },
+      });
+      if (req.body.collectionId) {
+        try { await require('../services/autoCollectionEngine').reconcileSaveCollections?.(save._id, [], [req.body.collectionId]); } catch {}
+      }
+
+      // 2) The read runs detached from the response.
       const work = (async () => {
-        const pipelineResult = await screenshotPipeline.processFiles(files, {
-          userId: req.user.id,
-          title: req.body.title || '',
-          source: 'screenshot_bundle',
-          category: 'other'
-        });
-
-        const filePaths = pipelineResult.screenshots.map(s => {
-          const filename = path.basename(s.url);
-          const localPath = path.join(screenshotPipeline.__dirs.FULL_DIR, filename);
-          // Cloudinary-hosted screenshots have no local file — pass the remote URL
-          // so Claude can fetch them directly. Local saves use the on-disk path.
-          return require('fs').existsSync(localPath) ? localPath : s.url;
-        });
-
-        const sessionId = uuidv4();
         const start = Date.now();
-        const summary = await screenshotBundle.analyzeBundle(filePaths, sessionId, req.body.title || '');
-        const processingTimeMs = Date.now() - start;
-
-        if (!summary) {
-          const err = new Error('AI processing failed, please retry');
-          err.code = 'ANALYSIS_FAILED';
+        try {
+          const summary = await screenshotBundle.analyzeBundle(filePaths, sessionId, req.body.title || '');
+          if (!summary) throw new Error('AI processing failed, please retry');
+          screenshotBundle.saveSession(sessionId, filePaths, summary, thumbnails);
+          const detectedCategory = (() => {
+            const c = String(summary.detectedTheme || '').toLowerCase();
+            if (['food', 'shopping', 'tech', 'finance', 'travel', 'other'].includes(c)) return c;
+            if (['cafe', 'cafes', 'restaurant', 'restaurants', 'recipe', 'recipes'].includes(c)) return 'food';
+            if (['hotel', 'hotels', 'stay', 'stays', 'place', 'places'].includes(c)) return 'travel';
+            return 'other';
+          })();
+          await Save.findByIdAndUpdate(save._id, {
+            title: (req.body.title || '').trim() || summary.autoTitle || save.title,
+            category: detectedCategory,
+            tags: [...new Set((summary.categories || []).flatMap((c) => (c.items || []).flatMap((i) => i.tags || [])).map((t) => String(t).trim()).filter(Boolean))].slice(0, 12),
+            aiAnalysis: { summary: summary.masterSummary?.oneLiner || '', keyPoints: summary.masterSummary?.bullets || [], structuredData: null, screenshotAnalysis: { type: 'bundle', data: summary, confidence: summary.confidence || 0.8, allMatches: [] }, processedAt: new Date() },
+            processingStatus: 'done',
+          });
+          logger.info(`[screenshot-bundle] ${save._id} read in ${Date.now() - start}ms: "${summary.autoTitle}"`);
+          try { await require('../services/notificationService').sendJobNotification(req.user.id, { type: 'JOB_COMPLETED', saveId: save._id.toString() }); } catch (e) { logger.warn(`[screenshot-bundle] notify failed: ${e.message}`); }
+          return { status: 'success', sessionId, saveId: save._id, summary, imageCount: files.length, thumbnails, processingTimeMs: Date.now() - start };
+        } catch (err) {
+          logger.error(`[screenshot-bundle] ${save._id} read failed: ${err.message}`);
+          await Save.findByIdAndUpdate(save._id, { processingStatus: 'failed', title: (req.body.title || '').trim() || (files.length === 1 ? 'Screenshot' : `${files.length} screenshots`) }).catch(() => {});
+          try { await require('../services/notificationService').sendJobNotification(req.user.id, { type: 'JOB_FAILED', saveId: save._id.toString(), message: 'We could not read those screenshots. Open the save and tap Read it again.' }); } catch {}
           throw err;
         }
-
-        screenshotBundle.saveSession(sessionId, filePaths, summary, pipelineResult.screenshots.map(s => s.thumbnailUrl));
-        logger.info(`[screenshot-bundle] Completed in ${processingTimeMs}ms: "${summary.autoTitle}"`);
-
-        return {
-          status: 'success',
-          sessionId,
-          summary,
-          imageCount: files.length,
-          thumbnails: pipelineResult.screenshots.map(s => s.thumbnailUrl),
-          processingTimeMs
-        };
       })();
-
-      bundleDedup.set(dedupKey, { promise: work, at: Date.now() });
-      // Swallow unhandled-rejection noise for joiners that never arrive.
+      bundleDedup.set(dedupKey, { promise: Promise.resolve({ status: 'success', sessionId, saveId: save._id, processing: true }), at: Date.now() });
       work.catch(() => {});
-      for (const [k, v] of bundleDedup) {
-        if (Date.now() - v.at > BUNDLE_DEDUP_TTL_MS) bundleDedup.delete(k);
-      }
+      for (const [k, v] of bundleDedup) { if (Date.now() - v.at > BUNDLE_DEDUP_TTL_MS) bundleDedup.delete(k); }
 
-      let payload;
-      try {
-        payload = await work;
-      } catch (err) {
-        bundleDedup.delete(dedupKey);
-        if (err.code === 'ANALYSIS_FAILED') {
-          return res.status(500).json({ status: 'error', error: { code: 'ANALYSIS_FAILED', message: err.message } });
-        }
-        throw err;
-      }
+      // 3) Answer now. The client opens the save and watches it finish.
+      const payload = { status: 'success', sessionId, saveId: save._id, processing: true, imageCount: files.length, thumbnails };
       res.json(payload);
     } catch (err) {
       logger.error(`screenshot-bundle failed: ${err.message}`, { stack: err.stack });

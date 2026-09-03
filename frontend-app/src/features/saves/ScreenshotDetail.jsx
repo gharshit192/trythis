@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import api from '../../api';
 import Icon from '../../components/Icon';
 import Button from '../../components/Button';
@@ -57,6 +57,11 @@ function List({ title, items }) {
 
 export default function ScreenshotDetail({ save: initial, onNavigate, onBack }) {
   const [save, setSave] = useState(initial);
+  useEffect(() => { setSave(initial); }, [initial]);
+  const reading = ['pending', 'processing'].includes(save.processingStatus);
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => { if (!reading) return undefined; const t = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(t); }, [reading]);
+  const secs = Math.max(0, Math.round((now - new Date(save.createdAt).getTime()) / 1000));
   const [menu, setMenu] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [toast, setToast] = useState(null);
@@ -142,14 +147,24 @@ export default function ScreenshotDetail({ save: initial, onNavigate, onBack }) 
       <h1 className="wt-title lg" style={{ marginBottom: 10 }}>{save.title || 'Untitled'}</h1>
       <span style={{ fontSize: 14.5, color: 'var(--mute)', marginBottom: 22 }}>Saved {relativeTime(save.createdAt).toLowerCase()}{data.date ? ` · dated ${data.date}` : ''}</span>
 
-      {tryable
+      {reading && (
+        <div style={{ marginBottom: 22, padding: '14px', borderRadius: 14, background: 'var(--teal-soft)', display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span className="wt-spinner" />
+            <span style={{ flex: 1, fontSize: 14.5, fontWeight: 500, color: 'var(--teal-d)' }}>{secs < 25 ? 'Reading the text — Hindi and English…' : secs < 70 ? 'Working out what it says…' : 'Almost there — a long document takes a minute or two…'}</span>
+            <span style={{ fontSize: 12.5, color: 'var(--teal)', fontVariantNumeric: 'tabular-nums' }}>{Math.floor(secs / 60) ? `${Math.floor(secs / 60)}m ` : ''}{secs % 60}s</span>
+          </div>
+          <span style={{ fontSize: 12.5, color: 'var(--teal-d)' }}>You can leave — it's saved, and your phone will tell you when it's ready.</span>
+        </div>
+      )}
+      {!reading && (tryable
         ? <div style={{ marginBottom: 24 }}><StatusControl value={save.intentStatus || 'saved'} onChange={setIntent} /></div>
         : (
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24, padding: '10px 12px', borderRadius: 12, background: 'var(--card-2)', fontSize: 13.5, color: 'var(--mute)' }}>
             <Icon name="book" size={16} /><span style={{ flex: 1 }}>A document, not a place to try — keep it, set a reminder, or mark it done.</span>
             <button type="button" onClick={() => setIntent(save.intentStatus === 'dismissed' ? 'saved' : 'dismissed')} style={{ background: 'none', border: 0, color: 'var(--teal)', fontWeight: 600, fontSize: 13.5, cursor: 'pointer', fontFamily: 'inherit' }}>{save.intentStatus === 'dismissed' ? 'Keep' : 'Done'}</button>
           </div>
-        )}
+        ))}
 
       {summary && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 20 }}>

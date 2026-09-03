@@ -84,6 +84,19 @@ export default function SaveDetail({ onNavigate, onBack, payload }) {
     api.getRecommendations(id).then((r) => alive && r?.status === 'success' && setRecs(r.data || [])).catch(() => {});
     return () => { alive = false; };
   }, [id, payload?.refresh]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Still being read on the server → refresh every 4 s (up to 5 min) so the
+  // details appear the moment they exist.
+  useEffect(() => {
+    if (!save || !['pending', 'processing'].includes(save.processingStatus)) return undefined;
+    let ticks = 0;
+    const t = setInterval(async () => {
+      ticks += 1;
+      const r = await api.getSaveById(id, { force: true }).catch(() => null);
+      if (r?.status === 'success') setSave(r.data);
+      if (ticks > 75 || (r?.status === 'success' && !['pending', 'processing'].includes(r.data.processingStatus))) clearInterval(t);
+    }, 4000);
+    return () => clearInterval(t);
+  }, [id, save?.processingStatus]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const flash = (t) => { setToast(t); setTimeout(() => setToast(null), 1800); };
   const setIntent = async (next) => {
