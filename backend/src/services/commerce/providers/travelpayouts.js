@@ -6,6 +6,7 @@
 const logger = require('../../../utils/logger');
 
 const configured = () => !!process.env.TRAVELPAYOUTS_TOKEN;
+const AIRLINE = { '6E': 'IndiGo', AI: 'Air India', IX: 'Air India Express', UK: 'Vistara', SG: 'SpiceJet', QP: 'Akasa', G8: 'Go First', S5: 'Star Air', '9I': 'Alliance Air', EK: 'Emirates', TG: 'Thai Airways', FD: 'Thai AirAsia', VJ: 'VietJet' };
 const token = () => process.env.TRAVELPAYOUTS_TOKEN;
 const marker = () => process.env.TRAVELPAYOUTS_MARKER || '';
 const getJson = async (url) => {
@@ -41,10 +42,17 @@ const iso = (d) => new Date(d).toISOString().slice(0, 10);
 const checkOut = (checkIn, nights) => { const d = new Date(checkIn); d.setDate(d.getDate() + nights); return iso(d); };
 
 // Hotels with cached live prices for a city and dates (Hotellook).
+// The Hotellook price endpoint answered 404 on 3 Sep 2026 even with a valid
+// token; until the replacement endpoint is confirmed (HOTELLOOK_CACHE_URL), a
+// 404 switches hotel lookups off for this process so cards never wait on it.
+let hotelsDisabledUntil = 0;
 const hotels = async ({ city, checkIn, nights = 1, adults = 2, limit = 8 }) => {
-  if (!configured()) return [];
+  if (!configured() || Date.now() < hotelsDisabledUntil) return [];
   const out = checkOut(checkIn, nights);
-  const j = await getJson(`https://engine.hotellook.com/api/v2/cache.json?location=${encodeURIComponent(city)}&checkIn=${checkIn}&checkOut=${out}&adults=${adults}&currency=inr&limit=${limit}&token=${token()}`);
+  const base = process.env.HOTELLOOK_CACHE_URL || 'https://engine.hotellook.com/api/v2/cache.json';
+  let j;
+  try { j = await getJson(`${base}?location=${encodeURIComponent(city)}&checkIn=${checkIn}&checkOut=${out}&adults=${adults}&currency=inr&limit=${limit}&token=${token()}`); }
+  catch (e) { if (/^404 /.test(e.message)) { hotelsDisabledUntil = Date.now() + 6 * 3600000; logger.warn('[travelpayouts] hotel price endpoint 404 — hotel lookups paused for 6h'); return []; } throw e; }
   const rows = Array.isArray(j) ? j : [];
   return rows.filter((h) => h.hotelName && (h.priceFrom || h.priceAvg)).map((h) => {
     const total = Number(h.priceFrom || h.priceAvg); const perNight = Math.round(total / nights);
@@ -68,10 +76,10 @@ const flights = async ({ origin, city, date, adults = 1, limit = 4 }) => {
     const dep = String(f.departure_at || '').slice(11, 16); const hrs = f.duration ? `${Math.floor(f.duration / 60)}h${f.duration % 60 ? ` ${f.duration % 60}m` : ''}` : null;
     return {
       type: 'TRANSPORT', provider: 'aviasales', providerOfferId: `${f.airline}${f.flight_number}-${f.departure_at}`, title: `${f.airline} ${f.flight_number || ''} ${o.code} → ${d.code}`.replace(/\s+/g, ' ').trim(),
-      description: [dep ? `dep ${dep}` : null, hrs, f.transfers ? `${f.transfers} stop${f.transfers > 1 ? 's' : ''}` : 'non-stop'].filter(Boolean).join(' · '),
+      description: [dep ? `dep ${dep}` : null, hrs, f.transfers ? `${f.transfers} stop${f.transfers > 1 ? 's' : ''}` : 'non-stop', f.gate ? `via ${f.gate}` : null].filter(Boolean).join(' · '),
       price: Number(f.price), currency: 'INR', priceLabel: `₹${Number(f.price).toLocaleString('en-IN')}`, source: 'affiliate',
       metadata: { mode: 'flight', carrier: f.airline, date },
-      deeplink: `https://www.aviasales.com${f.link || `/search/${o.code}${date.slice(8, 10)}${date.slice(5, 7)}${d.code}${adults}`}${(f.link || '').includes('?') ? '&' : '?'}${marker() ? `marker=${marker()}` : ''}`,
+      deeplink: `https://www.aviasales.com${f.link || `/search/${o.code}${date.slice(8, 10)}${date.slice(5, 7)}${d.code}${adults}`}${marker() ? `${(f.link || '').includes('?') ? '&' : '?'}marker=${marker()}` : ''}`,
     };
   });
 };
