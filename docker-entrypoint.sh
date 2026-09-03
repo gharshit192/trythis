@@ -18,7 +18,7 @@ YTDLP_BIN="${YTDLP_BIN:-/usr/local/bin/yt-dlp}"
 
 YTDLP_URL="${YTDLP_URL:-https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp}"
 
-if [ "${YTDLP_AUTO_UPDATE:-true}" = "true" ]; then
+refresh_ytdlp() {
   BEFORE="$($YTDLP_BIN --version 2>/dev/null || echo unknown)"
   echo "[entrypoint] yt-dlp before: $BEFORE"
 
@@ -44,6 +44,14 @@ if [ "${YTDLP_AUTO_UPDATE:-true}" = "true" ]; then
     # fails to download — which is exactly how this went unnoticed for months.
     echo "[entrypoint] WARNING: yt-dlp update FAILED — still running $BEFORE, video extraction may break"
   fi
+}
+
+# The refresh used to run BEFORE the server started, so every cold start on
+# Render waited on a GitHub download (up to 90 s) before a single request could
+# be answered. It now runs in the background; the baked-in binary serves any
+# video job that arrives in the meantime.
+if [ "${YTDLP_AUTO_UPDATE:-true}" = "true" ]; then
+  refresh_ytdlp &
 else
   echo "[entrypoint] yt-dlp auto-update disabled (YTDLP_AUTO_UPDATE=false)"
 fi

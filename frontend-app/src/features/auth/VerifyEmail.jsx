@@ -31,6 +31,7 @@ export default function VerifyEmail({ onNavigate, payload }) {
     if (r?.status === 'success') {
       if (r.data.verified) return finish();
       setSentState(r.data.sent ? 'sent' : 'unsent');
+      if (!r.data.sent && r.data.reason && r.data.reason !== 'not_configured') setMsg(`Mail not sent: ${r.data.reason}`);
       if (r.data.otp) setMsg(`Dev build — your code is ${r.data.otp}`);
       setCooldown(30);
     } else setMsg(r?.error?.message || "Couldn't send the code. Try again in a moment.");

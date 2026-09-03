@@ -60,6 +60,8 @@ app.get('/status', (req, res) => {
     db: process.env.DATABASE_URL ? 'SET' : 'NOT SET',
     redis: process.env.REDIS_URL ? 'SET' : 'NOT SET',
     jwt: process.env.JWT_SECRET ? 'SET' : 'NOT SET',
+    email: require('./services/emailService').emailProvider(),
+    emailFrom: process.env.RESEND_FROM || process.env.EMAIL_FROM || 'Wanna Try <onboarding@resend.dev> (sandbox: delivers only to the Resend account owner)',
     frontend: process.env.FRONTEND_URL || 'NOT SET',
   });
 });

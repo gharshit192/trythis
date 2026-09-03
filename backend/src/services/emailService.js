@@ -23,16 +23,29 @@ const sendEmail = async ({ to, subject, html, text }) => {
       headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ from, to: [to], subject, html, text }),
     });
-    if (!r.ok) { logger.error(`[email] resend ${r.status}: ${(await r.text()).slice(0, 200)}`); return false; }
+    if (!r.ok) {
+      const body = (await r.text()).slice(0, 300);
+      logger.error(`[email] resend ${r.status}: ${body}`);
+      // Resend's sandbox sender only delivers to the account owner; say so in
+      // words the admin can act on instead of a silent false.
+      let reason = `resend_${r.status}`;
+      try { const j = JSON.parse(body); if (j.message) reason = j.message; } catch {}
+      sendEmail.lastError = reason;
+      return false;
+    }
+    sendEmail.lastError = null;
     return true;
   }
   if (process.env.SMTP_HOST) {
-    await transporter.sendMail({ from, to, subject, html, text });
-    return true;
+    try { await transporter.sendMail({ from, to, subject, html, text }); sendEmail.lastError = null; return true; }
+    catch (e) { logger.error(`[email] smtp: ${e.message}`); sendEmail.lastError = `smtp: ${e.message}`; return false; }
   }
   logger.warn(`[email] no RESEND_API_KEY or SMTP_HOST — not sending "${subject}" to ${to}`);
+  sendEmail.lastError = 'not_configured';
   return false;
 };
+sendEmail.lastError = null;
+const emailProvider = () => (process.env.RESEND_API_KEY ? 'resend' : process.env.SMTP_HOST ? 'smtp' : 'none');
 
 const sendVerificationEmail = async (user, otp) => sendEmail({
   to: user.email,
@@ -99,6 +112,7 @@ const sendNotificationEmail = async (user, notification) => {
 
 module.exports = {
   sendEmail,
+  emailProvider,
   sendVerificationEmail,
   sendNotificationEmail,
   transporter,

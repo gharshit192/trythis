@@ -5,7 +5,7 @@ const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const User = require('../models/User');
 const authMiddleware = require('../middleware/auth');
-const { sendVerificationEmail } = require('../services/emailService');
+const { sendVerificationEmail, sendEmail } = require('../services/emailService');
 const { loginLimiter, signupLimiter, forgotPasswordLimiter } = require('../middleware/rateLimiter');
 const logger = require('../utils/logger');
 
@@ -207,7 +207,7 @@ router.post('/send-verification', authMiddleware, async (req, res) => {
     if (!user) return res.status(404).json({ status: 'error', error: { code: 'NOT_FOUND', message: 'User not found' } });
     if (user.emailVerified) return res.json({ status: 'success', data: { verified: true, sent: false } });
     const { sent, otp } = await issueVerificationCode(user);
-    const data = { verified: false, sent };
+    const data = { verified: false, sent, reason: sent ? null : (sendEmail.lastError || 'not_configured') };
     if (!isProd()) data.otp = otp;
     res.json({ status: 'success', data });
   } catch (e) {
