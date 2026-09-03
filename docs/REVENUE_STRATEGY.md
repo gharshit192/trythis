@@ -1,6 +1,6 @@
 # Wanna Try — Revenue Strategy
 
-Companion to `PRODUCT_STRATEGY.md` (what we build) and `MONETIZATION_ARCHITECTURE.md` (how offers, tracking and redirects are implemented). Status: **Phase 1.** The offers layer and the "Complete your trip" screens are built (3 Sep 2026) and show partner links; commissions start only when affiliate ids are added to env, and live prices when Amadeus keys are added. See `MONETIZATION_ARCHITECTURE.md` §Implementation status.
+Companion to `PRODUCT_STRATEGY.md` (what we build) and `MONETIZATION_ARCHITECTURE.md` (how offers, tracking and redirects are implemented). Status: **Phase 1.** The offers layer and the "Complete your trip" screens are built (3 Sep 2026) and show partner links; commissions start only when affiliate ids are added to env, and live prices when the Travelpayouts token is added. See `MONETIZATION_ARCHITECTURE.md` §Implementation status.
 
 ## The rule above every model
 
@@ -19,7 +19,7 @@ Today's data already carries the hooks: travel saves have destinations, day coun
 ### 1. Travel affiliate — HIGH, Phase 2
 - **What:** hotels, activities, trek bookings, transport, tickets, shown inside a trip ("Complete your trip": Stay · Experiences · Transport) and on travel item pages.
 - **Model:** redirect to partner; commission on conversion where the partner supports it.
-- **Partners to evaluate (India first):** stays — Booking.com Affiliate, Agoda, MakeMyTrip/Goibibo affiliate (via networks like Cuelinks/EarnKaro), Airbnb (no public programme; skip); activities — Thrillophilia, Klook, GetYourGuide; treks — Indiahikes/Bikat (direct partnerships, not affiliate networks); transport — redBus, IRCTC via partners, Ola/Uber deep links (no commission; utility only). Start with the network that already aggregates Indian travel merchants (one integration, many partners).
+- **Partners (India first):** data + affiliate in one — **Travelpayouts** (Hotellook for stays, Aviasales for flights; free token, marker for commission; built); stays — Booking.com Affiliate, Agoda, MakeMyTrip/Goibibo via Cuelinks/EarnKaro (links built, ids pending); activities — Thrillophilia, Klook, GetYourGuide; treks — Indiahikes/Bikat (direct partnerships); transport — redBus (via network), IRCTC (utility). Amadeus Self-Service is no longer available to new developers (July 2026).
 - **UI:** hotel cards with price, rating, distance, and a reason ("near 3 places in your plan"); "Compare booking options" lists 2–3 partners with price and **View** → redirect. Hotels never become a top-level tab.
 - **Guardrail:** appears only on saves/plans with a destination or dated plan.
 
