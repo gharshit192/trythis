@@ -42,13 +42,15 @@ async function staysFor(dest, { checkIn, nights, adults, planHotels = [] }) {
     catch (e) { logger.warn(`[commerce] hotellook failed for ${city}: ${e.message}`); }
   }
   const liveOffers = live.map((h) => ({ ...h, area: h.area || city, reason: h.distanceKm != null ? `${h.distanceKm} km from the centre` : `In ${city}`, placement: 'stay_options',
-    options: [{ provider: 'Hotellook', priceLabel: h.priceLabel, deeplink: h.deeplink }, ...links.stayOptions(`${h.title} ${city}`, checkIn, nights)] }));
+    options: [{ provider: 'Hotellook', priceLabel: h.priceLabel, deeplink: h.deeplink }, ...links.stayOptions(`${h.title} ${city}`, checkIn, nights, adults)] }));
   const suggested = planHotels.slice(0, 5).map((h) => ({
     type: 'HOTEL', provider: 'suggested', title: h.name, area: h.area || null, city, price: rupees(h.approx), currency: 'INR', priceLabel: h.approx || null,
     rating: null, description: h.tier ? `${h.tier} · from the plan` : 'From the plan', reason: h.area ? `Near ${h.area}` : `In ${city}`, source: 'suggested', placement: 'stay_options',
-    options: links.stayOptions(`${h.name} ${city}`, checkIn, nights),
+    // Primary action: Google Hotels for the exact hotel (every site's price); compare rows below.
+    deeplink: links.googleHotelsUrl(`${h.name} ${city}`, checkIn, nights),
+    options: links.stayOptions(`${h.name} ${city}`, checkIn, nights, adults),
   }));
-  const cityWide = { type: 'HOTEL', provider: 'links', title: `All stays in ${city}`, city, description: 'Every budget, live prices on the partner', reason: `Search ${city}`, source: 'affiliate', placement: 'stay_options', options: links.stayOptions(city, checkIn, nights) };
+  const cityWide = { type: 'HOTEL', provider: 'links', title: `All stays in ${city}`, city, description: 'Every budget, live prices on the partner', reason: `Search ${city}`, source: 'affiliate', placement: 'stay_options', deeplink: links.bookingUrl(city, checkIn, nights, adults), options: links.stayOptions(city, checkIn, nights, adults) };
   return [...liveOffers, ...suggested, cityWide];
 }
 
