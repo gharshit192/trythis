@@ -52,6 +52,7 @@ const sendToUser = async (userId, payload) => {
     count === undefined ? payload : { ...payload, count }
   );
   const deadEndpoints = [];
+  const errors = [];   // what the push service answered, for the test endpoint and the logs
   let sent = 0;
 
   await Promise.all(
@@ -68,8 +69,9 @@ const sendToUser = async (userId, payload) => {
         if (err.statusCode === 404 || err.statusCode === 410) {
           deadEndpoints.push(sub.endpoint);
         } else {
-          logger.warn(`[pushService] send failed (${err.statusCode || '?'}) for user ${userId}: ${err.message}`);
+          logger.warn(`[pushService] send failed (${err.statusCode || '?'}) for user ${userId}: ${err.message} ${String(err.body || '').slice(0, 200)}`);
         }
+        errors.push({ endpoint: String(sub.endpoint).replace(/^(https?:\/\/[^/]+\/).{0,12}.*$/, '$1…'), statusCode: err.statusCode || null, message: String(err.body || err.message || '').slice(0, 300) });
       }
     })
   );
@@ -81,7 +83,7 @@ const sendToUser = async (userId, payload) => {
     );
   }
 
-  return { sent, pruned: deadEndpoints.length };
+  return { sent, pruned: deadEndpoints.length, errors, subscriptions: subs.length };
 };
 
 module.exports = { getPublicKey, isEnabled, sendToUser };

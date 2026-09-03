@@ -134,6 +134,21 @@ router.post('/test/time', async (req, res) => {
  *
  * GET /notifications/test/help
  */
+// POST /notifications/test/push — send one real push to the caller's own
+// devices and return exactly what each push service answered. The only way to
+// see an Apple/Google rejection (bad VAPID subject, key mismatch, expired
+// subscription) without reading server logs.
+router.post('/test/push', authMiddleware, async (req, res) => {
+  try {
+    const pushService = require('../services/pushService');
+    if (!pushService.isEnabled()) return res.json({ status: 'success', data: { enabled: false, reason: 'VAPID keys not set on the server' } });
+    const result = await pushService.sendToUser(req.user.id, { title: 'Wanna Try test', body: 'If you can read this, push works on this device.', url: '/', tag: 'wt-test' });
+    res.json({ status: 'success', data: { enabled: true, subject: (process.env.VAPID_SUBJECT || '').replace(/(.{4}).+(@|$)/, '$1…$2'), ...result } });
+  } catch (e) {
+    res.status(500).json({ status: 'error', error: { code: 'PUSH_TEST_FAILED', message: e.message } });
+  }
+});
+
 router.get('/test/help', (req, res) => {
   res.json({
     status: 'success',
