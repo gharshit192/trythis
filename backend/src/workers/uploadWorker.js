@@ -254,7 +254,11 @@ async function processLinkJob(job) {
   }
 
   // Determine if this is a video that needs async processing
-  const isVideoSource = url && /(?:instagram\.com|tiktok\.com|youtube\.com|youtu\.be|vimeo\.com|facebook\.com|fb\.watch|twitter\.com|x\.com|reddit\.com)/i.test(url);
+  const isVideoHost = url && /(?:instagram\.com|tiktok\.com|youtube\.com|youtu\.be|vimeo\.com|facebook\.com|fb\.watch|twitter\.com|x\.com|reddit\.com)/i.test(url);
+  // Links come as posts, pins and photos as often as reels. Anything from a
+  // video host, plus any image-first post (Pinterest, a photo post anywhere),
+  // goes through the media processor, which reads video OR images.
+  const isVideoSource = isVideoHost || (!!extra.isPhotoPost || (/pinterest\./i.test(url || '') && (extra.images || []).length > 0));
 
   // Update save with Stage 0 & Stage 1 complete
   logger.info(`[processLinkJob] Setting processingStages.metadata + aiAnalysis, confidence=0.4, location=${extractedLocation?.city || 'none'}`);
