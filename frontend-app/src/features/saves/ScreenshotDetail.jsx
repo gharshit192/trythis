@@ -6,6 +6,7 @@ import StatusControl from '../../components/StatusControl';
 import SectionLabel from '../../components/SectionLabel';
 import ReminderControl from '../../components/ReminderControl';
 import { relativeTime } from '../../lib/format';
+import { isTryable } from '../../lib/intent';
 
 // Screenshot saves: what the analyzer read out of the images, in the same
 // vocabulary as every other item. The images themselves stay off the screen
@@ -68,8 +69,21 @@ export default function ScreenshotDetail({ save: initial, onNavigate, onBack }) 
   const data = sa.data || sa.extracted || sa;
   const agg = save.aiAnalysis?.aggregateAnalysis;
   const count = save.screenshots?.length || save.aiAnalysis?.screenshotAnalysis?.data?.totalScreenshots || save.metadata?.screenshotCount || 1;
-  const points = save.aiAnalysis?.keyPoints || [];
-  const lists = Object.entries(data || {}).filter(([k, v]) => Array.isArray(v) && v.length && k !== 'keyPoints');
+  const summary = save.aiAnalysis?.summary || save.description || '';
+  // The pipeline puts the summary and an OCR quality note into keyPoints; show each once, in its place.
+  const diag = /(\d+) of (\d+) lines|transcribed by a single model|need review/i;
+  const points = (save.aiAnalysis?.keyPoints || []).filter((k) => k && k !== summary && !diag.test(k));
+  const quality = (save.aiAnalysis?.keyPoints || []).find((k) => diag.test(k)) || null;
+  // Bundle shape: categories → either a transcribed document (lines) or a list of things.
+  const isBundle = sa.type === 'bundle';
+  const bundleCats = isBundle ? (data.categories || []) : [];
+  const isDoc = (cat) => Array.isArray(cat?.items) && cat.items.length > 0 && cat.items.every((i) => /^Line \d+/.test(String(i?.details || '')));
+  const docText = (cat) => (cat.items || []).map((i) => String(i?.name || '').trim()).filter(Boolean).reduce((t, line, idx) => (idx === 0 ? line : t + (/[।॥.!?]$/.test(t.trimEnd()) ? '\n' : ' ') + line), '');
+  const hw = data.handwrittenAnalysis || null;
+  const ents = hw?.entities || {};
+  const entityRows = [['People', ents.people], ['Places', ents.locations], ['Organisations', ents.organizations], ['Dates', ents.dates], ['Amounts', ents.currencies?.length ? ents.currencies : ents.amounts], ['Phone', ents.phoneNumbers], ['Email', ents.emails], ['Websites', ents.websites]].filter(([, v]) => Array.isArray(v) && v.length);
+  const lists = isBundle ? [] : Object.entries(data || {}).filter(([k, v]) => Array.isArray(v) && v.length && k !== 'keyPoints');
+  const tryable = isTryable(save);
 
   const setIntent = async (next) => {
     if (next === 'tried') return onNavigate('tried', { id, title: save.title, createdAt: save.createdAt });
@@ -120,16 +134,42 @@ export default function ScreenshotDetail({ save: initial, onNavigate, onBack }) 
       <h1 className="wt-title lg" style={{ marginBottom: 10 }}>{save.title || 'Untitled'}</h1>
       <span style={{ fontSize: 14.5, color: 'var(--mute)', marginBottom: 22 }}>Saved {relativeTime(save.createdAt).toLowerCase()}{data.date ? ` · dated ${data.date}` : ''}</span>
 
-      <div style={{ marginBottom: 24 }}><StatusControl value={save.intentStatus || 'saved'} onChange={setIntent} /></div>
+      {tryable
+        ? <div style={{ marginBottom: 24 }}><StatusControl value={save.intentStatus || 'saved'} onChange={setIntent} /></div>
+        : (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24, padding: '10px 12px', borderRadius: 12, background: 'var(--card-2)', fontSize: 13.5, color: 'var(--mute)' }}>
+            <Icon name="book" size={16} /><span style={{ flex: 1 }}>A document, not a place to try — keep it, set a reminder, or mark it done.</span>
+            <button type="button" onClick={() => setIntent(save.intentStatus === 'dismissed' ? 'saved' : 'dismissed')} style={{ background: 'none', border: 0, color: 'var(--teal)', fontWeight: 600, fontSize: 13.5, cursor: 'pointer', fontFamily: 'inherit' }}>{save.intentStatus === 'dismissed' ? 'Keep' : 'Done'}</button>
+          </div>
+        )}
 
-      {(save.aiAnalysis?.summary || save.description) && (
+      {summary && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 20 }}>
           <SectionLabel>What it says</SectionLabel>
-          <p style={{ fontSize: 15.5, lineHeight: 1.55, margin: 0 }}>{save.aiAnalysis?.summary || save.description}</p>
+          <p style={{ fontSize: 15.5, lineHeight: 1.55, margin: 0 }}>{summary}</p>
         </div>
       )}
       {points.length > 0 && <List title="Key points" items={points} />}
-      <Facts obj={data} />
+      {entityRows.length > 0 && (
+        <div style={{ borderTop: '1px solid var(--line)', marginBottom: 16 }}>
+          {entityRows.map(([k, v]) => (
+            <div key={k} style={{ display: 'flex', gap: 14, padding: '11px 0', borderBottom: '1px solid var(--line)' }}>
+              <span style={{ width: 96, flexShrink: 0, fontSize: 11.5, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--faint)', paddingTop: 3 }}>{k}</span>
+              <span style={{ fontSize: 15, lineHeight: 1.45 }}>{v.join(', ')}</span>
+            </div>
+          ))}
+        </div>
+      )}
+      {bundleCats.map((cat, ci) => isDoc(cat) ? (
+        <section key={ci} style={{ marginBottom: 20 }}>
+          <SectionLabel>{hw?.language ? `Text read · ${hw.language}` : 'Text read'}</SectionLabel>
+          <p style={{ fontSize: 15.5, lineHeight: 1.7, margin: '6px 0 0', whiteSpace: 'pre-wrap' }}>{docText(cat)}</p>
+          {quality && <p style={{ fontSize: 12.5, color: 'var(--faint)', margin: '8px 0 0' }}>{quality.replace(/;.*$/, '')} — check against the photo.</p>}
+        </section>
+      ) : (
+        <List key={ci} title={`${cat.name || 'Items'}${cat.count ? ` · ${cat.count}` : ''}`} items={(cat.items || []).map((i) => ({ name: i.name, description: [i.details, ...(i.tags || [])].filter(Boolean).join(' · ') }))} />
+      ))}
+      {!isBundle && <Facts obj={data} />}
       {lists.map(([k, v]) => <List key={k} title={label(k)} items={v} />)}
       {data.rawText && <div style={{ marginBottom: 18 }}><SectionLabel>Text read</SectionLabel><p style={{ fontSize: 14.5, lineHeight: 1.6, color: 'var(--mute)', margin: '6px 0 0', whiteSpace: 'pre-wrap' }}>{data.rawText}</p></div>}
 

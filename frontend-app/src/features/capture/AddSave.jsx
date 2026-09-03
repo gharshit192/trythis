@@ -157,11 +157,21 @@ function Shots({ onBack, onNavigate, collections }) {
       if (col) fd.append('collectionId', col);
       const result = await api.analyzeScreenshotBundle(fd);
       if (result?.status !== 'success') throw new Error(result?.error?.message || 'Could not read those.');
+      setPhase('saving');
       const saved = await api.saveScreenshotBundle(result.sessionId, result.summary);
       const doc = saved?.save || saved?.data || null;
+      if (leftRef.current) return; // user chose to continue in the background; the save is in the list now
       onNavigate('screenshot-summary', { sessionId: result.sessionId, summary: result.summary, saveId: doc?._id || null, autoSaved: !!doc?._id });
-    } catch (e) { setError(e.message); setBusy(false); }
+    } catch (e) { if (!leftRef.current) { setError(e.message); setBusy(false); setPhase(null); } }
   };
+  // What the wait looks like: stage by elapsed time (the request is one call), a
+  // running clock, and a way out — the read keeps going and lands in the list.
+  const [phase, setPhase] = useState(null);
+  const [elapsed, setElapsed] = useState(0);
+  const leftRef = useRef(false);
+  useEffect(() => { if (!busy) { setElapsed(0); return undefined; } const t = setInterval(() => setElapsed((s) => s + 1), 1000); return () => clearInterval(t); }, [busy]);
+  const stage = phase === 'saving' ? 'Saving it to your list…' : elapsed < 4 ? `Uploading ${files.length} photo${files.length === 1 ? '' : 's'}…` : elapsed < 25 ? 'Reading the text — Hindi and English…' : elapsed < 60 ? 'Working out what it says…' : 'Almost there — a long document takes a minute or two…';
+  const leave = () => { leftRef.current = true; onNavigate('home', { refresh: true }); };
 
   return (
     <div className="wt-screen">
@@ -193,8 +203,21 @@ function Shots({ onBack, onNavigate, collections }) {
       <div className="wt-field"><label className="wt-label" htmlFor="shotsTitle">Title (optional)</label>
         <input id="shotsTitle" className="wt-input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="What is this?" /></div>
       <CollectionPick collections={collections} value={col} onChange={setCol} />
-      <div style={{ marginTop: 'auto' }}>
-        <Button onClick={submit} disabled={busy || !files.length}>{busy ? 'Reading…' : 'Read them'}</Button>
+      {busy && (
+        <div style={{ marginTop: 6, marginBottom: 12, padding: '14px 14px', borderRadius: 14, background: 'var(--teal-soft)', display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span className="wt-spinner" />
+            <span style={{ flex: 1, fontSize: 14.5, fontWeight: 500, color: 'var(--teal-d)' }}>{stage}</span>
+            <span style={{ fontSize: 12.5, color: 'var(--teal)', fontVariantNumeric: 'tabular-nums' }}>{Math.floor(elapsed / 60) ? `${Math.floor(elapsed / 60)}m ` : ''}{elapsed % 60}s</span>
+          </div>
+          <div style={{ height: 4, borderRadius: 2, background: 'rgba(14,124,123,.18)', overflow: 'hidden' }}><div style={{ height: '100%', width: `${Math.min(92, 8 + elapsed * 2.2)}%`, background: 'var(--teal)', transition: 'width 1s linear' }} /></div>
+          <span style={{ fontSize: 12.5, color: 'var(--teal-d)' }}>Usually 20–60 seconds. You don't have to wait here.</span>
+        </div>
+      )}
+      <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {busy
+          ? <Button variant="secondary" onClick={leave}>Continue in background</Button>
+          : <Button onClick={submit} disabled={!files.length}>Read them</Button>}
       </div>
     </div>
   );

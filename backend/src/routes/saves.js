@@ -1563,9 +1563,13 @@ router.get('/:id/export-pdf', validateObjectId('id'), async (req, res) => {
       if (bundle.masterSummary?.oneLiner) {
         section('Bundle Summary');
         doc.fontSize(11).font('Helvetica').fillColor('#222222').text(bundle.masterSummary.oneLiner, { lineGap: 2 });
-        if (Array.isArray(bundle.masterSummary.bullets) && bundle.masterSummary.bullets.length) {
+        // The one-liner is repeated as the first bullet and an OCR quality note
+        // rides along as another; neither is a point about the document.
+        const diag = /(\d+) of (\d+) lines|transcribed by a single model|need review/i;
+        const bullets = (bundle.masterSummary.bullets || []).filter((b) => b && b !== bundle.masterSummary.oneLiner && !diag.test(b));
+        if (bullets.length) {
           doc.moveDown(0.4);
-          bundle.masterSummary.bullets.forEach(bullet);
+          bullets.forEach(bullet);
         }
         if (bundle.masterSummary?.budgetRange) {
           doc.moveDown(0.4);

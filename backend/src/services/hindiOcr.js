@@ -997,10 +997,20 @@ const run = async (imageContents, { handwritten = true } = {}) => {
       const tessLines = await runWithTesseract(imageContents);
       const scored = tessLines.map((l) => l.confidence).filter((c) => typeof c === 'number');
       const avg = scored.length ? scored.reduce((a, b) => a + b, 0) / scored.length : 0;
-      if (tessLines.length > 0 && avg >= TESSERACT_MIN_CONFIDENCE) {
+      // A photo of a screen gave Tesseract an average of 0.61 with half the lines
+      // pure noise ("Nm @ar3ast Br Bel Wan,") — and that passed. Accept a
+      // Tesseract-only read only when it is actually clean: solid average, few
+      // weak lines, and almost no junk lines (Latin noise or lone symbols in a
+      // Devanagari document). Anything else goes to the LLM read, which handled
+      // the same kind of image perfectly.
+      const isJunk = (t) => { const s = String(t || '').trim(); if (s.length < 3) return true; const deva = (s.match(/[\u0900-\u097F]/g) || []).length; const latin = (s.match(/[A-Za-z]/g) || []).length; const sym = (s.match(/[^\w\s\u0900-\u097F।॥]/g) || []).length; return (latin > 0 && latin >= deva && latin <= 6) || sym > s.length / 3; };
+      const junkRatio = tessLines.length ? tessLines.filter((l) => isJunk(l.text)).length / tessLines.length : 1;
+      const weakRatio = scored.length ? scored.filter((c) => c < 0.6).length / scored.length : 1;
+      const clean = tessLines.length > 0 && avg >= Math.max(TESSERACT_MIN_CONFIDENCE, 0.72) && weakRatio <= 0.25 && junkRatio <= 0.2;
+      if (clean) {
         return await finalizeOcrLines(tessLines, 'tesseract');
       }
-      logger.info(`hindiOcr: tesseract yield too weak (lines=${tessLines.length}, avgConf=${avg.toFixed(2)}) — falling back to LLM OCR`);
+      logger.info(`hindiOcr: tesseract not clean enough (lines=${tessLines.length}, avgConf=${avg.toFixed(2)}, weak=${(weakRatio * 100).toFixed(0)}%, junk=${(junkRatio * 100).toFixed(0)}%) — falling back to LLM OCR`);
     } catch (err) {
       logger.warn(`hindiOcr: tesseract failed (${err.message}) — falling back to LLM OCR`);
     }

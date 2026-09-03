@@ -11,6 +11,7 @@ import Trip from './Trip';
 import SaveSections from './SaveSections';
 import ReminderControl from '../../components/ReminderControl';
 import Chip from '../../components/Chip';
+import { isTryable } from '../../lib/intent';
 
 // Screenshot saves keep their own (legacy) detail until it is rebuilt.
 const ScreenshotDetail = lazy(() => import('./ScreenshotDetail'));
@@ -154,7 +155,15 @@ export default function SaveDetail({ onNavigate, onBack, payload }) {
   const sd = save.aiAnalysis?.structuredData || {};
   const tile = getCategoryTile(save.category);
   const isTravel = ['travel', 'experience', 'hotel'].includes(save.category) && (sd.itinerary?.destination || sd.itinerary?.highlights?.length);
-  const status = <StatusControl value={save.intentStatus || 'saved'} onChange={setIntent} />;
+  const tryable = isTryable(save);
+  const status = tryable
+    ? <StatusControl value={save.intentStatus || 'saved'} onChange={setIntent} />
+    : (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 12, background: 'var(--card-2)', fontSize: 13.5, color: 'var(--mute)' }}>
+        <Icon name="book" size={16} /><span style={{ flex: 1 }}>{save.source === 'voice' ? 'A note — keep it, set a reminder, or mark it done.' : 'A document, not a place to try — keep it, set a reminder, or mark it done.'}</span>
+        <button type="button" onClick={() => setIntent(save.intentStatus === 'dismissed' ? 'saved' : 'dismissed')} style={{ background: 'none', border: 0, color: 'var(--teal)', fontWeight: 600, fontSize: 13.5, cursor: 'pointer', fontFamily: 'inherit' }}>{save.intentStatus === 'dismissed' ? 'Keep' : 'Done'}</button>
+      </div>
+    );
   const menuSheet = menu && (
     <div className="wt-sheet" onClick={() => setMenu(false)}>
       <div onClick={(e) => e.stopPropagation()}>
@@ -280,8 +289,8 @@ export default function SaveDetail({ onNavigate, onBack, payload }) {
         {processing && <span style={{ padding: '3px 9px', borderRadius: 999, fontSize: 11.5, fontWeight: 600, background: 'var(--teal-soft)', color: 'var(--teal-d)' }}>{save.processingStatus === 'failed' ? 'Couldn\'t read it' : save.processingStatus === 'partial' ? 'Partly read' : 'Still reading'}</span>}
       </div>
 
-      <div style={{ marginBottom: save.intentStatus === 'planned' ? 12 : 24 }}>{status}</div>
-      {save.intentStatus === 'planned' && (
+      <div style={{ marginBottom: save.intentStatus === 'planned' && tryable ? 12 : 24 }}>{status}</div>
+      {tryable && save.intentStatus === 'planned' && (
         <div style={{ marginBottom: 24, padding: '13px 14px', borderRadius: 12, background: 'var(--teal-soft)', display: 'flex', flexDirection: 'column', gap: 10 }}>
           <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--teal)' }}>When?</span>
           {save.plannedFor && <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--teal-d)' }}>{new Date(save.plannedFor).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'short' })}<span style={{ display: 'block', fontSize: 12.5, fontWeight: 500, color: 'var(--teal)' }}>We'll remind you that morning.</span></span>}
