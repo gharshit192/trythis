@@ -14,6 +14,13 @@ rulebook — then the relevant doc under [`docs/`](docs/):**
 - [`docs/design-system.md`](docs/design-system.md) — canonical UI tokens/components
 - [`docs/code-patterns.md`](docs/code-patterns.md) — feature implementation patterns
 - [`docs/adr/`](docs/adr/) — architecture decision records (the "why")
+- Strategy set (3 Sep 2026): [`docs/PRODUCT_STRATEGY.md`](docs/PRODUCT_STRATEGY.md),
+  [`docs/REVENUE_STRATEGY.md`](docs/REVENUE_STRATEGY.md),
+  [`docs/MONETIZATION_ARCHITECTURE.md`](docs/MONETIZATION_ARCHITECTURE.md),
+  [`docs/MOBILE_ARCHITECTURE.md`](docs/MOBILE_ARCHITECTURE.md),
+  [`docs/AWS_ARCHITECTURE.md`](docs/AWS_ARCHITECTURE.md),
+  [`docs/SECURITY_COMPLIANCE.md`](docs/SECURITY_COMPLIANCE.md),
+  [`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md) — keep current as implementation changes
 
 ## Rules
 

@@ -63,7 +63,7 @@ JSON files are only a fallback when Mongo is unreachable.
 
 ## Deployment
 
-- Backend deploys to **Vercel** (`vercel.json`, `Procfile`, `Dockerfile`
+- Backend deploys to **Render** as a Docker image (the `Dockerfile` at the repo root; `.dockerignore` keeps the context small — see `AWS_ARCHITECTURE.md`). Legacy files (`vercel.json`, `Procfile`, `Dockerfile`
   available). Set all required env vars in the platform dashboard.
 - Use connection pooling for MongoDB in production; serve over HTTPS.
 - Post-deploy checklist: health endpoint responds, auth works, a test save
