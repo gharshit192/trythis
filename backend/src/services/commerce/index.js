@@ -42,15 +42,15 @@ async function staysFor(dest, { checkIn, nights, adults, planHotels = [] }) {
     catch (e) { logger.warn(`[commerce] hotellook failed for ${city}: ${e.message}`); }
   }
   const liveOffers = live.map((h) => ({ ...h, area: h.area || city, reason: h.distanceKm != null ? `${h.distanceKm} km from the centre` : `In ${city}`, placement: 'stay_options',
-    options: [{ provider: 'Hotellook', priceLabel: h.priceLabel, deeplink: h.deeplink }, ...links.stayOptions(`${h.title} ${city}`, checkIn, nights, adults)] }));
+    options: [{ provider: 'Hotellook', priceLabel: h.priceLabel, deeplink: h.deeplink }, ...links.stayOptions(`${h.title} ${city}`, checkIn, nights, adults, city)] }));
   const suggested = planHotels.slice(0, 5).map((h) => ({
     type: 'HOTEL', provider: 'suggested', title: h.name, area: h.area || null, city, price: rupees(h.approx), currency: 'INR', priceLabel: h.approx || null,
     rating: null, description: h.tier ? `${h.tier} · from the plan` : 'From the plan', reason: h.area ? `Near ${h.area}` : `In ${city}`, source: 'suggested', placement: 'stay_options',
     // Primary action: Google Hotels for the exact hotel (every site's price); compare rows below.
     deeplink: links.googleHotelsUrl(`${h.name} ${city}`, checkIn, nights),
-    options: links.stayOptions(`${h.name} ${city}`, checkIn, nights, adults),
+    options: links.stayOptions(`${h.name} ${city}`, checkIn, nights, adults, city),
   }));
-  const cityWide = { type: 'HOTEL', provider: 'links', title: `All stays in ${city}`, city, description: 'Every budget, live prices on the partner', reason: `Search ${city}`, source: 'affiliate', placement: 'stay_options', deeplink: links.bookingUrl(city, checkIn, nights, adults), options: links.stayOptions(city, checkIn, nights, adults) };
+  const cityWide = { type: 'HOTEL', provider: 'links', title: `All stays in ${city}`, city, description: 'Every budget, live prices on the partner', reason: `Search ${city}`, source: 'affiliate', placement: 'stay_options', deeplink: links.bookingUrl(city, checkIn, nights, adults), options: links.stayOptions(city, checkIn, nights, adults, city) };
   return [...liveOffers, ...suggested, cityWide];
 }
 
@@ -62,7 +62,9 @@ async function transportFor(dest, { origin, date, adults }) {
     catch (e) { logger.warn(`[commerce] aviasales failed ${origin}→${city}: ${e.message}`); }
   }
   const liveOffers = live.map((f) => ({ ...f, city, reason: 'Live fare', placement: 'getting_there' }));
-  const linkOffers = links.transportOffers({ origin, city, domestic: dest.domestic || /india/i.test(dest.country || ''), date }).map((o) => ({ ...o, city, placement: 'getting_there', reason: o.metadata?.mode === 'bus' ? 'Overnight buses run most days' : o.metadata?.mode === 'train' ? 'Cheapest if seats are open' : 'Compare across airlines' }));
+  let oCode = null; let dCode = null;
+  if (origin) { try { const [o, d] = await Promise.all([tp.place(origin, 'IN'), tp.place(city, 'IN')]); oCode = o?.code || null; dCode = d?.code || null; } catch {} }
+  const linkOffers = links.transportOffers({ origin, city, domestic: dest.domestic || /india/i.test(dest.country || ''), date, oCode, dCode, adults }).map((o) => ({ ...o, city, placement: 'getting_there', reason: o.metadata?.mode === 'bus' ? 'Overnight buses run most days' : o.metadata?.mode === 'train' ? 'Cheapest if seats are open' : 'Compare across airlines' }));
   return [...liveOffers, ...linkOffers];
 }
 
