@@ -7,12 +7,12 @@ Grounded in the repo as of 3 Sep 2026. One frontend (`frontend-app`, React 19 / 
 | Capability | Web / PWA | Android (Capacitor) | iOS (Capacitor) |
 |---|---|---|---|
 | Shell, auth, all screens | ✓ | ✓ (same bundle, `webDir: build`) | folder exists, never built |
-| Share **into** the app | ✓ `share_target` in `manifest.json` → `/share-target` (Android Chrome, installed PWA only) | ✗ no `ACTION_SEND` intent filter in `AndroidManifest.xml` | ✗ |
+| Share **into** the app | ✓ `share_target` in `manifest.json` → `/share-target` (Android Chrome, installed PWA only) | ✓ (3 Sep 2026) `ShareReceiverPlugin` + `ACTION_SEND`/`SEND_MULTIPLE` filters for `text/plain` and `image/*`; web bridge `lib/shareReceiver.js` → share-intake / screenshot pipeline | ✗ |
 | Deep links | web URLs only (`/?open=…`, `/s/:id` share pages on the API) | ✗ no `appUrlOpen` listener, no App Links | ✗ |
 | Push | ✓ Web Push (VAPID, `public/sw.js`) — works in Chrome Android PWA | ✗ no `@capacitor/push-notifications`; FCM not set up | ✗ |
 | Camera / files | `<input type=file>` (gallery) | same via WebView | — |
 | Location | `navigator.geolocation` | same via WebView (permission in manifest?) — verify | — |
-| Native plugins present | — | app, filesystem, share (share **out**), splash-screen, status-bar | same list |
+| Native plugins present | — | app, filesystem, share (share **out**), splash-screen, status-bar, **ShareReceiver** (in-app, share **in**) | same list minus ShareReceiver |
 | Config | `capacitor.config.ts`: appId `com.trythis.app`, name "Wanna Try", `androidScheme: https` | | |
 
 Everything product-level therefore already runs on Android as a WebView app; what is missing is exactly the native integration list below.
@@ -31,7 +31,7 @@ No second codebase. Native features are thin bridges; the UI stays shared. The `
 
 ## P0 for the Android launch
 
-1. **Share → Wanna Try (the reason the app exists on a phone).**
+1. **Share → Wanna Try (the reason the app exists on a phone).** ✓ built 3 Sep 2026 — see `android/app/src/main/java/com/trythis/app/ShareReceiverPlugin.java`.
    - Manifest: `<intent-filter>` for `android.intent.action.SEND` with `text/plain` and `image/*`, and `SEND_MULTIPLE` for images.
    - Bridge: a small Capacitor plugin (or the community `capacitor-share-target` / `send-intent` plugin) that hands the shared text/URL/files to the web layer; the web layer routes to the existing `share-intake` screen (URL/text) or the screenshot uploader (images). Reuse `/uploads` and `POST /saves` as today.
    - The AI path is unchanged: extraction → "We found N places" → save selected.
