@@ -27,7 +27,7 @@ const place = async (name, country = 'IN') => {
     const rows = Array.isArray(j) ? j : [];
     const norm = (x) => String(x || '').toLowerCase();
     // The name must match; the country only breaks ties (never turns Bangkok into Gangtok).
-    const named = rows.filter((p) => norm(p.name).startsWith(norm(name)) || norm(name).startsWith(norm(p.name)));
+    const named = rows.filter((p) => norm(p.name).includes(norm(name)) || norm(name).includes(norm(p.name)));
     const hit = named.find((p) => p.type === 'city' && p.country_code === country)
       || named.find((p) => p.type === 'city')
       || named.find((p) => p.country_code === country)
