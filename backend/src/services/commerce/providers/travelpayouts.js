@@ -75,7 +75,7 @@ const flights = async ({ origin, city, date, adults = 1, limit = 4 }) => {
   return (j.data || []).map((f) => {
     const dep = String(f.departure_at || '').slice(11, 16); const hrs = f.duration ? `${Math.floor(f.duration / 60)}h${f.duration % 60 ? ` ${f.duration % 60}m` : ''}` : null;
     return {
-      type: 'TRANSPORT', provider: 'aviasales', providerOfferId: `${f.airline}${f.flight_number}-${f.departure_at}`, title: `${f.airline} ${f.flight_number || ''} ${o.code} → ${d.code}`.replace(/\s+/g, ' ').trim(),
+      type: 'TRANSPORT', provider: 'aviasales', providerOfferId: `${f.airline}${f.flight_number}-${f.departure_at}`, title: `${AIRLINE[f.airline] || f.airline} ${f.flight_number || ''} · ${o.code} → ${f.destination_airport || d.code}`.replace(/\s+/g, ' ').trim(),
       description: [dep ? `dep ${dep}` : null, hrs, f.transfers ? `${f.transfers} stop${f.transfers > 1 ? 's' : ''}` : 'non-stop', f.gate ? `via ${f.gate}` : null].filter(Boolean).join(' · '),
       price: Number(f.price), currency: 'INR', priceLabel: `₹${Number(f.price).toLocaleString('en-IN')}`, source: 'affiliate',
       metadata: { mode: 'flight', carrier: f.airline, date },
