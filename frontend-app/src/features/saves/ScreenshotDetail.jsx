@@ -78,9 +78,10 @@ export default function ScreenshotDetail({ save: initial, onNavigate, onBack }) 
   const isBundle = sa.type === 'bundle';
   const bundleCats = isBundle ? (data.categories || []) : [];
   const isDoc = (cat) => Array.isArray(cat?.items) && cat.items.length > 0 && cat.items.every((i) => /^Line \d+/.test(String(i?.details || '')));
-  const docText = (cat) => (cat.items || []).map((i) => String(i?.name || '').trim()).filter(Boolean).reduce((t, line, idx) => (idx === 0 ? line : t + (/[।॥.!?]$/.test(t.trimEnd()) ? '\n' : ' ') + line), '');
+  const docText = (cat) => (cat.items || []).map((i) => String(i?.name || '').trim()).filter(Boolean).reduce((t, line, idx) => (idx === 0 ? line : /-$/.test(t) ? t.slice(0, -1) + line : t + '\n' + line), '');
   const hw = data.handwrittenAnalysis || null;
   const ents = hw?.entities || {};
+  const topicPoints = [...(ents.topics || []), ...(ents.bookTitles || [])].filter(Boolean).slice(0, 20);
   const entityRows = [['People', ents.people], ['Places', ents.locations], ['Organisations', ents.organizations], ['Dates', ents.dates], ['Amounts', ents.currencies?.length ? ents.currencies : ents.amounts], ['Phone', ents.phoneNumbers], ['Email', ents.emails], ['Websites', ents.websites]].filter(([, v]) => Array.isArray(v) && v.length);
   const lists = isBundle ? [] : Object.entries(data || {}).filter(([k, v]) => Array.isArray(v) && v.length && k !== 'keyPoints');
   const tryable = isTryable(save);
@@ -92,6 +93,12 @@ export default function ScreenshotDetail({ save: initial, onNavigate, onBack }) 
     if (r?.status !== 'success') setSave((s) => ({ ...s, intentStatus: prev }));
   };
   const setReminder = async (date) => { const r = await api.patchSave(id, { resurfaceAt: date }).catch(() => null); if (r?.status === 'success') { setSave(r.data); flash(date ? 'Reminder set' : 'Reminder off'); } };
+  const reread = async () => {
+    setBusy(true); flash('Reading the photos again… 20–60 s');
+    const r = await api.rereadScreenshots(id).catch(() => null);
+    setBusy(false);
+    if (r?.status === 'success') { setSave(r.data); flash('Updated'); } else flash(r?.error?.message || 'Could not read it again');
+  };
   const pdf = async () => { setBusy(true); try { const how = await api.exportScreenshotPdf(id, save.title); if (how === 'downloaded') flash('PDF downloaded'); } catch (e) { flash(e.message || 'PDF failed'); } finally { setBusy(false); } };
   const share = async () => {
     setMenu(false); setBusy(true);
@@ -105,6 +112,7 @@ export default function ScreenshotDetail({ save: initial, onNavigate, onBack }) 
       {menu && (
         <div className="wt-sheet" onClick={() => setMenu(false)}><div onClick={(e) => e.stopPropagation()}><div className="grab" />
           <button type="button" className="wt-menu-row" onClick={share}><Icon name="share" size={20} />Share</button>
+          <button type="button" className="wt-menu-row" onClick={() => { setMenu(false); reread(); }}><Icon name="sparkle" size={20} />Read it again</button>
           <button type="button" className="wt-menu-row" onClick={() => { setMenu(false); pdf(); }}><Icon name="book" size={20} />Download as PDF</button>
           <button type="button" className="wt-menu-row danger" onClick={() => { setMenu(false); setConfirmDelete(true); }}><Icon name="close" size={20} />Delete</button>
         </div></div>
@@ -149,7 +157,7 @@ export default function ScreenshotDetail({ save: initial, onNavigate, onBack }) 
           <p style={{ fontSize: 15.5, lineHeight: 1.55, margin: 0 }}>{summary}</p>
         </div>
       )}
-      {points.length > 0 && <List title="Key points" items={points} />}
+      {(points.length ? points : topicPoints).length > 0 && <List title={points.length ? 'Key points' : 'What it covers'} items={points.length ? points : topicPoints} />}
       {entityRows.length > 0 && (
         <div style={{ borderTop: '1px solid var(--line)', marginBottom: 16 }}>
           {entityRows.map(([k, v]) => (

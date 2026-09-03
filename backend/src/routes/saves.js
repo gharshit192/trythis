@@ -1776,6 +1776,40 @@ router.post('/:id/insights', async (req, res) => {
 // (one per chosen place) grouped in a collection named after the reel. Each
 // child carries the reel's url/source so "open the original" still works, and
 // goes through the place resolver so it joins nearby. Idempotent per place.
+// POST /saves/:id/reread — run the current screenshot read again on the stored
+// images (a screenshot save has no 'retry' because it never had a job). Used
+// after the OCR routing improved, or when a first read came out wrong.
+router.post('/:id/reread', async (req, res) => {
+  const fs = require('fs'); const os = require('os'); const path = require('path'); const axios = require('axios');
+  try {
+    const save = await Save.findOne({ _id: req.params.id, userId: req.user.id, status: 'active' });
+    if (!save) return res.status(404).json({ status: 'error', error: { code: 'NOT_FOUND', message: 'Save not found' } });
+    if (!(save.contentType === 'image' || save.source === 'screenshot')) return res.status(400).json({ status: 'error', error: { code: 'NOT_A_SCREENSHOT', message: 'Only screenshot saves can be re-read; use retry for links.' } });
+    const urls = [...new Set([...(save.screenshots || []).map((x) => x.url).filter(Boolean), ...((save.metadata?.images) || []), save.thumbnail].filter((u) => u && /^https?:\/\//.test(u)))].slice(0, 10);
+    if (!urls.length) return res.status(400).json({ status: 'error', error: { code: 'NO_IMAGES', message: 'The original images are not stored for this save.' } });
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'wt-reread-')); const files = [];
+    for (const [i, u] of urls.entries()) {
+      const r = await axios.get(u, { responseType: 'arraybuffer', timeout: 20000 });
+      const ext = /png/i.test(r.headers['content-type'] || '') ? 'png' : /webp/i.test(r.headers['content-type'] || '') ? 'webp' : 'jpg';
+      const f = path.join(dir, `img-${i}.${ext}`); fs.writeFileSync(f, Buffer.from(r.data)); files.push(f);
+    }
+    const { analyzeBundle } = require('../services/screenshotBundle');
+    const userTitle = /^(hindi\/devanagari document|screenshot bundle|untitled)$/i.test(save.title || '') ? null : save.title;
+    const summary = await analyzeBundle(files, `reread-${save._id}`, userTitle);
+    try { fs.rmSync(dir, { recursive: true, force: true }); } catch {}
+    if (!summary) throw new Error('The read produced nothing.');
+    save.title = summary.autoTitle || save.title;
+    save.tags = [...new Set((summary.categories || []).flatMap((c) => (c.items || []).flatMap((i) => i.tags || [])).map((t) => String(t).trim()).filter(Boolean))].slice(0, 12);
+    save.aiAnalysis = { ...(save.aiAnalysis?.toObject ? save.aiAnalysis.toObject() : (save.aiAnalysis || {})), summary: summary.masterSummary?.oneLiner || '', keyPoints: summary.masterSummary?.bullets || [], structuredData: null, screenshotAnalysis: { type: 'bundle', data: summary, confidence: summary.confidence || 0.8, allMatches: [] }, processedAt: new Date() };
+    save.markModified('aiAnalysis'); save.processingStatus = 'done';
+    await save.save();
+    res.json({ status: 'success', data: save });
+  } catch (e) {
+    logger.error(`[reread] ${e.message}`);
+    res.status(500).json({ status: 'error', error: { code: 'REREAD_FAILED', message: 'Could not read the images again right now.' } });
+  }
+});
+
 router.post('/:id/split', async (req, res) => {
   try {
     const parent = await Save.findOne({ _id: req.params.id, userId: req.user.id, status: 'active' });

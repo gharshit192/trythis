@@ -47,6 +47,13 @@ const saves = {
     return handle(res);
   },
 
+  // Screenshot saves: run the current read again on the stored images.
+  async rereadScreenshots(id) {
+    const res = await fetch(`${API_BASE_URL}/saves/${id}/reread`, { method: 'POST', headers: authHeader() });
+    invalidateSaves();
+    return handle(res);
+  },
+
   // A list reel → separate saves for the chosen places (POST /saves/:id/split).
   async splitSave(id, indices) {
     const res = await fetch(`${API_BASE_URL}/saves/${id}/split`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeader() }, body: JSON.stringify({ indices }) });

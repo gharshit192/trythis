@@ -24,11 +24,9 @@ const documentText = (cat) =>
   (cat?.items || [])
     .map((i) => String(i?.name || '').trim())
     .filter(Boolean)
-    .reduce((text, line, idx) => {
-      if (idx === 0) return line;
-      const endsSentence = /[।॥.!?]$/.test(text.trimEnd());
-      return text + (endsSentence ? '\n' : ' ') + line;
-    }, '');
+    // One read line = one visual line on the page (lists, tables of contents
+    // and notes all lay out that way); only a hyphen at a line end joins.
+    .reduce((text, line, idx) => (idx === 0 ? line : /-$/.test(text) ? text.slice(0, -1) + line : text + '\n' + line), '');
 
 // How many lines the pipeline flagged for a human to check. Reported once,
 // rather than as a caption under every line.
