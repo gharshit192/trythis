@@ -37,13 +37,16 @@
       Learn how to configure a non-root public URL by running `npm run build`.
     -->
     <title>Wanna Try - See it. Save it. Try it.</title>
-      <!-- Travelpayouts Drive: site verification + link tracking for the affiliate
-         account. Web only — never on localhost (dev) and never inside the
-         Capacitor apps (they serve from https://localhost). -->
+      <!-- Travelpayouts Drive: site verification for the affiliate account. Web only,
+         signed-out visitors only — never on localhost, never inside the Capacitor
+         apps, never while someone is using the app. -->
     <script data-cmp-ab="2">
       (function () {
         var h = location.hostname;
         if (h === 'localhost' || h === '127.0.0.1' || location.protocol === 'capacitor:') return;
+        // Signed-in users never load it: Drive's link-switching / keyword / offer
+        // injection stays off the app itself. Their verification bot is signed out.
+        try { if (localStorage.getItem('auth_token')) return; } catch (e) {}
         var script = document.createElement("script");
         script.async = 1;
         script.setAttribute("data-cmp-ab", "2");
