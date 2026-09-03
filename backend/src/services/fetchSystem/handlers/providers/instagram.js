@@ -225,4 +225,4 @@ const fetch = async (source) => {
   };
 };
 
-module.exports = { match, fetch, name: 'instagram', __test__: { extractPostId, extractKind } };
+module.exports = { match, fetch, name: 'instagram', jsonFailure, __test__: { extractPostId, extractKind } };

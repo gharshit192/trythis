@@ -62,6 +62,7 @@ app.get('/status', (req, res) => {
     redis: process.env.REDIS_URL ? 'SET' : 'NOT SET',
     jwt: process.env.JWT_SECRET ? 'SET' : 'NOT SET',
     email: require('./services/emailService').emailProvider(),
+    instagramSession: process.env.YTDLP_COOKIES_B64 || process.env.YTDLP_COOKIES_FILE ? 'SET' : 'NOT SET',
     emailFrom: process.env.RESEND_FROM || process.env.EMAIL_FROM || 'Wanna Try <onboarding@resend.dev> (sandbox: delivers only to the Resend account owner)',
     frontend: process.env.FRONTEND_URL || 'NOT SET',
   });

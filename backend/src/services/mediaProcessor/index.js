@@ -747,7 +747,10 @@ const processSave = async (saveId) => {
               Object.assign(fresh, { description: patch.description || fresh.description, title: patch.title || fresh.title });
               logger.info(`[mediaProcessor ${saveId}] photo post images fetched on the fly: ${urls.length} (${ig.provider})`);
             } else {
-              fetchNote = 'Instagram returned no images — the session cookies on the server are missing or expired.';
+              const why = require('../fetchSystem/handlers/providers/instagram').jsonFailure?.();
+              fetchNote = why === 'no_cookies' ? 'Instagram needs a signed-in session: YTDLP_COOKIES_B64 is not set on the server.'
+                : why === 'login_wall' || why === 'http_401' || why === 'http_403' ? 'Instagram rejected the session cookies on the server — they have expired; export fresh ones from the throwaway account.'
+                : `Instagram returned no images (${why || 'unknown'}).`;
             }
           } catch (err) { fetchNote = `Instagram fetch failed: ${err.message}`; }
         }
