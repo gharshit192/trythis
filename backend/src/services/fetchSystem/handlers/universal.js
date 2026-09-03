@@ -46,6 +46,8 @@ const normalize = (raw, url) => {
       tags: raw && raw.tags,
       width: raw && raw.width,
       height: raw && raw.height,
+      images: raw && raw.images,
+      isPhotoPost: raw && raw.isPhotoPost,
     },
     _ytdlpInfo: raw && raw._ytdlpInfo, // for downstream transcription + muxing
   };

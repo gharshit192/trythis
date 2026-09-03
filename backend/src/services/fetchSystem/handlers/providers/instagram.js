@@ -18,6 +18,45 @@ const extractKind = (u) => {
 };
 
 const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+const { cookieHeaderFor } = require('../../../../utils/ytdlpCookies');
+
+// Strategy 0: Instagram's own JSON for the post, with the same session cookies
+// yt-dlp uses. This is the only path that returns a PHOTO post's images and
+// caption (yt-dlp answers "There is no video in this post"; the HTML is a
+// login wall without cookies). Works for reels too, and gives every carousel
+// image, not just the cover.
+const firstLine = (t) => String(t || '').split('\n').map((x) => x.trim()).find(Boolean) || '';
+const tryJsonWithCookies = async (url) => {
+  const cookie = cookieHeaderFor('www.instagram.com');
+  if (!cookie) return null;
+  try {
+    const clean = url.split('?')[0].replace(/\/$/, '') + '/';
+    const { data } = await axios.get(`${clean}?__a=1&__d=dis`, {
+      timeout: 8000, maxRedirects: 2,
+      headers: { 'User-Agent': UA, Accept: 'application/json,*/*', Cookie: cookie, 'x-ig-app-id': '936619743392459', 'x-requested-with': 'XMLHttpRequest' },
+    });
+    const item = data?.items?.[0] || data?.graphql?.shortcode_media || null;
+    if (!item) return null;
+    const caption = item.caption?.text || item.edge_media_to_caption?.edges?.[0]?.node?.text || '';
+    const user = item.user?.username || item.owner?.username || null;
+    const pick = (m) => m?.image_versions2?.candidates?.[0]?.url || m?.display_url || null;
+    const images = (item.carousel_media || []).map(pick).filter(Boolean);
+    const cover = pick(item) || images[0] || null;
+    const isVideo = !!(item.video_versions?.length || item.is_video);
+    const allImages = images.length ? images : (cover ? [cover] : []);
+    return {
+      title: firstLine(caption).slice(0, 110) || (user ? `Post by @${user}` : 'Instagram post'),
+      description: caption || '',
+      image: cover, images: allImages, isPhotoPost: !isVideo && allImages.length > 0,
+      author: user, authorId: user, likeCount: item.like_count, commentCount: item.comment_count,
+      uploadDate: item.taken_at ? new Date(item.taken_at * 1000).toISOString().slice(0, 10).replace(/-/g, '') : undefined,
+      provider: 'instagram-json',
+    };
+  } catch (err) {
+    logger.warn(`[instagram] json fetch failed: ${err.response?.status || err.message}`);
+    return null;
+  }
+};
 
 // Strategy 1: Public oEmbed (deprecated for unauthenticated, often 403 — but cheap to try)
 const tryOembed = async (url) => {
@@ -42,9 +81,10 @@ const tryOembed = async (url) => {
 // Strategy 2: Fetch HTML and read OG tags (often blocked / returns login page, but try)
 const tryHtmlOg = async (url) => {
   try {
+    const cookie = cookieHeaderFor('www.instagram.com');
     const { data } = await axios.get(url, {
       timeout: 5000,
-      headers: { 'User-Agent': UA, 'Accept': 'text/html,*/*' },
+      headers: { 'User-Agent': UA, 'Accept': 'text/html,*/*', ...(cookie ? { Cookie: cookie } : {}) },
       maxRedirects: 3,
     });
     const $ = cheerio.load(data);
@@ -54,10 +94,14 @@ const tryHtmlOg = async (url) => {
     if (!ogTitle && !ogDesc && !ogImage) return null;
     // Instagram returns a "Login" page sometimes — detect that.
     if (ogTitle && /login.*instagram/i.test(ogTitle)) return null;
+    const captionMatch = String(ogDesc || '').match(/^\s*"([\s\S]+?)"\s*[-–]\s*[^"]*on Instagram/);
+    const caption = captionMatch ? captionMatch[1].trim() : null;
     return {
-      title: ogTitle || null,
-      description: ogDesc || null,
+      title: (caption ? firstLine(caption).slice(0, 110) : null) || ogTitle || null,
+      description: caption || ogDesc || null,
       image: ogImage || null,
+      images: ogImage ? [ogImage] : [],
+      isPhotoPost: !/\/reel\//.test(url) && !!ogImage,
       provider: 'instagram-og',
     };
   } catch {
@@ -107,6 +151,12 @@ const fetch = async (source) => {
   const kind = extractKind(url);
   const transcript = typeof source === 'object' ? source.transcript : null;
 
+  // Layer 0: the post's own JSON via session cookies — images + caption, photo posts included.
+  const json = await tryJsonWithCookies(url);
+  if (json && (json.description || json.images?.length)) {
+    return { ...json, url, source: 'instagram', postId, kind: json.isPhotoPost ? 'Post' : kind };
+  }
+
   // Layer 1: oEmbed
   const oembed = await tryOembed(url);
   if (oembed && oembed.title) {
@@ -130,6 +180,8 @@ const fetch = async (source) => {
       title: og.title,
       description: og.description || `Instagram ${kind.toLowerCase()}`,
       image: og.image || null,
+      images: og.images || [],
+      isPhotoPost: og.isPhotoPost || false,
       url,
       source: 'instagram',
       provider: og.provider,

@@ -35,4 +35,22 @@ const resolve = () => {
 // Spread into any yt-dlp argv: `[...cookieArgs(), url]`.
 const cookieArgs = () => (resolve() ? ['--cookies', resolve()] : []);
 
-module.exports = { cookieArgs, __test__: { reset: () => { resolved = undefined; } } };
+// The same session as a Cookie header, for plain HTTP fetches of pages that
+// yt-dlp cannot handle (Instagram photo posts). Netscape cookies.txt: 7 tab-
+// separated fields; domain match is suffix-based like a browser's.
+const cookieHeaderFor = (hostname) => {
+  const file = resolve(); if (!file) return null;
+  try {
+    const host = String(hostname || '').toLowerCase();
+    const pairs = [];
+    for (const line of fs.readFileSync(file, 'utf8').split('\n')) {
+      if (!line || line.startsWith('#')) continue;
+      const f = line.split('\t'); if (f.length < 7) continue;
+      const domain = f[0].replace(/^\./, '').toLowerCase();
+      if (host === domain || host.endsWith(`.${domain}`)) pairs.push(`${f[5]}=${f[6].trim()}`);
+    }
+    return pairs.length ? pairs.join('; ') : null;
+  } catch (e) { logger.warn(`[cookies] header build failed: ${e.message}`); return null; }
+};
+
+module.exports = { cookieArgs, cookieHeaderFor, __test__: { reset: () => { resolved = undefined; } } };

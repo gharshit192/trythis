@@ -62,10 +62,32 @@ const mapYtdlpError = (stderr) => {
   if (/403|forbidden/i.test(firstErr)) {
     return 'Access denied by the video host.';
   }
+  if (/no video in this post/i.test(stderr || '')) {
+    return 'This is a photo post, not a video.';
+  }
   return 'Video extraction unavailable for this URL.';
 };
 
 // ---- helpers ----
+// One vision read of a photo post image: the visible text verbatim, then what
+// the photo shows (place, dish, product, prices, signs). Feeds the same
+// analysis step as a transcript would.
+const describePhoto = async (imageUrl) => {
+  const axios = require('axios');
+  const Anthropic = require('@anthropic-ai/sdk');
+  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  const res = await axios.get(imageUrl, { responseType: 'arraybuffer', timeout: 15000, headers: { 'User-Agent': 'Mozilla/5.0' } });
+  const mediaType = (res.headers['content-type'] || 'image/jpeg').split(';')[0];
+  const data = Buffer.from(res.data).toString('base64');
+  const msg = await client.messages.create({
+    model: 'claude-haiku-4-5-20251001', max_tokens: 700, temperature: 0,
+    messages: [{ role: 'user', content: [
+      { type: 'text', text: 'This is an image from an Instagram post someone saved because they want to try it. First, transcribe ALL visible text exactly (signs, captions, prices, menu items, names, handles). Then in 2–3 plain sentences say what the image shows — the place, dish, product, or activity — naming anything identifiable. No preamble.' },
+      { type: 'image', source: { type: 'base64', media_type: mediaType, data } },
+    ] }],
+  });
+  return (msg.content?.[0]?.text || '').trim();
+};
 const ensureDir = (p) => { if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true }); };
 const tmpWork = () => {
   const p = path.join(os.tmpdir(), `trythis-media-${crypto.randomBytes(6).toString('hex')}`);
@@ -547,6 +569,19 @@ const processSave = async (saveId) => {
       logger.info(`[mediaProcessor ${saveId}] download was skipped, proceeding with metadata analysis`);
     }
 
+    // ─── PHOTO POST: not a failed video. Read the images instead. ───
+    const photoImages = Array.isArray(save.metadata?.images) ? save.metadata.images.slice(0, 4) : [];
+    const isPhotoPost = !mp4Ready && !downloadSkipped && (save.metadata?.photoPost || /photo post/i.test(downloadFailureReason || '') || (photoImages.length > 0 && save.contentType === 'image'));
+    if (isPhotoPost) {
+      downloadSkipped = true; skipReason = 'photo_post'; downloadFailureReason = null;
+      const existing = await Save.findById(saveId).select('processingStages');
+      if (existing?.processingStages) {
+        existing.processingStages.videoDownload = { completed: false, error: null, completedAt: null, skipped: true, reason: 'photo post — images read instead' };
+        await Save.findByIdAndUpdate(saveId, { processingStages: existing.processingStages });
+      }
+      logger.info(`[mediaProcessor ${saveId}] photo post with ${photoImages.length || 1} image(s) — reading them`);
+    }
+
     // ─── GUARD: Mark download stage appropriately ───
     if (!downloadSkipped && !mp4Ready) {
       logger.warn(`[mediaProcessor ${saveId}] MP4 download returned null or file does not exist — skipping transcription`);
@@ -632,6 +667,10 @@ const processSave = async (saveId) => {
           logger.info(`[mediaProcessor ${saveId}] transcript: ${englishClean.length} chars (lang=${raw.language || 'auto'})`);
         }
         await Save.findByIdAndUpdate(saveId, transcriptionUpdate);
+      } else if (mp4Ready) {
+        // Audio was there but no usable speech came back (music-only reels are
+        // common). Say so on the stage instead of leaving it blank.
+        await Save.findByIdAndUpdate(saveId, { 'processingStages.audioTranscription': { completed: true, error: null, completedAt: new Date(), skipped: true, reason: raw._source === 'none' ? 'no speech recognised (music or silence)' : 'empty transcript' } });
       }
 
       // P2: extract a handful of keyframes from the video and OCR them.
@@ -686,7 +725,21 @@ const processSave = async (saveId) => {
       // downloaded but frame OCR failed. A music-only reel's whole message is
       // its on-screen text, so one frame beats none.
       const frameOcrFailed = !!fresh.processingStages?.frameOCR?.error;
-      if (!frameOcr && (!mp4Ready || frameOcrFailed) && fresh.thumbnail) {
+      // Photo posts: every image goes through the vision read (text + what the
+      // photo shows). A food photo has no text to OCR; the model still says
+      // "a plate of butter chicken at a dhaba, ₹180 on the board".
+      if (!frameOcr && isPhotoPost) {
+        const urls = photoImages.length ? photoImages : (fresh.thumbnail ? [fresh.thumbnail] : []);
+        const parts = [];
+        for (const [i, u] of urls.entries()) {
+          try { const t = await describePhoto(u); if (t) parts.push(urls.length > 1 ? `--- Image ${i + 1} ---\n${t}` : t); }
+          catch (err) { logger.warn(`[mediaProcessor ${saveId}] photo read failed (${i + 1}): ${err.message}`); }
+        }
+        frameOcr = parts.join('\n\n');
+        await Save.findByIdAndUpdate(saveId, { 'processingStages.frameOCR': { completed: parts.length > 0, error: parts.length ? null : 'Could not read the photos.', completedAt: parts.length ? new Date() : null }, ...(frameOcr ? { 'aiAnalysis.visualText': frameOcr.slice(0, 4000) } : {}) });
+        logger.info(`[mediaProcessor ${saveId}] photo post read: ${frameOcr.length} chars from ${parts.length}/${urls.length} image(s)`);
+      }
+      if (!frameOcr && !isPhotoPost && (!mp4Ready || frameOcrFailed) && fresh.thumbnail) {
         try {
           logger.info(`[mediaProcessor ${saveId}] attempting thumbnail OCR fallback`);
           const thumbnailRes = await frameExtractor.extractAndOcrFrames(fresh.thumbnail, {

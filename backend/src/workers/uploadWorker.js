@@ -163,6 +163,7 @@ async function processLinkJob(job) {
   })();
 
   const contentType = (() => {
+    if (extra.isPhotoPost) return 'image';
     if (extra.duration || /(?:reel|video|watch|shorts|youtu\.be|tiktok)/i.test(url || '')) return 'video';
     if (sourceFromUrl === 'pinterest') return 'image';
     return 'article';
@@ -308,6 +309,13 @@ async function processLinkJob(job) {
     } catch (err) {
       logger.warn(`[processLinkJob] place link failed: ${err.message}`);
     }
+  }
+
+  // Photo posts: keep every image so the media processor can read all of them.
+  if (Array.isArray(extra.images) && extra.images.length) {
+    save.metadata = { ...(save.metadata || {}), images: extra.images.slice(0, 6), photoPost: !!extra.isPhotoPost };
+    save.markModified('metadata');
+    await save.save();
   }
 
   // Cache thumbnail locally from remote URL
