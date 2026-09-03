@@ -34,6 +34,13 @@ const saves = {
     return dedupedGet(`${API_BASE_URL}/saves/${id}`, { headers: authHeader() });
   },
 
+  // Complete your trip: stays + transport offers for a trip (GET /saves/:id/offers).
+  async getTripOffers(id, { checkIn, nights, adults, origin } = {}) {
+    const q = new URLSearchParams(); if (checkIn) q.set('checkIn', checkIn); if (nights) q.set('nights', nights); if (adults) q.set('adults', adults); if (origin) q.set('origin', origin);
+    const res = await fetch(`${API_BASE_URL}/saves/${id}/offers?${q}`, { headers: authHeader() });
+    return handle(res);
+  },
+
   // Pins for the map view (GET /saves/map).
   async getSavesMap() {
     const res = await fetch(`${API_BASE_URL}/saves/map`, { headers: authHeader() });

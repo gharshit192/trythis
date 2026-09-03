@@ -1812,6 +1812,23 @@ router.post('/:id/split', async (req, res) => {
   }
 });
 
+// GET /saves/:id/offers?checkIn=YYYY-MM-DD&nights=2&adults=2&origin=Delhi
+// "Complete your trip": stays and transport per destination, as Offers with
+// /go hrefs. Live prices when a provider is configured; partner links always.
+router.get('/:id/offers', async (req, res) => {
+  try {
+    const save = await Save.findOne({ _id: req.params.id, userId: req.user.id, status: 'active' }).select('title tripPlan extractedLocation category').lean();
+    if (!save) return res.status(404).json({ status: 'error', error: { code: 'NOT_FOUND', message: 'Save not found' } });
+    const { offersForTrip } = require('../services/commerce');
+    const data = await offersForTrip(save, { checkIn: req.query.checkIn, nights: req.query.nights, adults: req.query.adults, origin: req.query.origin });
+    require('../services/events').track('affiliate_offer_viewed', req.user.id, { placement: 'complete_trip', destinations: data.destinations.length, live: data.live });
+    res.json({ status: 'success', data });
+  } catch (e) {
+    logger.error(`[offers] ${e.message}`);
+    res.status(500).json({ status: 'error', error: { code: 'OFFERS_FAILED', message: 'Could not load booking options right now.' } });
+  }
+});
+
 router.post('/:id/plan', async (req, res) => {
   try {
     const save = await Save.findById(req.params.id);

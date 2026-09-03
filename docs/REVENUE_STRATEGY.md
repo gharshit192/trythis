@@ -1,6 +1,6 @@
 # Wanna Try — Revenue Strategy
 
-Companion to `PRODUCT_STRATEGY.md` (what we build) and `MONETIZATION_ARCHITECTURE.md` (how offers, tracking and redirects are implemented). Status: **Phase 1 — no monetisation live.** Nothing in this document is switched on today.
+Companion to `PRODUCT_STRATEGY.md` (what we build) and `MONETIZATION_ARCHITECTURE.md` (how offers, tracking and redirects are implemented). Status: **Phase 1.** The offers layer and the "Complete your trip" screens are built (3 Sep 2026) and show partner links; commissions start only when affiliate ids are added to env, and live prices when Amadeus keys are added. See `MONETIZATION_ARCHITECTURE.md` §Implementation status.
 
 ## The rule above every model
 

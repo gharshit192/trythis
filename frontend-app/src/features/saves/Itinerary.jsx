@@ -3,6 +3,7 @@ import api from '../../api';
 import Icon from '../../components/Icon';
 import Button from '../../components/Button';
 import Chip from '../../components/Chip';
+import CompleteYourTrip from '../../components/commerce/CompleteYourTrip';
 
 // Day-wise plan from planEngine (POST /saves/:id/plan). Every stop credits its
 // source where the engine knows it; engine-added stops say so.
@@ -13,7 +14,7 @@ export default function Itinerary({ onNavigate, onBack, payload }) {
   const [error, setError] = useState(null);
   const [building, setBuilding] = useState(true);
   const [pickDays, setPickDays] = useState(false);
-  const [tab, setTab] = useState('days');
+  const [tab, setTab] = useState(payload?.tab === 'book' ? 'book' : 'days');
   const [pdfBusy, setPdfBusy] = useState(false);
   const downloadPdf = async () => { setPdfBusy(true); try { await api.exportSavePdf(id, title || plan?.tripTitle); } catch (e) { setError(e.message || 'PDF export failed'); } finally { setPdfBusy(false); } };
   const sharePlan = async () => {
@@ -84,21 +85,11 @@ export default function Itinerary({ onNavigate, onBack, payload }) {
 
       {plan && (
         <div className="wt-tabs" style={{ marginBottom: 14 }}>
-          {[['days', 'Days'], ['stays', 'Stays'], ['there', 'Getting there']].map(([k, l]) => <button key={k} type="button" className={tab === k ? 'is-on' : ''} onClick={() => setTab(k)}>{l}</button>)}
+          {[['days', 'Days'], ['book', 'Stay & travel']].map(([k, l]) => <button key={k} type="button" className={tab === k ? 'is-on' : ''} onClick={() => setTab(k)}>{l}</button>)}
         </div>
       )}
-      {plan && tab !== 'days' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 0, marginBottom: 12 }}>
-          {(plan.destinations || []).flatMap((d) => (tab === 'stays' ? (d.stays || []) : (d.gettingThere || [])).map((x, i) => (
-            <a key={`${d.name}-${i}`} href={x.url} target="_blank" rel="noreferrer" className="wt-row" style={{ textDecoration: 'none' }}>
-              <span className={`wt-tile ${tab === 'stays' ? 'place' : 'learn'}`}><Icon name={tab === 'stays' ? 'pin' : 'globe'} size={20} /></span>
-              <span className="wt-row-body"><span className="wt-row-title" style={{ fontSize: 17 }}>{x.provider || x.mode}</span><span className="wt-row-meta">{[x.tier, x.mode && x.provider ? x.mode : null, x.approx, d.name].filter(Boolean).join(' · ')}</span></span>
-              <span className="wt-row-trail"><Icon name="forward" size={16} /></span>
-            </a>
-          )))}
-          {!(plan.destinations || []).some((d) => (tab === 'stays' ? d.stays : d.gettingThere)?.length) && <p className="wt-sub" style={{ fontSize: 14.5 }}>Nothing here yet for this trip.</p>}
-          <p style={{ fontSize: 12.5, color: 'var(--faint)', margin: '12px 0 0' }}>Hotel picks and routes plug in here next.</p>
-        </div>
+      {plan && tab === 'book' && (
+        <CompleteYourTrip saveId={id} defaultNights={Math.max(1, Math.min(7, Math.ceil(days.length / Math.max(1, (plan.destinations || []).length || 1))))} origin={plan.origin || undefined} />
       )}
       {days.length > 0 && tab === 'days' && (
         <>

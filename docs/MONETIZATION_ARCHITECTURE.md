@@ -82,10 +82,13 @@ Every zone shows "Affiliate links" or "Sponsored" in its header, and links to `/
 
 If ever used, ad units are mounted only inside `CommerceSection` zones, behind a `placement` that exists in the table above. Consent and policy requirements of the network apply; the product rule (no ads on Home or in the list) is not negotiable.
 
-## Implementation order (Phase 2)
+## Implementation status
 
-1. `Offer`/`OfferClick` models, `/go/:clickId`, event logging.
-2. Move `planEngine.buildDestLinks` output into `booking` and `agoda` adapters; serve them as Offers on the itinerary (today's Stays / Getting there tabs become the first `CompleteYourTrip`).
-3. `CommerceSection`, `HotelCard`, `BookingOption`, `PartnerCTA`.
-4. One Indian network adapter; conversions via report import.
-5. Metrics in the admin (impressions, clicks, CTR, revenue per travel-intent user).
+Built 3 Sep 2026 (`backend/src/services/commerce/*`, `routes/go.js`, `frontend-app/src/components/commerce/*`):
+
+1. ✓ `Offer` (cache), `OfferClick`, `Event` models; `GET /go/:token` (signed offer token → click row → 302); `affiliate_offer_viewed` / `partner_redirect` events.
+2. ✓ Providers: `links` (Booking.com, Agoda, MakeMyTrip, redBus, IRCTC, Google Flights with env affiliate ids) and `amadeus` (live hotel offers with price/rating, flight fares; on when `AMADEUS_CLIENT_ID/SECRET` are set). `GET /saves/:id/offers` assembles "Complete your trip" per destination with the plan's own hotel suggestions as a third source.
+3. ✓ `CommerceSection`, `HotelCard` (+ compare options rows), `OfferCard`, `PartnerCTA`, `CompleteYourTrip`; itinerary tab **Stay & travel**; compact preview on the trip screen once a plan exists.
+4. ☐ Indian affiliate network adapter (EarnKaro/Cuelinks) for MakeMyTrip/redBus commissions; conversion import.
+5. ☐ Metrics in the admin (impressions, clicks, CTR, revenue per travel-intent user).
+6. ☐ Activities/experiences provider (Thrillophilia/Klook) for the Experiences zone.
