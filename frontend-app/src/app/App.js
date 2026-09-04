@@ -3,6 +3,7 @@ import './theme.css';
 import './legacy.css';
 import api from '../api';
 import { consumeNativeShare, onNativeShare } from '../lib/shareReceiver';
+import ErrorBoundary from '../components/ErrorBoundary';
 
 import BottomNav from '../components/BottomNav';
 import InstallPrompt from '../components/InstallPrompt';
@@ -346,7 +347,7 @@ function App() {
       }}>
         {/* Screen Content */}
         <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', overscrollBehaviorX: 'none', display: 'flex', flexDirection: 'column' }}>
-          <Suspense fallback={<div className="wt-screen" />}>{screenMap[currentScreen] || screenMap['welcome']}</Suspense>
+          <ErrorBoundary key={currentScreen}><Suspense fallback={<div className="wt-screen" />}>{screenMap[currentScreen] || screenMap['welcome']}</Suspense></ErrorBoundary>
         </div>
 
         {/* Bottom Navigation - shown on main screens */}

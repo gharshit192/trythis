@@ -27,13 +27,19 @@ const looksHallucinated = (text) => {
   return new Set(words.map((w) => w.toLowerCase())).size / words.length < 0.3;
 };
 const prettify = (t) => String(t).replace(/[-_]+/g, ' ').trim();
+// Directions go by NAME whenever there is one: Google resolves "Blue Tokai,
+// Hauz Khas, Delhi" to the door, whereas our coordinates are often a geocode
+// of the city or the area and point at the wrong place. Coordinates are only
+// the fallback for a save that has no name at all.
 const mapsHref = (save) => {
   const p = save?.aiAnalysis?.structuredData?.place;
   if (p?.googleMapsUrl) return p.googleMapsUrl;
-  if (p?.coordinates?.lat) return `https://www.google.com/maps/search/?api=1&query=${p.coordinates.lat},${p.coordinates.lng}`;
   const loc = save?.extractedLocation;
+  const name = p?.name || loc?.name;
+  const q = [name, p?.address, !p?.address && loc?.city ? loc.city : null, loc?.country && !/india/i.test(loc.country) ? loc.country : null].filter(Boolean).join(', ');
+  if (name && q) return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
+  if (p?.coordinates?.lat) return `https://www.google.com/maps/search/?api=1&query=${p.coordinates.lat},${p.coordinates.lng}`;
   if (loc?.lat) return `https://www.google.com/maps/search/?api=1&query=${loc.lat},${loc.lng}`;
-  const q = [p?.name || loc?.name, p?.address, loc?.city].filter(Boolean).join(', ');
   return q ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}` : null;
 };
 const sourceLabel = (s) => ({ instagram: 'a reel', youtube: 'a video', tiktok: 'a video', web: 'an article', url: 'a link', pinterest: 'a pin', manual: 'a note', voice: 'a voice note' }[s] || 'a link');

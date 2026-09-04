@@ -154,6 +154,18 @@ The document may also contain
 
 ---
 
+# Numerals — read them exactly
+
+Devanagari digits are letters of the document, not formatting:
+
+० = 0, १ = 1, २ = 2, ३ = 3, ४ = 4, ५ = 5, ६ = 6, ७ = 7, ८ = 8, ९ = 9
+
+* Transcribe every numeral exactly as written in its own script: १०८ stays १०८, 108 stays 108. Never convert one to the other, never spell a digit out.
+* Keep list numbering, dates, prices, page numbers, phone numbers and quantities in place — a line that starts with "३." or "(२)" keeps that prefix.
+* Mixed lines are common ("₹३५०", "Chapter २") — keep the mix as written.
+
+---
+
 # Supported Devanagari Characters
 
 Recognize all valid Devanagari characters including
@@ -312,7 +324,7 @@ If handwriting is difficult
 
 Do NOT guess.
 
-Transcribe only what is visually supported.
+Transcribe only what is visually supported. Keep Devanagari numerals (०१२३४५६७८९) exactly as written — never convert them to 0-9, never drop list numbers, dates, prices or phone numbers.
 
 Return a confidence score.
 

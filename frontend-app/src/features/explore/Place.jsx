@@ -32,9 +32,9 @@ export default function Place({ onNavigate, onBack, payload }) {
 
   if (!place) return <div className="wt-screen"><div style={{ padding: 40, textAlign: 'center', color: 'var(--mute)' }}>Loading…</div></div>;
 
-  const mapsHref = place.geo?.lat
-    ? `https://www.google.com/maps/search/?api=1&query=${place.geo.lat},${place.geo.lng}`
-    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([place.canonicalName, place.city].filter(Boolean).join(', '))}`;
+  // By name, not by our geocode: the seeded coordinates are area-level and sent
+  // people to the wrong spot. Google resolves the name + city to the venue.
+  const mapsHref = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([place.canonicalName, place.city, place.region].filter(Boolean).join(', '))}`;
 
   return (
     <div className="wt-screen">
