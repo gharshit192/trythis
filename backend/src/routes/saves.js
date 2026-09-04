@@ -1798,20 +1798,37 @@ router.post('/:id/reread', async (req, res) => {
       const ext = /png/i.test(r.headers['content-type'] || '') ? 'png' : /webp/i.test(r.headers['content-type'] || '') ? 'webp' : 'jpg';
       const f = path.join(dir, `img-${i}.${ext}`); fs.writeFileSync(f, Buffer.from(r.data)); files.push(f);
     }
-    const { analyzeBundle } = require('../services/screenshotBundle');
+    // Answer straight away and read in the background: the item page shows the
+    // live "Reading…" line, refreshes itself, and the phone gets a push. The
+    // user can leave the screen or the app.
     const userTitle = /^(hindi\/devanagari document|screenshot bundle|untitled)$/i.test(save.title || '') ? null : save.title;
-    const summary = await analyzeBundle(files, `reread-${save._id}`, userTitle);
-    try { fs.rmSync(dir, { recursive: true, force: true }); } catch {}
-    if (!summary) throw new Error('The read produced nothing.');
-    save.title = summary.autoTitle || save.title;
-    save.tags = [...new Set((summary.categories || []).flatMap((c) => (c.items || []).flatMap((i) => i.tags || [])).map((t) => String(t).trim()).filter(Boolean))].slice(0, 12);
-    save.aiAnalysis = { ...(save.aiAnalysis?.toObject ? save.aiAnalysis.toObject() : (save.aiAnalysis || {})), summary: summary.masterSummary?.oneLiner || '', keyPoints: summary.masterSummary?.bullets || [], structuredData: null, screenshotAnalysis: { type: 'bundle', data: summary, confidence: summary.confidence || 0.8, allMatches: [] }, processedAt: new Date() };
-    save.markModified('aiAnalysis'); save.processingStatus = 'done';
+    save.processingStatus = 'processing';
     await save.save();
-    res.json({ status: 'success', data: save });
+    res.json({ status: 'success', data: save, processing: true });
+
+    (async () => {
+      const { analyzeBundle } = require('../services/screenshotBundle');
+      try {
+        const summary = await analyzeBundle(files, `reread-${save._id}`, userTitle);
+        if (!summary) throw new Error('The read produced nothing.');
+        await Save.findByIdAndUpdate(save._id, {
+          title: summary.autoTitle || save.title,
+          tags: [...new Set((summary.categories || []).flatMap((c) => (c.items || []).flatMap((i) => i.tags || [])).map((t) => String(t).trim()).filter(Boolean))].slice(0, 12),
+          aiAnalysis: { summary: summary.masterSummary?.oneLiner || '', keyPoints: summary.masterSummary?.bullets || [], structuredData: null, screenshotAnalysis: { type: 'bundle', data: summary, confidence: summary.confidence || 0.8, allMatches: [] }, processedAt: new Date() },
+          processingStatus: 'done',
+        });
+        try { await require('../services/notificationService').sendJobNotification(req.user.id, { type: 'JOB_COMPLETED', saveId: String(save._id) }); } catch {}
+        logger.info(`[reread] ${save._id} done`);
+      } catch (err) {
+        logger.error(`[reread] ${save._id} failed: ${err.message}`);
+        await Save.findByIdAndUpdate(save._id, { processingStatus: 'done' }).catch(() => {});
+      } finally {
+        try { fs.rmSync(dir, { recursive: true, force: true }); } catch {}
+      }
+    })();
   } catch (e) {
     logger.error(`[reread] ${e.message}`);
-    res.status(500).json({ status: 'error', error: { code: 'REREAD_FAILED', message: 'Could not read the images again right now.' } });
+    if (!res.headersSent) res.status(500).json({ status: 'error', error: { code: 'REREAD_FAILED', message: 'Could not read the images again right now.' } });
   }
 });
 

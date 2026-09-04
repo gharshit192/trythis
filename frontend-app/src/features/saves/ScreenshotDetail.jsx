@@ -106,10 +106,12 @@ export default function ScreenshotDetail({ save: initial, onNavigate, onBack }) 
   };
   const setReminder = async (date) => { const r = await api.patchSave(id, { resurfaceAt: date }).catch(() => null); if (r?.status === 'success') { setSave(r.data); flash(date ? 'Reminder set' : 'Reminder off'); } };
   const reread = async () => {
-    setBusy(true); flash('Reading the photos again… 20–60 s');
+    flash('Reading it again — you can leave this screen');
     const r = await api.rereadScreenshots(id).catch(() => null);
-    setBusy(false);
-    if (r?.status === 'success') { setSave(r.data); flash('Updated'); } else flash(r?.error?.message || 'Could not read it again');
+    // The server answers at once with the save marked as reading; the page's
+    // own refresh loop fills in the new content when it lands.
+    if (r?.status === 'success') setSave(r.data);
+    else flash(r?.error?.message || 'Could not read it again');
   };
   const saveTitle = async () => {
     const title = draftTitle.trim(); setRenameOpen(false);
