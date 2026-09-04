@@ -5,6 +5,7 @@ import Button from '../../components/Button';
 import StatusControl from '../../components/StatusControl';
 import SectionLabel from '../../components/SectionLabel';
 import ReminderControl from '../../components/ReminderControl';
+import Chip from '../../components/Chip';
 import { relativeTime } from '../../lib/format';
 import { isTryable } from '../../lib/intent';
 
@@ -19,6 +20,7 @@ const TYPE_LABEL = {
 const TYPE_KIND = { receipt: 'shop', menu: 'food', product_page: 'shop', map: 'place', travel_booking: 'place', finance: 'learn', article: 'learn', code: 'learn', handwritten_note: 'learn', price_list: 'shop' };
 const KEY_LABEL = { orderId: 'Order', bookingId: 'Booking', paymentMethod: 'Paid with', restaurantName: 'Restaurant', priceRange: 'Price range', originalPrice: 'Was', placeType: 'Type', keyInfo: 'Key info', keyItems: 'Items', keyElements: 'Key parts', screensVisible: 'Screens', designPatterns: 'Patterns', specialItems: 'Specials', errorMessage: 'Error', rawText: 'Text read', priceVisible: 'Price seen' };
 const label = (k) => KEY_LABEL[k] || k.replace(/([A-Z])/g, ' $1').replace(/^./, (c) => c.toUpperCase());
+const PRESET_TAGS = ['bill', 'invoice', 'receipt', 'notes', 'study', 'work', 'warranty', 'travel', 'menu', 'recipe', 'important', 'keep'];
 const isReminderWorthy = (type) => ['receipt', 'travel_booking', 'price_list', 'finance', 'notification'].includes(type);
 
 function Facts({ obj }) {
@@ -64,6 +66,11 @@ export default function ScreenshotDetail({ save: initial, onNavigate, onBack }) 
   const secs = Math.max(0, Math.round((now - new Date(save.createdAt).getTime()) / 1000));
   const [menu, setMenu] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [renameOpen, setRenameOpen] = useState(false);
+  const [draftTitle, setDraftTitle] = useState('');
+  const [tagsOpen, setTagsOpen] = useState(false);
+  const [draftTags, setDraftTags] = useState([]);
+  const [customTag, setCustomTag] = useState('');
   const [toast, setToast] = useState(null);
   const [busy, setBusy] = useState(false);
   const flash = (t) => { setToast(t); setTimeout(() => setToast(null), 1800); };
@@ -104,6 +111,17 @@ export default function ScreenshotDetail({ save: initial, onNavigate, onBack }) 
     setBusy(false);
     if (r?.status === 'success') { setSave(r.data); flash('Updated'); } else flash(r?.error?.message || 'Could not read it again');
   };
+  const saveTitle = async () => {
+    const title = draftTitle.trim(); setRenameOpen(false);
+    if (!title || title === save.title) return;
+    const r = await api.patchSave(id, { title }).catch(() => null);
+    if (r?.status === 'success') { setSave(r.data); flash('Renamed'); } else flash('Could not rename');
+  };
+  const saveTags = async () => {
+    setTagsOpen(false);
+    const r = await api.patchSave(id, { tags: draftTags }).catch(() => null);
+    if (r?.status === 'success') { setSave(r.data); flash('Tags saved'); } else flash('Could not save tags');
+  };
   const pdf = async () => { setBusy(true); try { const how = await api.exportScreenshotPdf(id, save.title); if (how === 'downloaded') flash('PDF downloaded'); } catch (e) { flash(e.message || 'PDF failed'); } finally { setBusy(false); } };
   const share = async () => {
     setMenu(false); setBusy(true);
@@ -117,9 +135,32 @@ export default function ScreenshotDetail({ save: initial, onNavigate, onBack }) 
       {menu && (
         <div className="wt-sheet" onClick={() => setMenu(false)}><div onClick={(e) => e.stopPropagation()}><div className="grab" />
           <button type="button" className="wt-menu-row" onClick={share}><Icon name="share" size={20} />Share</button>
+          <button type="button" className="wt-menu-row" onClick={() => { setMenu(false); setDraftTitle(save.title || ''); setRenameOpen(true); }}><Icon name="edit" size={20} />Rename</button>
+          <button type="button" className="wt-menu-row" onClick={() => { setMenu(false); setDraftTags(save.tags || []); setTagsOpen(true); }}><Icon name="folder" size={20} />Edit tags</button>
           <button type="button" className="wt-menu-row" onClick={() => { setMenu(false); reread(); }}><Icon name="sparkle" size={20} />Read it again</button>
           <button type="button" className="wt-menu-row" onClick={() => { setMenu(false); pdf(); }}><Icon name="book" size={20} />Download as PDF</button>
           <button type="button" className="wt-menu-row danger" onClick={() => { setMenu(false); setConfirmDelete(true); }}><Icon name="close" size={20} />Delete</button>
+        </div></div>
+      )}
+      {renameOpen && (
+        <div className="wt-sheet" onClick={() => setRenameOpen(false)}><div onClick={(e) => e.stopPropagation()}><div className="grab" />
+          <p style={{ fontFamily: 'var(--font-display)', fontSize: 20, margin: '0 0 12px' }}>Rename</p>
+          <input className="wt-input" autoFocus value={draftTitle} onChange={(e) => setDraftTitle(e.target.value)} maxLength={140} style={{ marginBottom: 12 }} onKeyDown={(e) => e.key === 'Enter' && saveTitle()} />
+          <div style={{ display: 'flex', gap: 10 }}><Button small variant="secondary" onClick={() => setRenameOpen(false)}>Cancel</Button><Button small onClick={saveTitle} disabled={!draftTitle.trim()}>Save</Button></div>
+        </div></div>
+      )}
+      {tagsOpen && (
+        <div className="wt-sheet" onClick={() => setTagsOpen(false)}><div onClick={(e) => e.stopPropagation()}><div className="grab" />
+          <p style={{ fontFamily: 'var(--font-display)', fontSize: 20, margin: '0 0 4px' }}>Tags</p>
+          <p className="wt-sub" style={{ marginBottom: 14 }}>A few that help you find it later.</p>
+          <div className="wt-chips" style={{ flexWrap: 'wrap', marginBottom: 12 }}>
+            {[...new Set([...PRESET_TAGS, ...draftTags])].map((t) => <Chip key={t} small on={draftTags.includes(t)} onClick={() => setDraftTags((xs) => xs.includes(t) ? xs.filter((x) => x !== t) : [...xs, t])}>{t}</Chip>)}
+          </div>
+          <form onSubmit={(e) => { e.preventDefault(); const t = customTag.trim().toLowerCase().replace(/^#/, '').slice(0, 24); if (t && !draftTags.includes(t)) setDraftTags((xs) => [...xs, t]); setCustomTag(''); }} style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+            <input className="wt-input" value={customTag} onChange={(e) => setCustomTag(e.target.value)} placeholder="Other…" style={{ flex: 1 }} />
+            <Button small variant="secondary" type="submit" disabled={!customTag.trim()} style={{ width: 'auto', padding: '0 16px' }}>Add</Button>
+          </form>
+          <div style={{ display: 'flex', gap: 10 }}><Button small variant="secondary" onClick={() => setTagsOpen(false)}>Cancel</Button><Button small onClick={saveTags}>Save tags</Button></div>
         </div></div>
       )}
       {confirmDelete && (

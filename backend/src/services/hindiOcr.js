@@ -1003,32 +1003,125 @@ const TESSERACT_MIN_CONFIDENCE = parseFloat(process.env.TESSERACT_MIN_CONFIDENCE
 // Vision as the last resort while billing is disabled (ADR 0008/0009).
 // Callers pass detect()'s handwritten flag; when unknown we assume handwritten
 // (the conservative path).
+
+// Numbers are where the readers disagree most and where a mistake matters most
+// (a price, a phone number, a date). Each line has up to three independent
+// readings — two vision models and Tesseract. Compare only the digit runs: if
+// two readers agree on a run and the chosen text disagrees, take theirs, in the
+// script the chosen text already uses. Nothing but digits is ever replaced.
+
+// One extra look at the image for numbers alone. A model transcribing a whole
+// page spends its attention on words; asked only for the numbers, in order, it
+// reads them far more reliably. Used purely as a third voter for the digit
+// reconciliation below — it never rewrites any words.
+const readNumbersPass = async (imageContents) => {
+  try {
+    const msg = await claudeClient.messages.create({
+      model: 'claude-sonnet-4-6', max_tokens: 700, temperature: 0,
+      messages: [{ role: 'user', content: [...imageContents, { type: 'text', text: 'List every number visible in this image, in reading order, one per line, exactly as printed (keep Devanagari digits as Devanagari, keep ₹, %, dates and phone numbers whole). Read each digit carefully. No commentary, no numbering of your own.' }] }],
+    });
+    const text = msg.content?.[0]?.type === 'text' ? msg.content[0].text : '';
+    return String(text).split('\n').map((l) => l.trim()).filter(Boolean);
+  } catch (err) {
+    logger.warn(`hindiOcr: numbers pass failed: ${err.message}`);
+    return [];
+  }
+};
+
+const DEVA = '०१२३४५६७८९';
+const toArabic = (t) => String(t || '').replace(/[०-९]/g, (d) => String(DEVA.indexOf(d)));
+const toDeva = (t) => String(t || '').replace(/[0-9]/g, (d) => DEVA[Number(d)]);
+const digitRuns = (t) => (String(t || '').match(/[0-9०-९]+/g) || []).map(toArabic);
+const reconcileDigits = (text, candidates) => {
+  const mine = digitRuns(text);
+  if (!mine.length) return { text, changed: false };
+  const others = candidates.map(digitRuns).filter((r) => r.length === mine.length);
+  if (others.length < 2) return { text, changed: false };
+  let changed = false;
+  let k = -1;
+  const isDeva = /[०-९]/.test(text);
+  const out = String(text).replace(/[0-9०-९]+/g, (run) => {
+    k += 1;
+    const votes = {};
+    for (const o of others) votes[o[k]] = (votes[o[k]] || 0) + 1;
+    const [best, n] = Object.entries(votes).sort((a, b) => b[1] - a[1])[0] || [];
+    // Only a genuine majority (two independent readers) overrides what we have.
+    if (n >= 2 && best !== toArabic(run)) { changed = true; return isDeva ? toDeva(best) : best; }
+    return run;
+  });
+  return { text: out, changed };
+};
+
 const run = async (imageContents, { handwritten = true } = {}) => {
-  if (!handwritten) {
-    try {
-      const tessLines = await runWithTesseract(imageContents);
-      const scored = tessLines.map((l) => l.confidence).filter((c) => typeof c === 'number');
-      const avg = scored.length ? scored.reduce((a, b) => a + b, 0) / scored.length : 0;
-      // A photo of a screen gave Tesseract an average of 0.61 with half the lines
-      // pure noise ("Nm @ar3ast Br Bel Wan,") — and that passed. Accept a
-      // Tesseract-only read only when it is actually clean: solid average, few
-      // weak lines, and almost no junk lines (Latin noise or lone symbols in a
-      // Devanagari document). Anything else goes to the LLM read, which handled
-      // the same kind of image perfectly.
-      const isJunk = (t) => { const s = String(t || '').trim(); if (s.length < 3) return true; const deva = (s.match(/[\u0900-\u097F]/g) || []).length; const latin = (s.match(/[A-Za-z]/g) || []).length; const sym = (s.match(/[^\w\s\u0900-\u097F।॥]/g) || []).length; return (latin > 0 && latin >= deva && latin <= 6) || sym > s.length / 3; };
-      const junkRatio = tessLines.length ? tessLines.filter((l) => isJunk(l.text)).length / tessLines.length : 1;
-      const weakRatio = scored.length ? scored.filter((c) => c < 0.6).length / scored.length : 1;
-      const clean = tessLines.length > 0 && avg >= Math.max(TESSERACT_MIN_CONFIDENCE, 0.72) && weakRatio <= 0.25 && junkRatio <= 0.2;
-      if (clean) {
-        return await finalizeOcrLines(tessLines, 'tesseract');
+  // Printed Devanagari: Tesseract and the model read run side by side. The
+  // model's read is the one we keep — on a clean printed list Tesseract still
+  // turned "₹१०५५" into "Tok" and "₹१४०" into "र१४०" — and Tesseract's lines
+  // become the cross-check that raises confidence where the two agree.
+  // Tesseract-only is now the fallback for when every model call fails.
+  let tessLines = [];
+  let tessClean = false;
+  const tessPromise = !handwritten ? runWithTesseract(imageContents).catch((err) => { logger.warn(`hindiOcr: tesseract failed (${err.message})`); return []; }) : Promise.resolve([]);
+  const llmPromise = runWithLLMs(imageContents).catch((err) => { logger.warn(`hindiOcr: LLM OCR failed: ${err.message}`); return EMPTY_RESULT; });
+  const numbersPromise = readNumbersPass(imageContents);
+  const [tl, llmFirst, numberLines] = await Promise.all([tessPromise, llmPromise, numbersPromise]);
+  tessLines = tl;
+  if (tessLines.length) {
+    const scored = tessLines.map((l) => l.confidence).filter((c) => typeof c === 'number');
+    const avg = scored.length ? scored.reduce((a, b) => a + b, 0) / scored.length : 0;
+    const isJunk = (t) => { const x = String(t || '').trim(); if (x.length < 3) return true; const deva = (x.match(/[\u0900-\u097F]/g) || []).length; const latin = (x.match(/[A-Za-z]/g) || []).length; const sym = (x.match(/[^\w\s\u0900-\u097F।॥]/g) || []).length; return (latin > 0 && latin >= deva && latin <= 6) || sym > x.length / 3; };
+    const junkRatio = tessLines.filter((l) => isJunk(l.text)).length / tessLines.length;
+    const weakRatio = scored.length ? scored.filter((c) => c < 0.6).length / scored.length : 1;
+    tessClean = avg >= Math.max(TESSERACT_MIN_CONFIDENCE, 0.72) && weakRatio <= 0.25 && junkRatio <= 0.2;
+  }
+  const llmLinesFirst = llmFirst.transcription?.lines || [];
+  if (llmLinesFirst.length > 0) {
+    // Cross-check against Tesseract where it read cleanly: agreeing lines get
+    // their confidence lifted; nothing from Tesseract replaces the model's text.
+    // Line-by-line cross-check against Tesseract, then a digit vote across all
+    // three readings so a price or a phone number is never one model's guess.
+    const canon = (t) => canonicalizeDevanagari(t);
+    const gLines = llmFirst._models?.gemini?.transcription?.lines || [];
+    const cLines = llmFirst._models?.claude?.transcription?.lines || [];
+    const nearest = (list, i, text) => {
+      let best = null;
+      for (let j = Math.max(0, i - 2); j <= Math.min(list.length - 1, i + 2); j++) {
+        const sc = similarity(text, list[j].text);
+        if (!best || sc > best.sc) best = { sc, text: list[j].text };
       }
-      logger.info(`hindiOcr: tesseract not clean enough (lines=${tessLines.length}, avgConf=${avg.toFixed(2)}, weak=${(weakRatio * 100).toFixed(0)}%, junk=${(junkRatio * 100).toFixed(0)}%) — falling back to LLM OCR`);
-    } catch (err) {
-      logger.warn(`hindiOcr: tesseract failed (${err.message}) — falling back to LLM OCR`);
+      return best && best.sc >= 0.55 ? best.text : null;
+    };
+    let fixed = 0;
+    llmLinesFirst.forEach((l, i) => {
+      const cands = [nearest(gLines, i, l.text), nearest(cLines, i, l.text), tessLines.length ? nearest(tessLines, i, l.text) : null].filter(Boolean);
+      // The numbers-only reading contributes the entry whose digits line up
+      // with this line's, so a price or total gets a genuinely independent vote.
+      const mineRuns = digitRuns(l.text);
+      if (mineRuns.length) {
+        const hit = numberLines.find((n) => { const r = digitRuns(n); return r.length === mineRuns.length && (r[0] === mineRuns[0] || r.some((x, k) => x !== mineRuns[k])); });
+        if (hit) cands.push(hit);
+      }
+      const r = reconcileDigits(l.text, cands);
+      if (r.changed) { l.text = r.text; fixed += 1; }
+      if (tessClean) {
+        const tessSet = new Set(tessLines.map((x) => canon(x.text)));
+        if (tessSet.has(canon(l.text))) { l.agreed = true; l.confidence = Math.max(l.confidence || 0, 0.92); }
+      }
+    });
+    if (fixed) logger.info(`hindiOcr: digit vote corrected ${fixed} line(s)`);
+    if (tessClean) {
+      const agreedN = llmLinesFirst.filter((l) => l.agreed).length;
+      llmFirst.overallConfidence = Math.max(llmFirst.overallConfidence || 0, Math.min(0.97, 0.6 + 0.35 * (agreedN / llmLinesFirst.length)));
+      llmFirst.corroboration = agreedN ? 'tesseract' : llmFirst.corroboration;
     }
+    return { ...llmFirst, source: 'dual-llm', _models: { ...(llmFirst._models || {}), tesseract: { lines: tessLines } } };
+  }
+  if (tessClean) {
+    logger.info('hindiOcr: model read unavailable — using the clean Tesseract read');
+    return await finalizeOcrLines(tessLines, 'tesseract');
   }
 
-  const llmResult = await runWithLLMs(imageContents).catch((err) => {
+  const llmResult = llmFirst;
+  if (false) await runWithLLMs(imageContents).catch((err) => {
     logger.warn(`hindiOcr: LLM OCR failed, trying Google Vision last: ${err.message}`);
     return EMPTY_RESULT;
   });
