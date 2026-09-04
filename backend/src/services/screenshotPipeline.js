@@ -114,7 +114,9 @@ const runOcr = async (imagePath) => {
 
 const mergedSeparator = (i) => `\n\n--- Image ${i + 1} ---\n`;
 
-const processFiles = async (files = [], { userId, title, source = 'screenshot', category }) => {
+// skipOcr: the bundle read does its own, better OCR pass; running Tesseract
+// here first cost the upload ~30 s before it could even answer.
+const processFiles = async (files = [], { userId, title, source = 'screenshot', category, skipOcr = false }) => {
   if (!Array.isArray(files) || files.length === 0) {
     throw new Error('no files supplied');
   }
@@ -148,7 +150,7 @@ const processFiles = async (files = [], { userId, title, source = 'screenshot', 
       continue;
     }
 
-    const ocrText = fullPath ? await runOcr(fullPath) : '';
+    const ocrText = fullPath && !skipOcr ? await runOcr(fullPath) : '';
     const uploadedAt = new Date();
     const purgeAfter = addWorkingDays(uploadedAt, PURGE_AFTER_DAYS);
 

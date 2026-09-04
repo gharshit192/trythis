@@ -881,7 +881,7 @@ router.post('/screenshot-bundle',
       // 1) Store the images and create the save NOW, so it is in the list within
       //    seconds and survives the phone leaving, sleeping or losing the network.
       const pipelineResult = await screenshotPipeline.processFiles(files, {
-        userId: req.user.id, title: req.body.title || '', source: 'screenshot_bundle', category: 'other',
+        userId: req.user.id, title: req.body.title || '', source: 'screenshot_bundle', category: 'other', skipOcr: true,
       });
       const filePaths = pipelineResult.screenshots.map((s) => {
         const filename = path.basename(s.url);
