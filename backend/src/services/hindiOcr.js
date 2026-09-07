@@ -163,6 +163,7 @@ Devanagari digits are letters of the document, not formatting:
 * Transcribe every numeral exactly as written in its own script: १०८ stays १०८, 108 stays 108. Never convert one to the other, never spell a digit out.
 * Keep list numbering, dates, prices, page numbers, phone numbers and quantities in place — a line that starts with "३." or "(२)" keeps that prefix.
 * Mixed lines are common ("₹३५०", "Chapter २") — keep the mix as written.
+* Never mix digit scripts INSIDE one number or date: १३/१/४९ is all Devanagari, 13/1/49 is all Arabic. "13/1/1३६" is always a misreading.
 
 ---
 
@@ -1069,6 +1070,26 @@ const DEVA = '०१२३४५६७८९';
 const toArabic = (t) => String(t || '').replace(/[०-९]/g, (d) => String(DEVA.indexOf(d)));
 const toDeva = (t) => String(t || '').replace(/[0-9]/g, (d) => DEVA[Number(d)]);
 const digitRuns = (t) => (String(t || '').match(/[0-9०-९]+/g) || []).map(toArabic);
+// A number that mixes both digit scripts ("13/1/1३६") is always a misreading:
+// a writer uses one script for one figure. Rewrite such tokens in whichever
+// script the document mostly uses, so at least the form is honest.
+const unmixDigitScripts = (lines) => {
+  const all = lines.map((l) => l.text).join(' ');
+  const deva = (all.match(/[०-९]/g) || []).length;
+  const arab = (all.match(/[0-9]/g) || []).length;
+  const preferDeva = deva >= arab;
+  let changed = 0;
+  for (const l of lines) {
+    const next = String(l.text).replace(/[0-9०-९][0-9०-९\/.\-]*[0-9०-९]|[0-9०-९]/g, (tok) => {
+      const hasD = /[०-९]/.test(tok); const hasA = /[0-9]/.test(tok);
+      if (!(hasD && hasA)) return tok;
+      changed += 1;
+      return preferDeva ? toDeva(tok) : toArabic(tok);
+    });
+    if (next !== l.text) { l.text = next; l.agreed = false; l.confidence = Math.min(l.confidence ?? 0.5, 0.6); }
+  }
+  return changed;
+};
 const reconcileDigits = (text, candidates) => {
   const mine = digitRuns(text);
   if (!mine.length) return { text, changed: false };
@@ -1183,6 +1204,8 @@ const run = async (rawImageContents, { handwritten = true } = {}) => {
       }
     });
     if (fixed) logger.info(`hindiOcr: digit vote corrected ${fixed} line(s)`);
+    const unmixed = unmixDigitScripts(llmLinesFirst);
+    if (unmixed) logger.info(`hindiOcr: ${unmixed} number(s) had mixed digit scripts — rewritten in the document's own script`);
     if (tessClean) {
       const agreedN = llmLinesFirst.filter((l) => l.agreed).length;
       llmFirst.overallConfidence = Math.max(llmFirst.overallConfidence || 0, Math.min(0.97, 0.6 + 0.35 * (agreedN / llmLinesFirst.length)));

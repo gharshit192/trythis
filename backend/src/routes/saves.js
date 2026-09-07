@@ -884,8 +884,8 @@ router.post('/screenshot-bundle',
         userId: req.user.id, title: req.body.title || '', source: 'screenshot_bundle', category: 'other', skipOcr: true,
       });
       const filePaths = pipelineResult.screenshots.map((s) => {
-        const filename = path.basename(s.url);
-        const localPath = path.join(screenshotPipeline.__dirs.FULL_DIR, filename);
+        if (s.readPath && require('fs').existsSync(s.readPath)) return s.readPath;
+        const localPath = path.join(screenshotPipeline.__dirs.FULL_DIR, path.basename(s.url));
         return require('fs').existsSync(localPath) ? localPath : s.url;
       });
       const sessionId = uuidv4();

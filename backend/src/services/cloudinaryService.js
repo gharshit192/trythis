@@ -6,13 +6,17 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-const uploadImage = async (source, folder, publicId) => {
+// A screenshot is the document. Capping it at 480px turned a photographed
+// letter into 360x480 pixels before anything read it — handwritten dates came
+// out as "13/1/1३६" because the digits were three pixels tall. Media that gets
+// read keeps its resolution; thumbnails ask for the small transform explicitly.
+const uploadImage = async (source, folder, publicId, { maxSide = 2400, quality = 'auto:good' } = {}) => {
   try {
     const options = {
       folder: `trythis/${folder}`,
       resource_type: 'image',
       format: 'jpg',
-      transformation: [{ width: 480, height: 480, crop: 'limit', quality: 80 }]
+      transformation: [{ width: maxSide, height: maxSide, crop: 'limit', quality }]
     };
     if (publicId) options.public_id = publicId;
 
@@ -29,10 +33,10 @@ const uploadImage = async (source, folder, publicId) => {
   }
 };
 
-const uploadBuffer = async (buffer, mimetype, folder, publicId) => {
+const uploadBuffer = async (buffer, mimetype, folder, publicId, opts) => {
   const b64 = buffer.toString('base64');
   const dataUri = `data:${mimetype};base64,${b64}`;
-  return uploadImage(dataUri, folder, publicId);
+  return uploadImage(dataUri, folder, publicId, opts);
 };
 
 const deleteImage = async (publicId) => {

@@ -69,8 +69,13 @@ const persistFull = async (multerFile, userId) => {
     const buffer = multerFile.buffer || (multerFile.path ? fs.readFileSync(multerFile.path) : null);
     if (!buffer) throw new Error('multer file has neither .path nor .buffer');
 
-    const result = await uploadBuffer(buffer, multerFile.mimetype, 'screenshots', publicId);
+    const result = await uploadBuffer(buffer, multerFile.mimetype, 'screenshots', publicId, { maxSide: 2400, quality: 'auto:good' });
     if (!result) throw new Error('Cloudinary upload failed');
+
+    // Keep the untouched bytes on local disk as well: the read wants the
+    // original, and a remote fetch of a re-encoded copy is not the original.
+    let localCopy = null;
+    try { const l = persistFullLocal(multerFile, userId); localCopy = l.destPath; } catch (e) { logger.warn(`[persistFull] local copy failed: ${e.message}`); }
 
     logger.info(`[persistFull] uploaded to Cloudinary: ${result.url}`);
     return {
@@ -78,7 +83,8 @@ const persistFull = async (multerFile, userId) => {
       publicId: result.publicId,
       filename: publicId,
       basename,
-      destPath: null
+      destPath: localCopy,
+      readPath: localCopy
     };
   }
 
@@ -155,6 +161,9 @@ const processFiles = async (files = [], { userId, title, source = 'screenshot', 
     const purgeAfter = addWorkingDays(uploadedAt, PURGE_AFTER_DAYS);
 
     screenshots.push({
+      // Where the reader should look: the untouched local file when we have
+      // it, so the read never happens on a re-encoded copy.
+      readPath: fullPath || null,
       url: cloudinaryUrl || `${PUBLIC_BASE_URL}/static/screenshots/full/${filename}`,
       thumbnailUrl: cloudinaryUrl ? cloudinaryUrl : (thumbResult?.filename ? `${PUBLIC_BASE_URL}/static/screenshots/thumb/${thumbResult.filename}` : null),
       ocrText,
