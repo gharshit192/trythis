@@ -19,9 +19,16 @@ const CONSONANT = {
   प: 'p', फ: 'ph', ब: 'b', भ: 'bh', म: 'm',
   य: 'y', र: 'r', ऱ: 'r', ल: 'l', ळ: 'l', ऴ: 'l', व: 'v',
   श: 'sh', ष: 'sh', स: 's', ह: 'h',
-  // Nukta forms — the Urdu-derived sounds that show up constantly in Hindi
-  // food and place names (ज़ायका, फ़लूदा, पड़ोस).
-  क़: 'q', ख़: 'kh', ग़: 'g', ज़: 'z', ड़: 'r', ढ़: 'rh', फ़: 'f', य़: 'y',
+};
+
+// The Urdu-derived sounds that show up constantly in Hindi food and place
+// names (ज़ायका, फ़लूदा, पड़ोस). Their precomposed codepoints (U+0958–U+095F)
+// are Unicode *composition exclusions*: NFC will never produce them, so the
+// nukta always arrives as a separate combining mark and has to retro-modify
+// the consonant we just emitted.
+const NUKTA = '़';
+const NUKTA_SOUND = {
+  क: 'q', ख: 'kh', ग: 'g', ज: 'z', ड: 'r', ढ: 'rh', फ: 'f', य: 'y', न: 'n', र: 'r',
 };
 
 const VOWEL = {
@@ -41,27 +48,30 @@ const SIGN = { 'ं': 'n', 'ः': 'h', 'ँ': 'n' };
 
 const VIRAMA = '्';
 const DIGIT = { '०': '0', '१': '1', '२': '2', '३': '3', '४': '4', '५': '5', '६': '6', '७': '7', '८': '8', '९': '9' };
-const DROP = new Set(['़', 'ऽ', '।', '॥']); // nukta, avagraha, danda
+const DROP = new Set(['ऽ', '।', '॥']); // avagraha, danda — no sound of their own
 
 const hasDevanagari = (s) => /[ऀ-ॿ]/.test(s);
 
 // Devanagari → Latin, syllable by syllable. Word-final inherent 'a' is dropped
 // the way Hindi actually drops it (मंदिर → "mandir", not "mandira").
 const transliterate = (input) => {
-  const src = input.normalize('NFC');
+  // NFD so a precomposed ज़ and a typed ज+़ take the same path below.
+  const src = input.normalize('NFD');
   const out = [];
-  let pending = false; // a consonant is waiting for its inherent 'a'
+  let pending = false;   // a consonant is waiting for its inherent 'a'
+  let lastCons = null;   // the Devanagari consonant we last emitted, for the nukta
 
   const flush = () => { if (pending) out.push('a'); pending = false; };
-  const endWord = () => { pending = false; }; // schwa deletion at a word boundary
+  const endWord = () => { pending = false; lastCons = null; }; // schwa deletion
 
   for (const ch of src) {
-    if (CONSONANT[ch]) { flush(); out.push(CONSONANT[ch]); pending = true; }
+    if (CONSONANT[ch]) { flush(); out.push(CONSONANT[ch]); pending = true; lastCons = ch; }
+    else if (ch === NUKTA) { if (lastCons && NUKTA_SOUND[lastCons]) out[out.length - 1] = NUKTA_SOUND[lastCons]; }
     else if (MATRA[ch]) { pending = false; out.push(MATRA[ch]); }
     else if (ch === VIRAMA) { pending = false; }
-    else if (VOWEL[ch]) { flush(); out.push(VOWEL[ch]); }
-    else if (SIGN[ch]) { flush(); out.push(SIGN[ch]); }
-    else if (DIGIT[ch]) { flush(); out.push(DIGIT[ch]); }
+    else if (VOWEL[ch]) { flush(); out.push(VOWEL[ch]); lastCons = null; }
+    else if (SIGN[ch]) { flush(); out.push(SIGN[ch]); lastCons = null; }
+    else if (DIGIT[ch]) { flush(); out.push(DIGIT[ch]); lastCons = null; }
     else if (DROP.has(ch)) { /* carries no sound of its own */ }
     else { endWord(); out.push(ch); }
   }

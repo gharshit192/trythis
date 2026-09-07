@@ -33,11 +33,16 @@ export default function Profile({ onNavigate }) {
     else setNote('Could not save that preference.');
   };
   const [cur, setCur] = useState(''); const [next, setNext] = useState(''); const [pwMsg, setPwMsg] = useState(null);
+  // What we noticed, as opposed to what you told us. Derived only — every row
+  // says where it came from (docs/MEMORY_ENGINE.md §8.5).
+  const [known, setKnown] = useState(null);
+  const [openKnown, setOpenKnown] = useState(false);
 
   useEffect(() => {
     const ctrl = new AbortController();
     api.getSaves({ signal: ctrl.signal }).then((r) => r?.status === 'success' && setSaves(r.data || []));
     setPush(getPushState());
+    api.getKnowledge().then((r) => r?.status === 'success' && setKnown(r.data)).catch(() => {});
     api.getMe().then((r) => { const u = r?.data?.user || r?.data; if (u?.preferences) { setPrefs(u.preferences); try { localStorage.setItem('user', JSON.stringify({ ...user, ...u, id: user.id || u._id })); } catch {} } }).catch(() => {});
     return () => ctrl.abort();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -51,6 +56,7 @@ export default function Profile({ onNavigate }) {
     if (push === 'on') { await disablePushNotifications(); setPush(getPushState()); api.updateSettings({ notificationsEnabled: false }).catch(() => {}); return; }
     const r = await enablePushNotifications();
     setPush(getPushState());
+    api.getKnowledge().then((r) => r?.status === 'success' && setKnown(r.data)).catch(() => {});
     if (r?.ok === false || r?.reason) setNote(PUSH_COPY[r.reason] || PUSH_COPY.error);
     else api.updateSettings({ notificationsEnabled: true }).catch(() => {});
   };
@@ -106,6 +112,33 @@ export default function Profile({ onNavigate }) {
       {note && <div className="wt-note info" style={{ marginTop: 12 }}>{note}</div>}
 
       <Row icon="star" kind="food" title={`Your ${new Date().getFullYear()}`} sub={tried ? `${tried} tried so far — see the year` : 'Everything you try this year, in one place'} onClick={() => onNavigate('year-recap')} right={<Icon name="forward" size={18} style={{ color: 'var(--faint)' }} />} />
+
+      {known?.gist && (
+        <>
+          <div style={{ marginTop: 24 }}><SectionLabel>What I&rsquo;ve noticed</SectionLabel></div>
+          <Row
+            icon="sparkle"
+            kind="learn"
+            title={known.gist}
+            sub={openKnown ? 'Tap to hide' : `${known.groups.reduce((n, g) => n + g.items.length, 0)} things, all from what you saved`}
+            onClick={() => setOpenKnown((v) => !v)}
+            right={<Icon name={openKnown ? 'back' : 'forward'} size={18} style={{ color: 'var(--faint)' }} />}
+          />
+          {openKnown && known.groups.map((g) => (
+            <div key={g.title} style={{ padding: '10px 0 4px' }}>
+              <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--faint)' }}>{g.title}</span>
+              {g.items.map((it, i) => (
+                <div key={`${g.title}-${i}`} style={{ display: 'flex', alignItems: 'baseline', gap: 10, padding: '7px 0', borderBottom: '1px solid var(--line)' }}>
+                  <span style={{ flex: 1, fontSize: 14.5 }}>{it.statement}</span>
+                  <span style={{ fontSize: 11.5, color: 'var(--faint)', textAlign: 'right', flexShrink: 0 }}>
+                    {it.sureness}{it.detail ? ` \u00b7 ${it.detail}` : ''}<br />{it.source}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ))}
+        </>
+      )}
 
       <div style={{ marginTop: 24 }}><SectionLabel>About you</SectionLabel></div>
       <p style={{ fontSize: 13.5, color: 'var(--mute)', margin: '4px 0 10px', lineHeight: 1.45 }}>Ask, trip plans and nudges use these. Tap again to clear.</p>

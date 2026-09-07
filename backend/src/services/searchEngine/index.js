@@ -130,7 +130,11 @@ function searchSaves(saves, query, { limit = 50 } = {}) {
 
   const strong = scored.filter((x) => x.score >= STRONG);
   if (strong.length) return { results: strong.slice(0, limit), weak: false };
-  return { results: scored.slice(0, WEAK_FALLBACK), weak: true };
+  // Nothing cleared the bar. Show the closest partial hits, or — when not one
+  // token matched anywhere — the most recent saves. An empty search screen is
+  // the one outcome this function will not produce.
+  if (scored.length) return { results: scored.slice(0, WEAK_FALLBACK), weak: true };
+  return { results: saves.slice(0, WEAK_FALLBACK).map((save) => ({ save, score: 0 })), weak: true };
 }
 
 // Everything scoreSave() reads. Kept next to FIELDS so the two cannot drift.

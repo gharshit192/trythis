@@ -13,6 +13,7 @@ rulebook — then the relevant doc under [`docs/`](docs/):**
 - [`docs/testing.md`](docs/testing.md) — how to verify changes
 - [`docs/design-system.md`](docs/design-system.md) — canonical UI tokens/components
 - [`docs/code-patterns.md`](docs/code-patterns.md) — feature implementation patterns
+- [`docs/MEMORY_ENGINE.md`](docs/MEMORY_ENGINE.md) — semantic memory layer: model, conflicts, decay, retrieval, UX (design)
 - [`docs/adr/`](docs/adr/) — architecture decision records (the "why")
 - Strategy set (3 Sep 2026): [`docs/PRODUCT_STRATEGY.md`](docs/PRODUCT_STRATEGY.md),
   [`docs/REVENUE_STRATEGY.md`](docs/REVENUE_STRATEGY.md),

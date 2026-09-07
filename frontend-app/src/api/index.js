@@ -4,6 +4,7 @@ import auth from './auth';
 import saves from './saves';
 import collections from './collections';
 import search from './search';
+import knowledge from './knowledge';
 import notifications from './notifications';
 import places from './places';
 import onboarding from './onboarding';
@@ -12,6 +13,6 @@ import voice from './voice';
 import ask from './ask';
 import plans from './plans';
 
-const api = { ...auth, ...saves, ...collections, ...search, ...notifications, ...places, ...onboarding, ...uploads, ...voice, ...ask, ...plans };
+const api = { ...auth, ...saves, ...collections, ...search, ...knowledge, ...notifications, ...places, ...onboarding, ...uploads, ...voice, ...ask, ...plans };
 
 export default api;

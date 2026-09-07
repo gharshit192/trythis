@@ -22,15 +22,25 @@ export default function Search({ onNavigate, onBack }) {
   useEffect(() => { api.getSaves().then((r) => r?.status === 'success' && setSaves(r.data || [])); }, []);
   useEffect(() => {
     clearTimeout(timer.current);
-    if (q.trim().length < 2) { setRemote(null); return; }
-    timer.current = setTimeout(() => api.search(q.trim()).then((r) => setRemote(r?.status === 'success' ? (r.data?.saves || []) : null)).catch(() => {}), 350);
+    const term = q.trim();
+    if (term.length < 2) { setRemote(null); return; }
+    timer.current = setTimeout(() => api.search(term)
+      .then((r) => setRemote(r?.status === 'success' ? { q: term, saves: r.data?.saves || [], weak: !!r.data?.weak, searchId: r.data?.searchId } : null))
+      .catch(() => {}), 350);
     return () => clearTimeout(timer.current);
   }, [q]);
 
   const needle = q.trim().toLowerCase();
   const local = needle ? saves.filter((s) => [s.title, s.aiAnalysis?.summary, ...(s.tags || []), s.extractedLocation?.city].filter(Boolean).join(' ').toLowerCase().includes(needle)) : saves;
-  const merged = [...local, ...(remote || []).filter((r) => !local.some((l) => l._id === r._id))];
+  // The server ranks by relevance and reads what the local pass can't see —
+  // transcripts, screenshot OCR, and Devanagari spellings of a Latin query. Once
+  // it has answered *this* term, its order wins; local-only hits trail it.
+  const fresh = remote && remote.q === q.trim() ? remote : null;
+  const merged = fresh
+    ? [...fresh.saves, ...local.filter((l) => !fresh.saves.some((r) => r._id === l._id))]
+    : local;
   const rows = merged.filter((s) => kind === 'all' || getCategoryTile(s.category).kind === kind).slice(0, 60);
+  const noExactMatch = !!fresh?.weak && local.length === 0;
 
   return (
     <div className="wt-screen has-nav">
@@ -49,9 +59,14 @@ export default function Search({ onNavigate, onBack }) {
           <Icon name="forward" size={16} />
         </button>
       )}
+      {noExactMatch && rows.length > 0 && (
+        <p style={{ margin: '2px 0 10px', fontSize: 13, color: 'var(--ink-3)' }}>
+          Nothing exact for <b>“{q.trim()}”</b> — closest things you saved
+        </p>
+      )}
       {rows.length === 0
         ? <EmptyState title={needle ? 'Nothing matches' : 'Nothing saved yet'} text={needle ? 'Try a place, a dish, a creator, or a word from the reel.' : 'Share a reel or paste a link to start.'} />
-        : rows.map((s) => <ListRow key={s._id} category={s.category} title={s.title} meta={[getCategoryTile(s.category).label, s.extractedLocation?.city].filter(Boolean).join(' · ')} trail={relativeTime(s.createdAt)} onClick={() => onNavigate('save-detail', { id: s._id })} />)}
+        : rows.map((s, i) => <ListRow key={s._id} category={s.category} title={s.title} meta={[getCategoryTile(s.category).label, s.extractedLocation?.city].filter(Boolean).join(' · ')} trail={relativeTime(s.createdAt)} onClick={() => { api.logSearchTap(fresh?.searchId, s._id, i + 1); onNavigate('save-detail', { id: s._id }); }} />)}
     </div>
   );
 }
