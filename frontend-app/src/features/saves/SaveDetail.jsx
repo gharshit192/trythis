@@ -6,7 +6,7 @@ import StatusControl from '../../components/StatusControl';
 import SectionLabel from '../../components/SectionLabel';
 import ListRow from '../../components/ListRow';
 import { getCategoryTile } from '../../lib/categoryMeta';
-import { relativeTime } from '../../lib/format';
+import { savedAt, relativeTime } from '../../lib/format';
 import Trip from './Trip';
 import SaveSections from './SaveSections';
 import ReminderControl from '../../components/ReminderControl';
@@ -304,7 +304,7 @@ export default function SaveDetail({ onNavigate, onBack, payload }) {
       </div>
       <h1 className="wt-title lg" style={{ marginBottom: 10 }}>{title}</h1>
       <div style={{ fontSize: 14.5, color: 'var(--mute)', marginBottom: 22, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-        <span>{meta || `Saved ${relativeTime(save.createdAt).toLowerCase()}`}</span>
+        <span>{meta ? `${meta} · saved ${savedAt(save.createdAt)}` : `Saved ${savedAt(save.createdAt)}`}</span>
         {processing && <span style={{ padding: '3px 9px', borderRadius: 999, fontSize: 11.5, fontWeight: 600, background: 'var(--teal-soft)', color: 'var(--teal-d)' }}>{save.processingStatus === 'failed' ? 'Couldn\'t read it' : save.processingStatus === 'partial' ? 'Partly read' : 'Still reading'}</span>}
       </div>
 

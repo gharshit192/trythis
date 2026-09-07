@@ -721,6 +721,7 @@ const structureWithClaude = async (transcribedText) => {
   const prompt = `The following text was OCR-transcribed from a Hindi/Devanagari document. Do NOT change, translate, or "correct" it. Based ONLY on this text, return ONLY JSON (no markdown).
 Numbers: copy every figure EXACTLY as it appears in the text, in the same script — Devanagari digits stay Devanagari (₹१०५५ stays ₹१०५५, never 1055). An amount entry must be the whole amount with its symbol (₹१०५५), never a bare currency sign.
 {
+  "title": "a short specific name for this document taken from its content, 3-7 words, in English, keeping names, places and dates as they appear (e.g. 'Shopping list, 4 September 2026', 'Letter from Shah Shankarlal Rampratap, 1949', 'Anatomy textbook contents'). Never a generic label like 'Hindi document'.",
   "documentType": "list|letter|form|notes|receipt|table|other",
   "entities": { "people": [], "organizations": [], "locations": [], "dates": [], "times": [], "phoneNumbers": [], "emails": [], "websites": [], "currencies": [], "amounts": [], "identifiers": [] },
   "summary": "one short sentence in Hindi describing the document"
@@ -736,8 +737,11 @@ ${transcribedText}`;
   });
   const parsed = parseJsonSafely(text);
   if (!parsed) return empty;
+  const title = String(parsed.title || '').trim();
   return {
     documentType: parsed.documentType || 'auto',
+    // Guard against the model handing back the generic label anyway.
+    title: /hindi|devanagari|document$|^untitled/i.test(title) && title.split(/\s+/).length <= 3 ? '' : title.slice(0, 80),
     entities: verifyEntities({ ...EMPTY_RESULT.entities, ...(parsed.entities || {}) }, transcribedText),
     summary: parsed.summary || '',
   };
@@ -1022,6 +1026,7 @@ const finalizeOcrLines = async (ocrLines, source, extraModels = {}) => {
     disputedLines: lines.filter((l) => !l.agreed).length,
     totalLines: lines.length,
     source,
+    title: structured.title || '',
     english: await translateLines(lines),
     _models: { [source]: { lines: ocrLines }, structuring: structured, ...extraModels },
   };
@@ -1183,7 +1188,14 @@ const run = async (rawImageContents, { handwritten = true } = {}) => {
       llmFirst.overallConfidence = Math.max(llmFirst.overallConfidence || 0, Math.min(0.97, 0.6 + 0.35 * (agreedN / llmLinesFirst.length)));
       llmFirst.corroboration = agreedN ? 'tesseract' : llmFirst.corroboration;
     }
-    const englishLines = await translateLines(llmLinesFirst);
+    // Name and entities come from the same structuring step the other path
+    // uses, so a document is named from its content however it was read.
+    const fullText = llmLinesFirst.map((l) => l.text).join('\n');
+    const [englishLines, structured] = await Promise.all([translateLines(llmLinesFirst), structureWithClaude(fullText)]);
+    llmFirst.title = structured.title || '';
+    llmFirst.documentType = structured.documentType && structured.documentType !== 'auto' ? structured.documentType : llmFirst.documentType;
+    if (structured.entities && Object.values(structured.entities).some((v) => Array.isArray(v) && v.length)) llmFirst.entities = structured.entities;
+    if (!llmFirst.summary) llmFirst.summary = structured.summary || '';
     return { ...llmFirst, english: englishLines, source: 'dual-llm', _models: { ...(llmFirst._models || {}), tesseract: { lines: tessLines } } };
   }
   if (tessClean) {
@@ -1281,9 +1293,21 @@ const toBundleShape = (result, screenshotCount, userTitle) => {
   if (entities.phoneNumbers?.length) bullets.push(`Phone numbers: ${entities.phoneNumbers.join(', ')}`);
   if (entities.amounts?.length) bullets.push(`Amounts mentioned: ${entities.amounts.join(', ')}`);
 
+  // The name comes from what the document says. "Hindi/Devanagari Document"
+  // was never a name — the script belongs in the tags, next to the kind of
+  // document, so the list reads like a list of things and not of file types.
+  const docTags = [...new Set([
+    result.language ? String(result.language).toLowerCase() : 'hindi',
+    result.documentType && result.documentType !== 'auto' ? String(result.documentType).toLowerCase() : null,
+    'document',
+  ].filter(Boolean))];
   return {
     english: result.english || [],
-    autoTitle: userTitle || 'Hindi/Devanagari Document',
+    tags: docTags,
+    autoTitle: userTitle || result.title || (() => {
+      const first = (lines[0]?.text || '').trim();
+      return first && first.length <= 60 ? first : '';
+    })() || 'Scanned document',
     detectedTheme: 'notes',
     totalScreenshots: screenshotCount,
     categories: [

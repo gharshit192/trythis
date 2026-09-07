@@ -2,7 +2,7 @@ import { useState } from 'react';
 import api from '../../api';
 import Icon from '../../components/Icon';
 import Button from '../../components/Button';
-import { relativeTime } from '../../lib/format';
+import { savedAt } from '../../lib/format';
 
 // Completion screen after a save flips to `tried` (ADR 0015): one-tap rating,
 // optional note. Rating is the only signal that says a recommendation was good.
@@ -38,7 +38,7 @@ export default function Tried({ onNavigate, onBack, payload }) {
         </div>
         <span className="wt-eyebrow" style={{ color: 'var(--sand)', marginBottom: 12 }}>Tried it</span>
         <h1 className="wt-title lg" style={{ color: '#fff', marginBottom: 8 }}>{title || 'Done'}</h1>
-        {createdAt && <span style={{ fontSize: 14.5, color: 'rgba(255,255,255,.7)' }}>Saved {relativeTime(createdAt).toLowerCase()} · tried today</span>}
+        {createdAt && <span style={{ fontSize: 14.5, color: 'rgba(255,255,255,.7)' }}>Saved {savedAt(createdAt)} · tried today</span>}
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, marginTop: 38 }}>

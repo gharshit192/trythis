@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import api from '../../api';
 import Icon from '../../components/Icon';
 import Button from '../../components/Button';
@@ -6,7 +6,7 @@ import StatusControl from '../../components/StatusControl';
 import SectionLabel from '../../components/SectionLabel';
 import ReminderControl from '../../components/ReminderControl';
 import Chip from '../../components/Chip';
-import { relativeTime } from '../../lib/format';
+import { savedAt } from '../../lib/format';
 import { isTryable } from '../../lib/intent';
 
 // Screenshot saves: what the analyzer read out of the images, in the same
@@ -62,8 +62,23 @@ export default function ScreenshotDetail({ save: initial, onNavigate, onBack }) 
   useEffect(() => { setSave(initial); }, [initial]);
   const reading = ['pending', 'processing'].includes(save.processingStatus);
   const [now, setNow] = useState(Date.now());
-  useEffect(() => { if (!reading) return undefined; const t = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(t); }, [reading]);
-  const secs = Math.max(0, Math.round((now - new Date(save.createdAt).getTime()) / 1000));
+  // The clock measures THIS read, not the age of the save — a re-read of a
+  // month-old document was showing "4297m".
+  const readStart = useRef(null);
+  useEffect(() => {
+    if (!reading) { readStart.current = null; return undefined; }
+    if (!readStart.current) {
+      const updated = save.updatedAt ? new Date(save.updatedAt).getTime() : 0;
+      const created = save.createdAt ? new Date(save.createdAt).getTime() : 0;
+      // Whichever marks the start of the current read, and never in the future
+      // or absurdly far back (a stale 'processing' flag).
+      const candidate = Math.max(updated, created);
+      readStart.current = candidate && Date.now() - candidate < 10 * 60000 ? candidate : Date.now();
+    }
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [reading, save.updatedAt, save.createdAt]);
+  const secs = Math.max(0, Math.round((now - (readStart.current || Date.now())) / 1000));
   const [menu, setMenu] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [renameOpen, setRenameOpen] = useState(false);
@@ -189,7 +204,7 @@ export default function ScreenshotDetail({ save: initial, onNavigate, onBack }) 
         <span style={{ fontSize: 12, color: 'var(--faint)' }}>· {count} photo{count === 1 ? '' : 's'} saved</span>
       </div>
       <h1 className="wt-title lg" style={{ marginBottom: 10 }}>{save.title || 'Untitled'}</h1>
-      <span style={{ fontSize: 14.5, color: 'var(--mute)', marginBottom: 22 }}>Saved {relativeTime(save.createdAt).toLowerCase()}{data.date ? ` · dated ${data.date}` : ''}</span>
+      <span style={{ fontSize: 14.5, color: 'var(--mute)', marginBottom: 22 }}>Saved {savedAt(save.createdAt)}{data.date ? ` · dated ${data.date}` : ''}</span>
 
       {reading && (
         <div style={{ marginBottom: 22, padding: '14px', borderRadius: 14, background: 'var(--teal-soft)', display: 'flex', flexDirection: 'column', gap: 8 }}>

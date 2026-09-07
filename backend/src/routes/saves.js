@@ -920,7 +920,7 @@ router.post('/screenshot-bundle',
           await Save.findByIdAndUpdate(save._id, {
             title: (req.body.title || '').trim() || summary.autoTitle || save.title,
             category: detectedCategory,
-            tags: [...new Set((summary.categories || []).flatMap((c) => (c.items || []).flatMap((i) => i.tags || [])).map((t) => String(t).trim()).filter(Boolean))].slice(0, 12),
+            tags: [...new Set([...(summary.tags || []), ...(summary.categories || []).flatMap((c) => (c.items || []).flatMap((i) => i.tags || []))].map((t) => String(t).trim()).filter(Boolean))].slice(0, 12),
             aiAnalysis: { summary: summary.masterSummary?.oneLiner || '', keyPoints: summary.masterSummary?.bullets || [], structuredData: null, screenshotAnalysis: { type: 'bundle', data: summary, confidence: summary.confidence || 0.8, allMatches: [] }, processedAt: new Date() },
             processingStatus: 'done',
           });
@@ -1808,7 +1808,7 @@ router.post('/:id/reread', async (req, res) => {
     // Answer straight away and read in the background: the item page shows the
     // live "Reading…" line, refreshes itself, and the phone gets a push. The
     // user can leave the screen or the app.
-    const userTitle = /^(hindi\/devanagari document|screenshot bundle|untitled)$/i.test(save.title || '') ? null : save.title;
+    const userTitle = /^(hindi\/devanagari document|screenshot bundle|scanned document|reading your screenshot|reading \d+ screenshots|untitled)/i.test((save.title || '').trim()) ? null : save.title;
     save.processingStatus = 'processing';
     await save.save();
     res.json({ status: 'success', data: save, processing: true });
@@ -1820,7 +1820,7 @@ router.post('/:id/reread', async (req, res) => {
         if (!summary) throw new Error('The read produced nothing.');
         await Save.findByIdAndUpdate(save._id, {
           title: summary.autoTitle || save.title,
-          tags: [...new Set((summary.categories || []).flatMap((c) => (c.items || []).flatMap((i) => i.tags || [])).map((t) => String(t).trim()).filter(Boolean))].slice(0, 12),
+          tags: [...new Set([...(summary.tags || []), ...(summary.categories || []).flatMap((c) => (c.items || []).flatMap((i) => i.tags || []))].map((t) => String(t).trim()).filter(Boolean))].slice(0, 12),
           aiAnalysis: { summary: summary.masterSummary?.oneLiner || '', keyPoints: summary.masterSummary?.bullets || [], structuredData: null, screenshotAnalysis: { type: 'bundle', data: summary, confidence: summary.confidence || 0.8, allMatches: [] }, processedAt: new Date() },
           processingStatus: 'done',
         });
