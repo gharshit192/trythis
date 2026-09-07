@@ -3,6 +3,8 @@
 // eyebrow, serif title, fact chips, numbered steps, day-by-day legs — not a
 // grey card with three bullets. Server-rendered so the link previews fast and
 // needs no login; every string is escaped.
+const { isPrivateDocument, publicKeyPoints } = require('../utils/publicSafety');
+
 const esc = (t) => (t == null ? '' : String(t)
   .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;'));
 
@@ -77,7 +79,12 @@ function renderSharePage({ save, shareId, sharer, shareUrl, app }) {
   const catLabel = save.source === 'voice' && save.memoryType === 'plan' ? 'Trip' : (LABEL[save.category] || (save.source === 'voice' ? 'Note' : 'Save'));
   const city = save.extractedLocation?.city || save.extractedLocation?.name || save.entities?.place;
   const isTrip = !!(sd.itinerary && (sd.itinerary.highlights?.length || sd.itinerary.destination));
-  const points = (ai.keyPoints || []).filter((k) => k && !looksHallucinated(k)).slice(0, 10);
+  // A read of the user's own document is private in substance, not just in raw
+  // form: its summary and key points ARE the letter. Stripping the transcript
+  // and publishing "People mentioned: …" and "Amounts mentioned: …" was the
+  // same leak wearing a different coat.
+  const isDoc = isPrivateDocument(save);
+  const points = isDoc ? [] : publicKeyPoints(ai.keyPoints, ai.summary).filter((k) => !looksHallucinated(k)).slice(0, 10);
   const r = sd.recipe; const p = sd.product; const e = sd.event; const pl = sd.place;
   // A public link never carries the raw material — no transcript, no voice note,
   // no scanned document text or its translation. Those belong to the person who
@@ -88,9 +95,11 @@ function renderSharePage({ save, shareId, sharer, shareUrl, app }) {
   save.sharerName = sharer;
 
   const title = esc(save.title || 'Untitled');
-  const description = esc(ai.summary || save.description || 'Saved on Wanna Try');
+  const publicSummary = isDoc ? null : ai.summary;
+  const description = esc(publicSummary || (isDoc ? 'A document read on Wanna Try' : save.description) || 'Saved on Wanna Try');
   const body = `
-    ${ai.summary ? `<p class="summary">${esc(ai.summary)}</p>` : (save.description && !isTrip ? `<p class="summary">${esc(save.description.slice(0, 500))}</p>` : '')}
+    ${isDoc ? '<p class="summary">This is someone\u2019s own document \u2014 only they can read what it says.</p>' : ''}
+    ${publicSummary ? `<p class="summary">${esc(publicSummary)}</p>` : (!isDoc && save.description && !isTrip ? `<p class="summary">${esc(save.description.slice(0, 500))}</p>` : '')}
     ${isTrip ? tripHtml(save, sd.itinerary) : ''}
     ${rows('Key points', points)}
     ${r?.isRecipe ? `<section>${label(r.title && r.title !== save.title ? r.title : 'Recipe')}${facts([['Time', r.cookingTime], ['Serves', r.servings], ['Cuisine', r.cuisine]])}${rows(`${(r.ingredients || []).length} ingredients`, r.ingredients)}${rows('Steps', r.steps, true)}</section>` : ''}

@@ -156,6 +156,10 @@ const intentItemSchema = new mongoose.Schema({
   // Multi-screenshot uploads. Original purged after 2 working days,
   // thumbnail kept forever for the carousel.
   screenshots: [{
+    // Absolute path to the untouched local upload. Without this field Mongoose
+    // strict mode dropped it, so a re-read fell back to the Cloudinary
+    // re-encode — the one thing the reader is not supposed to read.
+    readPath: String,
     url: String,             // /static/screenshots/full/<filename>; nulled after purge
     thumbnailUrl: String,    // /static/screenshots/thumb/<filename>; kept forever
     ocrText: String,

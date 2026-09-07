@@ -1080,7 +1080,15 @@ const digitRuns = (t) => (String(t || '').match(/[0-9०-९]+/g) || []).map(toA
 const dandaDatesToSlashes = (lines) => {
   let n = 0;
   for (const l of lines) {
-    const next = String(l.text).replace(/([0-9०-९]{1,4})\s*[।॥]\s*([0-9०-९]{1,4})\s*[।॥]\s*([0-9०-९]{2,4})/g, '$1/$2/$3');
+    // Any danda sitting BETWEEN two digit runs is a separator, whether the
+    // figure has three parts or two. The old rule only matched the three-part
+    // form, so a date that lost one stroke in the read ("९३।०१७६") kept its
+    // danda and reached the summariser looking like prose punctuation.
+    // A danda AFTER a number and before a space or end-of-line is a ledger
+    // fraction (९६॥) and is still left exactly as written.
+    // The lookahead keeps the following digit unconsumed, so consecutive
+    // separators (१३।१।४९) are both rewritten in a single pass.
+    const next = String(l.text).replace(/([0-9०-९])\s*[।॥]\s*(?=[0-9०-९])/g, '$1/');
     if (next !== l.text) { l.text = next; n += 1; }
   }
   return n;
@@ -1546,5 +1554,5 @@ module.exports = {
   parseVisionLines,
   // Exported for tests: the agreement rule decides every line's confidence and
   // whether the user is asked to verify it, so it needs to be assertable.
-  __test__: { canonicalizeDevanagari, similarity, mergeTranscriptions, AGREE_THRESHOLD },
+  __test__: { canonicalizeDevanagari, similarity, mergeTranscriptions, AGREE_THRESHOLD, dandaDatesToSlashes },
 };

@@ -718,6 +718,8 @@ router.post('/:id/share', validateObjectId('id'), async (req, res) => {
     if (save.shareId) {
       return res.json({
         status: 'success',
+        data: { shareId: save.shareId, shareUrl: `${publicBaseUrl()}/s/${save.shareId}` },
+        // Kept alongside `data` for clients built against the old shape.
         shareId: save.shareId,
         shareUrl: `${publicBaseUrl()}/s/${save.shareId}`,
       });
@@ -730,6 +732,7 @@ router.post('/:id/share', validateObjectId('id'), async (req, res) => {
     logger.info(`Save shared: ${save._id} with shareId ${shareId}`);
     res.json({
       status: 'success',
+      data: { shareId, shareUrl: `${publicBaseUrl()}/s/${shareId}` },
       shareId,
       shareUrl: `${publicBaseUrl()}/s/${shareId}`,
     });
@@ -1570,8 +1573,8 @@ router.get('/:id/export-pdf', validateObjectId('id'), async (req, res) => {
         doc.fontSize(11).font('Helvetica').fillColor('#222222').text(bundle.masterSummary.oneLiner, { lineGap: 2 });
         // The one-liner is repeated as the first bullet and an OCR quality note
         // rides along as another; neither is a point about the document.
-        const diag = /(\d+) of (\d+) lines|transcribed by a single model|need review/i;
-        const bullets = (bundle.masterSummary.bullets || []).filter((b) => b && b !== bundle.masterSummary.oneLiner && !diag.test(b));
+        // Same rule as the share page — see utils/publicSafety.
+        const bullets = publicKeyPoints(bundle.masterSummary.bullets, bundle.masterSummary.oneLiner);
         if (bullets.length) {
           doc.moveDown(0.4);
           bullets.forEach(bullet);

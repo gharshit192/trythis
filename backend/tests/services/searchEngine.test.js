@@ -156,3 +156,42 @@ describe('scoreSave', () => {
     expect(scoreSave(s, ['methi'], 'methi')).toBeGreaterThan(0);
   });
 });
+
+describe('document reads are searchable (regression from db4b290)', () => {
+  // skipOcr:true removed screenshots[].ocrText, so for a scanned document the
+  // read output is the only field carrying its text.
+  const letter = save({
+    title: 'Hindi/Devanagari Document',
+    aiAnalysis: {
+      screenshotAnalysis: {
+        type: 'handwritten_letter',
+        data: {
+          english: 'Letter regarding a land settlement in Bikaner',
+          categories: [{ name: 'People', items: [{ name: 'Damrichand' }, { name: 'Ramkumar' }] }],
+        },
+      },
+    },
+  });
+
+  test('finds a document by words from its translation', () => {
+    expect(titles(searchSaves([letter, save({ title: 'Kasol trip' })], 'land settlement'))[0])
+      .toBe('Hindi/Devanagari Document');
+  });
+
+  test('finds a document by a name inside the read', () => {
+    expect(titles(searchSaves([letter, save({ title: 'Kasol trip' })], 'damrichand'))[0])
+      .toBe('Hindi/Devanagari Document');
+  });
+
+  test('ignores machine keys so a type name is not a match', () => {
+    const { analysisText } = require('../../src/services/searchEngine').__test__;
+    expect(analysisText(letter.aiAnalysis.screenshotAnalysis)).not.toContain('handwritten_letter');
+    expect(analysisText(letter.aiAnalysis.screenshotAnalysis)).toContain('Bikaner');
+  });
+
+  test('is bounded, so one enormous read cannot dominate scoring', () => {
+    const { analysisText } = require('../../src/services/searchEngine').__test__;
+    const huge = { data: { lines: Array.from({ length: 5000 }, () => ({ text: 'x'.repeat(500) })) } };
+    expect(analysisText(huge).length).toBeLessThan(60000);
+  });
+});

@@ -26,14 +26,16 @@ describe('recommendationEngine helpers', () => {
     expect(isPriceRange(null, '$100')).toBe(false);
   });
 
-  it('calculateSimilarityScore weights category 0.4, domain 0.3, price 0.2, location 0.1', () => {
+  it('calculateSimilarityScore weights category family 0.5, exact category 0.1, location 0.3', () => {
     const a = { category: 'travel', metadata: { domain: 'airbnb.com', price: '$100', location: 'Lisbon' } };
     const b = { category: 'travel', metadata: { domain: 'airbnb.com', price: '$150', location: 'Lisbon' } };
-    expect(calculateSimilarityScore(a, b)).toBeCloseTo(0.4 + 0.3 + 0.2 + 0.1, 5);
+    // Domain is deliberately NOT a signal (same platform != same interest) and
+    // price counts only inside shopping, so travel + same city tops out at 0.9.
+    expect(calculateSimilarityScore(a, b)).toBeCloseTo(0.5 + 0.1 + 0.3, 5);
 
     const c = { category: 'food', metadata: { domain: 'zomato.com' } };
     const d = { category: 'food', metadata: { domain: 'swiggy.com' } };
-    expect(calculateSimilarityScore(c, d)).toBeCloseTo(0.4, 5);
+    expect(calculateSimilarityScore(c, d)).toBeCloseTo(0.5 + 0.1, 5);
   });
 
   it('idOf coerces ObjectId-like values to strings', () => {

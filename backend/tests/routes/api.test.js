@@ -237,9 +237,13 @@ describe('/search', () => {
     expect(r.body.data.total).toBe(1);
   });
 
-  it('q with no match returns 0', async () => {
+  it('q with no match returns the closest saves, flagged weak, never an empty screen', async () => {
     const r = await request(app).get('/search?q=Nonexistent').set('Authorization', `Bearer ${token}`).expect(200);
-    expect(r.body.data.total).toBe(0);
+    // Contract changed with the ranked engine (ADR 0019): a search that clears
+    // nothing shows the nearest things the user saved and says so, rather than
+    // handing them a dead end.
+    expect(r.body.data.weak).toBe(true);
+    expect(r.body.data.saves.length).toBeGreaterThan(0);
   });
 });
 

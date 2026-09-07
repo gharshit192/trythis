@@ -108,3 +108,31 @@ describe('mergeTranscriptions', () => {
     expect(allTags).toHaveLength(0);
   });
 });
+
+describe('dandaDatesToSlashes', () => {
+  const { dandaDatesToSlashes } = require('../../src/services/hindiOcr').__test__;
+  const run = (text) => { const lines = [{ text }]; dandaDatesToSlashes(lines); return lines[0].text; };
+
+  test('rewrites a three-part date', () => {
+    expect(run('दिनांक १३।१।४९')).toBe('दिनांक १३/१/४९');
+  });
+
+  test('rewrites a two-part figure — the case a dropped stroke leaves behind', () => {
+    // The reported defect: "Dated ९३।०१७६" kept its danda because the old rule
+    // only matched a three-part date, and reached the summariser as prose.
+    expect(run('Dated ९३।०१७६')).toBe('Dated ९३/०१७६');
+  });
+
+  test('leaves a ledger fraction alone — the danda follows the number', () => {
+    expect(run('रकम ९६॥')).toBe('रकम ९६॥');
+    expect(run('कुल ९६॥ रुपये')).toBe('कुल ९६॥ रुपये');
+  });
+
+  test('leaves sentence punctuation alone', () => {
+    expect(run('यह पत्र है। आपका')).toBe('यह पत्र है। आपका');
+  });
+
+  test('handles Arabic digits and spacing around the stroke', () => {
+    expect(run('13 । 1 । 49')).toBe('13/1/49');
+  });
+});

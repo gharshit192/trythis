@@ -29,8 +29,44 @@ const FIELDS = [
   // People remember what a screenshot *said*, not what we titled it.
   { weight: 2, get: (s) => s.aiAnalysis?.transcription?.text },
   { weight: 2, get: (s) => (s.screenshots || []).map((x) => x.ocrText).filter(Boolean).join(' ') },
+  // The screenshot/document read (14 analyzer shapes plus the Hindi document
+  // path) lands in `screenshotAnalysis` as Mixed. Since db4b290 the bundle
+  // upload passes skipOcr:true, so for a scanned document this is the ONLY
+  // field carrying its text — without it a perfectly transcribed letter is
+  // findable by its title alone.
+  { weight: 2, get: (s) => analysisText(s.aiAnalysis?.screenshotAnalysis) },
   { weight: 1.5, get: (s) => s.aiAnalysis?.visualText },
 ];
+
+// `screenshotAnalysis` has no fixed shape, so rather than track fourteen of
+// them we walk it and collect the strings, bounded so one enormous read cannot
+// dominate a scoring pass.
+const ANALYSIS_KEY_SKIP = /^(type|contentType|id|_id|url|href|confidence|score|createdAt|updatedAt|model|version|lang|language)$/i;
+const ANALYSIS_MAX_CHARS = 20000;
+
+function analysisText(node) {
+  if (!node) return '';
+  const out = [];
+  let budget = ANALYSIS_MAX_CHARS;
+  const walk = (v, depth) => {
+    if (budget <= 0 || depth > 6 || v == null) return;
+    if (typeof v === 'string') {
+      const t = v.trim();
+      if (t && t.length < 2000) { out.push(t); budget -= t.length; }
+      return;
+    }
+    if (typeof v === 'number') { out.push(String(v)); budget -= 4; return; }
+    if (Array.isArray(v)) { for (const x of v.slice(0, 200)) walk(x, depth + 1); return; }
+    if (typeof v === 'object') {
+      for (const [k, x] of Object.entries(v)) {
+        if (ANALYSIS_KEY_SKIP.test(k)) continue;
+        walk(x, depth + 1);
+      }
+    }
+  };
+  walk(node, 0);
+  return out.join(' ');
+}
 
 function structuredText(sd) {
   if (!sd) return '';
@@ -142,8 +178,8 @@ const SEARCH_SELECT = [
   'title description userNote tags category source author authorHandle',
   'intentStatus confidence createdAt thumbnail url extractedLocation entities',
   'aiAnalysis.summary aiAnalysis.keyPoints aiAnalysis.structuredData',
-  'aiAnalysis.transcription.text aiAnalysis.visualText screenshots.ocrText',
+  'aiAnalysis.transcription.text aiAnalysis.visualText screenshots.ocrText aiAnalysis.screenshotAnalysis',
   'memoryType plannedFor resurfaceAt rating',
 ].join(' ');
 
-module.exports = { searchSaves, scoreSave, SEARCH_SELECT, __test__: { tokenScore, structuredText } };
+module.exports = { searchSaves, scoreSave, SEARCH_SELECT, __test__: { tokenScore, structuredText, analysisText } };

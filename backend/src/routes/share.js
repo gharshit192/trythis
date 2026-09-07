@@ -116,7 +116,8 @@ router.get('/:shareId', async (req, res) => {
       `);
     }
 
-    const sharer = save.userId?.firstName || 'Someone';
+    // User has `name`, never `firstName` — the old lookup always fell through.
+    const sharer = String(save.userId?.name || '').trim().split(/\s+/)[0] || 'Someone';
     const html = renderSharePage({ save: save.toObject(), shareId, sharer, shareUrl: `${publicBaseUrl()}/s/${shareId}`, app: appUrl() });
 
     res.type('text/html').send(html);
