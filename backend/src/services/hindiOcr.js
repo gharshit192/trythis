@@ -1124,24 +1124,63 @@ const unmixDigitScripts = (lines) => {
   }
   return changed;
 };
+// Majority vote over the figures on a line. Only digits are ever replaced, and
+// only when two independent readers agree against what we have.
+const flatDigits = (t) => (toArabic(t).match(/[0-9]/g) || []);
+
+// Rewrite the line's digits from `fixed`, keeping each digit in the script it
+// was already written in and leaving every separator untouched.
+const spliceDigits = (text, fixed) => {
+  let i = -1;
+  return String(text).replace(/[0-9०-९]/g, (orig) => {
+    i += 1;
+    return /[०-९]/.test(orig) ? toDeva(fixed[i]) : fixed[i];
+  });
+};
+
+const majority = (values) => {
+  const votes = {};
+  for (const v of values) votes[v] = (votes[v] || 0) + 1;
+  const [best, n] = Object.entries(votes).sort((a, b) => b[1] - a[1])[0] || [];
+  return { best, n: n || 0 };
+};
+
 const reconcileDigits = (text, candidates) => {
   const mine = digitRuns(text);
   if (!mine.length) return { text, changed: false };
-  const others = candidates.map(digitRuns).filter((r) => r.length === mine.length);
+
+  // Pass 1 — vote run by run, when the readers broke the line into the same
+  // number of figures.
+  const aligned = candidates.map(digitRuns).filter((r) => r.length === mine.length);
+  if (aligned.length >= 2) {
+    let changed = false;
+    let k = -1;
+    const isDeva = /[०-९]/.test(text);
+    const out = String(text).replace(/[0-9०-९]+/g, (run) => {
+      k += 1;
+      const { best, n } = majority(aligned.map((o) => o[k]));
+      if (n >= 2 && best !== toArabic(run)) { changed = true; return isDeva ? toDeva(best) : best; }
+      return run;
+    });
+    if (changed) return { text: out, changed: true };
+  }
+
+  // Pass 2 — vote digit by digit. Readers frequently disagree about where the
+  // separators fall in handwriting while agreeing on the digits themselves:
+  // १३।०१।७६ is three runs and ९३।०१७६ is two, so the run-count filter above
+  // threw away precisely the reading that could have corrected the first digit.
+  // Both are still six digits, and position 0 is then a straight 1-vs-9 vote.
+  const myFlat = flatDigits(text);
+  if (!myFlat.length) return { text, changed: false };
+  const others = candidates.map(flatDigits).filter((f) => f.length === myFlat.length);
   if (others.length < 2) return { text, changed: false };
-  let changed = false;
-  let k = -1;
-  const isDeva = /[०-९]/.test(text);
-  const out = String(text).replace(/[0-9०-९]+/g, (run) => {
-    k += 1;
-    const votes = {};
-    for (const o of others) votes[o[k]] = (votes[o[k]] || 0) + 1;
-    const [best, n] = Object.entries(votes).sort((a, b) => b[1] - a[1])[0] || [];
-    // Only a genuine majority (two independent readers) overrides what we have.
-    if (n >= 2 && best !== toArabic(run)) { changed = true; return isDeva ? toDeva(best) : best; }
-    return run;
+
+  const fixed = myFlat.map((d, i) => {
+    const { best, n } = majority(others.map((o) => o[i]));
+    return n >= 2 && best !== d ? best : d;
   });
-  return { text: out, changed };
+  if (fixed.join('') === myFlat.join('')) return { text, changed: false };
+  return { text: spliceDigits(text, fixed), changed: true };
 };
 
 
@@ -1554,5 +1593,5 @@ module.exports = {
   parseVisionLines,
   // Exported for tests: the agreement rule decides every line's confidence and
   // whether the user is asked to verify it, so it needs to be assertable.
-  __test__: { canonicalizeDevanagari, similarity, mergeTranscriptions, AGREE_THRESHOLD, dandaDatesToSlashes },
+  __test__: { canonicalizeDevanagari, similarity, mergeTranscriptions, AGREE_THRESHOLD, dandaDatesToSlashes, reconcileDigits },
 };

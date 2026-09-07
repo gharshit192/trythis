@@ -136,3 +136,55 @@ describe('dandaDatesToSlashes', () => {
     expect(run('13 । 1 । 49')).toBe('13/1/49');
   });
 });
+
+describe('reconcileDigits', () => {
+  const { reconcileDigits } = require('../../src/services/hindiOcr').__test__;
+
+  test('corrects a digit when two other readers agree against it', () => {
+    const r = reconcileDigits('₹१००५', ['₹१०५५', '₹१०५५']);
+    expect(r).toMatchObject({ text: '₹१०५५', changed: true });
+  });
+
+  test('one dissenting reader is not a majority', () => {
+    expect(reconcileDigits('₹१००५', ['₹१०५५', '₹१००५'])).toMatchObject({ changed: false });
+  });
+
+  test('votes across a different separator split — the reported date', () => {
+    // The chosen read lost a stroke, so it has two figures where the others
+    // have three. Both are six digits, so position 0 is a plain 1-vs-9 vote.
+    const r = reconcileDigits('Dated ९३।०१७६', ['Dated १३।०१।७६', 'Dated १३।०१।७६']);
+    expect(r.changed).toBe(true);
+    expect(r.text).toBe('Dated १३।०१७६');
+  });
+
+  test('a figure written in two scripts is a misread, so the vote unifies it', () => {
+    // "9३" mixes scripts inside one number, which this codebase treats as
+    // always wrong (see unmixDigitScripts). The run-level pass rewrites the
+    // whole figure in the line's script rather than preserving the mixture.
+    expect(reconcileDigits('ref 9३', ['ref १३', 'ref १३']).text).toBe('ref १३');
+  });
+
+  test('the digit-level pass writes corrections back in Devanagari', () => {
+    const r = reconcileDigits('तारीख ९३।०१७६', ['तारीख १३।०१।७६', 'तारीख १३।०१।७६']);
+    expect(r.text).toBe('तारीख १३।०१७६');
+    expect(r.text).not.toMatch(/[0-9]/);
+  });
+
+  test('never changes a digit count, only digit values', () => {
+    const r = reconcileDigits('९३।०१७६', ['१३।०१।७६', '१३।०१।७६']);
+    expect((r.text.match(/[0-9०-९]/g) || []).length).toBe(6);
+  });
+
+  test('leaves the line alone when readers disagree on how many digits there are', () => {
+    expect(reconcileDigits('१२३', ['१२३४', '१२'])).toMatchObject({ changed: false });
+  });
+
+  test('leaves separators and surrounding text untouched', () => {
+    const r = reconcileDigits('कुल ९६॥ रुपये', ['कुल ८६॥ रुपये', 'कुल ८६॥ रुपये']);
+    expect(r.text).toBe('कुल ८६॥ रुपये');
+  });
+
+  test('does nothing on a line with no digits', () => {
+    expect(reconcileDigits('कोई अंक नहीं', ['कोई अंक नहीं'])).toMatchObject({ changed: false });
+  });
+});
