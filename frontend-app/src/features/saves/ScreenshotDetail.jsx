@@ -92,6 +92,7 @@ export default function ScreenshotDetail({ save: initial, onNavigate, onBack }) 
   const isDoc = (cat) => Array.isArray(cat?.items) && cat.items.length > 0 && cat.items.every((i) => /^Line \d+/.test(String(i?.details || '')));
   const docText = (cat) => (cat.items || []).map((i) => String(i?.name || '').trim()).filter(Boolean).reduce((t, line, idx) => (idx === 0 ? line : /-$/.test(t) ? t.slice(0, -1) + line : t + '\n' + line), '');
   const hw = data.handwrittenAnalysis || null;
+  const english = (data.english || hw?.english || []).filter(Boolean);
   const ents = hw?.entities || {};
   const topicPoints = [...(ents.topics || []), ...(ents.bookTitles || [])].filter(Boolean).slice(0, 20);
   const entityRows = [['People', ents.people], ['Places', ents.locations], ['Organisations', ents.organizations], ['Dates', ents.dates], ['Amounts', ents.currencies?.length ? ents.currencies : ents.amounts], ['Phone', ents.phoneNumbers], ['Email', ents.emails], ['Websites', ents.websites]].filter(([, v]) => Array.isArray(v) && v.length);
@@ -230,6 +231,12 @@ export default function ScreenshotDetail({ save: initial, onNavigate, onBack }) 
         <section key={ci} style={{ marginBottom: 20 }}>
           <SectionLabel>{hw?.language ? `Text read · ${hw.language}` : 'Text read'}</SectionLabel>
           <p style={{ fontSize: 15.5, lineHeight: 1.7, margin: '6px 0 0', whiteSpace: 'pre-wrap' }}>{docText(cat)}</p>
+          {english.length > 0 && (
+            <div style={{ marginTop: 18 }}>
+              <SectionLabel>In English</SectionLabel>
+              <p style={{ fontSize: 15, lineHeight: 1.7, margin: '6px 0 0', whiteSpace: 'pre-wrap', color: 'var(--mute)' }}>{english.join('\n')}</p>
+            </div>
+          )}
           {quality && <p style={{ fontSize: 12.5, color: 'var(--faint)', margin: '8px 0 0' }}>{quality.replace(/;.*$/, '')} — check against the photo.</p>}
         </section>
       ) : (

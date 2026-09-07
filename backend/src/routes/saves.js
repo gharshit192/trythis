@@ -1600,6 +1600,13 @@ router.get('/:id/export-pdf', validateObjectId('id'), async (req, res) => {
             // matras above and below the baseline collide between rows.
             doc.fontSize(12).font('Helvetica').fillColor('#111111')
               .text(documentText(cat), { lineGap: 7, align: 'left' });
+            const english = (bundle.english || bundle.handwrittenAnalysis?.english || []).filter(Boolean);
+            if (english.length) {
+              doc.moveDown(0.6);
+              doc.fontSize(12).font('Helvetica-Bold').fillColor(ACCENT).text('In English');
+              doc.moveDown(0.3);
+              doc.fontSize(11.5).font('Helvetica').fillColor('#333333').text(english.join('\n'), { lineGap: 5 });
+            }
             const unsure = unreviewedCount(cat);
             if (unsure) {
               doc.moveDown(0.4);

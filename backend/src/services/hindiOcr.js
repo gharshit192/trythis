@@ -684,11 +684,42 @@ const runWithGoogleVision = async (imageContents) => {
 // Structure already-transcribed text into entities + summary. This is plain
 // NLP over text Vision already read — the LLM never sees pixels here, so it
 // can't re-hallucinate the handwriting.
+
+// The structuring model occasionally miscopies a figure it is only echoing
+// (a phone number gaining a digit). Everything it returns must be present in
+// the text it was given: an entry that is not found is corrected to the closest
+// actual figure in the document, or dropped.
+const verifyEntities = (entities, transcript) => {
+  const hay = String(transcript || '');
+  const hayDigits = (hay.match(/[0-9०-९][0-9०-९\/\-.,]*/g) || []).map((x) => x.replace(/[^0-9०-९]/g, ''));
+  const arab = (t) => String(t || '').replace(/[०-९]/g, (d) => String('०१२३४५६७८९'.indexOf(d)));
+  const asText = (v) => (v && typeof v === 'object' ? String(v.text ?? v.value ?? v.name ?? '') : String(v ?? ''));
+  const clean = (list) => (Array.isArray(list) ? list : []).map((v) => {
+    const raw = asText(v).trim();
+    const cur = v && typeof v === 'object' && v.currency ? String(v.currency) : '';
+    const val = (cur && !raw.startsWith(cur) ? cur + raw : raw).trim();
+    if (!val) return null;
+    if (hay.includes(val)) return val;                       // verbatim in the document
+    const digits = arab(val.replace(/[^0-9०-९]/g, ''));
+    if (!digits) return hay.includes(val) ? val : val;       // words: leave as written
+    const match = hayDigits.find((d) => arab(d) === digits);
+    if (match) return val;                                   // same figure, different punctuation
+    // Nearest figure of the same length actually present, else drop it.
+    const near = hayDigits.find((d) => arab(d).length === digits.length && [...arab(d)].filter((c, i) => c !== digits[i]).length <= 1);
+    if (near) { const idx = hay.search(new RegExp(near.split('').map((c) => c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('\\s*'))); return idx >= 0 ? hay.slice(idx).match(/^\S+/)[0] : null; }
+    return null;
+  }).filter(Boolean);
+  const out = {};
+  for (const [k, v] of Object.entries(entities || {})) out[k] = Array.isArray(v) ? [...new Set(clean(v))] : v;
+  return out;
+};
+
 const structureWithClaude = async (transcribedText) => {
   const empty = { documentType: 'auto', entities: EMPTY_RESULT.entities, summary: '' };
   if (!transcribedText.trim()) return empty;
 
-  const prompt = `The following text was OCR-transcribed from a Hindi/Devanagari document. Do NOT change, translate, or "correct" it. Based ONLY on this text, return ONLY JSON (no markdown):
+  const prompt = `The following text was OCR-transcribed from a Hindi/Devanagari document. Do NOT change, translate, or "correct" it. Based ONLY on this text, return ONLY JSON (no markdown).
+Numbers: copy every figure EXACTLY as it appears in the text, in the same script — Devanagari digits stay Devanagari (₹१०५५ stays ₹१०५५, never 1055). An amount entry must be the whole amount with its symbol (₹१०५५), never a bare currency sign.
 {
   "documentType": "list|letter|form|notes|receipt|table|other",
   "entities": { "people": [], "organizations": [], "locations": [], "dates": [], "times": [], "phoneNumbers": [], "emails": [], "websites": [], "currencies": [], "amounts": [], "identifiers": [] },
@@ -707,7 +738,7 @@ ${transcribedText}`;
   if (!parsed) return empty;
   return {
     documentType: parsed.documentType || 'auto',
-    entities: { ...EMPTY_RESULT.entities, ...(parsed.entities || {}) },
+    entities: verifyEntities({ ...EMPTY_RESULT.entities, ...(parsed.entities || {}) }, transcribedText),
     summary: parsed.summary || '',
   };
 };
@@ -991,6 +1022,7 @@ const finalizeOcrLines = async (ocrLines, source, extraModels = {}) => {
     disputedLines: lines.filter((l) => !l.agreed).length,
     totalLines: lines.length,
     source,
+    english: await translateLines(lines),
     _models: { [source]: { lines: ocrLines }, structuring: structured, ...extraModels },
   };
 };
@@ -1052,7 +1084,28 @@ const reconcileDigits = (text, candidates) => {
   return { text: out, changed };
 };
 
-const run = async (imageContents, { handwritten = true } = {}) => {
+
+// Vision models misread small digits: at 900 px wide, ₹१०५५ came back as ₹१००५
+// on some runs. Upscaling to ~1800 px with a light sharpen before any model
+// sees the page fixes that, and costs a few hundred milliseconds.
+const upscaleForOcr = async (imageContents) => {
+  let sharp; try { sharp = require('sharp'); } catch { return imageContents; }
+  return Promise.all(imageContents.map(async (c) => {
+    if (c?.source?.type !== 'base64') return c;
+    try {
+      const buf = Buffer.from(c.source.data, 'base64');
+      const img = sharp(buf, { failOn: 'none' });
+      const meta = await img.metadata();
+      if (!meta.width || meta.width >= 1700) return c;
+      const scale = Math.min(2.5, 1800 / meta.width);
+      const out = await img.resize({ width: Math.round(meta.width * scale), kernel: 'lanczos3' }).sharpen({ sigma: 0.6 }).jpeg({ quality: 92 }).toBuffer();
+      return { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: out.toString('base64') } };
+    } catch { return c; }
+  }));
+};
+
+const run = async (rawImageContents, { handwritten = true } = {}) => {
+  const imageContents = await upscaleForOcr(rawImageContents);
   // Printed Devanagari: Tesseract and the model read run side by side. The
   // model's read is the one we keep — on a clean printed list Tesseract still
   // turned "₹१०५५" into "Tok" and "₹१४०" into "र१४०" — and Tesseract's lines
@@ -1093,12 +1146,29 @@ const run = async (imageContents, { handwritten = true } = {}) => {
     let fixed = 0;
     llmLinesFirst.forEach((l, i) => {
       const cands = [nearest(gLines, i, l.text), nearest(cLines, i, l.text), tessLines.length ? nearest(tessLines, i, l.text) : null].filter(Boolean);
+      // Printed digits are Tesseract's strength and the vision models' weakness
+      // (they read ९८७६५४३२१० as ९८७७६५४३२१०). Where Tesseract read this line
+      // confidently and found the same number of figures, its digits win
+      // outright — the words still come from the model.
+      const tessLine = tessLines.length ? (() => {
+        let best = null;
+        for (let j = Math.max(0, i - 2); j <= Math.min(tessLines.length - 1, i + 2); j++) {
+          const sc = similarity(l.text, tessLines[j].text);
+          if (!best || sc > best.sc) best = { sc, line: tessLines[j] };
+        }
+        return best && best.sc >= 0.55 ? best.line : null;
+      })() : null;
+      if (tessLine && (tessLine.confidence ?? 0) >= 0.7 && digitRuns(tessLine.text).length === digitRuns(l.text).length && digitRuns(l.text).length) {
+        cands.length = 0; cands.push(tessLine.text, tessLine.text);
+      }
       // The numbers-only reading contributes the entry whose digits line up
       // with this line's, so a price or total gets a genuinely independent vote.
       const mineRuns = digitRuns(l.text);
       if (mineRuns.length) {
-        const hit = numberLines.find((n) => { const r = digitRuns(n); return r.length === mineRuns.length && (r[0] === mineRuns[0] || r.some((x, k) => x !== mineRuns[k])); });
-        if (hit) cands.push(hit);
+        // The numbers-only reading is the specialist here, so it votes twice:
+        // two general readers making the same slip cannot outvote it alone.
+        const hit = numberLines.find((n) => digitRuns(n).length === mineRuns.length);
+        if (hit) { cands.push(hit); cands.push(hit); }
       }
       const r = reconcileDigits(l.text, cands);
       if (r.changed) { l.text = r.text; fixed += 1; }
@@ -1113,7 +1183,8 @@ const run = async (imageContents, { handwritten = true } = {}) => {
       llmFirst.overallConfidence = Math.max(llmFirst.overallConfidence || 0, Math.min(0.97, 0.6 + 0.35 * (agreedN / llmLinesFirst.length)));
       llmFirst.corroboration = agreedN ? 'tesseract' : llmFirst.corroboration;
     }
-    return { ...llmFirst, source: 'dual-llm', _models: { ...(llmFirst._models || {}), tesseract: { lines: tessLines } } };
+    const englishLines = await translateLines(llmLinesFirst);
+    return { ...llmFirst, english: englishLines, source: 'dual-llm', _models: { ...(llmFirst._models || {}), tesseract: { lines: tessLines } } };
   }
   if (tessClean) {
     logger.info('hindiOcr: model read unavailable — using the clean Tesseract read');
@@ -1151,6 +1222,27 @@ const run = async (imageContents, { handwritten = true } = {}) => {
 // ─── Map the rich result into the bundle shape screenshotBundle.js (PDF
 // export, save persistence) already expects, so this pipeline is a drop-in
 // replacement for the generic bundle prompt when Devanagari is detected. ──
+
+// Hindi documents get an English translation alongside the original: the same
+// lines, in the same order, so the two can be read side by side. Numbers,
+// names and layout are preserved; only the language changes.
+const translateLines = async (lines) => {
+  const src = lines.map((l, i) => `${i + 1}. ${l.text}`).join('\n');
+  if (!src.trim()) return [];
+  try {
+    const text = await callClaude({
+      model: 'claude-sonnet-4-6',
+      maxTokens: 2000,
+      content: [{ type: 'text', text: `Translate this Hindi/Devanagari document into natural English, line by line. Keep one output line per input line, in the same order, numbered the same way. Write numbers in English digits (०१२ → 012) with the SAME values — ₹१०५५ becomes ₹1055, ९८७६५४३२१० becomes 9876543210, ४ सितम्बर २०२६ becomes 4 September 2026. Never change a value or recalculate anything. If a line is already English, repeat it unchanged. If a line is unreadable, write [unclear]. No commentary.\n\n${src}` }],
+    });
+    const out = String(text || '').split('\n').map((l) => l.replace(/^\s*\d+[.)]\s*/, '').trim()).filter((l, i, arr) => l.length > 0 || i < arr.length);
+    return out.slice(0, lines.length);
+  } catch (err) {
+    logger.warn(`hindiOcr: translation failed: ${err.message}`);
+    return [];
+  }
+};
+
 const toBundleShape = (result, screenshotCount, userTitle) => {
   const lines = result.transcription?.lines || [];
   const entities = result.entities || {};
@@ -1190,6 +1282,7 @@ const toBundleShape = (result, screenshotCount, userTitle) => {
   if (entities.amounts?.length) bullets.push(`Amounts mentioned: ${entities.amounts.join(', ')}`);
 
   return {
+    english: result.english || [],
     autoTitle: userTitle || 'Hindi/Devanagari Document',
     detectedTheme: 'notes',
     totalScreenshots: screenshotCount,

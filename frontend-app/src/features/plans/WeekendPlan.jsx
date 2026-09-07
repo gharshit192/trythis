@@ -33,7 +33,10 @@ export default function WeekendPlan({ onNavigate, onBack, payload }) {
   const swap = (stop) => { const next = [...excluded, String(stop.saveId)]; setExcluded(next); build(next); };
   const share = async () => {
     if (!plan) return;
-    const lines = plan.stops.map((s) => `${s.start} · ${s.title}${s.note ? ` — ${s.note}` : ''}`);
+    const lines = plan.stops.map((s, i) => {
+      const travel = i && s.travelMinFromPrev ? `\n       ↓ ${s.travelMinFromPrev} min${s.distanceKmFromPrev ? ` · ${s.distanceKmFromPrev} km` : ''}` : '';
+      return `${travel ? `${travel}\n` : ''}${s.start}  ${s.title}${s.durationMin ? ` (${s.durationMin} min)` : ''}${s.note ? `\n       ${s.note}` : ''}`;
+    });
     const text = `${plan.title} (${plan.dayLabel})\n${lines.join('\n')}${plan.estimatedCostInr ? `\nAbout ${money(plan.estimatedCostInr)} for the day` : ''}\n— planned with Wanna Try`;
     try { if (navigator.share) await navigator.share({ title: plan.title, text }); else { await navigator.clipboard?.writeText(text); setError('Copied the plan.'); } } catch {}
   };

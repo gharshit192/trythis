@@ -79,10 +79,9 @@ function renderSharePage({ save, shareId, sharer, shareUrl, app }) {
   const isTrip = !!(sd.itinerary && (sd.itinerary.highlights?.length || sd.itinerary.destination));
   const points = (ai.keyPoints || []).filter((k) => k && !looksHallucinated(k)).slice(0, 10);
   const r = sd.recipe; const p = sd.product; const e = sd.event; const pl = sd.place;
-  const t = ai.transcription || {};
-  const transcript = t.text && !looksHallucinated(t.text) ? t.text : null;
-  const code = String(t.detectedLanguage || '').toLowerCase().slice(0, 2);
-  const lang = code && code !== 'en' ? (LANG[code] || t.detectedLanguage) : null;
+  // A public link never carries the raw material — no transcript, no voice note,
+  // no scanned document text or its translation. Those belong to the person who
+  // saved it; the link shows what the thing IS: the plan, the place, the recipe.
   const tags = [...new Set([...(save.tags || []), ...(ai.audioTags || [])])].filter(Boolean).slice(0, 6);
   const maps = pl?.address || city ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([save.extractedLocation?.name, pl?.address || city].filter(Boolean).join(', '))}` : null;
   const meta = [save.plannedFor ? `Planned for ${day(save.plannedFor, { weekday: 'long', day: 'numeric', month: 'short' })}` : null, `Saved ${day(save.createdAt)}`, save.intentStatus === 'tried' ? `Tried${save.rating ? ` · ${'★'.repeat(save.rating)}` : ''}` : null].filter(Boolean).join(' · ');
@@ -100,8 +99,7 @@ function renderSharePage({ save, shareId, sharer, shareUrl, app }) {
     ${pl && (pl.address || pl.cuisine || pl.priceRange) ? `<section>${label('The place')}${facts([['Cuisine', pl.cuisine], ['Price', pl.priceRange]])}${pl.address ? `<p class="addr">${esc(pl.address)}</p>` : ''}</section>` : ''}
     ${isTrip && (sd.itinerary.perDestinationCosts || []).length ? rows('Costs', sd.itinerary.perDestinationCosts.map((c) => [c.destination, c.cost, c.notes].filter(Boolean).join(' — '))) : ''}
     ${planHtml(save.tripPlan?.data)}
-    ${save.source === 'voice' && (save.entities?.people?.length || save.entities?.topic) ? `<section>${label('From a voice note')}${facts([['Who', (save.entities.people || []).join(', ')], ['Where', save.entities.place], ['About', save.entities.topic]])}</section>` : ''}
-    ${transcript ? `<section>${label(`${save.source === 'voice' ? 'What they said' : 'What the reel said'}${lang ? ` · ${lang}${/[ऀ-ॿ]/.test(transcript) ? '' : ', translated'}` : ''}`)}<p class="transcript">${esc(transcript.slice(0, 1500))}</p></section>` : ''}
+    ${save.source === 'voice' && save.entities?.place ? `<section>${label('Where')}${facts([['Place', save.entities.place]])}</section>` : ''}
     ${tags.length ? `<div class="chips tags">${tags.map((x) => `<span class="chip">${esc(x)}</span>`).join('')}</div>` : ''}`;
 
   return `<!DOCTYPE html>
