@@ -1086,6 +1086,19 @@ const dandaDatesToSlashes = (lines) => {
   return n;
 };
 
+// A line written in Devanagari shows its numbers in Devanagari. A model that
+// transliterated them ("Dated 931174") is corrected back to the page's script;
+// English lines (the printed letterhead) are left alone.
+const digitsToLineScript = (lines) => {
+  let n = 0;
+  for (const l of lines) {
+    const deva = (l.text.match(/[\u0900-\u097F]/g) || []).length;
+    const latinWords = (l.text.match(/[A-Za-z]{2,}/g) || []).length;
+    if (deva >= 3 && latinWords === 0 && /[0-9]/.test(l.text)) { l.text = toDeva(l.text); n += 1; }
+  }
+  return n;
+};
+
 const unmixDigitScripts = (lines) => {
   const all = lines.map((l) => l.text).join(' ');
   const deva = (all.match(/[०-९]/g) || []).length;
@@ -1143,6 +1156,87 @@ const upscaleForOcr = async (imageContents) => {
   }));
 };
 
+
+// Reading a page in zoomed bands.
+//
+// A whole page handed to a model at once means each handwritten character is a
+// few dozen pixels; the same lines read one band at a time, enlarged, are far
+// more legible — exactly what a person does when they hold a letter closer.
+// Each band overlaps the next so no line is cut in half, and the overlap is
+// then used to stitch the bands back into one document without repeats.
+
+// A replacement line has to be at least as trustworthy as the one it replaces:
+// same script (a Devanagari line does not become Latin), no stray symbols from
+// a model transliterating, and not obviously truncated.
+const scriptProfile = (t) => {
+  const x = String(t || '');
+  return { deva: (x.match(/[\u0900-\u097F]/g) || []).length, latin: (x.match(/[A-Za-z]/g) || []).length };
+};
+const isBetterCandidate = (original, candidate) => {
+  if (!candidate || candidate.length < 2) return false;
+  if (/[^\s\u0900-\u097F\u0966-\u097F0-9A-Za-z₹.,:;()\[\]\/|—–\-+%&'"@#*।॥]/.test(candidate)) return false;  // ε and friends
+  const o = scriptProfile(original); const c = scriptProfile(candidate);
+  if (o.deva >= 3 && c.deva === 0) return false;                 // Devanagari line must stay Devanagari
+  if (o.latin >= 3 && o.deva === 0 && c.deva > c.latin) return false;  // and an English line stays English
+  if (candidate.length < original.length * 0.4) return false;    // not a fragment
+  return true;
+};
+
+// Reading in zoomed bands helps some pages and destabilises others (it lifted
+// the commodity names on a 1949 ledger letter and mangled the date on the same
+// page). Off unless OCR_BANDS is set, so it can be measured before it is trusted.
+const BAND_COUNT = parseInt(process.env.OCR_BANDS || '0', 10);
+const BAND_OVERLAP = 0.12;
+const tileImage = async (content) => {
+  let sharp; try { sharp = require('sharp'); } catch { return null; }
+  if (content?.source?.type !== 'base64') return null;
+  try {
+    const buf = Buffer.from(content.source.data, 'base64');
+    const meta = await sharp(buf).metadata();
+    if (!meta.height || meta.height < 700) return null;   // small page: one look is enough
+    const bandH = Math.round(meta.height / BAND_COUNT);
+    const out = [];
+    for (let i = 0; i < BAND_COUNT; i += 1) {
+      const top = Math.max(0, Math.round(i * bandH - (i ? bandH * BAND_OVERLAP : 0)));
+      const height = Math.min(meta.height - top, Math.round(bandH * (1 + (i && i < BAND_COUNT - 1 ? 2 : 1) * BAND_OVERLAP)));
+      const scale = Math.min(3, 1700 / meta.width);
+      const band = await sharp(buf).extract({ left: 0, top, width: meta.width, height })
+        .resize({ width: Math.round(meta.width * scale), kernel: 'lanczos3' }).sharpen({ sigma: 0.6 })
+        .jpeg({ quality: 92 }).toBuffer();
+      out.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: band.toString('base64') } });
+    }
+    return out;
+  } catch (err) { logger.warn(`hindiOcr: banding failed: ${err.message}`); return null; }
+};
+
+// One band → its lines, in order.
+const readBand = async (band, index, total) => {
+  const text = await callClaude({
+    model: 'claude-sonnet-4-6',
+    maxTokens: 1500,
+    content: [band, { type: 'text', text: `This is band ${index + 1} of ${total} of a single page (they overlap slightly). Transcribe every line of text you can see, in order, one per line, exactly as written — same script, same digits (Devanagari stays Devanagari), same numbers and separators. Do not translate, do not tidy, do not invent. If a line is only partly visible at the very top or bottom edge, still include it. Output only the lines.` }],
+  }).catch((err) => { logger.warn(`hindiOcr: band ${index + 1} failed: ${err.message}`); return ''; });
+  return String(text || '').split('\n').map((l) => l.trim()).filter(Boolean).filter((l) => !/^(band|here|the (text|lines))\b/i.test(l));
+};
+
+// Bands → one list, with the overlap collapsed.
+const readInBands = async (imageContents) => {
+  const perImage = await Promise.all(imageContents.map(tileImage));
+  const bands = perImage.flat().filter(Boolean);
+  if (!bands.length) return [];
+  const total = bands.length;
+  const results = await Promise.all(bands.map((b, i) => readBand(b, i, total)));
+  const merged = [];
+  for (const lines of results) {
+    for (const line of lines) {
+      const dup = merged.slice(-6).some((prev) => similarity(prev, line) >= 0.75);
+      if (!dup) merged.push(line);
+    }
+  }
+  logger.info(`hindiOcr: banded read produced ${merged.length} lines from ${total} bands`);
+  return merged;
+};
+
 const run = async (rawImageContents, { handwritten = true } = {}) => {
   const imageContents = await upscaleForOcr(rawImageContents);
   // Printed Devanagari: Tesseract and the model read run side by side. The
@@ -1155,7 +1249,10 @@ const run = async (rawImageContents, { handwritten = true } = {}) => {
   const tessPromise = !handwritten ? runWithTesseract(imageContents).catch((err) => { logger.warn(`hindiOcr: tesseract failed (${err.message})`); return []; }) : Promise.resolve([]);
   const llmPromise = runWithLLMs(imageContents).catch((err) => { logger.warn(`hindiOcr: LLM OCR failed: ${err.message}`); return EMPTY_RESULT; });
   const numbersPromise = readNumbersPass(imageContents);
-  const [tl, llmFirst, numberLines] = await Promise.all([tessPromise, llmPromise, numbersPromise]);
+  // Handwriting is where a zoomed, band-by-band read pays for itself; printed
+  // pages are already legible whole and Tesseract covers them.
+  const bandPromise = handwritten && BAND_COUNT > 1 ? readInBands(imageContents) : Promise.resolve([]);
+  const [tl, llmFirst, numberLines, bandLines] = await Promise.all([tessPromise, llmPromise, numbersPromise, bandPromise]);
   tessLines = tl;
   if (tessLines.length) {
     const scored = tessLines.map((l) => l.confidence).filter((c) => typeof c === 'number');
@@ -1182,9 +1279,33 @@ const run = async (rawImageContents, { handwritten = true } = {}) => {
       }
       return best && best.sc >= 0.55 ? best.text : null;
     };
+    // Where the full-page readers disagreed, the band that saw the line
+    // enlarged is the better witness.
+    let fromBands = 0;
+    if (bandLines.length) {
+      llmLinesFirst.forEach((l, i) => {
+        if (l.agreed) return;
+        let best = null;
+        for (let j = Math.max(0, i - 3); j <= Math.min(bandLines.length - 1, i + 3); j++) {
+          const sc = similarity(l.text, bandLines[j]);
+          if (!best || sc > best.sc) best = { sc, text: bandLines[j] };
+        }
+        if (best && best.sc >= 0.45 && best.text !== l.text && isBetterCandidate(l.text, best.text)) { l.text = best.text; l.confidence = Math.max(l.confidence ?? 0, 0.75); fromBands += 1; }
+      });
+      if (fromBands) logger.info(`hindiOcr: ${fromBands} disputed line(s) taken from the zoomed read`);
+    }
+
     let fixed = 0;
     llmLinesFirst.forEach((l, i) => {
-      const cands = [nearest(gLines, i, l.text), nearest(cLines, i, l.text), tessLines.length ? nearest(tessLines, i, l.text) : null].filter(Boolean);
+      const bandCand = bandLines.length ? (() => {
+        let best = null;
+        for (let j = Math.max(0, i - 3); j <= Math.min(bandLines.length - 1, i + 3); j++) {
+          const sc = similarity(l.text, bandLines[j]);
+          if (!best || sc > best.sc) best = { sc, text: bandLines[j] };
+        }
+        return best && best.sc >= 0.45 ? best.text : null;
+      })() : null;
+      const cands = [nearest(gLines, i, l.text), nearest(cLines, i, l.text), tessLines.length ? nearest(tessLines, i, l.text) : null, bandCand].filter(Boolean);
       // Printed digits are Tesseract's strength and the vision models' weakness
       // (they read ९८७६५४३२१० as ९८७७६५४३२१०). Where Tesseract read this line
       // confidently and found the same number of figures, its digits win
@@ -1218,6 +1339,7 @@ const run = async (rawImageContents, { handwritten = true } = {}) => {
     });
     if (fixed) logger.info(`hindiOcr: digit vote corrected ${fixed} line(s)`);
     dandaDatesToSlashes(llmLinesFirst);
+    digitsToLineScript(llmLinesFirst);
     const unmixed = unmixDigitScripts(llmLinesFirst);
     if (unmixed) logger.info(`hindiOcr: ${unmixed} number(s) had mixed digit scripts — rewritten in the document's own script`);
     if (tessClean) {
@@ -1304,7 +1426,10 @@ const toBundleShape = (result, screenshotCount, userTitle) => {
     let note = '';
     if (!l.agreed && !singleModel) note = l.altText ? ' — models disagree, unverified' : ' — low OCR confidence, verify';
     return {
-      name: l.agreed ? l.text : `${l.text}${l.altText ? ` / ${l.altText}` : ''}`,
+      // One line, one reading. Printing "reading A / reading B" turned a letter
+      // into a diff; if we are unsure, the line still shows our best reading and
+      // says it wants checking.
+      name: l.text,
       details: `Line ${l.line}${note}`,
       // Deliberately no tags. These used to be ['confirmed'|'disputed'], and the
       // bundle save flattens every item's tags into the save's user-facing tag
