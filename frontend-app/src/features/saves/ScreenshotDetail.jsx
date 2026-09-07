@@ -96,6 +96,10 @@ export default function ScreenshotDetail({ save: initial, onNavigate, onBack }) 
   const data = sa.data || sa.extracted || sa;
   const agg = save.aiAnalysis?.aggregateAnalysis;
   const count = save.screenshots?.length || save.aiAnalysis?.screenshotAnalysis?.data?.totalScreenshots || save.metadata?.screenshotCount || 1;
+  // "Read it again" leaves a mark: when the current content was produced, shown
+  // only when it is a genuine re-read rather than the first one.
+  const processedAt = save.aiAnalysis?.processedAt || null;
+  const lastRead = processedAt && new Date(processedAt) - new Date(save.createdAt) > 90000 ? savedAt(processedAt) : null;
   const summary = save.aiAnalysis?.summary || save.description || '';
   // The pipeline puts the summary and an OCR quality note into keyPoints; show each once, in its place.
   const diag = /(\d+) of (\d+) lines|transcribed by a single model|need review/i;
@@ -204,7 +208,7 @@ export default function ScreenshotDetail({ save: initial, onNavigate, onBack }) 
         <span style={{ fontSize: 12, color: 'var(--faint)' }}>· {count} photo{count === 1 ? '' : 's'} saved</span>
       </div>
       <h1 className="wt-title lg" style={{ marginBottom: 10 }}>{save.title || 'Untitled'}</h1>
-      <span style={{ fontSize: 14.5, color: 'var(--mute)', marginBottom: 22 }}>Saved {savedAt(save.createdAt)}{data.date ? ` · dated ${data.date}` : ''}</span>
+      <span style={{ fontSize: 14.5, color: 'var(--mute)', marginBottom: 22 }}>Saved {savedAt(save.createdAt)}{data.date ? ` · dated ${data.date}` : ''}{lastRead ? ` · read again ${lastRead}` : ''}</span>
 
       {reading && (
         <div style={{ marginBottom: 22, padding: '14px', borderRadius: 14, background: 'var(--teal-soft)', display: 'flex', flexDirection: 'column', gap: 8 }}>

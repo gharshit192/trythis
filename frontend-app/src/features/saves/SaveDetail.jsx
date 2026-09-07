@@ -283,6 +283,8 @@ export default function SaveDetail({ onNavigate, onBack, payload }) {
     return line.charAt(0).toUpperCase() + line.slice(1) + '.';
   })();
   const processing = ['pending', 'processing', 'failed', 'partial'].includes(save.processingStatus);
+  const processedAt = save.aiAnalysis?.processedAt || null;
+  const lastRead = processedAt && new Date(processedAt) - new Date(save.createdAt) > 90000 ? savedAt(processedAt) : null;
 
   return (
     <div className="wt-screen">
@@ -304,7 +306,7 @@ export default function SaveDetail({ onNavigate, onBack, payload }) {
       </div>
       <h1 className="wt-title lg" style={{ marginBottom: 10 }}>{title}</h1>
       <div style={{ fontSize: 14.5, color: 'var(--mute)', marginBottom: 22, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-        <span>{meta ? `${meta} · saved ${savedAt(save.createdAt)}` : `Saved ${savedAt(save.createdAt)}`}</span>
+        <span>{meta ? `${meta} · saved ${savedAt(save.createdAt)}` : `Saved ${savedAt(save.createdAt)}`}{lastRead ? ` · read again ${lastRead}` : ''}</span>
         {processing && <span style={{ padding: '3px 9px', borderRadius: 999, fontSize: 11.5, fontWeight: 600, background: 'var(--teal-soft)', color: 'var(--teal-d)' }}>{save.processingStatus === 'failed' ? 'Couldn\'t read it' : save.processingStatus === 'partial' ? 'Partly read' : 'Still reading'}</span>}
       </div>
 
