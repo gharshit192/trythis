@@ -58,7 +58,10 @@ async function sendJobNotification(userId, payload) {
       deliveryMethod: 'in_app',
       sentAt: new Date(),
       metadata: {
-        jobId: jobId.toString(),
+        // A screenshot or a re-read has no upload job. Calling .toString() on
+        // an absent id threw here, and the catch below swallowed it — which is
+        // why finished screenshots never produced a notification or a push.
+        ...(jobId ? { jobId: String(jobId) } : {}),
         channel: 'in_app',
         ...extraMeta,
       },

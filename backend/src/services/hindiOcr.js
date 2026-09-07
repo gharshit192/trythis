@@ -1073,6 +1073,19 @@ const digitRuns = (t) => (String(t || '').match(/[0-9०-९]+/g) || []).map(toA
 // A number that mixes both digit scripts ("13/1/1३६") is always a misreading:
 // a writer uses one script for one figure. Rewrite such tokens in whichever
 // script the document mostly uses, so at least the form is honest.
+// A danda between two digits is a separator the writer drew as a stroke, not
+// sentence punctuation: १३।१।४९ is a date. Rewrite those as slashes so the
+// figure reads as one. Dandas after a number (ledger fractions like ९६॥) are
+// left exactly as written.
+const dandaDatesToSlashes = (lines) => {
+  let n = 0;
+  for (const l of lines) {
+    const next = String(l.text).replace(/([0-9०-९]{1,4})\s*[।॥]\s*([0-9०-९]{1,4})\s*[।॥]\s*([0-9०-९]{2,4})/g, '$1/$2/$3');
+    if (next !== l.text) { l.text = next; n += 1; }
+  }
+  return n;
+};
+
 const unmixDigitScripts = (lines) => {
   const all = lines.map((l) => l.text).join(' ');
   const deva = (all.match(/[०-९]/g) || []).length;
@@ -1204,6 +1217,7 @@ const run = async (rawImageContents, { handwritten = true } = {}) => {
       }
     });
     if (fixed) logger.info(`hindiOcr: digit vote corrected ${fixed} line(s)`);
+    dandaDatesToSlashes(llmLinesFirst);
     const unmixed = unmixDigitScripts(llmLinesFirst);
     if (unmixed) logger.info(`hindiOcr: ${unmixed} number(s) had mixed digit scripts — rewritten in the document's own script`);
     if (tessClean) {
@@ -1327,7 +1341,14 @@ const toBundleShape = (result, screenshotCount, userTitle) => {
   return {
     english: result.english || [],
     tags: docTags,
-    autoTitle: userTitle || result.title || (() => {
+    autoTitle: userTitle || (() => {
+      const t = String(result.title || '').trim();
+      if (!t) return '';
+      // A handwritten date read at 60% confidence has no business being stated
+      // as fact in the document's name.
+      const unsure = (result.overallConfidence ?? 1) < 0.65;
+      return unsure ? t.replace(/[,\s—-]+((?:\d{1,2}[\/.-]){0,2}\d{2,4})\s*$/, '').trim() || t : t;
+    })() || (() => {
       const first = (lines[0]?.text || '').trim();
       return first && first.length <= 60 ? first : '';
     })() || 'Scanned document',
