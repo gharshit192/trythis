@@ -1,3 +1,4 @@
+import { Capacitor } from '@capacitor/core';
 import { API_BASE_URL, authHeader, handle, handleAbortable, dedupedGet, readSavesCache, writeSavesCache, invalidateSaves } from './client';
 
 const saves = {
@@ -37,6 +38,7 @@ const saves = {
   // Complete your trip: stays + transport offers for a trip (GET /saves/:id/offers).
   async getTripOffers(id, { checkIn, nights, adults, origin } = {}) {
     const q = new URLSearchParams(); if (checkIn) q.set('checkIn', checkIn); if (nights) q.set('nights', nights); if (adults) q.set('adults', adults); if (origin) q.set('origin', origin);
+    q.set('platform', Capacitor.isNativePlatform() ? Capacitor.getPlatform() : (/Mobi|Android/i.test(navigator.userAgent) ? 'mobile_web' : 'web'));
     const res = await fetch(`${API_BASE_URL}/saves/${id}/offers?${q}`, { headers: authHeader() });
     return handle(res);
   },

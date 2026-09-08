@@ -12,6 +12,7 @@ const authMiddleware = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (typeof decoded.id !== 'string' || decoded.aud === 'partner-redirect') throw new Error('Not an authentication token');
     req.user = decoded;
     next();
   } catch (error) {

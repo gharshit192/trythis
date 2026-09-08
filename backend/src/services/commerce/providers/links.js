@@ -1,72 +1,28 @@
-// Search-link partners: always available, no API needed. Affiliate ids come
-// from env so a partner switch never touches a screen.
-const enc = (s) => encodeURIComponent(String(s || '').trim());
-const dash = (s) => String(s || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+const cuelinks = require('./cuelinks');
 
-const checkOutOf = (checkIn, nights) => { const d = new Date(checkIn); d.setDate(d.getDate() + (nights || 1)); return d.toISOString().slice(0, 10); };
-
-// Agoda: textToSearch + dates + los (length of stay) opens results for the hotel/city.
-const agodaUrl = (q, checkIn, nights, adults = 2) => `https://www.agoda.com/search?textToSearch=${enc(q)}${checkIn ? `&checkIn=${checkIn}&los=${nights || 1}` : ''}&rooms=1&adults=${adults}&children=0${process.env.AGODA_CID ? `&cid=${process.env.AGODA_CID}` : ''}`;
-
-const ddmmyyyy = (iso) => { const [y, m, d] = iso.split('-'); return `${d}/${m}/${y}`; };
-// Cleartrip takes city + dates in the URL; MakeMyTrip, Goibibo and OYO have no
-// text-search URL for a hotel by name, so those rows go through a search pinned
-// to the partner's hotel pages (lands on the hotel; never the user's last search).
-const cleartripHotelsUrl = (city, checkIn, nights, adults = 2) => `https://www.cleartrip.com/hotels/results?city=${enc(city)}&country=IN${checkIn ? `&chk_in=${ddmmyyyy(checkIn)}&chk_out=${ddmmyyyy(checkOutOf(checkIn, nights))}` : ''}&adults=${adults}&rooms=1`;
-const oyoUrl = (city, checkIn, nights, adults = 2) => `https://www.oyorooms.com/search?location=${enc(city)}${checkIn ? `&checkin=${ddmmyyyy(checkIn)}&checkout=${ddmmyyyy(checkOutOf(checkIn, nights))}` : ''}&guests=${adults}&rooms=1`;
-const pinnedSearch = (site, q) => `https://www.google.com/search?q=${enc(`site:${site} ${q}`)}`;
-
-// Indian affiliate network wrapper (Cuelinks / EarnKaro / Admitad): one account
-// covers MakeMyTrip, Goibibo, Cleartrip, OYO, EaseMyTrip, redBus and more. Set
-// AFFILIATE_WRAP_TEMPLATE, e.g. Cuelinks LinkKit:
-//   https://linksredirect.com/?cid=123456&source=linkkit&url={url}
-// and AFFILIATE_WRAP_DOMAINS (comma list of merchant domains the network pays
-// for). Links to other domains pass through untouched.
-const wrap = (url) => {
-  const tpl = process.env.AFFILIATE_WRAP_TEMPLATE; if (!tpl || !url) return url;
-  const domains = String(process.env.AFFILIATE_WRAP_DOMAINS || 'makemytrip.com,goibibo.com,cleartrip.com,oyorooms.com,easemytrip.com,redbus.in,agoda.com,booking.com,yatra.com').split(',').map((d) => d.trim()).filter(Boolean);
-  let host = ''; try { host = new URL(url).hostname; } catch { return url; }
-  if (!domains.some((d) => host === d || host.endsWith(`.${d}`))) return url;
-  return tpl.replace('{url}', encodeURIComponent(url));
-};
-
-// "Compare booking options" rows for one hotel or one city — the partners Indian
-// users actually book on first, global ones after.
-// Only partners that pay us: Cuelinks sites, Agoda (direct), Hotellook (Travelpayouts marker).
-const hotellookUrl = (q, checkIn, nights, adults = 2) => `https://search.hotellook.com/hotels?destination=${enc(q)}${checkIn ? `&checkIn=${checkIn}&checkOut=${checkOutOf(checkIn, nights)}` : ''}&adults=${adults}&currency=inr&language=en${process.env.TRAVELPAYOUTS_MARKER ? `&marker=${process.env.TRAVELPAYOUTS_MARKER}` : ''}`;
-const stayOptions = (q, checkIn, nights, adults = 2, city = q) => [
-  { provider: 'MakeMyTrip', deeplink: wrap(pinnedSearch('makemytrip.com/hotels', q)), note: 'via search' },
-  { provider: 'Goibibo', deeplink: wrap(pinnedSearch('goibibo.com/hotels', q)), note: 'via search' },
-  { provider: 'Cleartrip', deeplink: wrap(cleartripHotelsUrl(city, checkIn, nights, adults)) },
-  { provider: 'OYO', deeplink: wrap(oyoUrl(city, checkIn, nights, adults)) },
-  { provider: 'Agoda', deeplink: wrap(agodaUrl(q, checkIn, nights, adults)) },
-  { provider: 'Hotellook', deeplink: hotellookUrl(q, checkIn, nights, adults), note: 'compares 70+ sites' },
-];
-
-// Flights on the sites Indians use, with the date and route in the URL.
-const flightLinks = ({ oCode, dCode, origin, city, date, adults = 1 }) => {
-  if (!oCode || !dCode || !date) return [];
-  const dmy = ddmmyyyy(date); const ymd = date.replace(/-/g, '');
-  return [
-    { provider: 'MakeMyTrip', deeplink: wrap(`https://www.makemytrip.com/flight/search?itinerary=${oCode}-${dCode}-${dmy}&tripType=O&paxType=A-${adults}_C-0_I-0&cabinClass=E`) },
-    { provider: 'Goibibo', deeplink: wrap(`https://www.goibibo.com/flights/air-${oCode}-${dCode}-${ymd}--${adults}-0-0-E-D/`) },
-    { provider: 'Cleartrip', deeplink: wrap(`https://www.cleartrip.com/flights/results?adults=${adults}&childs=0&infants=0&class=Economy&depart_date=${dmy}&from=${oCode}&to=${dCode}&intl=n`) },
-  ].map((x) => ({ ...x, title: `${origin || oCode} → ${city || dCode}` }));
-};
-
-const transportOffers = ({ origin, city, domestic, date, oCode, dCode, adults = 1 }) => {
-  const o = origin || '';
-  const out = [];
-  const fl = flightLinks({ oCode, dCode, origin: o, city, date, adults });
-  if (fl.length) {
-    const aviasales = oCode && dCode && date ? { provider: 'Aviasales', deeplink: `https://www.aviasales.com/search/${oCode}${date.slice(8, 10)}${date.slice(5, 7)}${dCode}${adults}${process.env.TRAVELPAYOUTS_MARKER ? `?marker=${process.env.TRAVELPAYOUTS_MARKER}` : ''}` } : null;
-    out.push({ type: 'TRANSPORT', provider: 'MakeMyTrip', title: `Flights ${o} → ${city}`, description: 'Fares on MakeMyTrip · also Goibibo, Cleartrip, Aviasales', source: 'affiliate', metadata: { mode: 'flight' }, deeplink: fl[0].deeplink, options: [...fl.map((x) => ({ provider: x.provider, deeplink: x.deeplink })), ...(aviasales ? [aviasales] : [])] });
+function stayOptions(q, checkIn, nights, adults = 2, city = q, platform = 'web') {
+  const rows = ['cleartrip', 'itc'].map((id) => cuelinks.link(id, { platform }));
+  if (process.env.AGODA_CID) {
+    const url = new URL('https://www.agoda.com/search');
+    Object.entries({ textToSearch: q, checkIn, los: nights, rooms: 1, adults, cid: process.env.AGODA_CID }).forEach(([k, v]) => url.searchParams.set(k, v));
+    rows.push({ provider: 'Agoda', source: 'affiliate', deeplink: url.href });
   }
-  if (domestic) {
-    out.push({ type: 'TRANSPORT', provider: 'redBus', title: `Bus${o ? ` ${o} → ${city}` : ` to ${city}`}`, description: 'Overnight and day buses, seat selection', source: 'affiliate', metadata: { mode: 'bus' },
-      deeplink: wrap(o ? `https://www.redbus.in/bus-tickets/${dash(o)}-to-${dash(city)}${date ? `?onward=${ddmmyyyy(date).replace(/\//g, '-')}` : ''}` : `https://www.redbus.in/bus-tickets/${dash(city)}`) });
-  }
+  return rows;
+}
+
+function transportOffers({ origin, city, domestic, platform = 'web' }) {
+  const out = [{ ...cuelinks.link('airindiaexpress', { platform }), type: 'TRANSPORT',
+    title: 'Browse flights', description: 'Choose your route and dates on Air India Express',
+    reason: origin ? `For your ${origin} to ${city} trip` : `For your ${city} trip`, metadata: { mode: 'flight' } }];
+  if (domestic) out.push({ provider: 'redBus', type: 'TRANSPORT', source: 'utility',
+    title: 'Browse buses', description: 'Choose your route and dates on redBus',
+    reason: `Transport for your ${city} trip`, metadata: { mode: 'bus' }, deeplink: 'https://www.redbus.in/' });
   return out;
-};
+}
 
-module.exports = { stayOptions, transportOffers, hotellookUrl, wrap };
+function activitiesFor(city, platform) {
+  return [{ ...cuelinks.link('thrillophilia', { platform }), type: 'ACTIVITY', title: 'Browse experiences',
+    description: 'Choose your destination and dates on Thrillophilia', reason: `Ideas for your ${city} trip`, metadata: { mode: 'activity' } }];
+}
+
+module.exports = { stayOptions, transportOffers, activitiesFor };

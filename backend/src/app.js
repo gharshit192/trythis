@@ -71,6 +71,7 @@ app.get('/status', (req, res) => {
     instagramSession: process.env.YTDLP_COOKIES_B64 || process.env.YTDLP_COOKIES_FILE ? 'SET' : 'NOT SET',
     emailFrom: process.env.RESEND_FROM || process.env.EMAIL_FROM || 'Wanna Try <onboarding@resend.dev> (sandbox: delivers only to the Resend account owner)',
     frontend: process.env.FRONTEND_URL || 'NOT SET',
+    commerce: require('./services/commerce/providers/cuelinks').status(),
   });
 });
 

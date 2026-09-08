@@ -65,6 +65,8 @@ Status format: `Proposed - YYYY-MM-DD` / `Accepted - YYYY-MM-DD` /
 - [ADR 0018](0018-blog-is-server-rendered-from-the-api.md) — Blog server-rendered by
   the API for SEO; one env-configured web admin writes it
 
+- [ADR 0022](0022-cuelinks-contextual-merchant-links.md) - Verified Cuelinks links, platform restrictions and separate inventory. *Accepted*
+
 ## Maintenance Rules
 
 - Do not add a new cross-cutting pattern without an ADR.

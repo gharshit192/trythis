@@ -9,6 +9,7 @@ import { getCategoryTile } from '../../lib/categoryMeta';
 import { savedAt, relativeTime } from '../../lib/format';
 import Trip from './Trip';
 import SaveSections from './SaveSections';
+import SavedMerchant from '../../components/commerce/SavedMerchant';
 import ReminderControl from '../../components/ReminderControl';
 import Chip from '../../components/Chip';
 import { isTryable } from '../../lib/intent';
@@ -358,6 +359,7 @@ export default function SaveDetail({ onNavigate, onBack, payload }) {
         </div>
       )}
       <SaveSections save={save} />
+      <SavedMerchant save={save} />
       {tags.length > 0 && (
         <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap', marginBottom: 22 }}>
           {tags.map((t) => <span key={t} className="wt-chip sm" style={{ cursor: 'default', fontSize: 12.5 }}>{t}</span>)}

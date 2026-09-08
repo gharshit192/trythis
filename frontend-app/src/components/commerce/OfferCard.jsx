@@ -19,7 +19,7 @@ export default function OfferCard({ offer }) {
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
         {offer.priceLabel && <span style={{ fontSize: 14, fontWeight: 600 }}>{offer.priceLabel}</span>}
-        <PartnerCTA href={offer.href} label={offer.priceLabel ? 'Book' : 'Search'} small primary={!!offer.priceLabel} />
+        <PartnerCTA href={offer.href} label={offer.priceLabel ? 'Check price' : 'View'} small primary={!!offer.priceLabel} />
       </div>
     </div>
     {options.length > 1 && (

@@ -19,7 +19,7 @@ Today's data already carries the hooks: travel saves have destinations, day coun
 ### 1. Travel affiliate — HIGH, Phase 2
 - **What:** hotels, activities, trek bookings, transport, tickets, shown inside a trip ("Complete your trip": Stay · Experiences · Transport) and on travel item pages.
 - **Model:** redirect to partner; commission on conversion where the partner supports it.
-- **Partners (decided 3 Sep 2026): only the three that pay us.** Cuelinks (MakeMyTrip, Goibibo, Cleartrip, OYO, redBus), Agoda Partners (direct id), Travelpayouts (Aviasales live fares, Hotellook stays; marker 773322). No Booking.com, Google, IRCTC or other unpaid rows in the booking zones. Activities (Thrillophilia/Klook) come later through the same rule.
+- **Superseded by ADR 0022:** Pending or platform-disallowed campaigns now use clearly labelled direct merchant links, without claiming commission. The original partner decision was: Cuelinks (MakeMyTrip, Goibibo, Cleartrip, OYO, redBus), Agoda Partners (direct id), Travelpayouts (Aviasales live fares, Hotellook stays; marker 773322). No Booking.com, Google, IRCTC or other unpaid rows in the booking zones. Activities (Thrillophilia/Klook) come later through the same rule.
 - **UI:** hotel cards with price, rating, distance, and a reason ("near 3 places in your plan"); "Compare booking options" lists 2–3 partners with price and **View** → redirect. Hotels never become a top-level tab.
 - **Guardrail:** appears only on saves/plans with a destination or dated plan.
 

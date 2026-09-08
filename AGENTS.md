@@ -312,6 +312,23 @@ See [ADR 0007](docs/adr/0007-dual-frontend-capacitor-pwa.md) (platform),
 - For end-to-end feature workflow and patterns, see
   [`docs/code-patterns.md`](docs/code-patterns.md).
 
+## Commerce Rules
+
+See [ADR 0022](docs/adr/0022-cuelinks-contextual-merchant-links.md).
+
+- Cuelinks tracking requires a successful redirect probe to the expected merchant,
+  not only API conversion approval. Failed probes use direct merchant URLs.
+- Cuelinks supplies verified attribution, not live inventory. Never label
+  configured credentials or generated plan estimates as live prices.
+- Respect merchant, country and platform restrictions. Pending, invalid,
+  disallowed or stale campaigns use direct links without a commission claim.
+- Campaign refresh runs in a bounded child worker, an exception to the Bull
+  rule for non-user configuration work on installations without Redis.
+- Keep API credentials in backend env. Every commerce link uses the signed
+  /go redirect, which rechecks merchant eligibility at click time.
+- Travel commerce stays in the trip flow; Nykaa requires an original Nykaa
+  save. No unrelated shopping suggestions in travel or Home.
+
 ## Secrets & Config Rules
 
 - All secrets come from environment variables loaded via `dotenv`. `.env`,

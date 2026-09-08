@@ -20,7 +20,7 @@ export default function HotelCard({ offer }) {
             {offer.reason && <span style={{ fontSize: 12.5, color: 'var(--teal-d)' }}>{offer.reason}</span>}
           </div>
         </div>
-        <PartnerCTA href={offer.href} label={offer.provider === 'suggested' || offer.provider === 'links' ? 'Search' : 'View'} small primary />
+        <PartnerCTA href={offer.href} label="View" small primary />
       </div>
       {(offer.options || []).length > 0 && (
         <div style={{ marginTop: 10, borderTop: '1px solid var(--line)', paddingTop: 8 }}>

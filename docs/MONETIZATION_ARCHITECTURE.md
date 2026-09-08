@@ -1,6 +1,6 @@
 # Monetisation Architecture
 
-How commercial content will be modelled, served, tracked and shown — designed now, **implemented in Phase 2** (`REVENUE_STRATEGY.md`). Nothing here is live. Written so that partners can be swapped and the frontend never learns a partner URL.
+How commercial content will be modelled, served, tracked and shown — designed now, **implemented in Phase 2** (`REVENUE_STRATEGY.md`). The contextual link implementation is active; inventory and commission availability depend on verified provider configuration. Written so that partners can be swapped and the frontend never learns a partner URL.
 
 ## Principles
 
@@ -89,6 +89,6 @@ Built 3 Sep 2026 (`backend/src/services/commerce/*`, `routes/go.js`, `frontend-a
 1. ✓ `Offer` (cache), `OfferClick`, `Event` models; `GET /go/:token` (signed offer token → click row → 302); `affiliate_offer_viewed` / `partner_redirect` events.
 2. ✓ Providers: `links` (Booking.com, Agoda, MakeMyTrip, redBus, IRCTC, Google Flights with env affiliate ids) and `travelpayouts` (Hotellook live hotel prices, Aviasales live fares, affiliate deep links; on when `TRAVELPAYOUTS_TOKEN` is set — Amadeus Self-Service was decommissioned in July 2026). `GET /saves/:id/offers` assembles "Complete your trip" per destination with the plan's own hotel suggestions as a third source.
 3. ✓ `CommerceSection`, `HotelCard` (+ compare options rows), `OfferCard`, `PartnerCTA`, `CompleteYourTrip`; itinerary tab **Stay & travel**; compact preview on the trip screen once a plan exists.
-4. ☐ Indian affiliate network adapter (EarnKaro/Cuelinks) for MakeMyTrip/redBus commissions; conversion import.
+4. Cuelinks adapter implemented for Air India Express, Nykaa, Thrillophilia, ITC and Cleartrip Hotels. Campaign verification refreshes in a bounded worker; pending or restricted tracking becomes a direct merchant link. Conversion import remains future work. See ADR 0022 and CUELINKS_SETUP.md.
 5. ☐ Metrics in the admin (impressions, clicks, CTR, revenue per travel-intent user).
-6. ☐ Activities/experiences provider (Thrillophilia/Klook) for the Experiences zone.
+6. Thrillophilia merchant links appear in the Experiences zone. Activity inventory and Klook are not integrated.
