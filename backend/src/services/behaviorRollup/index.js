@@ -219,7 +219,18 @@ function statementsFrom(signals) {
     signals.triedCount ? `and you’ve actually done ${signals.triedCount} of them` : 'and haven’t tried any of them yet',
   ].filter(Boolean).join(', ').concat('.');
 
-  return { gist, groups: g };
+  // The gist already names the top city and the two biggest interests. Repeating
+  // them as rows underneath reads like the app forgot what it just said —
+  // "You save most of your things in Mumbai" above "Saves things in Mumbai".
+  const named = new Set([
+    city ? `saves things in ${city}`.toLowerCase() : null,
+    ...cats.slice(0, 2).map((c) => `saves a lot of ${c}`.toLowerCase()),
+  ].filter(Boolean));
+  const groups = g
+    .map((group) => ({ ...group, items: group.items.filter((it) => !named.has(String(it.statement).toLowerCase())) }))
+    .filter((group) => group.items.length);
+
+  return { gist, groups };
 }
 
 module.exports = { rollupSignals, statementsFrom, __test__: { median, sureness } };

@@ -47,6 +47,16 @@ const sendEmail = async ({ to, subject, html, text }) => {
 sendEmail.lastError = null;
 const emailProvider = () => (process.env.RESEND_API_KEY ? 'resend' : process.env.SMTP_HOST ? 'smtp' : 'none');
 
+// The sandbox sender delivers ONLY to the address that owns the Resend account.
+// Leaving RESEND_FROM unset is the single most common reason mail "sends" and
+// never arrives, so name it rather than making someone read the logs.
+const usingSandboxSender = () => {
+  const from = process.env.RESEND_FROM || process.env.EMAIL_FROM || '';
+  return !!process.env.RESEND_API_KEY && (!from || /onboarding@resend\.dev/i.test(from));
+};
+const lastEmailError = () => sendEmail.lastError
+  || (usingSandboxSender() ? 'RESEND_FROM is unset, so mail is sent from Resend\'s sandbox address and only reaches the Resend account owner. Verify a domain and set RESEND_FROM.' : null);
+
 const sendVerificationEmail = async (user, otp) => sendEmail({
   to: user.email,
   subject: `${otp} is your Wanna Try code`,
@@ -113,6 +123,8 @@ const sendNotificationEmail = async (user, notification) => {
 module.exports = {
   sendEmail,
   emailProvider,
+  lastEmailError,
+  usingSandboxSender,
   sendVerificationEmail,
   sendNotificationEmail,
   transporter,

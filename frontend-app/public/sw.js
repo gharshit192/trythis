@@ -56,24 +56,40 @@ self.addEventListener('push', (event) => {
   })());
 });
 
-// Focus an existing tab (or open one) and navigate to the notification's target.
+// Focus an existing window (or open one) and take the user to what the
+// notification was about.
+//
+// The obvious implementation — focus(), then client.navigate(url) — silently
+// did nothing whenever the app was merely backgrounded rather than closed.
+// matchAll({ includeUncontrolled: true }) returns windows this service worker
+// does not control, and navigate() REJECTS on those. With the rejection
+// swallowed, focus() succeeded, navigation never happened, and the user was
+// dropped back on whatever screen they had left open.
+//
+// So: tell the page where to go and let it route itself, which is also a
+// smoother transition than a full reload. navigate() stays as a fallback for a
+// controlled client whose page is too old to understand the message.
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   const targetUrl = (event.notification.data && event.notification.data.url) || '/';
 
-  event.waitUntil(
-    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      for (const client of clientList) {
-        if ('focus' in client) {
-          client.focus();
-          if ('navigate' in client) client.navigate(targetUrl).catch(() => {});
-          return undefined;
-        }
+  event.waitUntil((async () => {
+    const clientList = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    const client = clientList.find((c) => 'focus' in c);
+
+    if (client) {
+      try { await client.focus(); } catch (e) { /* focus can be refused; keep going */ }
+      // The page listens for this and routes in-app.
+      try { client.postMessage({ type: 'deep-link', url: targetUrl }); } catch (e) { /* fall through */ }
+      // Older page, or one that never registered the listener.
+      if ('navigate' in client) {
+        try { await client.navigate(targetUrl); } catch (e) { /* uncontrolled: the message above is the path that works */ }
       }
-      if (self.clients.openWindow) return self.clients.openWindow(targetUrl);
-      return undefined;
-    })
-  );
+      return;
+    }
+
+    if (self.clients.openWindow) await self.clients.openWindow(targetUrl);
+  })());
 });
 
 // The push service can retire an endpoint on its own (browser update, storage

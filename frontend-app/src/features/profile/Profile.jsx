@@ -218,10 +218,12 @@ export default function Profile({ onNavigate }) {
       )}
 
       <div style={{ marginTop: 24 }}><SectionLabel>About you</SectionLabel></div>
-      <p style={{ fontSize: 13.5, color: 'var(--mute)', margin: '4px 0 10px', lineHeight: 1.45 }}>Ask, trip plans and nudges use these. Tap again to clear.</p>
+      <p style={{ fontSize: 13.5, color: 'var(--mute)', margin: '4px 0 10px', lineHeight: 1.45 }}>Tap again to clear.</p>
+      {/* Budget and "usually with" used to be chips here. They asked the user to
+          declare something abstract before the app had any reason to ask, and
+          the memory layer now picks both up from what they actually say
+          ("we usually just do hostels") — with a scope, which a chip never had. */}
       {[
-        ['budget', 'Budget', [['low', 'Keep it cheap'], ['mid', 'Mid-range'], ['high', 'Happy to splurge']]],
-        ['company', 'Usually with', [['partner', 'Partner'], ['friends', 'Friends'], ['family', 'Family'], ['solo', 'Solo']]],
         ['nudgeTime', 'Nudge me in the', [['morning', 'Morning'], ['evening', 'Evening']]],
       ].map(([k, label, opts]) => (
         <div key={k} style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '10px 0', borderBottom: '1px solid var(--line)' }}>

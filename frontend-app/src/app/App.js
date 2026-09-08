@@ -49,6 +49,23 @@ const Profile = lazy(() => import('../features/profile/Profile'));
 const Notifications = lazy(() => import('../features/notifications/Notifications'));
 const ScreenshotSummary = lazy(() => import('../features/saves/ScreenshotSummary'));
 
+// Path -> screen. At module scope so the mount effect does not close over a
+// new function identity on every render.
+const parseDeepLink = (path) => {
+  const saveMatch = path.match(/^\/saves\/([A-Za-z0-9]+)\/?$/);
+  if (saveMatch) return { screen: 'save-detail', payload: { id: saveMatch[1] } };
+  if (/^\/notifications\/?$/.test(path)) return { screen: 'notifications', payload: null };
+  return null;
+};
+
+// This app has no router, so a notification's path is translated here and then
+// cleared, or a later refresh bounces the user back to it.
+const consumeDeepLink = () => {
+  const target = parseDeepLink(window.location.pathname);
+  if (target) window.history.replaceState({}, '', '/');
+  return target;
+};
+
 function App() {
   const [authChecked, setAuthChecked] = useState(false);
   const [currentScreen, setCurrentScreen] = useState('welcome');
@@ -114,21 +131,6 @@ function App() {
   // `/saves/<id>` or `/notifications`. This app has no router, so the path has
   // to be translated into a screen here, then cleared so a later refresh doesn't
   // bounce the user back to it.
-  const consumeDeepLink = () => {
-    const path = window.location.pathname;
-    let target = null;
-
-    const saveMatch = path.match(/^\/saves\/([A-Za-z0-9]+)\/?$/);
-    if (saveMatch) {
-      target = { screen: 'save-detail', payload: { id: saveMatch[1] } };
-    } else if (/^\/notifications\/?$/.test(path)) {
-      target = { screen: 'notifications', payload: null };
-    }
-
-    if (target) window.history.replaceState({}, '', '/');
-    return target;
-  };
-
   useEffect(() => {
     // Synchronous auth check before rendering (prevents login flash)
     const storedToken = localStorage.getItem('auth_token');
@@ -172,6 +174,18 @@ function App() {
     // Always consume it, authed or not, so the URL is clean either way.
     const deepLink = consumeDeepLink();
 
+    // A notification tapped while the app is backgrounded reaches us as a
+    // message from the service worker rather than a page load, because
+    // navigate() cannot act on an uncontrolled window (see public/sw.js).
+    const onSwMessage = (event) => {
+      if (event.data?.type !== 'deep-link' || !event.data.url) return;
+      const target = parseDeepLink(new URL(event.data.url, window.location.origin).pathname);
+      if (!target) return;
+      setPayload(target.payload);
+      setCurrentScreen(target.screen);
+    };
+    navigator.serviceWorker?.addEventListener('message', onSwMessage);
+
     if (storedToken && storedUser) {
       try {
         const parsedUser = JSON.parse(storedUser);
@@ -206,7 +220,10 @@ function App() {
       setCurrentScreen('welcome');
     }
     setAuthChecked(true);
-    return () => offNativeShare();
+    return () => {
+      offNativeShare();
+      navigator.serviceWorker?.removeEventListener('message', onSwMessage);
+    };
   }, []);
 
   // navigate(screen) or navigate(screen, payload)

@@ -118,3 +118,38 @@ describe('statementsFrom', () => {
     expect(group.items[0].detail).toContain('not tried yet');
   });
 });
+
+describe('the gist and the rows do not repeat each other', () => {
+  const signals = rollupSignals({
+    saves: [
+      ...Array.from({ length: 6 }, () => save({ category: 'cafes', extractedLocation: { city: 'Mumbai' } })),
+      ...Array.from({ length: 3 }, () => save({ category: 'travel', extractedLocation: { city: 'Goa' } })),
+    ],
+  });
+
+  test('a city named in the gist is not listed again below it', () => {
+    const { gist, groups } = statementsFrom(signals);
+    expect(gist).toContain('Mumbai');
+    const rows = groups.flatMap((g) => g.items).map((i) => i.statement.toLowerCase());
+    expect(rows).not.toContain('saves things in mumbai');
+  });
+
+  test('the top interests named in the gist are not repeated either', () => {
+    const { gist, groups } = statementsFrom(signals);
+    expect(gist).toContain('cafes');
+    const rows = groups.flatMap((g) => g.items).map((i) => i.statement.toLowerCase());
+    expect(rows).not.toContain('saves a lot of cafes');
+  });
+
+  test('a second city the gist did not mention is still shown', () => {
+    const rows = statementsFrom(signals).groups.flatMap((g) => g.items).map((i) => i.statement);
+    expect(rows).toContain('Saves things in Goa');
+  });
+
+  test('an emptied group disappears rather than showing a bare heading', () => {
+    const only = rollupSignals({ saves: Array.from({ length: 6 }, () => save({ category: 'cafes', extractedLocation: { city: 'Mumbai' } })) });
+    const { groups } = statementsFrom(only);
+    expect(groups.every((g) => g.items.length > 0)).toBe(true);
+    expect(groups.find((g) => g.title === 'Places')).toBeUndefined();
+  });
+});
