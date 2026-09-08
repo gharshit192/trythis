@@ -205,6 +205,10 @@ const claudeKnowledgeInsights = async (placeLabel) => {
 };
 
 
+// The version of the take SHAPE. Bump it when this prompt changes materially;
+// placeResolver treats an older version as stale and rebuilds.
+const PLACE_TAKE_VERSION = 2;
+
 const buildPlaceTake = async (place, saves) => {
   const placeLabel = [place?.canonicalName, place?.city, place?.region, place?.country].filter(Boolean).join(', ') || 'this place';
   const summaries = (Array.isArray(saves) ? saves : [])
@@ -217,27 +221,45 @@ const buildPlaceTake = async (place, saves) => {
     .join('\n\n');
 
   const prompt = [
-    'You are summarizing multiple saves for the same travel place.',
+    'You are writing the page for a place in a travel app. Someone has tapped it',
+    'and wants to know what it actually is and whether to go.',
     '',
     'Place: ' + placeLabel,
     'Category: ' + (place?.category || 'destination'),
     'Vibe tags: ' + (Array.isArray(place?.vibeTags) ? place.vibeTags : []).slice(0, 8).join(', '),
     '',
-    'Save notes:',
-    summaries || 'No additional notes.',
+    'What people here saved about it:',
+    summaries || 'Nothing yet — write from what is widely known about the place.',
     '',
     'Return ONLY valid JSON in this exact shape:',
-    '{"text": string, "chips": [string, string, string, string, string, string]}',
+    '{',
+    '  "text": string,',
+    '  "knownFor": [string],',
+    '  "thingsToDo": [string],',
+    '  "goodToKnow": [{"label": string, "value": string}],',
+    '  "chips": [string]',
+    '}',
     '',
     'Rules:',
-    '- text must be a concise travel take, max 600 chars',
-    '- chips must be 3 to 6 short vibe labels',
-    '- do not invent sources or user identities',
+    '- text: 2 to 4 sentences. What the place IS and what it feels like to be there.',
+    '  Concrete and specific — no brochure language, no "nestled", no "hidden gem".',
+    '- knownFor: 3 to 5 short lines, what the place is actually known for.',
+    '- thingsToDo: 3 to 6 concrete activities, each a short phrase a person could act on.',
+    '- goodToKnow: up to 4 practical pairs. Use only these labels where you are',
+    '  confident: "Best time", "How long", "Getting there", "Budget", "Watch out for".',
+    '',
+    'What NOT to do — these matter more than completeness:',
+    '- Never invent prices, opening hours, phone numbers, distances or dates.',
+    '  Omit a field entirely rather than guess at it.',
+    '- If this is a small or obscure venue you do not reliably know, return short',
+    '  lists or empty ones. Two true lines beat six invented ones.',
+    '- Do not describe the app users, count saves, or refer to "travellers say".',
+    '- Do not repeat the same fact across text, knownFor and thingsToDo.',
   ].join('\n');
 
   const msg = await client.messages.create({
     model: MODEL,
-    max_tokens: 700,
+    max_tokens: 1200,
     messages: [{ role: 'user', content: prompt }],
   });
 
@@ -250,9 +272,41 @@ const buildPlaceTake = async (place, saves) => {
     throw new InsightsError('SUMMARY_PARSE', 'Could not parse place take.');
   }
 
+  return normalizePlaceTake(parsed);
+};
+
+const KNOWN_LABELS = ['Best time', 'How long', 'Getting there', 'Budget', 'Watch out for'];
+
+// The model is asked for a shape; it is never trusted to have produced one.
+const normalizePlaceTake = (parsed) => {
+  const lines = (v, max, len) => (Array.isArray(v) ? v : [])
+    .map((x) => String(x == null ? '' : x).replace(/\s+/g, ' ').trim())
+    .filter(Boolean)
+    .filter((x) => x.length > 2)
+    .slice(0, max)
+    .map((x) => x.slice(0, len));
+
+  const seen = new Set();
+  const dedupe = (arr) => arr.filter((x) => {
+    const k = x.toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (!k || seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+
   return {
-    text: String(parsed?.text || '').slice(0, 600),
-    chips: Array.isArray(parsed?.chips) ? parsed.chips.map((x) => String(x).trim()).filter(Boolean).slice(0, 6) : [],
+    text: String(parsed?.text || '').replace(/\s+/g, ' ').trim().slice(0, 700),
+    knownFor: dedupe(lines(parsed?.knownFor, 5, 120)),
+    thingsToDo: dedupe(lines(parsed?.thingsToDo, 6, 120)),
+    goodToKnow: (Array.isArray(parsed?.goodToKnow) ? parsed.goodToKnow : [])
+      .map((x) => ({ label: String(x?.label || '').trim(), value: String(x?.value || '').replace(/\s+/g, ' ').trim() }))
+      // An unrecognised label is a sign the model improvised; drop it rather
+      // than render a row nobody designed.
+      .filter((x) => x.value && KNOWN_LABELS.includes(x.label))
+      .slice(0, 4)
+      .map((x) => ({ label: x.label, value: x.value.slice(0, 90) })),
+    chips: lines(parsed?.chips, 6, 30),
+    version: PLACE_TAKE_VERSION,
   };
 };
 
@@ -297,4 +351,4 @@ const generateInsights = async (save) => {
   return claudeKnowledgeInsights(query);
 };
 
-module.exports = { generateInsights, buildQuery, buildPlaceTake, InsightsError };
+module.exports = { generateInsights, buildQuery, buildPlaceTake, InsightsError, PLACE_TAKE_VERSION, __test__: { normalizePlaceTake, KNOWN_LABELS } };

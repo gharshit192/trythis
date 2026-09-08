@@ -30,6 +30,7 @@ export default function Place({ onNavigate, onBack, payload }) {
     api.getPlaceSimilar(id).then((r) => { if (r?.status === 'success') setSimilar(r.data || []); }).catch(() => {});
   }, [id]);
 
+  const take = place?.aggregatedTake || {};
   if (!place) return <div className="wt-screen"><div style={{ padding: 40, textAlign: 'center', color: 'var(--mute)' }}>Loading…</div></div>;
 
   // By name, not by our geocode: the seeded coordinates are area-level and sent
@@ -46,11 +47,52 @@ export default function Place({ onNavigate, onBack, payload }) {
       <h1 className="wt-title lg" style={{ marginBottom: 10 }}>{place.canonicalName}</h1>
       <span style={{ fontSize: 14.5, color: 'var(--mute)', marginBottom: 22 }}>{[place.saveCount ? `Saved by ${place.saveCount} ${place.saveCount === 1 ? 'person' : 'people'}` : 'Not saved by anyone yet', place.viewCount ? `${place.viewCount} view${place.viewCount === 1 ? '' : 's'}` : null].filter(Boolean).join(' · ')}</span>
 
-      {place.aggregatedTake?.text && (
+      {take.text && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 20, marginTop: 8 }}>
           <SectionLabel>The take</SectionLabel>
-          <p style={{ fontSize: 15.5, lineHeight: 1.55, margin: 0 }}>{place.aggregatedTake.text}</p>
+          <p style={{ fontSize: 15.5, lineHeight: 1.55, margin: 0 }}>{take.text}</p>
         </div>
+      )}
+      {/* Sections are omitted, not stubbed, when the take has nothing for them —
+          a place we know little about shows less rather than something invented. */}
+      {take.knownFor?.length > 0 && (
+        <section style={{ marginBottom: 20 }}>
+          <SectionLabel>Known for</SectionLabel>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 7, marginTop: 6 }}>
+            {take.knownFor.map((k) => (
+              <div key={k} style={{ display: 'flex', gap: 9, alignItems: 'baseline' }}>
+                <span style={{ color: 'var(--teal)', fontWeight: 600, lineHeight: 1.5 }}>&bull;</span>
+                <span style={{ fontSize: 14.5, lineHeight: 1.5 }}>{k}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+      {take.thingsToDo?.length > 0 && (
+        <section style={{ marginBottom: 20 }}>
+          <SectionLabel>Things to do</SectionLabel>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 7, marginTop: 6 }}>
+            {take.thingsToDo.map((t) => (
+              <div key={t} style={{ display: 'flex', gap: 9, alignItems: 'baseline' }}>
+                <span style={{ color: 'var(--teal)', fontWeight: 600, lineHeight: 1.5 }}>&bull;</span>
+                <span style={{ fontSize: 14.5, lineHeight: 1.5 }}>{t}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+      {take.goodToKnow?.length > 0 && (
+        <section style={{ marginBottom: 20 }}>
+          <SectionLabel>Good to know</SectionLabel>
+          <div style={{ marginTop: 6 }}>
+            {take.goodToKnow.map((g) => (
+              <div key={g.label} style={{ display: 'flex', gap: 12, padding: '7px 0', borderBottom: '1px solid var(--line)' }}>
+                <span style={{ fontSize: 13, color: 'var(--faint)', minWidth: 96, flexShrink: 0 }}>{g.label}</span>
+                <span style={{ fontSize: 14.5 }}>{g.value}</span>
+              </div>
+            ))}
+          </div>
+        </section>
       )}
       {[...new Set([...(place.aggregatedTake?.chips || []), ...(place.vibeTags || [])])].length > 0 && (
         <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap', marginBottom: 22 }}>

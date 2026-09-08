@@ -36,10 +36,15 @@ function deriveCategory(save, tags = []) {
 }
 
 const TAKE_TTL_DAYS = 30;
+const { PLACE_TAKE_VERSION } = require('../insightsEngine');
+
 function isTakeStale(place) {
-  const g = place?.aggregatedTake?.generatedAt;
-  if (!g) return true;
-  return (Date.now() - new Date(g).getTime()) > TAKE_TTL_DAYS * 864e5;
+  const take = place?.aggregatedTake;
+  if (!take?.generatedAt) return true;
+  // Built by an older prompt: the row exists but is missing the sections the
+  // page now shows, so rebuild it rather than leave the place thin for a month.
+  if ((take.version || 1) < PLACE_TAKE_VERSION) return true;
+  return (Date.now() - new Date(take.generatedAt).getTime()) > TAKE_TTL_DAYS * 864e5;
 }
 
 async function findNearby(loc, metres = 150) {
@@ -106,4 +111,4 @@ async function resolvePlaceForSave(save) {
   }
 }
 
-module.exports = { resolvePlaceForSave, isTravel, isVenue, deriveCategory };
+module.exports = { resolvePlaceForSave, isTravel, isVenue, deriveCategory, isTakeStale };;

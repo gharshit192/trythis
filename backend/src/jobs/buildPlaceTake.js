@@ -22,7 +22,11 @@ async function buildPlaceTake(placeId) {
     $set: {
       aggregatedTake: {
         text: take.text || null,
-        chips: Array.isArray(take.chips) ? take.chips.slice(0, 6) : [],
+        knownFor: take.knownFor || [],
+        thingsToDo: take.thingsToDo || [],
+        goodToKnow: take.goodToKnow || [],
+        chips: take.chips || [],
+        version: take.version || 1,
         generatedAt: new Date(),
         sourceCount: saves.length,
       },

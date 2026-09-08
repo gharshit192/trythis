@@ -94,6 +94,17 @@ router.get('/:id', async (req, res) => {
       return res.status(404).json({ status: 'error', error: { code: 'NOT_FOUND', message: 'Place not found' } });
     }
     res.json({ status: 'success', data: place });
+
+    // Opening a place is exactly when its page should be worth reading, and
+    // until now a take was only ever rebuilt when a NEW save happened to link
+    // here — so a place nobody saved again kept whatever thin text it was born
+    // with. Fires after the response; the reader sees the fuller page next time.
+    // Seeded places keep their curated take and are left alone.
+    const { isTakeStale } = require('../services/placeResolver');
+    if (place.source !== 'seed' && isTakeStale(place)) {
+      const { enqueueTakeBuild } = require('../jobs/buildPlaceTake');
+      enqueueTakeBuild(place._id);
+    }
   } catch (e) {
     res.status(500).json({ status: 'error', error: { code: 'SERVER_ERROR', message: e.message } });
   }
