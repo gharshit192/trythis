@@ -9,6 +9,9 @@ const Anthropic = require('@anthropic-ai/sdk');
 const Save = require('../models/Save');
 const Conversation = require('../models/Conversation');
 const { parseJsonSafely } = require('./claudeService');
+const { buildBrief } = require('./memoryEngine/brief');
+const { extractFromText } = require('./memoryEngine/extract');
+const { observe } = require('./memoryEngine/observe');
 const logger = require('../utils/logger');
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -97,12 +100,21 @@ async function ask({ userId, question, conversationId, user }) {
   if (!convo) convo = new Conversation({ userId, title: clip(q, 60), messages: [] });
   const history = convo.messages.slice(-MAX_TURNS).map((m) => `${m.role === 'user' ? 'User' : 'You'}: ${clip(m.content, 700)}`).join('\n');
 
+  // What we know about this person, resolved for right now: an exception that
+  // is in play beats the standing default (docs/MEMORY_ENGINE.md §5.3).
+  // Never fatal — Ask must answer from saves alone if the memory layer is down.
+  let brief = { text: '', used: [] };
+  try { brief = await buildBrief(userId); } catch (err) { logger.warn(`[ask] brief unavailable: ${err.message}`); }
+
   const today = new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   const city = user?.location?.city || user?.settings?.location?.city;
   const pr = user?.preferences || {};
   const BUDGET = { low: 'keeps it cheap (₹)', mid: 'mid-range (₹₹)', high: 'happy to splurge (₹₹₹)' };
   const prefLine = [user?.interests?.length ? `into ${user.interests.slice(0, 6).join(', ')}` : null, pr.vibes?.length ? `likes it ${pr.vibes.slice(0, 4).join(', ')}` : null, pr.diet ? `eats ${pr.diet}` : null, pr.budget ? BUDGET[pr.budget] : null, pr.company ? `usually goes with ${pr.company === 'partner' ? 'their partner' : pr.company === 'solo' ? 'no one — solo' : pr.company}` : null].filter(Boolean).join('; ');
-  const prompt = `Today: ${today}${city ? `. User's city: ${city}` : ''}.${prefLine ? ` About the user: ${prefLine}. Weigh these when choosing between saves; say so when it matters.` : ''} Saved items: ${saves.length}${picked.length < saves.length ? ` (showing the ${picked.length} most relevant)` : ''}.\n\nSAVES:\n${index || '(nothing saved yet)'}\n\n${history ? `CONVERSATION SO FAR:\n${history}\n\n` : ''}User: ${q}`;
+  const memoryBlock = brief.text
+    ? `\n\nWHAT YOU KNOW ABOUT THEM (use it; never announce it, never say "I remember"; the bracket says how sure you are):\n${brief.text}`
+    : '';
+  const prompt = `Today: ${today}${city ? `. User's city: ${city}` : ''}.${prefLine ? ` About the user: ${prefLine}. Weigh these when choosing between saves; say so when it matters.` : ''} Saved items: ${saves.length}${picked.length < saves.length ? ` (showing the ${picked.length} most relevant)` : ''}.${memoryBlock}\n\nSAVES:\n${index || '(nothing saved yet)'}\n\n${history ? `CONVERSATION SO FAR:\n${history}\n\n` : ''}User: ${q}`;
 
   let out = null;
   for (let attempt = 0; attempt < 2 && !out; attempt += 1) {
@@ -124,7 +136,23 @@ async function ask({ userId, question, conversationId, user }) {
   convo.messages.push({ role: 'user', content: q });
   convo.messages.push({ role: 'assistant', content: answer, refs: refs.length ? refs : undefined, followUps: followUps.length ? followUps : undefined });
   await convo.save();
-  return { conversationId: convo._id, answer, references: refs, followUps, savesConsidered: picked.length };
+
+  // Learn from what they just said. Deliberately after the answer is composed
+  // and not awaited by the caller: this is the richest source of stated
+  // preference in the product (G4) and it must never slow down or break a reply.
+  extractFromText(q)
+    .then((candidates) => (candidates.length ? observe(userId, candidates, { source: 'ask_turn', refId: convo._id }) : []))
+    .catch((err) => logger.warn(`[ask] memory observe failed: ${err.message}`));
+
+  return {
+    conversationId: convo._id,
+    answer,
+    references: refs,
+    followUps,
+    savesConsidered: picked.length,
+    // So the client can mark which phrases leaned on a memory (phase 4).
+    usedMemories: brief.used.map((m) => ({ id: m._id, statement: m.statement, confidence: m.confidence, scope: m.scope?.contextLabel || null, derived: !!m.derived })),
+  };
 }
 
 module.exports = { ask };

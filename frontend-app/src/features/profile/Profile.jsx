@@ -36,6 +36,9 @@ export default function Profile({ onNavigate }) {
   // What we noticed, as opposed to what you told us. Derived only — every row
   // says where it came from (docs/MEMORY_ENGINE.md §8.5).
   const [known, setKnown] = useState(null);
+  // What we know because they told us, as opposed to what we noticed.
+  const [mem, setMem] = useState(null);
+  const [openMem, setOpenMem] = useState(false);
   const [openKnown, setOpenKnown] = useState(false);
 
   useEffect(() => {
@@ -43,6 +46,7 @@ export default function Profile({ onNavigate }) {
     api.getSaves({ signal: ctrl.signal }).then((r) => r?.status === 'success' && setSaves(r.data || []));
     setPush(getPushState());
     api.getKnowledge().then((r) => r?.status === 'success' && setKnown(r.data)).catch(() => {});
+    api.getMemories().then((r) => r?.status === 'success' && setMem(r.data)).catch(() => {});
     api.getMe().then((r) => { const u = r?.data?.user || r?.data; if (u?.preferences) { setPrefs(u.preferences); try { localStorage.setItem('user', JSON.stringify({ ...user, ...u, id: user.id || u._id })); } catch {} } }).catch(() => {});
     return () => ctrl.abort();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -57,6 +61,7 @@ export default function Profile({ onNavigate }) {
     const r = await enablePushNotifications();
     setPush(getPushState());
     api.getKnowledge().then((r) => r?.status === 'success' && setKnown(r.data)).catch(() => {});
+    api.getMemories().then((r) => r?.status === 'success' && setMem(r.data)).catch(() => {});
     if (r?.ok === false || r?.reason) setNote(PUSH_COPY[r.reason] || PUSH_COPY.error);
     else api.updateSettings({ notificationsEnabled: true }).catch(() => {});
   };
@@ -74,6 +79,17 @@ export default function Profile({ onNavigate }) {
     const r = await api.changePassword(cur, next);
     setPwMsg(r?.status === 'success' ? 'Password updated.' : (r?.error?.message || 'Could not update.'));
     if (r?.status === 'success') { setCur(''); setNext(''); setPw(false); }
+  };
+  const forget = async (id) => {
+    const r = await api.forgetMemory(id).catch(() => null);
+    if (r?.status !== 'success') { setNote('Could not forget that.'); return; }
+    // Optimistic: drop it from view, and say plainly that saves are untouched.
+    setMem((prev) => (prev ? { ...prev, groups: prev.groups.map((g) => ({ ...g, items: g.items.filter((i) => i.id !== id) })).filter((g) => g.items.length) } : prev));
+    setNote(`Forgotten. Your saves are untouched.`);
+  };
+  const confirmMem = async (id) => {
+    await api.confirmMemory(id).catch(() => {});
+    setMem((prev) => (prev ? { ...prev, groups: prev.groups.map((g) => ({ ...g, items: g.items.map((i) => (i.id === id ? { ...i, sureness: 'always' } : i)) })) } : prev));
   };
   const logout = () => { api.logout(); onNavigate('welcome'); };
 
@@ -112,6 +128,38 @@ export default function Profile({ onNavigate }) {
       {note && <div className="wt-note info" style={{ marginTop: 12 }}>{note}</div>}
 
       <Row icon="star" kind="food" title={`Your ${new Date().getFullYear()}`} sub={tried ? `${tried} tried so far — see the year` : 'Everything you try this year, in one place'} onClick={() => onNavigate('year-recap')} right={<Icon name="forward" size={18} style={{ color: 'var(--faint)' }} />} />
+
+      {mem?.total > 0 && (
+        <>
+          <div style={{ marginTop: 24 }}><SectionLabel>What I know about you</SectionLabel></div>
+          <Row
+            icon="sparkle"
+            kind="place"
+            title={`${mem.total} thing${mem.total === 1 ? '' : 's'} you've told me`}
+            sub={openMem ? 'Tap to hide' : 'Tap to see, correct or forget any of them'}
+            onClick={() => setOpenMem((v) => !v)}
+            right={<Icon name={openMem ? 'back' : 'forward'} size={18} style={{ color: 'var(--faint)' }} />}
+          />
+          {openMem && mem.groups.map((g) => (
+            <div key={g.title} style={{ padding: '10px 0 4px' }}>
+              <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--faint)' }}>{g.title}</span>
+              {g.items.map((it) => (
+                <div key={it.id} style={{ padding: '8px 0', borderBottom: '1px solid var(--line)' }}>
+                  <div style={{ fontSize: 14.5 }}>{it.statement}</div>
+                  <div style={{ fontSize: 11.5, color: 'var(--faint)', marginTop: 2 }}>
+                    {it.sureness}{it.scope ? ` \u00b7 ${it.scope}` : ''} \u00b7 {it.source}
+                  </div>
+                  {it.quote && <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 4, fontStyle: 'italic' }}>&ldquo;{it.quote}&rdquo;</div>}
+                  <div style={{ display: 'flex', gap: 8, marginTop: 7 }}>
+                    <Chip small onClick={() => confirmMem(it.id)}>That&rsquo;s right</Chip>
+                    <Chip small onClick={() => forget(it.id)}>Forget this</Chip>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ))}
+        </>
+      )}
 
       {known?.gist && (
         <>

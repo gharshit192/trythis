@@ -42,24 +42,24 @@ of truth.
 
 ### 1.1 The twelve gaps, named
 
-- **G1 — No semantic memory layer.** No `Memory` collection. A fact about the
+- **G1 — No semantic memory layer.** ✅ *closed by ADR 0020.* No `Memory` collection. A fact about the
   user has nowhere to live between "a 4-field enum" and "buried in 300 saves".
-- **G2 — Preferences have no scope or time.** `preferences.budget` is one global
+- **G2 — Preferences have no scope or time.** ✅ *closed by ADR 0020.* `preferences.budget` is one global
   enum. *"Budget normally, but luxury for the Kasol trip"* is **literally
   unrepresentable** in the current schema. This is the single highest-value gap.
-- **G3 — Nothing ever learns.** Grep confirms `user.preferences` is written only
+- **G3 — Nothing ever learns.** ✅ *closed by ADR 0020.* Grep confirms `user.preferences` is written only
   by `routes/auth.js:515`. 200 saves and every 5-star rating teach the system
   nothing durable.
-- **G4 — `Conversation` is a dead end.** Ask threads are stored and replayed
+- **G4 — `Conversation` is a dead end.** ✅ *closed by ADR 0020.* Ask threads are stored and replayed
   *within* a thread, then discarded. The richest source of stated preference in
   the product ("I hate early starts", "we're vegetarian now") is thrown away.
-- **G5 — No provenance.** Nothing records *when* a fact was learned, *from what*,
+- **G5 — No provenance.** ✅ *closed by ADR 0020.* Nothing records *when* a fact was learned, *from what*,
   or *how sure*. `askService` returns `refs`, and the UI doesn't even render a
   "why this" affordance.
-- **G6 — No decay, no reinforcement, no versions.** `Save.confidence` is
+- **G6 — No decay, no reinforcement, no versions.** ✅ *closed by ADR 0020.* `Save.confidence` is
   *extraction quality*, frozen at write time. Nothing strengthens on repetition
   or weakens on contradiction. An edit overwrites; there is no history.
-- **G7 — No contradiction detection.** Two saves that say opposite things simply
+- **G7 — No contradiction detection.** ✅ *closed by ADR 0020.* Two saves that say opposite things simply
   coexist. Nothing ever compares them.
 - **G8 — Search is substring matching.** ✅ *closed by ADR 0019.* `"cheap dinner"` could not find a save
   titled *"budget-friendly eats"*. No ranking beyond `createdAt`, hard cap of
@@ -706,11 +706,11 @@ Today: one regex `$or`, no ranking, capped at 50, sorted by `createdAt`.
 | Phase | Scope | Unlocks |
 |---|---|---|
 | **1 — Search + signals** (no engine) ✅ **shipped 7 Sep 2026** | §11.1 + §11.2.1–2 — see [ADR 0019](adr/0019-ranked-search-and-derived-signals.md) | Immediate, visible; starts collecting the evidence the engine needs |
-| **2 — Memory store** | `Memory` model, creation pipeline from saves + Ask turns, governance filter | Facts have a home (G1, G3, G4) |
-| **3 — Scope + conflicts** | scope field, NARROW/SUPERSEDE, retrieval precedence | The budget-vs-luxury case works (G2, G7) |
-| **4 — Transparency** | `usedMemories`, dotted underline, "why" sheet, dashboard | Trust (G5, G10) |
-| **5 — Lifecycle** | decay, dormancy, nightly consolidation, tombstones | Self-cleaning (G6) |
-| **6 — Learned retrieval** | embeddings, fusion, `RetrievalLog` → usefulness | Scales past 600 saves (G9, G12) |
+| **2 — Memory store** ✅ **shipped 8 Sep 2026** | [ADR 0020](adr/0020-semantic-memory-scope-and-lifecycle.md) | Facts have a home (G1, G3, G4) |
+| **3 — Scope + conflicts** ✅ **shipped 8 Sep 2026** | ADR 0020 | The budget-vs-luxury case works (G2, G7) |
+| **4 — Transparency** ✅ **shipped 8 Sep 2026** | `usedMemories`, `/memory` API, Profile dashboard. The in-answer dotted underline still needs the Ask UI | Trust (G5, G10) |
+| **5 — Lifecycle** ✅ **shipped 8 Sep 2026** | decay, dormancy, tombstones, consolidation *proposals*; sweep is lazy-on-read, not nightly | Self-cleaning (G6) |
+| **6 — Learned retrieval** ⬜ **not started** | embeddings, fusion, `RetrievalLog` → usefulness | Scales past 600 saves (G9, G12) |
 
 Phase 1 is worth shipping on its own merits even if nothing after it is built.
 

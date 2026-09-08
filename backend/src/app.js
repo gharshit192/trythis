@@ -7,6 +7,7 @@ const savesRoutes = require('./routes/saves');
 const collectionsRoutes = require('./routes/collections');
 const searchRoutes = require('./routes/search');
 const knowledgeRoutes = require('./routes/knowledge');
+const memoryRoutes = require('./routes/memory');
 const recommendationsRoutes = require('./routes/recommendations');
 const notificationsRoutes = require('./routes/notifications');
 const pushPublicRoutes = require('./routes/pushPublic');
@@ -73,7 +74,8 @@ app.use('/auth', authRoutes);
 app.use('/saves', savesRoutes);
 app.use('/collections', collectionsRoutes);
 app.use('/search', searchRoutes);
-app.use('/knowledge', knowledgeRoutes);  // "what do you remember about me" — docs/MEMORY_ENGINE.md
+app.use('/knowledge', knowledgeRoutes);  // derived signals — ADR 0019
+app.use('/memory', memoryRoutes);        // stated facts, and the controls over them — ADR 0020
 app.use('/recommendations', recommendationsRoutes);
 app.use('/places', placesRoutes);   // was only in routes/index.js, which nothing mounted
 app.use('/voice', voiceRoutes);     // ADR 0016
