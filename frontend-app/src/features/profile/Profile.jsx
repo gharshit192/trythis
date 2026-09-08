@@ -91,6 +91,12 @@ export default function Profile({ onNavigate }) {
     await api.confirmMemory(id).catch(() => {});
     setMem((prev) => (prev ? { ...prev, groups: prev.groups.map((g) => ({ ...g, items: g.items.map((i) => (i.id === id ? { ...i, sureness: 'always' } : i)) })) } : prev));
   };
+  const allowMem = async (id) => {
+    const r = await api.allowMemory(id).catch(() => null);
+    if (r?.status !== 'success') { setNote('Could not save that.'); return; }
+    setMem((prev) => (prev ? { ...prev, groups: prev.groups.map((g) => ({ ...g, items: g.items.map((i) => (i.id === id ? { ...i, needsPermission: false } : i)) })) } : prev));
+    setNote('Thanks — I\u2019ll use that when it matters.');
+  };
   const logout = () => { api.logout(); onNavigate('welcome'); };
 
   const Switch = ({ on, onClick }) => (
@@ -151,9 +157,16 @@ export default function Profile({ onNavigate }) {
                   </div>
                   {it.quote && <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 4, fontStyle: 'italic' }}>&ldquo;{it.quote}&rdquo;</div>}
                   <div style={{ display: 'flex', gap: 8, marginTop: 7 }}>
-                    <Chip small onClick={() => confirmMem(it.id)}>That&rsquo;s right</Chip>
+                    {it.needsPermission
+                      ? <Chip small onClick={() => allowMem(it.id)}>Yes, use this</Chip>
+                      : <Chip small onClick={() => confirmMem(it.id)}>That&rsquo;s right</Chip>}
                     <Chip small onClick={() => forget(it.id)}>Forget this</Chip>
                   </div>
+                  {it.needsPermission && (
+                    <div style={{ fontSize: 11.5, color: 'var(--faint)', marginTop: 4 }}>
+                      You told me this, so I&rsquo;ve kept it &mdash; but I won&rsquo;t use it in an answer until you say so.
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

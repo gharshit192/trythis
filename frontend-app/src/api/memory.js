@@ -23,6 +23,15 @@ const memory = {
     });
     return handle(res);
   },
+  // Grant / withdraw permission to use a sensitive fact the user stated.
+  async allowMemory(id) {
+    const res = await fetch(`${API_BASE_URL}/memory/${id}/allow`, { method: 'POST', headers: authHeader() });
+    return handle(res);
+  },
+  async withholdMemory(id) {
+    const res = await fetch(`${API_BASE_URL}/memory/${id}/withhold`, { method: 'POST', headers: authHeader() });
+    return handle(res);
+  },
   async forgetMemory(id) {
     const res = await fetch(`${API_BASE_URL}/memory/${id}`, { method: 'DELETE', headers: authHeader() });
     return handle(res);

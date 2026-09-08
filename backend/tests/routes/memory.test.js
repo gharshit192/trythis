@@ -183,3 +183,62 @@ describe('buildBrief', () => {
     expect(elsewhere.text).not.toContain('nicer stay');
   });
 });
+
+describe('sensitive memories are stored AND usable — the confirm tier', () => {
+  const sensitive = (over = {}) => make({
+    statement: 'Is diabetic — keep sugar low',
+    subject: 'health.condition',
+    kind: 'constraint',
+    value: 'diabetic',
+    sensitivity: 'sensitive',
+    surfacing: 'confirm',
+    importance: 0.9,
+    ...over,
+  });
+
+  test('is listed under "Waiting for your OK", flagged as needing permission', async () => {
+    await sensitive();
+    const res = await auth(request(app).get('/memory')).expect(200);
+    const group = res.body.data.groups.find((g) => g.title === 'Waiting for your OK');
+    expect(group.items[0].needsPermission).toBe(true);
+    expect(group.items[0].sensitive).toBe(true);
+  });
+
+  test('stays out of the prompt until it is allowed', async () => {
+    const m = await sensitive();
+    expect((await buildBrief(userId)).text).not.toContain('diabetic');
+
+    await auth(request(app).post(`/memory/${m._id}/allow`)).expect(200);
+    expect((await buildBrief(userId)).text).toContain('diabetic');
+  });
+
+  test('allowing it does not stop it being marked sensitive', async () => {
+    const m = await sensitive();
+    const res = await auth(request(app).post(`/memory/${m._id}/allow`)).expect(200);
+    expect(res.body.data.sensitive).toBe(true);
+    expect(res.body.data.needsPermission).toBe(false);
+    expect((await Memory.findById(m._id).lean()).sensitivity).toBe('sensitive');
+  });
+
+  test('permission can be withdrawn without forgetting the fact', async () => {
+    const m = await sensitive();
+    await auth(request(app).post(`/memory/${m._id}/allow`)).expect(200);
+    await auth(request(app).post(`/memory/${m._id}/withhold`)).expect(200);
+
+    expect((await buildBrief(userId)).text).not.toContain('diabetic');
+    // The fact itself is still on file — withholding is not forgetting.
+    expect((await Memory.findById(m._id).lean()).status).toBe('active');
+  });
+
+  test('allowing an ordinary memory is a no-op, not an error', async () => {
+    const m = await make();
+    const res = await auth(request(app).post(`/memory/${m._id}/allow`)).expect(200);
+    expect(res.body.data.needsPermission).toBe(false);
+  });
+
+  test('one user cannot grant permission on another user\'s memory', async () => {
+    const m = await sensitive();
+    const other = jwt.sign({ id: new mongoose.Types.ObjectId().toString() }, process.env.JWT_SECRET);
+    await request(app).post(`/memory/${m._id}/allow`).set('Authorization', `Bearer ${other}`).expect(404);
+  });
+});

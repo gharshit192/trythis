@@ -74,8 +74,9 @@ of truth.
   need the Memory layer.
 - **G11 — Behaviour log is inert.** ✅ *closed by ADR 0019.* `UserBehavior` had indices, a persister, and
   no reader.
-- **G12 — Retrieval usefulness is never measured.** We never learn which memory
-  helped produce a good answer.
+- **G12 — Retrieval usefulness is never measured.** 🟡 *search half closed* — `GET /search/gaps`
+  reports what people looked for and did not find, grouped by folded form. Memory-level
+  usefulness still needs `RetrievalLog` (phase 6).
 
 ---
 
@@ -708,7 +709,7 @@ Today: one regex `$or`, no ranking, capped at 50, sorted by `createdAt`.
 | **1 — Search + signals** (no engine) ✅ **shipped 7 Sep 2026** | §11.1 + §11.2.1–2 — see [ADR 0019](adr/0019-ranked-search-and-derived-signals.md) | Immediate, visible; starts collecting the evidence the engine needs |
 | **2 — Memory store** ✅ **shipped 8 Sep 2026** | [ADR 0020](adr/0020-semantic-memory-scope-and-lifecycle.md) | Facts have a home (G1, G3, G4) |
 | **3 — Scope + conflicts** ✅ **shipped 8 Sep 2026** | ADR 0020 | The budget-vs-luxury case works (G2, G7) |
-| **4 — Transparency** ✅ **shipped 8 Sep 2026** | `usedMemories`, `/memory` API, Profile dashboard. The in-answer dotted underline still needs the Ask UI | Trust (G5, G10) |
+| **4 — Transparency** ✅ **shipped 8 Sep 2026** | `usedMemories` rendered under each answer with forget-in-place, `/memory` API, Profile dashboard, the confirm tier's grant step. A footer, not an inline underline — marking spans would mean the model annotating its own prose | Trust (G5, G10) |
 | **5 — Lifecycle** ✅ **shipped 8 Sep 2026** | decay, dormancy, tombstones, consolidation *proposals*; sweep is lazy-on-read, not nightly | Self-cleaning (G6) |
 | **6 — Learned retrieval** ⬜ **not started** | embeddings, fusion, `RetrievalLog` → usefulness | Scales past 600 saves (G9, G12) |
 

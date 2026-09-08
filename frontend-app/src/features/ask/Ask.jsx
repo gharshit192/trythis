@@ -30,6 +30,43 @@ function Answer({ text }) {
   );
 }
 
+// What the answer leaned on besides your saves. Deliberately a quiet line
+// under the answer rather than a dialog: the design asks for an unobtrusive way
+// to understand what was used, not an interruption (docs/MEMORY_ENGINE.md §8.1).
+//
+// It is a footer, not an inline underline on the phrase itself — marking spans
+// would mean asking the model to annotate its own prose, which risks mangling
+// the answer for a small gain in precision.
+function UsedMemories({ items, onForget }) {
+  const [open, setOpen] = useState(false);
+  if (!items?.length) return null;
+  return (
+    <div style={{ marginTop: 10 }}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        style={{ background: 'none', border: 0, padding: 0, cursor: 'pointer', font: 'inherit', fontSize: 12.5, color: 'var(--faint)', borderBottom: '1px dotted var(--faint)' }}
+      >
+        {open ? 'Hide' : `Used ${items.length} thing${items.length === 1 ? '' : 's'} I know about you`}
+      </button>
+      {open && (
+        <div style={{ marginTop: 8, paddingLeft: 10, borderLeft: '2px solid var(--line)' }}>
+          {items.map((m) => (
+            <div key={m.id} style={{ padding: '5px 0' }}>
+              <div style={{ fontSize: 13.5 }}>{m.statement}</div>
+              <div style={{ fontSize: 11.5, color: 'var(--faint)', marginTop: 1 }}>
+                {m.derived ? 'from what you save' : 'you told me'}{m.scope ? ` \u00b7 only for ${m.scope}` : ''}
+                {' \u00b7 '}
+                <button type="button" onClick={() => onForget(m.id)} style={{ background: 'none', border: 0, padding: 0, font: 'inherit', color: 'var(--faint)', textDecoration: 'underline', cursor: 'pointer' }}>forget this</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Ask({ onNavigate, onBack, payload }) {
   const [messages, setMessages] = useState([]);
   const [conversationId, setConversationId] = useState(null);
@@ -41,6 +78,13 @@ export default function Ask({ onNavigate, onBack, payload }) {
   const user = (() => { try { return JSON.parse(localStorage.getItem('user') || 'null'); } catch { return null; } })();
   const city = user?.location?.city || user?.settings?.location?.city;
 
+  // Correcting a memory has to be reachable from where it was used, not only
+  // from a settings screen two taps away.
+  const forgetMemory = async (id) => {
+    await api.forgetMemory(id).catch(() => {});
+    setMessages((m) => m.map((msg) => (msg.usedMemories ? { ...msg, usedMemories: msg.usedMemories.filter((x) => x.id !== id) } : msg)));
+  };
+
   const send = async (q) => {
     const question = String(q || '').trim();
     if (!question || busy) return;
@@ -51,7 +95,7 @@ export default function Ask({ onNavigate, onBack, payload }) {
       const r = await api.ask(question, conversationId);
       if (r?.status === 'success') {
         setConversationId(r.data.conversationId);
-        setMessages((m) => [...m, { role: 'assistant', content: r.data.answer, refs: r.data.references, followUps: r.data.followUps }]);
+        setMessages((m) => [...m, { role: 'assistant', content: r.data.answer, refs: r.data.references, followUps: r.data.followUps, usedMemories: r.data.usedMemories }]);
       } else {
         setMessages((m) => [...m, { role: 'assistant', content: r?.error?.message || "Couldn't answer that just now. Try again in a moment." }]);
       }
@@ -109,6 +153,7 @@ export default function Ask({ onNavigate, onBack, payload }) {
                   ))}
                 </div>
               )}
+              <UsedMemories items={m.usedMemories} onForget={forgetMemory} />
               {m.followUps?.length > 0 && i === messages.length - 1 && (
                 <div className="wt-chips" style={{ marginTop: 10 }}>
                   {m.followUps.map((f) => <Chip key={f} small onClick={() => send(f)}>{f}</Chip>)}

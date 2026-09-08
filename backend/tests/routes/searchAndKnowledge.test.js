@@ -159,3 +159,45 @@ describe('GET /knowledge', () => {
     expect(forced.body.data.saveCount).toBe(5);
   });
 });
+
+describe('GET /search/gaps — what people looked for and did not find', () => {
+  test('groups misses by their folded form, so चाय and chai are one row', async () => {
+    await seed();
+    // Two spellings of a thing this library does not have.
+    await auth(request(app).get('/search').query({ q: 'biryani' })).expect(200);
+    await auth(request(app).get('/search').query({ q: 'biriyani' })).expect(200);
+    await auth(request(app).get('/search').query({ q: 'chai' })).expect(200);   // this one hits
+
+    const res = await auth(request(app).get('/search/gaps')).expect(200);
+    const queries = res.body.data.gaps.map((g) => g.folded);
+    expect(queries).not.toContain('chai');
+    expect(res.body.data.gaps.length).toBeGreaterThan(0);
+  });
+
+  test('counts repeat misses of the same thing', async () => {
+    await seed();
+    await auth(request(app).get('/search').query({ q: 'biryani' })).expect(200);
+    await auth(request(app).get('/search').query({ q: 'biryani' })).expect(200);
+
+    const res = await auth(request(app).get('/search/gaps')).expect(200);
+    const row = res.body.data.gaps.find((g) => g.folded === 'biryani');
+    expect(row.misses).toBe(2);
+    expect(row.people).toBe(1);
+    // A miss over a tiny library means less than one over a full one.
+    expect(row.librarySize).toBe(4);
+  });
+
+  test('shows only your own misses by default', async () => {
+    await seed();
+    await auth(request(app).get('/search').query({ q: 'biryani' })).expect(200);
+
+    const other = jwt.sign({ id: new mongoose.Types.ObjectId().toString() }, process.env.JWT_SECRET);
+    const res = await request(app).get('/search/gaps').set('Authorization', `Bearer ${other}`).expect(200);
+    expect(res.body.data.scope).toBe('you');
+    expect(res.body.data.gaps).toHaveLength(0);
+  });
+
+  test('requires a token', async () => {
+    await request(app).get('/search/gaps').expect(401);
+  });
+});

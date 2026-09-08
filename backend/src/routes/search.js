@@ -1,4 +1,5 @@
 const express = require('express');
+const mongoose = require('mongoose');
 
 const router = express.Router();
 const Save = require('../models/Save');
@@ -92,6 +93,59 @@ router.post('/tap', async (req, res) => {
     logger.warn(`[search] tap not recorded: ${error.message}`);
     // The user already navigated. Never surface this as a failure.
     return res.json({ status: 'success' });
+  }
+});
+
+// What people looked for and did not find.
+//
+// SearchLog was write-only until now — the same shape of mistake as the
+// behaviour log it was meant to fix. A query that came back empty is a user
+// telling us, in their own words, what they expected the app to know, and the
+// list of them is the most direct roadmap input available.
+router.get('/gaps', async (req, res) => {
+  try {
+    const days = Math.min(90, Math.max(1, Number(req.query.days) || 30));
+    const since = new Date(Date.now() - days * 86400000);
+    const mine = req.query.scope !== 'all';
+
+    const match = { createdAt: { $gte: since }, weak: true };
+    if (mine) match.userId = new mongoose.Types.ObjectId(req.user.id);
+
+    const rows = await SearchLog.aggregate([
+      { $match: match },
+      // Grouped on the folded form, so "chai", "चाय" and "chaii" are one row.
+      { $group: {
+        _id: '$folded',
+        misses: { $sum: 1 },
+        people: { $addToSet: '$userId' },
+        example: { $first: '$q' },
+        lastAt: { $max: '$createdAt' },
+        medianLibrary: { $avg: '$librarySize' },
+      } },
+      { $sort: { misses: -1, lastAt: -1 } },
+      { $limit: 50 },
+    ]);
+
+    return res.json({
+      status: 'success',
+      data: {
+        days,
+        scope: mine ? 'you' : 'everyone',
+        gaps: rows.map((r) => ({
+          query: r.example,
+          folded: r._id,
+          misses: r.misses,
+          people: r.people.length,
+          lastAt: r.lastAt,
+          // A miss over four saves is a cold-start artefact; a miss over four
+          // hundred is a real hole in what we can find.
+          librarySize: Math.round(r.medianLibrary || 0),
+        })),
+      },
+    });
+  } catch (error) {
+    logger.error(`Search gaps error: ${error.message}`);
+    return res.status(500).json({ status: 'error', error: { code: 'GAPS_ERROR', message: error.message } });
   }
 });
 

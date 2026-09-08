@@ -35,6 +35,9 @@ const shape = (m) => ({
   expiresAt: m.scope?.validUntil || null,
   quote: m.evidence?.[m.evidence.length - 1]?.quote || null,
   sensitive: m.sensitivity === 'sensitive',
+  // Stored, but not usable until the user says so. The UI needs to know, or a
+  // sensitive fact sits in the database doing nothing for anyone.
+  needsPermission: m.surfacing === 'confirm',
   pinned: !!m.pinned,
 });
 
@@ -54,9 +57,11 @@ router.get('/', async (req, res) => {
       // A faded memory is shown as possibly stale rather than hidden or
       // deleted — and answering that question is the cheapest good evidence
       // we can collect (docs/MEMORY_ENGINE.md §8.4).
-      const title = m.status === 'dormant'
-        ? 'Might be out of date'
-        : (m.scope?.type === 'temporal' || m.scope?.type === 'context' ? 'Just for now' : (GROUP[m.kind] || 'About you'));
+      const title = m.surfacing === 'confirm'
+        ? 'Waiting for your OK'
+        : m.status === 'dormant'
+          ? 'Might be out of date'
+          : (m.scope?.type === 'temporal' || m.scope?.type === 'context' ? 'Just for now' : (GROUP[m.kind] || 'About you'));
       if (!groups.has(title)) groups.set(title, []);
       groups.get(title).push(shape(m));
     }
@@ -99,6 +104,37 @@ router.post('/:id/confirm', async (req, res) => {
   m.strength = 1;
   m.observationCount += 1;
   m.lastConfirmedAt = new Date();
+  await m.save();
+  return res.json({ status: 'success', data: shape(m.toObject()) });
+});
+
+// "Yes, use that." The other half of the sensitive tier.
+//
+// Without this endpoint a stated constraint — "I'm diabetic, keep sugar low" —
+// was stored, marked, and then excluded from every prompt with no way to ever
+// approve it. That is the worst of both worlds: we hold the sensitive fact and
+// the user gets an assistant that behaves as though they never said it. Either
+// they can grant permission or we should not be storing it at all.
+router.post('/:id/allow', async (req, res) => {
+  const m = await Memory.findOne({ _id: req.params.id, userId: req.user.id, status: 'active' });
+  if (!m) return res.status(404).json({ status: 'error', error: { code: 'NOT_FOUND', message: 'No such memory.' } });
+  if (m.surfacing !== 'confirm') return res.json({ status: 'success', data: shape(m.toObject()) });
+
+  // Granted for use, but never volunteered unprompted: it goes into answers
+  // when it is relevant, and stays out of anything proactive. `sensitivity`
+  // is deliberately unchanged — the UI keeps showing it as sensitive.
+  m.surfacing = 'relevant';
+  m.lastConfirmedAt = new Date();
+  await m.save();
+  logger.info(`[memory] user ${req.user.id} allowed a ${m.sensitivity} memory to be used`);
+  return res.json({ status: 'success', data: shape(m.toObject()) });
+});
+
+// Withdraw that permission without forgetting the fact.
+router.post('/:id/withhold', async (req, res) => {
+  const m = await Memory.findOne({ _id: req.params.id, userId: req.user.id, status: 'active' });
+  if (!m) return res.status(404).json({ status: 'error', error: { code: 'NOT_FOUND', message: 'No such memory.' } });
+  m.surfacing = 'confirm';
   await m.save();
   return res.json({ status: 'success', data: shape(m.toObject()) });
 });
