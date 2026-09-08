@@ -43,11 +43,14 @@ const cookieHeaderFor = (hostname) => {
   try {
     const host = String(hostname || '').toLowerCase();
     const pairs = [];
-    for (const line of fs.readFileSync(file, 'utf8').split('\n')) {
+    for (let line of fs.readFileSync(file, 'utf8').split('\n')) {
+      if (line.startsWith('#HttpOnly_')) line = line.slice('#HttpOnly_'.length);
       if (!line || line.startsWith('#')) continue;
       const f = line.split('\t'); if (f.length < 7) continue;
+      const expires = Number(f[4]);
+      if (expires > 0 && expires <= Date.now() / 1000) continue;
       const domain = f[0].replace(/^\./, '').toLowerCase();
-      if (host === domain || host.endsWith(`.${domain}`)) pairs.push(`${f[5]}=${f[6].trim()}`);
+      if (host === domain || (f[1] === 'TRUE' && host.endsWith(`.${domain}`))) pairs.push(`${f[5]}=${f[6].trim()}`);
     }
     return pairs.length ? pairs.join('; ') : null;
   } catch (e) { logger.warn(`[cookies] header build failed: ${e.message}`); return null; }

@@ -3,7 +3,12 @@ const cheerio = require('cheerio');
 const claudeService = require('../../../claudeService');
 const logger = require('../../../../utils/logger');
 
-const match = (u) => /instagram\.com/i.test(u);
+const match = (u) => {
+  try {
+    const parsed = new URL(u);
+    return /^https?:$/.test(parsed.protocol) && /^(?:www\.|m\.)?instagram\.com$/.test(parsed.hostname);
+  } catch { return false; }
+};
 
 const POST_ID_RE = /\/(?:p|reel|reels|tv)\/([^/?#]+)/i;
 const extractPostId = (u) => {
@@ -108,7 +113,7 @@ const tryHtmlOg = async (url) => {
       description: caption || ogDesc || null,
       image: ogImage || null,
       images: ogImage ? [ogImage] : [],
-      isPhotoPost: !/\/reel\//.test(url) && !!ogImage,
+      isPhotoPost: false, // A cover image alone cannot distinguish a photo from a video.
       provider: 'instagram-og',
     };
   } catch {
@@ -154,6 +159,7 @@ const tryClaudeTitle = async (transcript, kind, postId) => {
 
 const fetch = async (source) => {
   const url = typeof source === 'string' ? source : source.url;
+  if (!match(url)) return null;
   const postId = extractPostId(url);
   const kind = extractKind(url);
   const transcript = typeof source === 'object' ? source.transcript : null;

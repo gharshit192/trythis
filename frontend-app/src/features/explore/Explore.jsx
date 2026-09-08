@@ -1,3 +1,4 @@
+import { getLocation } from "../../lib/location";
 import { useState, useEffect } from 'react';
 import api from '../../api';
 import Icon from '../../components/Icon';
@@ -81,16 +82,23 @@ export default function Explore({ onNavigate, nearbySaves = [] }) {
       // Nothing saved yet: "For you" is what other people on Wanna Try saved.
       else api.getTrendingPlaces(20).then((x) => x?.status === 'success' && setForYou((x.data || []).map((p) => ({ ...p, title: p.canonicalName, isPlace: true })))).catch(() => {});
     });
-    if (!navigator.geolocation) { setGeo('denied'); setLoading(false); return; }
-    navigator.geolocation.getCurrentPosition(async (pos) => {
-      const { latitude: lat, longitude: lng } = pos.coords;
-      setPos({ lat, lng });
-      try {
-        await loadNearby(lat, lng, RADIUS_M);
-        setGeo('ok');
-      } finally { setLoading(false); }
-    }, () => { setGeo('denied'); setLoading(false); }, { timeout: 10000, maximumAge: 300000 });
+    locate();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const locate = (requestPermission = false) => {
+    setLoading(true);
+    getLocation(async (position) => {
+      const { latitude: lat, longitude: lng } = position.coords;
+      setPos({ lat, lng });
+      localStorage.setItem('location_requested', 'true');
+      api.updateLocation(lat, lng, null).catch(() => {});
+      try {
+        await loadNearby(lat, lng, radius);
+        setGeo('ok');
+      } catch { setGeo('error'); }
+      finally { setLoading(false); }
+    }, () => { setGeo('denied'); setLoading(false); }, { requestPermission });
+  };
 
   const mineIds = new Set(near.map((s) => s._id));
   const rows = (() => {
@@ -169,7 +177,7 @@ export default function Explore({ onNavigate, nearbySaves = [] }) {
         <div style={{ padding: 40, textAlign: 'center', color: 'var(--mute)', fontSize: 14 }}>Finding what's close…</div>
       ) : rows.length === 0 ? (
         chip === 'near' && geo === 'denied'
-          ? <EmptyState title="Location is off" text="Explore works from where you are. Allow location to see saves and places nearby." />
+          ? <EmptyState title="Location is off" action="Use my location" onAction={() => locate(true)} />
           : <EmptyState title="Nothing here yet" text={chip === 'near' ? 'Nothing you saved is within 5 km. Try another chip.' : 'Save something in this category and it shows up here.'} action="Add a save" onAction={() => onNavigate('add-save')} />
       ) : rows.map((r) => (
         <ListRow key={r.key} category={r.category} title={r.title} meta={r.meta} reason={r.reason} trail={r.trail} alignTop

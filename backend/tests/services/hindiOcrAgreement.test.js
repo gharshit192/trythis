@@ -109,6 +109,15 @@ describe('mergeTranscriptions', () => {
   });
 });
 
+describe('salvageLines', () => {
+  const { salvageLines } = require('../../src/services/hindiOcr').__test__;
+
+  test('keeps line text from a truncated Gemini JSON response', () => {
+    const raw = '{"transcription":{"lines":[{"line":1,"text":"श्री १००८"},{"line":2,"text":"परिणय';
+    expect(salvageLines(raw)).toEqual([{ line: 1, text: 'श्री १००८' }]);
+  });
+});
+
 describe('dandaDatesToSlashes', () => {
   const { dandaDatesToSlashes } = require('../../src/services/hindiOcr').__test__;
   const run = (text) => { const lines = [{ text }]; dandaDatesToSlashes(lines); return lines[0].text; };

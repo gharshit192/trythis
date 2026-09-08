@@ -1,3 +1,4 @@
+import { getLocation } from "../lib/location";
 import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import './theme.css';
 import './legacy.css';
@@ -81,10 +82,7 @@ function App() {
   const requestAndStoreLocation = async () => {
     if (!navigator.geolocation) return;
 
-    const stored = localStorage.getItem('location_requested');
-    if (stored) return; // only ask once per session
-
-    navigator.geolocation.getCurrentPosition(
+    getLocation(
       async (pos) => {
         const { latitude: lat, longitude: lng } = pos.coords;
         localStorage.setItem('location_requested', 'true');
@@ -97,9 +95,7 @@ function App() {
           }
         } catch {}
       },
-      (err) => {
-        localStorage.setItem('location_requested', 'denied');
-      },
+      () => {},
       { timeout: 10000, maximumAge: 300000 }
     );
   };

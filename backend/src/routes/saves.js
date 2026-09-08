@@ -1721,7 +1721,9 @@ router.get('/:id/export-pdf', validateObjectId('id'), async (req, res) => {
 
     // ── WATERMARK + FOOTER (on every page) ──
     const range = doc.bufferedPageRange(); // { start, count }
-    const footTitle = String(save.title || '').replace(/[^\x20-\x7E]/g, '').slice(0, 60);
+    // Same fix as screenshotBundle: control characters go, the document's own
+    // script stays. A Devanagari title used to leave the footer blank.
+    const footTitle = String(save.title || '').replace(/[\u0000-\u001F\u007F-\u009F]/g, '').replace(/\s+/g, ' ').trim().slice(0, 60);
     for (let i = range.start; i < range.start + range.count; i++) {
       doc.switchToPage(i);
 

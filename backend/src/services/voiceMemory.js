@@ -48,6 +48,18 @@ const transcribeWithGroq = async (wavPath) => {
   return { text, language, original: originalText !== text ? originalText : null };
 };
 
+const normalizeSttResult = (result, engine) => {
+  const text = String(result?.text || result?.translation || result?.transcription || '').trim();
+  const original = result?.original
+    || (result?.translation && result?.transcription && result.translation !== result.transcription ? result.transcription : null);
+  return {
+    text,
+    language: result?.language || 'unknown',
+    source: result?._source || engine,
+    original,
+  };
+};
+
 const SYSTEM = `You turn a spoken note into a structured memory for a "remember this" app. Keep EVERY concrete detail the person said — places in order, days, timings, transport, stays, money, names. Nothing they said should be lost.
 Return ONLY JSON:
 {
@@ -130,18 +142,18 @@ const memoryFromAudio = async ({ audioPath, text }) => {
   let original = null;   // original-language text when the engine translated
   if (!transcript) {
     if (!isWav(audioPath)) { const e = new Error('Audio must be WAV (16 kHz mono).'); e.code = 'BAD_AUDIO'; throw e; }
-    // Whisper large-v3 (Groq) first: it is what reads reel audio well in
-    // production and handles Hinglish without paraphrasing. Sarvam is the
-    // fallback. Order is switchable with VOICE_STT_ORDER=sarvam,groq.
-    const order = (process.env.VOICE_STT_ORDER || 'groq,sarvam').split(',').map((x) => x.trim());
+    // Same default order as reel audio: Sarvam translate-first, then Groq.
+    // Order remains switchable for live comparison with VOICE_STT_ORDER.
+    const order = (process.env.VOICE_STT_ORDER || 'sarvam,groq').split(',').map((x) => x.trim());
     let lastErr = null;
     for (const engine of order) {
       try {
-        const t = engine === 'groq' ? await transcribeWithGroq(audioPath) : await transcribeAudio(audioPath);
-        transcript = (t.text || '').trim();
-        language = t.language || 'unknown';
-        source = engine;
-        original = t.original || null;
+        const raw = engine === 'groq' ? await transcribeWithGroq(audioPath) : await transcribeAudio(audioPath);
+        const t = normalizeSttResult(raw, engine);
+        transcript = t.text;
+        language = t.language;
+        source = t.source;
+        original = t.original;
         if (transcript) break;
       } catch (err) {
         lastErr = err;
@@ -197,4 +209,4 @@ const restructureFromTranscript = async (save) => {
   return fields;
 };
 
-module.exports = { memoryFromAudio, restructureFromTranscript, __test__: { resolveResurfaceAt } };
+module.exports = { memoryFromAudio, restructureFromTranscript, __test__: { resolveResurfaceAt, normalizeSttResult } };

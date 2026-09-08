@@ -1,3 +1,4 @@
+import { getLocation } from "../../lib/location";
 import { useState, useEffect } from 'react';
 import api from '../../api';
 import Icon from '../../components/Icon';
@@ -47,7 +48,7 @@ export default function Home({ onNavigate, payload, nearbySaves = [] }) {
     if (list.length < 2 || !navigator.geolocation || localStorage.getItem('location_requested') !== 'true') return resolve(null);
     const done = (v) => { clearTimeout(t); resolve(v); };
     const t = setTimeout(() => done(null), 2500);
-    navigator.geolocation.getCurrentPosition((p) => {
+    getLocation((p) => {
       const { latitude: lat, longitude: lng } = p.coords;
       api.weekendCandidates(lat, lng).then((r) => done(r?.status === 'success' && r.data.count >= 2 ? { count: r.data.count, lat, lng } : null)).catch(() => done(null));
     }, () => done(null), { timeout: 2000, maximumAge: 300000 });

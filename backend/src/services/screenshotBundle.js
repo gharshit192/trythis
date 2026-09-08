@@ -181,8 +181,21 @@ const generatePdf = (summary) => {
       doc.on('end', () => resolve(Buffer.concat(chunks)));
       doc.on('error', reject);
 
+      // Strip control characters, NOT "everything that isn't ASCII".
+      //
+      // The old rule deleted every non-ASCII codepoint, which on a Hindi
+      // document deleted the document: "Dated १३/७/५६" printed as "Dated //",
+      // and a line written entirely in Devanagari cleaned down to an empty
+      // string, so the renderer's `|| 'Item'` fallback printed the word "Item"
+      // twenty times. utils/pdfFonts embeds Noto Devanagari and routes each
+      // character to a font that can draw it — this line was throwing the text
+      // away before any of that could run.
+      //
+      // ZWJ and ZWNJ (200C/200D) are deliberately kept: they carry meaning in
+      // Devanagari conjuncts, and removing them changes the words.
       const clean = (value) => String(value || '')
-        .replace(/[^\x20-\x7E]/g, '')
+        .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/g, '')
+        .replace(/[\u200B\uFEFF]/g, '')
         .replace(/\s+/g, ' ')
         .trim();
       const ensureSpace = (height = 90) => {

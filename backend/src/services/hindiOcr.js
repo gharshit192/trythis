@@ -720,12 +720,14 @@ const structureWithClaude = async (transcribedText) => {
   if (!transcribedText.trim()) return empty;
 
   const prompt = `The following text was OCR-transcribed from a Hindi/Devanagari document. Do NOT change, translate, or "correct" it. Based ONLY on this text, return ONLY JSON (no markdown).
+
+The summary is written in ENGLISH — real English, all the way through. Do not leave Hindi words sitting inside an English sentence, in Devanagari or spelled out in Latin letters: write Sorghum and Maize and Barley, not ज्वार or "Jowar". The one exception is a name — a person, a firm, a town — which keeps its own spelling. A summary that reads half in one language and half in another is the failure being described here.
 Numbers: copy every figure EXACTLY as it appears in the text, in the same script — Devanagari digits stay Devanagari (₹१०५५ stays ₹१०५५, never 1055). An amount entry must be the whole amount with its symbol (₹१०५५), never a bare currency sign.
 {
   "title": "a short specific name for this document taken from its content, 3-7 words, in English, keeping names, places and dates as they appear (e.g. 'Shopping list, 4 September 2026', 'Letter from Shah Shankarlal Rampratap, 1949', 'Anatomy textbook contents'). Never a generic label like 'Hindi document'.",
   "documentType": "list|letter|form|notes|receipt|table|other",
   "entities": { "people": [], "organizations": [], "locations": [], "dates": [], "times": [], "phoneNumbers": [], "emails": [], "websites": [], "currencies": [], "amounts": [], "identifiers": [] },
-  "summary": "one short sentence in Hindi describing the document"
+  "summary": "one short sentence in English describing the document"
 }
 
 TEXT:
@@ -748,10 +750,26 @@ ${transcribedText}`;
   };
 };
 
+// A dense page of handwriting can outrun the output budget, and gemini-2.5's
+// thinking tokens come out of the same allowance. The result is valid JSON that
+// simply stops mid-array — which parses as nothing, so the whole read was
+// thrown away and the document fell back to a SINGLE model. That is the reader
+// the digit vote needs most: with one model there is nobody to vote against.
+const salvageLines = (text) => {
+  // Pull the line texts out in order, tolerating an unterminated tail.
+  const out = [];
+  const re = /"text"\s*:\s*"((?:[^"\\]|\\.)*)"/g;
+  let m;
+  while ((m = re.exec(text)) !== null) {
+    try { out.push(JSON.parse(`"${m[1]}"`)); } catch { /* skip a broken escape */ }
+  }
+  return out.filter((t) => String(t).trim()).map((t, i) => ({ line: i + 1, text: t }));
+};
+
 const runWithGemini = async (imageContents) => {
   const model = geminiClient.getGenerativeModel({
     model: 'gemini-2.5-flash',
-    generationConfig: { temperature: 0, maxOutputTokens: 4096 },
+    generationConfig: { temperature: 0, maxOutputTokens: 16384 },
   });
 
   const imageParts = await Promise.all(imageContents.map(toGeminiImagePart));
@@ -759,11 +777,16 @@ const runWithGemini = async (imageContents) => {
   const text = result.response.text();
 
   const parsed = parseJsonSafely(text);
-  if (!parsed) {
-    logger.warn(`hindiOcr.runWithGemini: failed to parse response. Raw: ${text.slice(0, 200)}`);
-    return EMPTY_RESULT;
+  if (parsed) return { ...EMPTY_RESULT, ...parsed };
+
+  // Truncated or otherwise unparseable: keep the lines rather than the nothing.
+  const lines = salvageLines(text);
+  if (lines.length) {
+    logger.warn(`hindiOcr.runWithGemini: response unparseable, salvaged ${lines.length} line(s) from it`);
+    return { ...EMPTY_RESULT, transcription: { lines } };
   }
-  return { ...EMPTY_RESULT, ...parsed };
+  logger.warn(`hindiOcr.runWithGemini: failed to parse response (${text.length} chars). Head: ${text.slice(0, 160)} … Tail: ${text.slice(-160)}`);
+  return EMPTY_RESULT;
 };
 
 const runWithClaude = async (imageContents) => {
@@ -1054,7 +1077,7 @@ const TESSERACT_MIN_CONFIDENCE = parseFloat(process.env.TESSERACT_MIN_CONFIDENCE
 // reconciliation below — it never rewrites any words.
 const readNumbersPass = async (imageContents) => {
   try {
-    const msg = await claudeClient.messages.create({
+    const msg = await client.messages.create({
       model: 'claude-sonnet-4-6', max_tokens: 700, temperature: 0,
       messages: [{ role: 'user', content: [...imageContents, { type: 'text', text: 'List every number visible in this image, in reading order, one per line, exactly as printed (keep Devanagari digits as Devanagari, keep ₹, %, dates and phone numbers whole). Read each digit carefully. No commentary, no numbering of your own.' }] }],
     });
@@ -1372,10 +1395,13 @@ const run = async (rawImageContents, { handwritten = true } = {}) => {
       // with this line's, so a price or total gets a genuinely independent vote.
       const mineRuns = digitRuns(l.text);
       if (mineRuns.length) {
-        // The numbers-only reading is the specialist here, so it votes twice:
-        // two general readers making the same slip cannot outvote it alone.
-        const hit = numberLines.find((n) => digitRuns(n).length === mineRuns.length);
-        if (hit) { cands.push(hit); cands.push(hit); }
+        // The numbers-only reading may vote ONLY when it is looking at this
+        // same line. Matching it by digit-run count alone — which is what this
+        // did — picks an arbitrary line on a page of prices: a letterhead's
+        // "S.T No 246/2450/4" and a "Dated 13/01/76" both hold three runs, and
+        // the vote swapped one into the other. Alignment first, then a vote.
+        const hit = nearest(numberLines.map((t) => ({ text: t })), i, l.text);
+        if (hit && digitRuns(hit).length === mineRuns.length) { cands.push(hit); cands.push(hit); }
       }
       const r = reconcileDigits(l.text, cands);
       if (r.changed) { l.text = r.text; fixed += 1; }
@@ -1451,7 +1477,7 @@ const translateLines = async (lines) => {
     const text = await callClaude({
       model: 'claude-sonnet-4-6',
       maxTokens: 2000,
-      content: [{ type: 'text', text: `Translate this Hindi/Devanagari document into natural English, line by line. Keep one output line per input line, in the same order, numbered the same way. Write numbers in English digits (०१२ → 012) with the SAME values — ₹१०५५ becomes ₹1055, ९८७६५४३२१० becomes 9876543210, ४ सितम्बर २०२६ becomes 4 September 2026. Never change a value or recalculate anything. If a line is already English, repeat it unchanged. If a line is unreadable, write [unclear]. No commentary.\n\n${src}` }],
+      content: [{ type: 'text', text: `Translate this Hindi/Devanagari document into natural English, line by line. Keep one output line per input line, in the same order, numbered the same way.\n\nTRANSLATE, DO NOT TRANSLITERATE. This is the thing that keeps going wrong. Every Hindi word must come out as its English meaning, not as its sound spelled in Latin letters:\n- ज्वार is Sorghum, not \"Jowar\". मक्का is Maize. जव is Barley. चना is Gram (chickpea). गेहूँ is Wheat. सरसों is Mustard. मसूर is Lentil. मूंग is Mung bean. उड़द is Black gram. मोठ is Moth bean. तिल is Sesame. मेथी is Fenugreek.\n- A word you cannot translate confidently is [unclear] — never a phonetic guess. \"Selling jingapash\" and \"Shri Tigat's saavat\" are failures, not translations.\n- A proper noun — a person, a firm, a town — stays as it is written in the Latin alphabet. That is the ONLY case where sound is kept.\n\nWrite numbers in English digits (०१२ → 012) with the SAME values — ₹१०५५ becomes ₹1055, ९८७६५४३२१० becomes 9876543210, ४ सितम्बर २०२६ becomes 4 September 2026. Never change a value or recalculate anything.\n\nIf a line is already English, repeat it unchanged. If a line is unreadable, write [unclear]. No commentary.\n\n${src}` }],
     });
     const out = String(text || '').split('\n').map((l) => l.replace(/^\s*\d+[.)]\s*/, '').trim()).filter((l, i, arr) => l.length > 0 || i < arr.length);
     return out.slice(0, lines.length);
@@ -1593,5 +1619,5 @@ module.exports = {
   parseVisionLines,
   // Exported for tests: the agreement rule decides every line's confidence and
   // whether the user is asked to verify it, so it needs to be assertable.
-  __test__: { canonicalizeDevanagari, similarity, mergeTranscriptions, AGREE_THRESHOLD, dandaDatesToSlashes, reconcileDigits },
+  __test__: { canonicalizeDevanagari, similarity, mergeTranscriptions, AGREE_THRESHOLD, dandaDatesToSlashes, reconcileDigits, salvageLines },
 };

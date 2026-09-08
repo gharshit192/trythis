@@ -67,7 +67,7 @@ const classifyUrl = (url) => {
   }
 
   // ── Instagram Reel (short, safe to download) ──
-  if (/instagram\.com\/reel\/|instagram\.com\/p\//.test(u)) {
+  if (/^https?:\/\/(?:www\.|m\.)?instagram\.com\/(?:reels?|p|tv|share\/(?:reel|p))\/[^/?#]+/.test(u)) {
     return {
       type: 'instagram_reel',
       shouldDownload: true,

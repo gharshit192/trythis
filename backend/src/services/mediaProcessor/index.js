@@ -595,7 +595,7 @@ const processSave = async (saveId) => {
 
     // ─── PHOTO POST: not a failed video. Read the images instead. ───
     const photoImages = Array.isArray(save.metadata?.images) ? save.metadata.images.slice(0, 4) : [];
-    const isPhotoPost = !mp4Ready && !downloadSkipped && (save.metadata?.photoPost || /photo post/i.test(downloadFailureReason || '') || photoImages.length > 0);
+    const isPhotoPost = !mp4Ready && !downloadSkipped && (save.metadata?.photoPost || /photo post/i.test(downloadFailureReason || ''));
     if (isPhotoPost) {
       downloadSkipped = true; skipReason = 'photo_post'; downloadFailureReason = null;
       const existing = await Save.findById(saveId).select('processingStages');

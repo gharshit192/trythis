@@ -36,6 +36,38 @@ rather than breaking the save:
   transcribed, filled fields), not optimism. Sparse input → low confidence and a
   generic type, never a confident guess.
 
+### Instagram fallback and link handling
+
+Instagram placeholder titles are last-resort results: they must not stop the
+provider cascade before yt-dlp runs. The downloader classifier accepts
+`/reel/`, `/reels/`, `/p/`, `/tv/`, `/share/reel/`, and `/share/p/`
+URLs. Recognizing a share link permits an extraction attempt; it does not
+guarantee Instagram will resolve it without authentication.
+
+The Instagram HTTP provider only accepts Instagram HTTP(S) hosts before
+attaching session cookies. Netscape cookie parsing includes `#HttpOnly_`
+entries, excludes expired cookies, and respects the subdomain flag.
+A thumbnail alone is not proof of a photo post: a failed reel download must
+retain its failure reason and use thumbnail OCR as a fallback.
+
+### Current reread limitations
+
+- Link retries rerun media processing on the stored URL. Saved remarks
+  (`userNote`, exposed as `notes`) are not supplied to the analysis.
+- The client currently offers link retry only for failed/partial saves; voice
+  notes have a separate rebuild action. Completed reels have no retry action.
+- Screenshot reread uses stored HTTP(S) image URLs and does not pass remarks
+  to the bundle analyzer. Local-only image paths are excluded.
+- Screenshot reread downloads images before responding and processes in an
+  in-process task. It does not yet meet the worker-queue rule in AGENTS.md.
+  Failed rereads restore `done`, retaining the previous analysis without a
+  durable reread error.
+
+Regression coverage: `tests/services/instagramExtraction.test.js` checks
+provider fallback, supported link paths, host validation, photo detection,
+and cookie parsing with mocked responses. It does not prove live Instagram
+session validity or extraction quality for a particular reel.
+
 ### yt-dlp expires — treat it as perishable
 
 Video download gates everything downstream: `mediaProcessor` only transcribes

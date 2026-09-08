@@ -245,6 +245,15 @@ See [`docs/notifications.md`](docs/notifications.md),
   Devanagari aliases, and `mediaProcessor` re-extracts location from the
   transcript/frame-OCR after analysis when metadata found none.
 
+### Location permission
+
+- Automatic location reads in App, Home, and Explore use `lib/location.js`
+  and only run when the browser reports permission as `granted`. A stored
+  `location_requested` flag is a preference, not proof of browser permission.
+- Only an explicit location action may request permission. Missing or
+  unsupported permission queries skip automatic GPS reads. Coordinate cache
+  age does not determine permission lifetime. See ADR 0021.
+
 ### Web Push delivery
 
 - A push endpoint identifies a **browser install, not a user**. Attaching one
