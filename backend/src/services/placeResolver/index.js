@@ -4,6 +4,8 @@
 const Place = require('../../models/Place');
 const logger = require('../../utils/logger');
 const { buildCanonicalKey } = require('../../utils/canonicalKey');
+const { toPoint, haversineMetres } = require('../../utils/geo');
+const { fold, withinEditDistance, slackFor } = require('../searchEngine/fold');
 
 const TRAVEL_CATEGORIES = ['travel', 'hotels', 'hotel'];
 // Anything you go *to*. A recipe, a film or a jacket has a location only by
@@ -47,14 +49,52 @@ function isTakeStale(place) {
   return (Date.now() - new Date(take.generatedAt).getTime()) > TAKE_TTL_DAYS * 864e5;
 }
 
-async function findNearby(loc, metres = 150) {
+// Two names for the same place, allowing for how people actually write them:
+// "Blue Tokai" vs "Blue Tokai Coffee Roasters", "Cafe Lota" vs "Café Lota".
+// Reuses the search fold, so Devanagari and Latin spellings meet too.
+function namesMatch(a, b) {
+  const x = fold(a);
+  const y = fold(b);
+  if (!x || !y) return false;
+  if (x === y) return true;
+  // One is a fuller form of the other, on whole-token boundaries.
+  const xt = x.split(' ');
+  const yt = y.split(' ');
+  const shorter = xt.length <= yt.length ? xt : yt;
+  const longer = xt.length <= yt.length ? yt : xt;
+  if (shorter.length >= 1 && shorter.every((t) => longer.includes(t))) return true;
+  // A typo or a transliteration wobble, on the whole string.
+  return withinEditDistance(x, y, slackFor(x));
+}
+
+// Find the SAME place, not merely a near one.
+//
+// The old rule was proximity alone: 150 m for a venue, 2 km for travel. Both
+// numbers were wrong in opposite directions. A geotag drifting 300 m — routine
+// on reels — made a second row for one cafe, while any two distinct spots
+// within 2 km of each other in a small town were silently merged into one.
+//
+// Now the NAME decides and distance only qualifies, so the radius can be
+// generous without causing false merges.
+async function findNearby(loc, metres = 400, name = null) {
   if (loc?.lat == null || loc?.lng == null) return null;
-  const d = metres / 111320;
-  return Place.findOne({
-    'geo.lat': { $gte: loc.lat - d, $lte: loc.lat + d },
-    'geo.lng': { $gte: loc.lng - d, $lte: loc.lng + d },
+  const point = toPoint(loc.lat, loc.lng);
+  if (!point) return null;
+
+  const candidates = await Place.find({
     status: 'active',
-  });
+    loc: { $nearSphere: { $geometry: point, $maxDistance: metres } },
+  }).limit(20);
+
+  if (!candidates.length) return null;
+  // With no name to go on, fall back to the nearest thing — but only if it is
+  // very close, because that is a guess and it should behave like one.
+  if (!name) {
+    const nearest = candidates[0];
+    const d = haversineMetres(loc, { lat: nearest.geo?.lat, lng: nearest.geo?.lng });
+    return d != null && d <= 100 ? nearest : null;
+  }
+  return candidates.find((c) => namesMatch(name, c.canonicalName)) || null;
 }
 
 // Idempotent per save: a save already linked to a place is never counted twice,
@@ -74,7 +114,7 @@ async function resolvePlaceForSave(save) {
     const tags = Array.isArray(save.tags) ? save.tags.slice(0, 8) : [];
 
     let place = await Place.findOne({ canonicalKey: key });
-    if (!place) place = await findNearby(loc, isTravel(save) ? 2000 : 150);
+    if (!place) place = await findNearby(loc, isTravel(save) ? 3000 : 400, name);
 
     if (!place) {
       place = await Place.create({
@@ -84,6 +124,7 @@ async function resolvePlaceForSave(save) {
         region: loc.region || null,
         country: loc.country || null,
         geo: { lat: loc.lat ?? sdPlace.coordinates?.lat ?? null, lng: loc.lng ?? sdPlace.coordinates?.lng ?? null },
+        loc: toPoint(loc.lat ?? sdPlace.coordinates?.lat, loc.lng ?? sdPlace.coordinates?.lng) || undefined,
         category: deriveCategory(save, tags),
         vibeTags: tags,
         heroThumbnail: save.thumbnail || null,
@@ -111,4 +152,4 @@ async function resolvePlaceForSave(save) {
   }
 }
 
-module.exports = { resolvePlaceForSave, isTravel, isVenue, deriveCategory, isTakeStale };;
+module.exports = { resolvePlaceForSave, isTravel, isVenue, deriveCategory, isTakeStale, __test__: { namesMatch } };;

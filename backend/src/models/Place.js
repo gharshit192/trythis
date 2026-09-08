@@ -8,9 +8,18 @@ const placeSchema = new mongoose.Schema({
   city: { type: String, default: null, index: true },
   region: { type: String, default: null, index: true },
   country: { type: String, default: null },
+  // Kept because a lot of code and every client reads it.
   geo: {
     lat: { type: Number, default: null },
     lng: { type: Number, default: null },
+  },
+  // The one that is actually queryable. GeoJSON order is [lng, lat]; keep it in
+  // step with `geo` via utils/geo. A 2dsphere index gives true spherical
+  // distance and real index use, which the old lat/lng bounding box gave
+  // neither of.
+  loc: {
+    type: { type: String, enum: ['Point'], default: undefined },
+    coordinates: { type: [Number], default: undefined },
   },
   googlePlaceId: { type: String, default: null, index: true },
 
@@ -51,6 +60,7 @@ const placeSchema = new mongoose.Schema({
 placeSchema.index({ city: 1, status: 1 });
 placeSchema.index({ region: 1, status: 1 });
 placeSchema.index({ category: 1, vibeTags: 1 });
-placeSchema.index({ 'geo.lat': 1, 'geo.lng': 1 });
+placeSchema.index({ 'geo.lat': 1, 'geo.lng': 1 });   // legacy readers
+placeSchema.index({ loc: '2dsphere' });
 
 module.exports = mongoose.model('Place', placeSchema);

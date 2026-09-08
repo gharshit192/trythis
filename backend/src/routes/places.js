@@ -1,4 +1,5 @@
 const express = require('express');
+const { toPoint, haversineMetres } = require('../utils/geo');
 const authMiddleware = require('../middleware/auth');
 const Save = require('../models/Save');
 const router = express.Router();
@@ -29,10 +30,39 @@ router.get('/picks', authMiddleware, async (req, res) => {
     const city = (req.query.city || me?.location?.city || me?.settings?.location?.city || '').trim();
     const mineSaves = await Save.find({ userId: req.user.id, status: 'active', $or: [{ 'metadata.placeId': { $exists: true } }, { placeId: { $ne: null } }] }).select('metadata.placeId placeId').lean();
     const mine = new Set(mineSaves.flatMap((s) => [s.metadata?.placeId, s.placeId].filter(Boolean).map(String)));
-    const q = { status: 'active' };
-    if (city) q.city = new RegExp(city.split(/[\s,]+/)[0], 'i');
-    let places = await Place.find(q).sort({ saveCount: -1, updatedAt: -1 }).limit(120).lean();
-    if (places.length < 8) places = places.concat(await Place.find({ status: 'active', _id: { $nin: places.map((p) => p._id) } }).sort({ saveCount: -1 }).limit(60).lean());
+    // Where the user actually is beats what their profile says their city is
+    // called: a place saved as "Navi Mumbai" or with a null city was invisible
+    // to a name match, and a stale city string localised nothing at all.
+    const here = me?.location?.lat != null ? { lat: me.location.lat, lng: me.location.lng } : null;
+    const point = here ? toPoint(here.lat, here.lng) : null;
+
+    let places = [];
+    let reach = null;   // how far we had to go to find anything
+
+    if (point) {
+      // Widen in steps rather than jumping straight to "anywhere on earth".
+      for (const metres of [5000, 25000, 100000]) {
+        places = await Place.find({
+          status: 'active',
+          loc: { $nearSphere: { $geometry: point, $maxDistance: metres } },
+        }).limit(120).lean();
+        if (places.length >= 8) { reach = metres; break; }
+        reach = metres;
+      }
+    }
+    if (places.length < 8 && city) {
+      const byName = await Place.find({ status: 'active', city: new RegExp(city.split(/[\s,]+/)[0], 'i'), _id: { $nin: places.map((p) => p._id) } })
+        .sort({ saveCount: -1, updatedAt: -1 }).limit(120).lean();
+      places = places.concat(byName);
+    }
+    // Last resort: anywhere. Flagged, because showing someone Delhi cafes
+    // while saying "worth a look in your city" is simply untrue.
+    const localCount = places.length;
+    if (places.length < 8) {
+      places = places.concat(await Place.find({ status: 'active', _id: { $nin: places.map((p) => p._id) } })
+        .sort({ saveCount: -1 }).limit(60).lean());
+    }
+    const elsewhere = places.length > localCount;
     const wantCats = new Set((me?.interests || []).flatMap((i) => INTEREST_CATS[i] || []));
     const vibes = new Set(me?.preferences?.vibes || []);
     const budget = me?.preferences?.budget;
@@ -60,7 +90,18 @@ router.get('/picks', authMiddleware, async (req, res) => {
     // Mix categories so the list doesn't open with eight cafes.
     const out = []; const seen = {};
     for (const p of scored) { seen[p.category] = (seen[p.category] || 0) + 1; if (seen[p.category] <= 4) out.push(p); if (out.length >= limit) break; }
-    res.json({ status: 'success', data: out.map(({ score, ...p }) => p), city: city || null });
+    res.json({
+      status: 'success',
+      data: out.map(({ score, ...p }) => ({
+        ...p,
+        distanceMetres: here ? haversineMetres(here, { lat: p.geo?.lat, lng: p.geo?.lng }) : null,
+      })),
+      city: city || null,
+      // True when the list had to reach past the user's own area to fill up.
+      // The client says so instead of passing another city off as theirs.
+      elsewhere,
+      searchedMetres: reach,
+    });
   } catch (e) {
     res.status(500).json({ status: 'error', error: { code: 'SERVER_ERROR', message: e.message } });
   }
@@ -72,15 +113,25 @@ router.get('/nearby', async (req, res) => {
     if (lat == null || lng == null) {
       return res.status(400).json({ status: 'error', error: { code: 'MISSING_LOCATION', message: 'lat and lng required' } });
     }
-    const d = (parseInt(radiusMetres) || 5000) / 111320;
     const la = parseFloat(lat);
     const ln = parseFloat(lng);
+    const point = toPoint(la, ln);
+    if (!point) {
+      return res.status(400).json({ status: 'error', error: { code: 'MISSING_LOCATION', message: 'lat and lng must be numbers' } });
+    }
+    // $nearSphere returns true great-circle distance, already sorted nearest
+    // first, using the 2dsphere index. The old lat/lng box was a square whose
+    // corners reached 1.41x the radius, and whose longitude span was ~14% too
+    // wide at Delhi's latitude.
     const places = await Place.find({
       status: 'active',
-      'geo.lat': { $gte: la - d, $lte: la + d },
-      'geo.lng': { $gte: ln - d, $lte: ln + d },
-    }).sort({ saveCount: -1, updatedAt: -1 }).limit(30).lean();
-    res.json({ status: 'success', data: places });
+      loc: { $nearSphere: { $geometry: point, $maxDistance: parseInt(radiusMetres, 10) || 5000 } },
+    }).limit(30).lean();
+
+    res.json({
+      status: 'success',
+      data: places.map((p) => ({ ...p, distanceMetres: haversineMetres({ lat: la, lng: ln }, { lat: p.geo?.lat, lng: p.geo?.lng }) })),
+    });
   } catch (e) {
     res.status(500).json({ status: 'error', error: { code: 'SERVER_ERROR', message: e.message } });
   }

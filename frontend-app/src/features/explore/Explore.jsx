@@ -105,7 +105,7 @@ export default function Explore({ onNavigate, nearbySaves = [] }) {
       const seeded = sorted.map((p) => ({
         key: p._id, category: p.category, title: p.canonicalName, place: p,
         meta: [getCategoryTile(p.category).label, p.city, ...(p.aggregatedTake?.chips || p.vibeTags || []).slice(0, 2)].filter(Boolean).join(' · '),
-        reason: [takeOf(p), counts(p)].filter(Boolean).join(' — ') || 'Worth a look in your city',
+        reason: [takeOf(p), counts(p)].filter(Boolean).join(' — ') || (p.distanceMetres != null ? `${formatDistance(p.distanceMetres)} away` : 'Worth a look'),
         trail: p.distanceMetres != null ? formatDistance(p.distanceMetres) : undefined, saved: savedPlaceIds.has(p._id),
         onClick: () => onNavigate('place', { id: p._id }),
       }));
