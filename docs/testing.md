@@ -26,6 +26,31 @@ mock model responses, and state clearly what was verified live vs. mocked.
 Use `trythis-seed-data/` to run real URLs through the pipeline and inspect the
 structured output. Validate public social URLs before demos (they rot).
 
+## Memory engine
+
+Three layers, because no one of them is enough.
+
+**Rules — `npm test`.** The decision logic is pure and fully covered:
+`govern` (what may be stored at all), `resolve` (narrow vs weaken vs supersede,
+and scope precedence), `lifecycle` (decay, dormancy, promotion). These are the
+parts that are subtly wrong if they are wrong, so they are the parts with no
+database in the way.
+
+**Wiring — `npm test`.** `tests/routes/memory.test.js` and
+`tests/services/memoryObserve.test.js` run against a real MongoDB
+(`mongodb-memory-server`): the write pipeline, the permission grant, tombstones
+surviving fresh evidence, and one user never touching another's rows.
+
+**The model — `node scripts/memory-smoke.js`.** Needs `ANTHROPIC_API_KEY` and
+`DATABASE_URL`. Unit tests mock the extractor, so they prove we handle whatever
+comes back; only this proves a real model, given a real sentence, produces a
+candidate the rules actually accept. A rule that is never reached is not a rule.
+Runs under a throwaway user and cleans up after itself; `--keep` leaves the rows.
+
+What still needs a human: the Ask attribution footer, the Profile dashboard, and
+the "Waiting for your OK" grant flow. See the checklist in
+[`MEMORY_ENGINE.md`](MEMORY_ENGINE.md).
+
 ## Notifications
 
 Trigger a known scenario (e.g. a Friday-6pm "weekend ahead" notification) and
