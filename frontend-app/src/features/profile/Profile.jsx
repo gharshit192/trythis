@@ -39,7 +39,8 @@ export default function Profile({ onNavigate }) {
   // What we know because they told us, as opposed to what we noticed.
   const [mem, setMem] = useState(null);
   const [openMem, setOpenMem] = useState(false);
-  const [openKnown, setOpenKnown] = useState(false);
+  const [openRow, setOpenRow] = useState(null);
+  const [showAll, setShowAll] = useState(false);
 
   useEffect(() => {
     const ctrl = new AbortController();
@@ -50,6 +51,18 @@ export default function Profile({ onNavigate }) {
     api.getMe().then((r) => { const u = r?.data?.user || r?.data; if (u?.preferences) { setPrefs(u.preferences); try { localStorage.setItem('user', JSON.stringify({ ...user, ...u, id: user.id || u._id })); } catch {} } }).catch(() => {});
     return () => ctrl.abort();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Both sources, one list. `id` is present only for stated memories — the
+  // noticed ones are derived and there is nothing to forget.
+  const needsOk = (mem?.groups || []).flatMap((g) => g.items).filter((i) => i.needsPermission);
+  const memRows = [
+    ...(mem?.groups || []).flatMap((g) => g.items)
+      .filter((i) => !i.needsPermission)
+      .map((i) => ({ key: `m${i.id}`, id: i.id, statement: i.statement, sureness: i.sureness, source: i.source, scope: i.scope, quote: i.quote, stale: i.stale })),
+    ...(known?.groups || []).flatMap((g) => g.items)
+      .map((i, n) => ({ key: `k${n}`, id: null, statement: i.statement, sureness: i.sureness, source: i.source, detail: i.detail })),
+  ];
+  const visibleRows = showAll ? memRows : memRows.slice(0, 6);
 
   const tried = saves.filter((s) => s.intentStatus === 'tried').length;
   const planned = saves.filter((s) => s.intentStatus === 'planned').length;
@@ -89,7 +102,8 @@ export default function Profile({ onNavigate }) {
   };
   const confirmMem = async (id) => {
     await api.confirmMemory(id).catch(() => {});
-    setMem((prev) => (prev ? { ...prev, groups: prev.groups.map((g) => ({ ...g, items: g.items.map((i) => (i.id === id ? { ...i, sureness: 'always' } : i)) })) } : prev));
+    setMem((prev) => (prev ? { ...prev, groups: prev.groups.map((g) => ({ ...g, items: g.items.map((i) => (i.id === id ? { ...i, sureness: 'always', stale: false } : i)) })) } : prev));
+    setOpenRow(null);
   };
   const allowMem = async (id) => {
     const r = await api.allowMemory(id).catch(() => null);
@@ -135,69 +149,71 @@ export default function Profile({ onNavigate }) {
 
       <Row icon="star" kind="food" title={`Your ${new Date().getFullYear()}`} sub={tried ? `${tried} tried so far — see the year` : 'Everything you try this year, in one place'} onClick={() => onNavigate('year-recap')} right={<Icon name="forward" size={18} style={{ color: 'var(--faint)' }} />} />
 
-      {mem?.total > 0 && (
+      {/* One section about the user, not three. Stated facts and noticed
+          patterns are the same question — "what does it know about me" — and
+          splitting them made Profile read like a settings panel for a database.
+          Rows carry no buttons: tap one to see where it came from and act on it,
+          so twenty memories are twenty lines, not forty controls. */}
+      {(memRows.length > 0 || known?.gist) && (
         <>
           <div style={{ marginTop: 24 }}><SectionLabel>What I know about you</SectionLabel></div>
+          {needsOk.length > 0 && (
+            <div style={{ padding: '10px 12px', marginBottom: 8, borderRadius: 10, background: 'var(--sand)' }}>
+              <div style={{ fontSize: 13.5, marginBottom: 2 }}>{needsOk[0].statement}</div>
+              <div style={{ fontSize: 11.5, color: 'var(--mute)', marginBottom: 8 }}>
+                You told me this, so I&rsquo;ve kept it &mdash; but I won&rsquo;t use it until you say so.
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <Chip small on onClick={() => allowMem(needsOk[0].id)}>Yes, use it</Chip>
+                <Chip small onClick={() => forget(needsOk[0].id)}>Forget it</Chip>
+              </div>
+            </div>
+          )}
           <Row
             icon="sparkle"
             kind="place"
-            title={`${mem.total} thing${mem.total === 1 ? '' : 's'} you've told me`}
-            sub={openMem ? 'Tap to hide' : 'Tap to see, correct or forget any of them'}
+            title={known?.gist || `${memRows.length} thing${memRows.length === 1 ? '' : 's'} you've told me`}
+            sub={openMem ? 'Tap to hide' : 'Tap to see or change any of it'}
             onClick={() => setOpenMem((v) => !v)}
             right={<Icon name={openMem ? 'back' : 'forward'} size={18} style={{ color: 'var(--faint)' }} />}
           />
-          {openMem && mem.groups.map((g) => (
-            <div key={g.title} style={{ padding: '10px 0 4px' }}>
-              <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--faint)' }}>{g.title}</span>
-              {g.items.map((it) => (
-                <div key={it.id} style={{ padding: '8px 0', borderBottom: '1px solid var(--line)' }}>
-                  <div style={{ fontSize: 14.5 }}>{it.statement}</div>
-                  <div style={{ fontSize: 11.5, color: 'var(--faint)', marginTop: 2 }}>
-                    {it.sureness}{it.scope ? ` \u00b7 ${it.scope}` : ''} \u00b7 {it.source}
-                  </div>
-                  {it.quote && <div style={{ fontSize: 12, color: 'var(--ink-3)', marginTop: 4, fontStyle: 'italic' }}>&ldquo;{it.quote}&rdquo;</div>}
-                  <div style={{ display: 'flex', gap: 8, marginTop: 7 }}>
-                    {it.needsPermission
-                      ? <Chip small onClick={() => allowMem(it.id)}>Yes, use this</Chip>
-                      : <Chip small onClick={() => confirmMem(it.id)}>That&rsquo;s right</Chip>}
-                    <Chip small onClick={() => forget(it.id)}>Forget this</Chip>
-                  </div>
-                  {it.needsPermission && (
-                    <div style={{ fontSize: 11.5, color: 'var(--faint)', marginTop: 4 }}>
-                      You told me this, so I&rsquo;ve kept it &mdash; but I won&rsquo;t use it in an answer until you say so.
+          {openMem && (
+            <div style={{ padding: '4px 0' }}>
+              {visibleRows.map((it) => (
+                <div key={it.key} style={{ padding: '9px 0', borderBottom: '1px solid var(--line)' }}>
+                  <button
+                    type="button"
+                    onClick={() => setOpenRow((r) => (r === it.key ? null : it.key))}
+                    style={{ display: 'flex', alignItems: 'baseline', gap: 10, width: '100%', background: 'none', border: 0, padding: 0, font: 'inherit', textAlign: 'left', cursor: it.id ? 'pointer' : 'default' }}
+                  >
+                    <span style={{ flex: 1, fontSize: 14.5 }}>{it.statement}</span>
+                    <span style={{ fontSize: 11.5, color: 'var(--faint)', flexShrink: 0 }}>{it.sureness}</span>
+                  </button>
+                  {openRow === it.key && (
+                    <div style={{ marginTop: 6 }}>
+                      {it.quote && <div style={{ fontSize: 12.5, color: 'var(--ink-3)', fontStyle: 'italic' }}>&ldquo;{it.quote}&rdquo;</div>}
+                      <div style={{ fontSize: 11.5, color: 'var(--faint)', marginTop: 3 }}>
+                        {it.source}{it.scope ? ` \u00b7 ${it.scope}` : ''}{it.detail ? ` \u00b7 ${it.detail}` : ''}
+                      </div>
+                      {it.id && (
+                        <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                          {/* Only a faded memory is worth asking about. */}
+                          {it.stale && <Chip small on onClick={() => confirmMem(it.id)}>Still true</Chip>}
+                          <Chip small onClick={() => forget(it.id)}>Forget this</Chip>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
               ))}
+              {memRows.length > visibleRows.length && (
+                <button type="button" onClick={() => setShowAll(true)}
+                  style={{ background: 'none', border: 0, padding: '10px 0 0', font: 'inherit', fontSize: 13, color: 'var(--teal-d)', cursor: 'pointer' }}>
+                  Show all {memRows.length}
+                </button>
+              )}
             </div>
-          ))}
-        </>
-      )}
-
-      {known?.gist && (
-        <>
-          <div style={{ marginTop: 24 }}><SectionLabel>What I&rsquo;ve noticed</SectionLabel></div>
-          <Row
-            icon="sparkle"
-            kind="learn"
-            title={known.gist}
-            sub={openKnown ? 'Tap to hide' : `${known.groups.reduce((n, g) => n + g.items.length, 0)} things, all from what you saved`}
-            onClick={() => setOpenKnown((v) => !v)}
-            right={<Icon name={openKnown ? 'back' : 'forward'} size={18} style={{ color: 'var(--faint)' }} />}
-          />
-          {openKnown && known.groups.map((g) => (
-            <div key={g.title} style={{ padding: '10px 0 4px' }}>
-              <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--faint)' }}>{g.title}</span>
-              {g.items.map((it, i) => (
-                <div key={`${g.title}-${i}`} style={{ display: 'flex', alignItems: 'baseline', gap: 10, padding: '7px 0', borderBottom: '1px solid var(--line)' }}>
-                  <span style={{ flex: 1, fontSize: 14.5 }}>{it.statement}</span>
-                  <span style={{ fontSize: 11.5, color: 'var(--faint)', textAlign: 'right', flexShrink: 0 }}>
-                    {it.sureness}{it.detail ? ` \u00b7 ${it.detail}` : ''}<br />{it.source}
-                  </span>
-                </div>
-              ))}
-            </div>
-          ))}
+          )}
         </>
       )}
 

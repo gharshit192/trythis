@@ -34,7 +34,7 @@ async function buildBrief(userId, { contextRefs = [], now = new Date() } = {}) {
     .limit(120)
     .lean();
 
-  if (!rows.length) return { text: '', used: [], overridden: [] };
+  if (!rows.length) return { text: '', used: [], attributable: [], overridden: [] };
 
   // Decay is applied here, not read from the stored value: the sweep is lazy,
   // so a memory can be overdue for it. A faded memory is not offered — it is
@@ -64,7 +64,16 @@ async function buildBrief(userId, { contextRefs = [], now = new Date() } = {}) {
     used.push(m);
   }
 
-  return { text: lines.join('\n'), used, overridden };
+  return {
+    text: lines.join('\n'),
+    used,
+    // What may be NAMED back to the user. The silent tier exists precisely so
+    // diet, city and the standing budget are used without being announced —
+    // listing them under every answer is the "since you're vegetarian…" tic the
+    // tier was invented to prevent (docs/MEMORY_ENGINE.md §8.5).
+    attributable: used.filter((m) => (m.surfacing || 'relevant') !== 'silent'),
+    overridden,
+  };
 }
 
 module.exports = { buildBrief, __test__: { sureness, PROMPTABLE } };

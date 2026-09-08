@@ -548,6 +548,30 @@ expires, **Edit** and **Forget**. Confidence is **words, never numbers**:
   made visible, and answering it is the cheapest high-quality evidence we can
   ever collect.
 
+### 8.4b How much the app is allowed to ask
+
+A memory dashboard fails the moment it feels like database admin, and the way
+that happens is not one bad screen — it is a button on every row. Twenty
+memories with two controls each is forty things to decide about.
+
+The budget, enforced in the API shape and tested:
+
+| Surface | What it asks | When |
+|---|---|---|
+| Profile list | nothing | a row is a sentence; tap it to see its source |
+| An expanded row | Forget this | only once you've opened that one row |
+| A faded row | Still true? | only when it has decayed to dormant |
+| A sensitive row | Yes, use it | only for a stated sensitive fact, one at a time |
+| An answer | nothing | a quiet line, and never for the silent tier |
+| Unprompted | one question, ever | an exception that recurred three times |
+
+Across a library of fourteen memories, exactly two ask for anything. That is
+the test (`tests/routes/memory.test.js`), not an aspiration.
+
+One section, not three. "What you told me" and "what I noticed" are the same
+question to a user — *what does it know about me* — and separating them turns
+a page about a person into a page about a schema.
+
 ### 8.5 Personalisation without creepiness (`surfacing` tiers)
 
 | Tier | Contents | Behaviour |

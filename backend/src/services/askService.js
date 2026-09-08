@@ -103,7 +103,7 @@ async function ask({ userId, question, conversationId, user }) {
   // What we know about this person, resolved for right now: an exception that
   // is in play beats the standing default (docs/MEMORY_ENGINE.md §5.3).
   // Never fatal — Ask must answer from saves alone if the memory layer is down.
-  let brief = { text: '', used: [] };
+  let brief = { text: '', used: [], attributable: [] };
   try { brief = await buildBrief(userId); } catch (err) { logger.warn(`[ask] brief unavailable: ${err.message}`); }
 
   const today = new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
@@ -151,7 +151,7 @@ async function ask({ userId, question, conversationId, user }) {
     followUps,
     savesConsidered: picked.length,
     // So the client can mark which phrases leaned on a memory (phase 4).
-    usedMemories: brief.used.map((m) => ({ id: m._id, statement: m.statement, confidence: m.confidence, scope: m.scope?.contextLabel || null, derived: !!m.derived })),
+    usedMemories: (brief.attributable || []).map((m) => ({ id: m._id, statement: m.statement, confidence: m.confidence, scope: m.scope?.contextLabel || null, derived: !!m.derived })),
   };
 }
 

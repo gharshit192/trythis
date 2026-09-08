@@ -38,6 +38,10 @@ const shape = (m) => ({
   // Stored, but not usable until the user says so. The UI needs to know, or a
   // sensitive fact sits in the database doing nothing for anyone.
   needsPermission: m.surfacing === 'confirm',
+  // Faded, so worth asking about — and the only row that gets a confirm
+  // control. Asking "is this still right?" about everything is how a memory
+  // dashboard turns into database admin.
+  stale: m.status === 'dormant',
   pinned: !!m.pinned,
 });
 

@@ -242,3 +242,50 @@ describe('sensitive memories are stored AND usable — the confirm tier', () => 
     await request(app).post(`/memory/${m._id}/allow`).set('Authorization', `Bearer ${other}`).expect(404);
   });
 });
+
+describe('the silent tier is used but never announced', () => {
+  test('a silent memory shapes the answer without being listed back', async () => {
+    await make({ statement: 'Eats vegetarian', subject: 'food.diet', value: 'veg', surfacing: 'silent' });
+    await make({ statement: 'Likes quiet cafes', subject: 'places.cafes', surfacing: 'relevant' });
+
+    const brief = await buildBrief(userId);
+    // Both reach the model...
+    expect(brief.text).toContain('vegetarian');
+    expect(brief.text).toContain('quiet cafes');
+    // ...only one may be named back to the user.
+    expect(brief.attributable.map((m) => m.statement)).toEqual(['Likes quiet cafes']);
+  });
+
+  test('an answer using only silent memories attributes nothing at all', async () => {
+    await make({ statement: 'Eats vegetarian', subject: 'food.diet', surfacing: 'silent' });
+    expect((await buildBrief(userId)).attributable).toHaveLength(0);
+  });
+});
+
+describe('how much the app asks of you', () => {
+  test('an ordinary memory carries no question — it is just shown', async () => {
+    await make();
+    const [item] = (await auth(request(app).get('/memory')).expect(200)).body.data.groups[0].items;
+    expect(item.needsPermission).toBe(false);
+    expect(item.stale).toBe(false);
+  });
+
+  test('only a faded memory is flagged as worth asking about', async () => {
+    await make({ status: 'dormant', strength: 0.05, kind: 'context', lastConfirmedAt: new Date('2020-01-01') });
+    const res = await auth(request(app).get('/memory')).expect(200);
+    const group = res.body.data.groups.find((g) => g.title === 'Might be out of date');
+    expect(group.items[0].stale).toBe(true);
+  });
+
+  test('across a full library, at most a handful ever ask for anything', async () => {
+    // 12 ordinary memories, one sensitive, one faded.
+    for (let i = 0; i < 12; i += 1) await make({ subject: `topic.${i}` });
+    await make({ subject: 'health.condition', sensitivity: 'sensitive', surfacing: 'confirm' });
+    await make({ subject: 'old.thing', status: 'dormant', strength: 0.02, kind: 'context', lastConfirmedAt: new Date('2020-01-01') });
+
+    const items = (await auth(request(app).get('/memory')).expect(200)).body.data.groups.flatMap((g) => g.items);
+    const asking = items.filter((i) => i.needsPermission || i.stale);
+    expect(items.length).toBe(14);
+    expect(asking).toHaveLength(2);
+  });
+});
