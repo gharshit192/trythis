@@ -50,4 +50,34 @@ const deleteImage = async (publicId) => {
   }
 };
 
-module.exports = { uploadImage, uploadBuffer, deleteImage };
+/**
+ * Parameters for a browser/app upload that goes straight to Cloudinary
+ * (technical PRD §37: large files should bypass the application server).
+ *
+ * Today every screenshot is base64'd through this process, which costs the
+ * request's memory and the dyno's bandwidth twice. Signing here keeps the secret
+ * server-side while the bytes never touch us.
+ *
+ * The signature covers folder, public_id and timestamp, so a client cannot
+ * redirect the upload somewhere else or replay it indefinitely — Cloudinary
+ * rejects a stale timestamp.
+ */
+const configured = () => !!(process.env.CLOUDINARY_CLOUD_NAME
+  && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET);
+
+const signedUploadParams = ({ folder, publicId }) => {
+  if (!configured()) return null;
+  const timestamp = Math.floor(Date.now() / 1000);
+  const toSign = { timestamp, folder, ...(publicId ? { public_id: publicId } : {}) };
+  return {
+    cloudName: process.env.CLOUDINARY_CLOUD_NAME,
+    apiKey: process.env.CLOUDINARY_API_KEY,
+    timestamp,
+    folder,
+    ...(publicId ? { publicId } : {}),
+    signature: cloudinary.utils.api_sign_request(toSign, process.env.CLOUDINARY_API_SECRET),
+    uploadUrl: `https://api.cloudinary.com/v1_1/${process.env.CLOUDINARY_CLOUD_NAME}/auto/upload`,
+  };
+};
+
+module.exports = { uploadImage, uploadBuffer, deleteImage, signedUploadParams, configured };

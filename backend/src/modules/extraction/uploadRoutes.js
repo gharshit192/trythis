@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 const os = require('os');
 const multer = require('multer');
+const storage = require('../../platform/storage/cloudinary');
 const router = express.Router();
 const UploadJob = require('./models/UploadJob');
 const authMiddleware = require('../../platform/http/auth');
@@ -28,6 +29,24 @@ router.use(authMiddleware);
 
 // POST /uploads — Create a new upload job
 // Body: { type: 'LINK', url: '...' } OR { type: 'SCREENSHOT', file: <multipart> }
+// Direct-to-Cloudinary upload (technical PRD §37). The client asks for a
+// signature, PUTs the bytes to Cloudinary itself, then tells us the resulting
+// URL — the file never passes through this process. The multer path below stays
+// for clients that have not moved yet.
+router.post('/signature', authMiddleware, (req, res) => {
+  const params = storage.signedUploadParams({
+    folder: `trythis/${req.user.id}`,
+    publicId: typeof req.body?.publicId === 'string' ? req.body.publicId.slice(0, 120) : undefined,
+  });
+  if (!params) {
+    return res.status(503).json({
+      status: 'error',
+      error: { message: 'Direct upload is not configured on this server.' },
+    });
+  }
+  return res.json({ status: 'success', data: params });
+});
+
 router.post('/', upload.single('file'), async (req, res) => {
   try {
     const { type, url } = req.body;

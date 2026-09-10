@@ -85,30 +85,40 @@ app.get('/status', (req, res) => {
   });
 });
 
-app.use('/auth', authRoutes);
-app.use('/saves', savesRoutes);
-app.use('/collections', collectionsRoutes);
-app.use('/search', searchRoutes);
-app.use('/knowledge', knowledgeRoutes);  // derived signals — ADR 0019
-app.use('/memory', memoryRoutes);        // stated facts, and the controls over them — ADR 0020
-app.use('/recommendations', recommendationsRoutes);
-app.use('/places', placesRoutes);   // was only in routes/index.js, which nothing mounted
-app.use('/voice', voiceRoutes);     // ADR 0016
-app.use('/ask', askRoutes);         // ADR 0017
-app.use('/plans', plansRoutes);     // weekend plans from your saves
-app.use('/go', goRoutes);           // partner redirects (MONETIZATION_ARCHITECTURE.md)
+// Every API route is reachable at both `/x` and `/api/v1/x` (technical PRD §35).
+// Dual-mounted rather than moved: the deployed web and Android clients call the
+// unprefixed paths, and a version prefix is not worth a forced client update.
+// New clients should use /api/v1; the bare paths stay until they stop being used.
+const API_PREFIX = '/api/v1';
+const mount = (path, ...handlers) => {
+  app.use(path, ...handlers);
+  app.use(API_PREFIX + path, ...handlers);
+};
+
+mount('/auth', authRoutes);
+mount('/saves', savesRoutes);
+mount('/collections', collectionsRoutes);
+mount('/search', searchRoutes);
+mount('/knowledge', knowledgeRoutes);  // derived signals — ADR 0019
+mount('/memory', memoryRoutes);        // stated facts, and the controls over them — ADR 0020
+mount('/recommendations', recommendationsRoutes);
+mount('/places', placesRoutes);   // was only in routes/index.js, which nothing mounted
+mount('/voice', voiceRoutes);     // ADR 0016
+mount('/ask', askRoutes);         // ADR 0017
+mount('/plans', plansRoutes);     // weekend plans from your saves
+mount('/go', goRoutes);           // partner redirects (MONETIZATION_ARCHITECTURE.md)
 // Order matters: both routers below apply authMiddleware to everything they
 // see, so any route that must skip user auth has to be mounted ahead of them.
 // pushPublicRoutes first: /notifications/resubscribe comes from the service
 // worker, which has no token. Then notificationTestRoutes, whose
 // /notifications/run is secret-protected rather than user-authed.
-app.use('/notifications', pushPublicRoutes);        // /notifications/resubscribe
-app.use('/notifications', notificationTestRoutes);  // /notifications/run + /test/*
-app.use('/notifications', notificationsRoutes);
-app.use('/uploads', uploadsRoutes);
-app.use('/admin', adminRoutes);
-app.use('/s', shareRoutes);
-app.use('/blog', blogRoutes);        // ADR 0018 — public journal + web admin
+mount('/notifications', pushPublicRoutes);        // /notifications/resubscribe
+mount('/notifications', notificationTestRoutes);  // /notifications/run + /test/*
+mount('/notifications', notificationsRoutes);
+mount('/uploads', uploadsRoutes);
+mount('/admin', adminRoutes);
+mount('/s', shareRoutes);
+mount('/blog', blogRoutes);        // ADR 0018 — public journal + web admin
 app.get('/robots.txt', (req, res) => res.type('text/plain').send(`User-agent: *\nAllow: /blog\nAllow: /s/\nDisallow: /blog/admin\nDisallow: /saves\nDisallow: /auth\nSitemap: ${require('./utils/publicUrl').publicBaseUrl()}/blog/sitemap.xml\n`));
 app.use(audioProcessingRoutes);  // mounts /saves/:id/process-audio etc. at root
 
