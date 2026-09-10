@@ -214,20 +214,52 @@ Little, which is the point:
 
 Nothing above requires a rewrite, a new language, or a new database.
 
-## 6. Phases
+## 6. Phases — status
 
-Each phase is independently shippable and leaves the app working.
-
-| Phase | Work | Risk |
+| Phase | Work | Status |
 | --- | --- | --- |
-| **P0** | Move files into `modules/`. Pure moves, no logic edits. Tests green | Low |
-| **P1** | Add `index.js` facades; add the ESLint boundary rule; fix violations | Low — compiler-checked |
-| **P2** | Extend the event model (§22) beyond analytics so recommendations consume it | Medium — touches ranking |
-| **P3** | Provider abstractions (§26) for maps/LLM/STT | Low |
-| **P4** | *Only if triggered:* Postgres when bookings land; AWS when Render hurts | High — deliberately last |
+| P0 | Move files into `modules/` | **done** — `c06e318` |
+| P1 | `index.js` facades + ESLint boundary rule in CI | **done** — `0c31b44` |
+| P1.5 | Observability — request ids, structured logs, latency by dependency | **done** — `ca4acf2` |
+| P2 | Event bus; §52 explicit-vs-inferred preference model | **done** — `ba16b9a` |
+| P2.5 | Embeddings + vector retrieval | **done** — `4f2fe61` |
+| P3 | `/api/v1` (§35), signed uploads (§37) | **done** — `2d52c3a` |
+| P4 | Postgres when bookings land; AWS when Render hurts | **not triggered** |
 
-P0–P1 is the whole "modular monolith" claim and is mechanical. P2 is where
-actual product value is: the memory engine gets the signals the PRD assumes.
+Backend went from 471 tests to 530, lint from "no config, CI step failing on
+every run" to a boundary rule that fails the build.
+
+### What each phase turned up
+
+- **P0** silently broke eight `__dirname` filesystem paths — uploads,
+  `.vision-usage.json`, `.sarvam-usage.json` — because a file under
+  `modules/extraction/` sits a level deeper than one under `services/`. All 471
+  tests stayed green throughout; nothing exercises those paths. Found by
+  grepping, not by the suite.
+- **P1** found CI's lint step had been failing on every run: `npm run lint` was
+  wired up with no ESLint config present. It also showed `Save` crossing into
+  eleven modules and `User` into six — models where a service call belongs.
+- **P2** found §52 was *half* implemented: `derived` already drove "you told me"
+  vs "from what you save", but was asserted by the caller and could contradict
+  the evidence. It is now grounded in the evidence rather than trusted.
+- **P2.5** replaced a 600-save keyword scan that made anything older invisible
+  and could not match a question to a differently-worded save.
+
+### Not built in P3, on purpose
+
+A formal `MapsProvider` interface (§26/§61). LLM, embeddings, speech and storage
+are already behind interfaces; geocoding has exactly one implementation
+([ADR 0011](../adr/0011-geocoding-cached-osm-first.md)) reached through one seam.
+Wrapping a single implementation for a second provider nobody has chosen is
+speculative generality, and §62's own advice is to optimise for product
+development over structure. Worth doing the day a second provider is real.
+
+### P4 is deliberately not started
+
+Both triggers are measurable and neither has fired: no bookings or payments
+exist, so Postgres has nothing transactional to hold; and Render's cost is now
+observable via P1.5 rather than assumed. Building either now would contradict
+[ADR 0023](../adr/0023-one-node-modular-monolith.md).
 
 ## 7. On "Java Spring scales better"
 
