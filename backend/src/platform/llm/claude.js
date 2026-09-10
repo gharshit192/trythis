@@ -16,6 +16,17 @@ const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
+// Time every Anthropic call once, at the client, rather than at each call site —
+// new call sites are then instrumented for free. Keyed by model, because that is
+// the axis latency and cost actually vary on (PRD §44: "AI latency").
+{
+  const metrics = require('../observability/metrics');
+  const create = client.messages.create.bind(client.messages);
+  client.messages.create = (body, ...rest) =>
+    metrics.timed('llm', `anthropic ${body && body.model ? body.model : 'unknown'}`,
+      () => create(body, ...rest));
+}
+
 const MAX_RETRIES = 2;
 const RETRY_DELAY_MS = 1000;
 

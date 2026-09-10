@@ -46,7 +46,8 @@ Transcript:
 ${String(text).slice(0, 6000)}`;
 
   try {
-    const result = await model.generateContent(prompt);
+    const result = await require('../observability/metrics')
+      .timed('llm', `gemini ${MODEL}`, () => model.generateContent(prompt));
     return (result.response.text() || '').trim();
   } catch (err) {
     logger.warn(`[geminiText] transcript normalization failed: ${err.message}`);

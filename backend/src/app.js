@@ -45,6 +45,8 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
+const requestContext = require('./platform/observability/requestContext');
+app.use(requestContext);   // request id + per-route latency + one structured line per response
 app.use(compression());
 app.use(express.json({ limit: '5mb' }));
 
@@ -54,6 +56,13 @@ app.use('/static', express.static(uploadsDir, { maxAge: '7d' }));
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'TryThis API is running' });
+});
+
+app.get('/metrics', (req, res) => {
+  // Guarded when a token is configured; open otherwise so it is usable in dev.
+  const want = process.env.METRICS_TOKEN;
+  if (want && req.get('x-metrics-token') !== want) return res.status(404).end();
+  res.json({ status: 'success', data: require('./platform/observability/metrics').snapshot() });
 });
 
 app.get('/status', (req, res) => {
