@@ -1,4 +1,4 @@
-const planEngine = require('../../src/modules/plans/planEngine');
+const planEngine = require('../../src/modules/plans').planEngine;
 
 const { buildDayRouteLink, uniquePlacesFromPlan } = planEngine.__test__;
 

@@ -4,7 +4,7 @@
 // right the moment a notification lands, while the app is closed) and the
 // /notifications/badge endpoint (so it stays right while the app is open).
 
-const Notification = require('../notifications/models/Notification');
+const Notification = require('../notifications').Notification;
 
 // "Unread" is pending + sent — the same rule the notifications list uses for its
 // unreadCount, so the icon and the in-app bell can never disagree.

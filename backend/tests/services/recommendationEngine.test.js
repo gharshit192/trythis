@@ -1,7 +1,7 @@
 const {
   generateRecommendations,
   __test__: { calculateSimilarityScore, isPriceRange, extractPrice, idOf },
-} = require('../../src/modules/feed/engine');
+} = require('../../src/modules/feed').engine;
 
 const mk = (overrides = {}) => ({
   _id: { toString: () => overrides._id || 'gen' },

@@ -6,7 +6,7 @@ const os = require('os');
 const TEST_UPLOADS = fs.mkdtempSync(path.join(os.tmpdir(), 'trythis-sweep-test-'));
 process.env.UPLOADS_DIR = TEST_UPLOADS;
 
-const Save = require('../../src/modules/saves/models/Save');
+const Save = require('../../src/modules/saves').Save;
 const sweeper = require('../../src/modules/extraction/purgeScreenshots');
 const { startMongo, stopMongo, clearDb } = require('../helpers/mongo');
 

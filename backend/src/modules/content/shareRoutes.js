@@ -1,7 +1,7 @@
 const express = require('express');
 const { publicBaseUrl, appUrl } = require('../../utils/publicUrl');
 const router = express.Router();
-const Save = require('../saves/models/Save');
+const Save = require('../saves').Save;
 const logger = require('../../utils/logger');
 const { renderSharePage } = require('./sharePage');
 
@@ -48,7 +48,7 @@ router.get('/:shareId', async (req, res) => {
     if (save) {
       setImmediate(async () => {
         try {
-          const Notification = require('../notifications/models/Notification');
+          const Notification = require('../notifications').Notification;
 
           // Increment view count
           await Save.findByIdAndUpdate(save._id, {

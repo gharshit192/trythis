@@ -3,9 +3,9 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
-const User = require('../users/models/User');
+const User = require('../users').User;
 const authMiddleware = require('../../platform/http/auth');
-const { sendVerificationEmail, sendEmail } = require('../notifications/emailService');
+const { sendVerificationEmail, sendEmail } = require('../notifications').emailService;
 const { loginLimiter, signupLimiter, forgotPasswordLimiter } = require('../../platform/http/rateLimiter');
 const logger = require('../../utils/logger');
 
@@ -81,7 +81,7 @@ router.post('/signup', signupLimiter, async (req, res) => {
     // Fire-and-forget welcome notification
     setImmediate(async () => {
       try {
-        const Notification = require('../notifications/models/Notification');
+        const Notification = require('../notifications').Notification;
         await Notification.create({
           userId: user._id,
           type: 'welcome',

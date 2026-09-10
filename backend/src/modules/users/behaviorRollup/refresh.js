@@ -1,6 +1,6 @@
 // The IO half of the rollup. Kept apart from index.js so the scoring logic
 // there stays pure and testable without a database.
-const Save = require('../../saves/models/Save');
+const Save = require('../../saves').Save;
 const UserBehavior = require('../models/UserBehavior');
 const UserSignal = require('../models/UserSignal');
 const { rollupSignals } = require('./index');

@@ -5,8 +5,8 @@
 // subscription is gone (404/410), we prune it so we don't keep retrying dead ones.
 
 const webpush = require('web-push');
-const User = require('../users/models/User');
-const badgeService = require('../users/badgeService');
+const User = require('../users').User;
+const badgeService = require('../users').badgeService;
 const logger = require('../../utils/logger');
 
 // Keep an undelivered push queued for a day (phone off, no network). Without

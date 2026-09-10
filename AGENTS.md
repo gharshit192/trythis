@@ -46,6 +46,11 @@ This is an **npm workspaces** monorepo. The authoritative lockfile is the root
 
 ```
 backend/        Node.js/Express API (MongoDB + Redis/Bull). The product brain.
+backend/src/modules/    One folder per domain. A module's index.js is its ONLY
+                importable surface — importing anything deeper from another
+                module fails `npm run lint` (ADR 0023). Add an export to the
+                target module's index.js instead of reaching past it.
+backend/src/platform/   Cross-cutting, no domain logic: llm, events, storage, http.
 frontend-app/   Capacitor + PWA client (web dev loop + Android). ACTIVE.
 frontend/       Expo/React Native client. LEGACY.
 shared/         Shared spec docs (API_SPEC, DATA_MODELS).

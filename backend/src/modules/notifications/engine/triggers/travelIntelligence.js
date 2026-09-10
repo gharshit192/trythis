@@ -1,5 +1,5 @@
 const axios = require('axios');
-const Save  = require('../../../saves/models/Save');
+const Save  = require('../../../saves').Save;
 const Notification = require('../../models/Notification');
 const { getMessage } = require('../../messageService');
 const logger = require('../../../../utils/logger');

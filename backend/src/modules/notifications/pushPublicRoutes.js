@@ -8,7 +8,7 @@
 
 const express = require('express');
 const router = express.Router();
-const User = require('../users/models/User');
+const User = require('../users').User;
 const logger = require('../../utils/logger');
 
 // Endpoint rotation, from the service worker's `pushsubscriptionchange` event.

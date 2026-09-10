@@ -1,7 +1,7 @@
 // Ask Wanna Try (ADR 0017): questions answered from the user's own saves.
 const express = require('express');
 const Conversation = require('./models/Conversation');
-const User = require('../users/models/User');
+const User = require('../users').User;
 const authMiddleware = require('../../platform/http/auth');
 const { ask } = require('./service');
 const logger = require('../../utils/logger');

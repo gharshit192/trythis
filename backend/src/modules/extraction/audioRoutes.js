@@ -6,7 +6,7 @@
 
 const express = require('express');
 const router = express.Router();
-const Save = require('../saves/models/Save');
+const Save = require('../saves').Save;
 const mediaProcessor = require('./mediaProcessor');
 const authMiddleware = require('../../platform/http/auth');
 const logger = require('../../utils/logger');

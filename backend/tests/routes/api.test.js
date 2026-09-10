@@ -278,7 +278,7 @@ describe('/notifications', () => {
   });
 
   it('mark as read then dismiss', async () => {
-    const Notification = require('../../src/modules/notifications/models/Notification');
+    const Notification = require('../../src/modules/notifications').Notification;
     const n = await Notification.create({
       userId,
       type: 'nearby_rediscovery',

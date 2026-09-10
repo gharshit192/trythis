@@ -1,11 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const Notification = require('./models/Notification');
-const User = require('../users/models/User');
+const User = require('../users').User;
 const authMiddleware = require('../../platform/http/auth');
 const logger = require('../../utils/logger');
 const pushService = require('./pushService');
-const badgeService = require('../users/badgeService');
+const badgeService = require('../users').badgeService;
 
 router.use(authMiddleware);
 

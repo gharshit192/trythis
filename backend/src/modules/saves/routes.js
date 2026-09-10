@@ -9,25 +9,25 @@ const { nanoid } = require('nanoid');
 const router = express.Router();
 const Save = require('./models/Save');
 const Collection = require('./models/Collection');
-const User = require('../users/models/User');
-const UserBehavior = require('../users/models/UserBehavior');
+const User = require('../users').User;
+const UserBehavior = require('../users').UserBehavior;
 const authMiddleware = require('../../platform/http/auth');
 const validateObjectId = require('../../platform/http/validateObjectId');
 const { validateSaveInput } = require('../../platform/http/inputValidation');
-const fetchSystem = require('../extraction/fetchSystem');
-const extractionEngine = require('../extraction/extractionEngine');
-const transcription = require('../extraction/transcription');
-const mediaProcessor = require('../extraction/mediaProcessor');
-const screenshotPipeline = require('../extraction/screenshotPipeline');
-const screenshotBundle = require('../extraction/screenshotBundle');
+const fetchSystem = require('../extraction').fetchSystem;
+const extractionEngine = require('../extraction').engine;
+const transcription = require('../extraction').transcription;
+const mediaProcessor = require('../extraction').mediaProcessor;
+const screenshotPipeline = require('../extraction').screenshotPipeline;
+const screenshotBundle = require('../extraction').screenshotBundle;
 const autoCollectionEngine = require('./autoCollection');
-const thumbnailCache = require('../extraction/thumbnailCache');
+const thumbnailCache = require('../extraction').thumbnailCache;
 const insightsEngine = require('./insightsEngine');
-const planEngine = require('../plans/planEngine');
-const placeResolver = require('../places/resolver');
+const planEngine = require('../plans').planEngine;
+const placeResolver = require('../places').resolver;
 const typeToCategory = require('../../utils/structuredTypeToCategory');
-const { classifyByDomainFull } = require('../extraction/extractionEngine/domainClassifier');
-const { classifyUrl } = require('../extraction/urlClassifier');
+const { classifyByDomainFull } = require('../extraction').domainClassifier;
+const { classifyUrl } = require('../extraction').urlClassifier;
 const logger = require('../../utils/logger');
 const cloudinaryService = require('../../platform/storage/cloudinary');
 
@@ -928,12 +928,12 @@ router.post('/screenshot-bundle',
             processingStatus: 'done',
           });
           logger.info(`[screenshot-bundle] ${save._id} read in ${Date.now() - start}ms: "${summary.autoTitle}"`);
-          try { await require('../notifications/notificationService').sendJobNotification(req.user.id, { type: 'JOB_COMPLETED', saveId: save._id.toString() }); } catch (e) { logger.warn(`[screenshot-bundle] notify failed: ${e.message}`); }
+          try { await require('../notifications').notificationService.sendJobNotification(req.user.id, { type: 'JOB_COMPLETED', saveId: save._id.toString() }); } catch (e) { logger.warn(`[screenshot-bundle] notify failed: ${e.message}`); }
           return { status: 'success', sessionId, saveId: save._id, summary, imageCount: files.length, thumbnails, processingTimeMs: Date.now() - start };
         } catch (err) {
           logger.error(`[screenshot-bundle] ${save._id} read failed: ${err.message}`);
           await Save.findByIdAndUpdate(save._id, { processingStatus: 'failed', title: (req.body.title || '').trim() || (files.length === 1 ? 'Screenshot' : `${files.length} screenshots`) }).catch(() => {});
-          try { await require('../notifications/notificationService').sendJobNotification(req.user.id, { type: 'JOB_FAILED', saveId: save._id.toString(), message: 'We could not read those screenshots. Open the save and tap Read it again.' }); } catch {}
+          try { await require('../notifications').notificationService.sendJobNotification(req.user.id, { type: 'JOB_FAILED', saveId: save._id.toString(), message: 'We could not read those screenshots. Open the save and tap Read it again.' }); } catch {}
           throw err;
         }
       })();
@@ -1819,7 +1819,7 @@ router.post('/:id/reread', async (req, res) => {
     res.json({ status: 'success', data: save, processing: true });
 
     (async () => {
-      const { analyzeBundle } = require('../extraction/screenshotBundle');
+      const { analyzeBundle } = require('../extraction').screenshotBundle;
       try {
         const summary = await analyzeBundle(files, `reread-${save._id}`, userTitle);
         if (!summary) throw new Error('The read produced nothing.');
@@ -1829,7 +1829,7 @@ router.post('/:id/reread', async (req, res) => {
           aiAnalysis: { summary: summary.masterSummary?.oneLiner || '', keyPoints: summary.masterSummary?.bullets || [], structuredData: null, screenshotAnalysis: { type: 'bundle', data: summary, confidence: summary.confidence || 0.8, allMatches: [] }, processedAt: new Date() },
           processingStatus: 'done',
         });
-        try { await require('../notifications/notificationService').sendJobNotification(req.user.id, { type: 'JOB_COMPLETED', saveId: String(save._id) }); } catch {}
+        try { await require('../notifications').notificationService.sendJobNotification(req.user.id, { type: 'JOB_COMPLETED', saveId: String(save._id) }); } catch {}
         logger.info(`[reread] ${save._id} done`);
       } catch (err) {
         logger.error(`[reread] ${save._id} failed: ${err.message}`);
@@ -1871,7 +1871,7 @@ router.post('/:id/split', async (req, res) => {
         collections: [collection._id],
       });
       made.push(child._id);
-      setImmediate(() => { try { require('../places/resolver').resolvePlaceForSave(child).catch(() => {}); } catch {} });
+      setImmediate(() => { try { require('../places').resolver.resolvePlaceForSave(child).catch(() => {}); } catch {} });
     }
     const all = [...made, ...existing];
     await Collection.updateOne({ _id: collection._id }, { $addToSet: { saves: { $each: all } } });
@@ -1889,7 +1889,7 @@ router.post('/:id/split', async (req, res) => {
 // /go hrefs. Live prices when a provider is configured; partner links always.
 router.get('/:id/offers', async (req, res) => {
   try {
-    const data = await require('../commerce/service').offersForUser(req.params.id, req.user.id, req.query);
+    const data = await require('../commerce').service.offersForUser(req.params.id, req.user.id, req.query);
     res.json({ status: 'success', data });
   } catch (e) {
     logger.error(`[offers] ${e.message}`);

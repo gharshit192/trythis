@@ -7,7 +7,7 @@
 const fs = require('fs');
 const path = require('path');
 const cron = require('node-cron');
-const Save = require('../saves/models/Save');
+const Save = require('../saves').Save;
 const logger = require('../../utils/logger');
 
 const UPLOADS_DIR = process.env.UPLOADS_DIR || path.join(__dirname, '..', '..', '..', 'uploads');

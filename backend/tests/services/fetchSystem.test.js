@@ -2,7 +2,7 @@ jest.mock('../../src/modules/extraction/fetchSystem/handlers/urlHandler', () => 
   fetch: jest.fn(),
 }));
 
-const fetchSystem = require('../../src/modules/extraction/fetchSystem');
+const fetchSystem = require('../../src/modules/extraction').fetchSystem;
 const urlHandler = require('../../src/modules/extraction/fetchSystem/handlers/urlHandler');
 
 describe('fetchSystem.fetchContent', () => {

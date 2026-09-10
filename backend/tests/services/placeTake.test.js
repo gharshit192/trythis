@@ -1,4 +1,4 @@
-const { __test__: { normalizePlaceTake, KNOWN_LABELS }, PLACE_TAKE_VERSION } = require('../../src/modules/saves/insightsEngine');
+const { __test__: { normalizePlaceTake, KNOWN_LABELS }, PLACE_TAKE_VERSION } = require('../../src/modules/saves').insightsEngine;
 
 const full = {
   text: 'Kasol is a small riverside village in the Parvati valley, busier than its size suggests.',

@@ -13,7 +13,7 @@
 //   * At most MAX_RECOVERED per boot, oldest first. A crash loop must not turn
 //     into a self-inflicted stampede of video downloads on every restart.
 
-const Save = require('../saves/models/Save');
+const Save = require('../saves').Save;
 const mediaProcessor = require('./mediaProcessor');
 const logger = require('../../utils/logger');
 

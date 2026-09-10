@@ -6,7 +6,7 @@ const router = express.Router();
 const UploadJob = require('./models/UploadJob');
 const authMiddleware = require('../../platform/http/auth');
 const validateObjectId = require('../../platform/http/validateObjectId');
-const notificationService = require('../notifications/notificationService');
+const notificationService = require('../notifications').notificationService;
 const logger = require('../../utils/logger');
 
 // Multer config: screenshot uploads to temp dir
@@ -79,7 +79,7 @@ router.post('/', upload.single('file'), async (req, res) => {
     logger.info(`[UploadJob] Created job ${job._id} for user ${userId} (${type})`);
 
     // Create temporary Save with processing status
-    const Save = require('../saves/models/Save');
+    const Save = require('../saves').Save;
     const tempSave = await Save.create({
       userId,
       title: type === 'LINK' ? url.trim() : (req.file?.originalname || 'Processing...'),
@@ -132,7 +132,7 @@ router.post('/bundle', upload.array('files', 10), async (req, res) => {
     }
 
     const userTitle = (req.body.title || '').trim();
-    const Save = require('../saves/models/Save');
+    const Save = require('../saves').Save;
     const jobs = [];
     let idx = 0;
     for (const file of req.files) {

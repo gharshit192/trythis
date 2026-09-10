@@ -1,7 +1,7 @@
 const Place = require('./models/Place');
-const Save = require('../saves/models/Save');
+const Save = require('../saves').Save;
 const logger = require('../../utils/logger');
-const insightsEngine = require('../saves/insightsEngine');
+const insightsEngine = require('../saves').insightsEngine;
 
 async function buildPlaceTake(placeId) {
   const place = await Place.findById(placeId);

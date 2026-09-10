@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const logger = require('../../utils/logger');
-const notificationScheduler = require('../notifications/scheduler');
+const notificationScheduler = require('../notifications').scheduler;
 
 // Admin endpoints for testing and debugging (development only)
 

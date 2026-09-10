@@ -1,4 +1,4 @@
-const Save = require('../modules/saves/models/Save');
+const Save = require('../modules/saves').Save;
 const crypto = require('crypto');
 
 /**

@@ -2,26 +2,26 @@ const express = require('express');
 const compression = require('compression');
 const path = require('path');
 const cors = require('cors');
-const authRoutes = require('./modules/auth/routes');
-const savesRoutes = require('./modules/saves/routes');
-const collectionsRoutes = require('./modules/saves/collectionRoutes');
-const searchRoutes = require('./modules/search/routes');
-const knowledgeRoutes = require('./modules/search/knowledgeRoutes');
-const memoryRoutes = require('./modules/memory/routes');
-const recommendationsRoutes = require('./modules/feed/routes');
-const notificationsRoutes = require('./modules/notifications/routes');
-const pushPublicRoutes = require('./modules/notifications/pushPublicRoutes');
-const notificationTestRoutes = require('./modules/notifications/testRoutes');
-const uploadsRoutes = require('./modules/extraction/uploadRoutes');
-const audioProcessingRoutes = require('./modules/extraction/audioRoutes');
-const adminRoutes = require('./modules/admin/routes');
-const shareRoutes = require('./modules/content/shareRoutes');
-const placesRoutes = require('./modules/places/routes');
-const voiceRoutes = require('./modules/voice/routes');
-const askRoutes = require('./modules/ask/routes');
-const blogRoutes = require('./modules/content/blogRoutes');
-const plansRoutes = require('./modules/plans/routes');
-const goRoutes = require('./modules/commerce/routes');
+const authRoutes = require('./modules/auth').routes;
+const savesRoutes = require('./modules/saves').routes;
+const collectionsRoutes = require('./modules/saves').collectionRoutes;
+const searchRoutes = require('./modules/search').routes;
+const knowledgeRoutes = require('./modules/search').knowledgeRoutes;
+const memoryRoutes = require('./modules/memory').routes;
+const recommendationsRoutes = require('./modules/feed').routes;
+const notificationsRoutes = require('./modules/notifications').routes;
+const pushPublicRoutes = require('./modules/notifications').pushPublicRoutes;
+const notificationTestRoutes = require('./modules/notifications').testRoutes;
+const uploadsRoutes = require('./modules/extraction').uploadRoutes;
+const audioProcessingRoutes = require('./modules/extraction').audioRoutes;
+const adminRoutes = require('./modules/admin').routes;
+const shareRoutes = require('./modules/content').shareRoutes;
+const placesRoutes = require('./modules/places').routes;
+const voiceRoutes = require('./modules/voice').routes;
+const askRoutes = require('./modules/ask').routes;
+const blogRoutes = require('./modules/content').blogRoutes;
+const plansRoutes = require('./modules/plans').routes;
+const goRoutes = require('./modules/commerce').routes;
 const errorHandler = require('./platform/http/errorHandler');
 
 const app = express();
@@ -63,15 +63,15 @@ app.get('/status', (req, res) => {
     db: process.env.DATABASE_URL ? 'SET' : 'NOT SET',
     redis: process.env.REDIS_URL ? 'SET' : 'NOT SET',
     jwt: process.env.JWT_SECRET ? 'SET' : 'NOT SET',
-    email: require('./modules/notifications/emailService').emailProvider(),
+    email: require('./modules/notifications').emailService.emailProvider(),
     // Why the last email did not go. Resend accepts the call and then refuses
     // delivery when the sender is its sandbox address, so a 200 in the logs is
     // not proof anything arrived.
-    lastEmailError: require('./modules/notifications/emailService').lastEmailError() || null,
+    lastEmailError: require('./modules/notifications').emailService.lastEmailError() || null,
     instagramSession: process.env.YTDLP_COOKIES_B64 || process.env.YTDLP_COOKIES_FILE ? 'SET' : 'NOT SET',
     emailFrom: process.env.RESEND_FROM || process.env.EMAIL_FROM || 'Wanna Try <onboarding@resend.dev> (sandbox: delivers only to the Resend account owner)',
     frontend: process.env.FRONTEND_URL || 'NOT SET',
-    commerce: require('./modules/commerce/providers/cuelinks').status(),
+    commerce: require('./modules/commerce').cuelinks.status(),
   });
 });
 

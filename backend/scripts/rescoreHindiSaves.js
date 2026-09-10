@@ -22,7 +22,7 @@ require('dotenv').config();
 if (process.env.ENV_FILE) require('dotenv').config({ path: process.env.ENV_FILE, override: true });
 
 const mongoose = require('mongoose');
-const Save = require('../src/modules/saves/models/Save');
+const Save = require('../src/modules/saves').Save;
 const { __test__ } = require('../src/modules/extraction/hindiOcr');
 
 const { mergeTranscriptions } = __test__;

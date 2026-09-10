@@ -6,7 +6,7 @@
 const mockCreate = jest.fn();
 jest.mock('@anthropic-ai/sdk', () => function Anthropic() { return { messages: { create: mockCreate } }; });
 
-const { extractFromText, fromRating } = require('../../src/modules/memory/engine/extract');
+const { extractFromText, fromRating } = require('../../src/modules/memory').extract;
 
 const reply = (obj) => ({ content: [{ type: 'text', text: JSON.stringify(obj) }] });
 const one = (over = {}) => ({

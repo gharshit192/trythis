@@ -1,7 +1,7 @@
 // Weekend plans from your own saves (brief §27).
 const express = require('express');
 const authMiddleware = require('../../platform/http/auth');
-const Save = require('../saves/models/Save');
+const Save = require('../saves').Save;
 const WeekendPlan = require('./models/WeekendPlan');
 const planner = require('./weekendPlanner');
 const logger = require('../../utils/logger');

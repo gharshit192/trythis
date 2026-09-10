@@ -7,7 +7,7 @@
 // Scheduled via node-cron. Also exported as runOnce() for tests.
 
 const cron = require('node-cron');
-const User = require('../users/models/User');
+const User = require('../users').User;
 const logger = require('../../utils/logger');
 const {
   evaluateNotifications,

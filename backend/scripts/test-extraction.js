@@ -3,12 +3,12 @@ const path = require('path');
 const axios = require('axios');
 const cheerio = require('cheerio');
 
-const extractionEngine = require('../src/modules/extraction/extractionEngine');
+const extractionEngine = require('../src/modules/extraction').engine;
 const { extractByCategoryWrapper } = require('../src/modules/extraction/extractionEngine/categories');
-const { classifyByDomain, EXTRACTOR_TO_SAVE_CATEGORY } = require('../src/modules/extraction/extractionEngine/domainClassifier');
+const { classifyByDomain, EXTRACTOR_TO_SAVE_CATEGORY } = require('../src/modules/extraction').domainClassifier;
 const llm = require('../src/platform/llm');
 const audioAnalyzer = require('../src/modules/extraction/audioAnalyzer');
-const transcription = require('../src/modules/extraction/transcription');
+const transcription = require('../src/modules/extraction').transcription;
 
 // DOMAIN_RULES and classifyByDomain moved to src/services/extractionEngine/
 // domainClassifier.js and are imported at the top — shared with the live

@@ -1,4 +1,4 @@
-const Save = require('../../../saves/models/Save');
+const Save = require('../../../saves').Save;
 const logger = require('../../../../utils/logger');
 
 // Keys must match Save.category enum values (food/cafes/experiences/…, not

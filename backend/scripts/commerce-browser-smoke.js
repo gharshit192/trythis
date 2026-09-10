@@ -10,8 +10,8 @@ process.env.JWT_SECRET = 'isolated-commerce-browser-test';
 process.env.CUELINKS_CAMPAIGNS_JSON = '{}';
 delete process.env.TRAVELPAYOUTS_TOKEN;
 const app = require('../src/app');
-const Save = require('../src/modules/saves/models/Save');
-const User = require('../src/modules/users/models/User');
+const Save = require('../src/modules/saves').Save;
+const User = require('../src/modules/users').User;
 const listen = (server) => new Promise((resolve) => { const instance = server.listen(0, '127.0.0.1', () => resolve(instance)); });
 
 async function main() {

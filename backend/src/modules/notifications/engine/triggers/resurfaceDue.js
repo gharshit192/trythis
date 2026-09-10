@@ -1,10 +1,10 @@
 // Fires a memory on the date the user asked for (ADR 0016): "follow up in six
 // months" → resurfaceAt → one notification, once. The age-based `resurface`
 // trigger is a different thing (saves that went quiet); this one is a promise.
-const Save = require('../../../saves/models/Save');
+const Save = require('../../../saves').Save;
 const logger = require('../../../../utils/logger');
 
-const User = require('../../../users/models/User');
+const User = require('../../../users').User;
 
 // IST hour, so 'morning' means the 9am run and 'evening' the 8pm run of the scheduler.
 const istHour = () => (new Date(Date.now() + 5.5 * 3600000)).getUTCHours();

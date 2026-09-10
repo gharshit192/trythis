@@ -1,4 +1,4 @@
-const { rollupSignals, statementsFrom } = require('../../src/modules/users/behaviorRollup');
+const { rollupSignals, statementsFrom } = require('../../src/modules/users').behaviorRollup;
 
 const d = (n) => new Date(Date.now() - n * 86400000);
 const save = (over = {}) => ({ _id: `s${Math.random().toString(36).slice(2, 8)}`, title: 'Thing', category: 'cafes', intentStatus: 'saved', createdAt: d(10), ...over });

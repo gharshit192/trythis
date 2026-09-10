@@ -2,8 +2,8 @@ const express = require('express');
 
 const router = express.Router();
 const authMiddleware = require('../../platform/http/auth');
-const { getUserSignals } = require('../users/behaviorRollup/refresh');
-const { statementsFrom } = require('../users/behaviorRollup');
+const { getUserSignals } = require('../users').refresh;
+const { statementsFrom } = require('../users').behaviorRollup;
 const logger = require('../../utils/logger');
 
 router.use(authMiddleware);

@@ -5,7 +5,7 @@ const Place = require('../models/Place');
 const logger = require('../../../utils/logger');
 const { buildCanonicalKey } = require('../../../utils/canonicalKey');
 const { toPoint, haversineMetres } = require('../../../utils/geo');
-const { fold, withinEditDistance, slackFor } = require('../../search/engine/fold');
+const { fold, withinEditDistance, slackFor } = require('../../search').fold;
 
 const TRAVEL_CATEGORIES = ['travel', 'hotels', 'hotel'];
 // Anything you go *to*. A recipe, a film or a jacket has a location only by
@@ -38,7 +38,7 @@ function deriveCategory(save, tags = []) {
 }
 
 const TAKE_TTL_DAYS = 30;
-const { PLACE_TAKE_VERSION } = require('../../saves/insightsEngine');
+const { PLACE_TAKE_VERSION } = require('../../saves').insightsEngine;
 
 function isTakeStale(place) {
   const take = place?.aggregatedTake;

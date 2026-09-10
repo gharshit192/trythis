@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 const Offer = require('./models/Offer');
-const Save = require('../saves/models/Save');
+const Save = require('../saves').Save;
 const tp = require('./providers/travelpayouts');
 const links = require('./providers/links');
 const cuelinks = require('./providers/cuelinks');

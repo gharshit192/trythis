@@ -10,11 +10,11 @@ if (process.env.NODE_ENV !== 'production') {
 const app = require('./app');
 const connectDB = require('./config/database');
 const redisClient = require('./config/redis');
-const purgeScreenshots = require('./modules/extraction/purgeScreenshots');
-const notificationScheduler = require('./modules/notifications/scheduler');
-const { recoverStuckSaves } = require('./modules/extraction/recoverStuckSaves');
-const { cleanupBundles } = require('./modules/extraction/cleanupBundles');
-const uploadWorker = require('./modules/extraction/uploadWorker');
+const purgeScreenshots = require('./modules/extraction').purgeScreenshots;
+const notificationScheduler = require('./modules/notifications').scheduler;
+const { recoverStuckSaves } = require('./modules/extraction').recoverStuckSaves;
+const { cleanupBundles } = require('./modules/extraction').cleanupBundles;
+const uploadWorker = require('./modules/extraction').uploadWorker;
 
 const PORT = process.env.PORT || 4000;
 let dbConnected = false;
@@ -67,7 +67,7 @@ const initializeServer = async () => {
         console.log('⏭️  Redis skipped (no REDIS_URL)');
       }
 
-      require('./modules/commerce/workers/cuelinksWorker').start();
+      require('./modules/commerce').cuelinksWorker.start();
 
       // Start upload worker (runs in all modes)
       console.log('[DEBUG] Starting upload worker...');

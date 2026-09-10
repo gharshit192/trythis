@@ -1,5 +1,5 @@
 const logger = require('../../../utils/logger');
-const UserBehavior = require('../../users/models/UserBehavior');
+const UserBehavior = require('../../users').UserBehavior;
 
 const buildBehaviorRecord = (userId, behavior) => ({
   userId,

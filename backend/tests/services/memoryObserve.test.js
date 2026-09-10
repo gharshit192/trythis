@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 const { startMongo, stopMongo, clearDb } = require('../helpers/mongo');
 const Memory = require('../../src/modules/memory/models/Memory');
 const MemoryTombstone = require('../../src/modules/memory/models/MemoryTombstone');
-const { observeOne, observe, retract } = require('../../src/modules/memory/engine/observe');
+const { observeOne, observe, retract } = require('../../src/modules/memory').observe;
 
 const userId = new mongoose.Types.ObjectId();
 

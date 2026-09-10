@@ -1,7 +1,7 @@
 const axios = require('axios');
 const universal = require('../../src/modules/extraction/fetchSystem/handlers/universal');
 const instagram = require('../../src/modules/extraction/fetchSystem/handlers/providers/instagram');
-const { classifyUrl } = require('../../src/modules/extraction/urlClassifier');
+const { classifyUrl } = require('../../src/modules/extraction').urlClassifier;
 const cookies = require('../../src/utils/ytdlpCookies');
 const fs = require('fs');
 

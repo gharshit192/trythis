@@ -6,12 +6,12 @@
 // by number, and offers two or three follow-ups. It never invents a place the
 // user did not save; when nothing matches it says so.
 const Anthropic = require('@anthropic-ai/sdk');
-const Save = require('../saves/models/Save');
+const Save = require('../saves').Save;
 const Conversation = require('./models/Conversation');
 const { parseJsonSafely } = require('../../platform/llm/claude');
-const { buildBrief } = require('../memory/engine/brief');
-const { extractFromText } = require('../memory/engine/extract');
-const { observe } = require('../memory/engine/observe');
+const { buildBrief } = require('../memory').brief;
+const { extractFromText } = require('../memory').extract;
+const { observe } = require('../memory').observe;
 const logger = require('../../utils/logger');
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });

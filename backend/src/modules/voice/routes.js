@@ -5,10 +5,10 @@ const fs = require('fs');
 const os = require('os');
 const multer = require('multer');
 const router = express.Router();
-const Save = require('../saves/models/Save');
+const Save = require('../saves').Save;
 const authMiddleware = require('../../platform/http/auth');
 const { memoryFromAudio, restructureFromTranscript } = require('./service');
-const autoCollectionEngine = require('../saves/autoCollection');
+const autoCollectionEngine = require('../saves').autoCollection;
 const logger = require('../../utils/logger');
 
 const upload = multer({

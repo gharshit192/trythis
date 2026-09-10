@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const Save = require('../saves/models/Save');
+const Save = require('../saves').Save;
 const Recommendation = require('./models/Recommendation');
 const authMiddleware = require('../../platform/http/auth');
 const recommendationEngine = require('./engine');

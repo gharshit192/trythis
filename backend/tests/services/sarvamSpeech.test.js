@@ -1,4 +1,4 @@
-const sarvamSpeech = require('../../src/modules/voice/sarvamSpeech');
+const sarvamSpeech = require('../../src/modules/voice').sarvamSpeech;
 
 const { pickTranscript, pickLanguage } = sarvamSpeech.__test__;
 

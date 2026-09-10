@@ -6,8 +6,8 @@ const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 
 const { startMongo, stopMongo, clearDb } = require('../helpers/mongo');
-const Save = require('../../src/modules/saves/models/Save');
-const UserBehavior = require('../../src/modules/users/models/UserBehavior');
+const Save = require('../../src/modules/saves').Save;
+const UserBehavior = require('../../src/modules/users').UserBehavior;
 const SearchLog = require('../../src/modules/search/models/SearchLog');
 
 // Mounted on a bare app rather than src/app.js: the full app pulls in `uuid`,
@@ -15,8 +15,8 @@ const SearchLog = require('../../src/modules/search/models/SearchLog');
 // currently fails to run). The routers under test are the real ones.
 const app = express();
 app.use(express.json());
-app.use('/search', require('../../src/modules/search/routes'));
-app.use('/knowledge', require('../../src/modules/search/knowledgeRoutes'));
+app.use('/search', require('../../src/modules/search').routes);
+app.use('/knowledge', require('../../src/modules/search').knowledgeRoutes);
 
 const userId = new mongoose.Types.ObjectId();
 const token = jwt.sign({ id: userId.toString() }, process.env.JWT_SECRET);

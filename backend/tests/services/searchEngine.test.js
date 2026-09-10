@@ -1,4 +1,4 @@
-const { fold, transliterate, withinEditDistance } = require('../../src/modules/search/engine/fold');
+const { fold, transliterate, withinEditDistance } = require('../../src/modules/search').fold;
 const { searchSaves, scoreSave } = require('../../src/modules/search/engine');
 
 const save = (over = {}) => ({

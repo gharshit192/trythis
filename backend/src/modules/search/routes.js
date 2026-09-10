@@ -2,7 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 
 const router = express.Router();
-const Save = require('../saves/models/Save');
+const Save = require('../saves').Save;
 const SearchLog = require('./models/SearchLog');
 const authMiddleware = require('../../platform/http/auth');
 const { searchSaves, SEARCH_SELECT } = require('./engine');

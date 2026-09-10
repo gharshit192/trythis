@@ -153,7 +153,7 @@ async function resolvePlace(name) {
   try {
     // Required lazily: locationExtractor is imported by pure-function tests that
     // have no database, and the geocoder needs the cache model.
-    const geocoder = require('../places/geocoder');
+    const geocoder = require('../places').geocoder;
     const hit = await geocoder.geocode(name);
     if (!hit) return null;
     return {

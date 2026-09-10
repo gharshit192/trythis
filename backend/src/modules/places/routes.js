@@ -1,7 +1,7 @@
 const express = require('express');
 const { toPoint, haversineMetres } = require('../../utils/geo');
 const authMiddleware = require('../../platform/http/auth');
-const Save = require('../saves/models/Save');
+const Save = require('../saves').Save;
 const router = express.Router();
 const Place = require('./models/Place');
 
@@ -24,7 +24,7 @@ router.get('/trending', async (req, res) => {
 const INTEREST_CATS = { cafes: ['cafe'], street_food: ['street_food', 'food'], restaurants: ['restaurant'], trips: ['travel', 'hotel'], recipes: ['recipe', 'cooking'], shopping: ['shopping', 'home-decor'], fashion: ['fashion', 'beauty'], films: ['film', 'movie', 'show'], books: ['book'], experiences: ['experience'], fitness: ['fitness'], gadgets: ['tech'] };
 router.get('/picks', authMiddleware, async (req, res) => {
   try {
-    const User = require('../users/models/User');
+    const User = require('../users').User;
     const me = await User.findById(req.user.id).select('interests preferences location settings.location').lean();
     const limit = Math.min(parseInt(req.query.limit) || 15, 40);
     const city = (req.query.city || me?.location?.city || me?.settings?.location?.city || '').trim();

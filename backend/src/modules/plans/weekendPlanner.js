@@ -3,8 +3,8 @@
 // One small Claude call orders and times them; a deterministic fallback
 // guarantees a plan even if the model is down. Never invents a place.
 const Anthropic = require('@anthropic-ai/sdk');
-const Save = require('../saves/models/Save');
-const User = require('../users/models/User');
+const Save = require('../saves').Save;
+const User = require('../users').User;
 const WeekendPlan = require('./models/WeekendPlan');
 const { parseJsonSafely } = require('../../platform/llm/claude');
 const logger = require('../../utils/logger');

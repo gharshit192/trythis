@@ -2,14 +2,14 @@ jest.mock('../../src/modules/users/models/UserBehavior', () => ({
   create: jest.fn(),
 }));
 
-const UserBehavior = require('../../src/modules/users/models/UserBehavior');
+const UserBehavior = require('../../src/modules/users').UserBehavior;
 const {
   trackBehavior,
   persistBehavior,
   detectTriggers,
   generateNotification,
   __test__: { isWeekendApproaching, isVacationPeriod, isBirthdayMonth, calculateOptimalTime },
-} = require('../../src/modules/feed/retention');
+} = require('../../src/modules/feed').retention;
 
 describe('trackBehavior', () => {
   it('returns the record shape without doing IO', () => {
