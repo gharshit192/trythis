@@ -66,6 +66,7 @@ Status format: `Proposed - YYYY-MM-DD` / `Accepted - YYYY-MM-DD` /
   the API for SEO; one env-configured web admin writes it
 
 - [ADR 0022](0022-cuelinks-contextual-merchant-links.md) - Verified Cuelinks links, platform restrictions and separate inventory. *Accepted*
+- [ADR 0023](0023-one-node-modular-monolith.md) - One Node modular monolith; PRD polyglot stack (Flutter/Java/FastAPI/Postgres) rejected. *Accepted*
 
 ## Maintenance Rules
 

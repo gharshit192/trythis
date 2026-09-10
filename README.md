@@ -24,6 +24,7 @@ bet is timing, not storage.
 | [docs/testing.md](docs/testing.md) | How to verify changes |
 | [docs/design-system.md](docs/design-system.md) | Canonical UI tokens, type scale, component specs |
 | [docs/code-patterns.md](docs/code-patterns.md) | Feature implementation workflow + patterns |
+| [docs/prd/](docs/prd/) | Author-written PRDs (product + mobile + target architecture). **Proposed, not adopted** |
 | [docs/adr/](docs/adr/) | Decision records (extraction, OCR, notifications, frontend) |
 
 ## Layout

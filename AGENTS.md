@@ -52,6 +52,8 @@ shared/         Shared spec docs (API_SPEC, DATA_MODELS).
 trythis-seed-data/  Seed URLs for exercising the extraction pipeline.
 docs/           Canonical documentation (see README for the map).
 docs/design/    The UI design: PDF + per-screen HTML sources (ADR 0013).
+docs/prd/       Author-written PRDs. TARGET-STATE, NOT ADOPTED — see docs/prd/README.md.
+                Stack response is decided: ADR 0023 (Node monolith; PRD stack rejected).
 uploads/        Local upload/bundle storage (screenshot bundles, thumbnails).
 ```
 
