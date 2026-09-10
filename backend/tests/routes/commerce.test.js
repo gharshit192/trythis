@@ -4,7 +4,10 @@ const request = require('supertest');
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 jest.mock('../../src/modules/commerce/providers/travelpayouts', () => ({ configured: jest.fn(() => false), hotels: jest.fn(), flights: jest.fn() }));
-jest.mock('../../src/platform/events', () => ({ track: jest.fn() }));
+jest.mock('../../src/platform/events', () => ({
+  ...jest.requireActual('../../src/platform/events'),
+  track: jest.fn(),   // only analytics is stubbed; the bus stays real so wiring is exercised
+}));
 const app = require('../../src/app');
 const Save = require('../../src/modules/saves').Save;
 const Offer = require('../../src/modules/commerce/models/Offer');

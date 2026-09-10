@@ -13,14 +13,13 @@ const os = require('os');
 const crypto = require('crypto');
 const Save = require('../../saves').Save;
 const audioAnalyzer = require('../audioAnalyzer');
-const autoCollectionEngine = require('../../saves').autoCollection;
 const frameExtractor = require('../frameExtractor');
 const claudeService = require('../../../platform/llm/claude');
 const sarvamSpeech = require('../../voice').sarvamSpeech;
 const geminiText = require('../../../platform/llm/gemini');
 const locationExtractor = require('../locationExtractor');
 const placeResolver = require('../../places').resolver;
-const notificationService = require('../../notifications').notificationService;
+const events = require('../../../platform/events');
 const { looksLikeHallucination } = require('../../../utils/hallucinationGuard');
 const typeToCategory = require('../../../utils/structuredTypeToCategory');
 const { resolveCategory } = typeToCategory;
@@ -508,11 +507,7 @@ const processSave = async (saveId) => {
     // This is the moment the reel is actually read (or given up on), so this is
     // where the user hears about it — not when the worker handed it off.
     if (doc?.userId && (status === 'done' || status === 'partial' || status === 'failed')) {
-      notificationService.sendJobNotification(doc.userId, {
-        type: status === 'failed' ? 'JOB_FAILED' : 'JOB_COMPLETED',
-        saveId,
-        message: status === 'failed' ? 'We could not read that reel. Open it and tap "Read it again".' : undefined,
-      }).catch((e) => logger.warn(`[mediaProcessor ${saveId}] ready notification failed: ${e.message}`));
+      events.emit(events.names.SAVE_PROCESSED, { saveId, userId: doc.userId, status });
     }
   };
 
@@ -922,11 +917,7 @@ const processSave = async (saveId) => {
         }
         logger.info(`[mediaProcessor ${saveId}] analysis done (type=${analysis.structuredData.type}, tags=${analysis.audioTags.length}, title="${updated.title}")`);
 
-        try {
-          await autoCollectionEngine.assignSave(updated);
-        } catch (e) {
-          logger.warn(`[mediaProcessor ${saveId}] auto-collection assign failed: ${e.message}`);
-        }
+        events.emit(events.names.SAVE_ENRICHED, { saveId, userId: updated.userId, save: updated });
       }
     } catch (err) {
       logger.warn(`[mediaProcessor ${saveId}] transcription/analysis failed: ${err.message}`);

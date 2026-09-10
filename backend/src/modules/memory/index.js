@@ -5,4 +5,5 @@ module.exports = {
   get brief() { return require('./engine/brief'); },
   get extract() { return require('./engine/extract'); },
   get observe() { return require('./engine/observe'); },
+  get provenance() { return require('./provenance'); },
 };

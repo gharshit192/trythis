@@ -14,12 +14,17 @@ const mongoose = require('mongoose');
 //      and keeps the old row.
 const evidenceSchema = new mongoose.Schema({
   kind: { type: String, enum: ['ask_turn', 'explicit', 'rating', 'voice', 'save', 'correction'], required: true },
+  // Did the user tell us, or did we work it out? (technical PRD §52). Derived from
+  // `kind` when absent, so rows written before this field still answer the question.
+  provenance: { type: String, enum: ['stated', 'observed'], default: undefined },
   refId: { type: mongoose.Schema.Types.ObjectId, default: null },   // Save / Conversation
   quote: { type: String, required: true },     // the user's own words, verbatim
   polarity: { type: Number, enum: [1, -1], default: 1 },
   weight: { type: Number, default: 1 },
   observedAt: { type: Date, default: () => new Date() },
 }, { _id: false });
+
+const { provenanceOf, basisOf } = require('../provenance');
 
 const memorySchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
@@ -88,5 +93,25 @@ const memorySchema = new mongoose.Schema({
 memorySchema.index({ userId: 1, subject: 1, status: 1 });
 // The brief: the memories worth putting in a prompt.
 memorySchema.index({ userId: 1, status: 1, importance: -1 });
+
+// Stamp provenance from the channel, so no write can forget it.
+memorySchema.pre('validate', function stampProvenance() {
+  for (const e of this.evidence || []) {
+    if (!e.provenance) e.provenance = provenanceOf(e.kind);
+  }
+  // `derived` drives the words shown to the user ("you told me" vs "from what you
+  // save"), but it was set by whoever built the candidate and could contradict the
+  // evidence. A memory resting only on behaviour cannot claim to be something the
+  // user said, so ground the flag rather than trusting it (technical PRD §52).
+  if (basisOf(this.evidence || []) === 'observed') this.derived = true;
+});
+
+// What this memory as a whole rests on: 'stated', 'observed' or 'mixed'.
+// Experience DNA (§44) shows this, and must never render 'observed' as 'stated'.
+memorySchema.virtual('basis').get(function getBasis() {
+  return basisOf(this.evidence || []);
+});
+memorySchema.set('toJSON', { virtuals: true });
+memorySchema.set('toObject', { virtuals: true });
 
 module.exports = mongoose.model('Memory', memorySchema);

@@ -1,4 +1,5 @@
 const express = require('express');
+const { basisOf } = require('./provenance');
 
 const router = express.Router();
 const Memory = require('./models/Memory');
@@ -30,6 +31,9 @@ const shape = (m) => ({
   // Where it came from, in the user's terms. An inferred memory must never be
   // described as something they told us.
   source: m.derived ? 'from what you save' : 'you told me',
+  // Which kind of evidence this rests on: 'stated', 'observed' or 'mixed'.
+  // Experience DNA (§44) needs it to avoid presenting inference as fact.
+  basis: m.basis || basisOf(m.evidence || []),
   learnedAt: m.firstObservedAt,
   scope: m.scope?.contextLabel ? `only for ${m.scope.contextLabel}` : null,
   expiresAt: m.scope?.validUntil || null,

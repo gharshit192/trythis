@@ -45,6 +45,7 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
+require('./subscriptions')();   // who reacts to which event — see platform/events/names.js
 const requestContext = require('./platform/observability/requestContext');
 app.use(requestContext);   // request id + per-route latency + one structured line per response
 app.use(compression());

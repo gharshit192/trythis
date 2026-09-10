@@ -12,4 +12,7 @@ const track = (name, userId, props = {}) => {
   Event.create({ name, userHash: userHash(userId), props: safe }).catch(() => {});
 };
 
-module.exports = { track, userHash };
+const bus = require('./bus');
+const names = require('./names');
+
+module.exports = { track, userHash, ...bus, names };
