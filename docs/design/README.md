@@ -5,10 +5,18 @@ The canonical UI design for `frontend-app/`, decided 2026-09-02. Read
 [ADR 0013](../adr/0013-text-first-ui-no-thumbnails.md) and
 [ADR 0024](../adr/0024-photo-when-we-have-one.md) for the reasoning.
 
-- **`wanna-try-redesign.pdf`** — all 19 screens at phone size, one per page.
-  Rows: the first ten minutes (welcome → city → interests → import → reading
-  reels → your list), the app (home, explore, item, multi-place reel, saved,
-  tried, your taste), and notifications / trips / voice.
+- **`wanna-try-redesign.pdf`** — all 29 screens at phone size, one per page, in
+  five rows:
+  1. **First ten minutes** — welcome, city, interests, taste, import, reading
+     reels, your list
+  2. **The app** — home, home with nothing saved, explore, search, item, saved,
+     saved on a map
+  3. **Capture** — multi-place reel, saved/why this one, saved/one question,
+     did you go, tried it
+  4. **Bringing it back** — notifications, remind me, travel save, new trip,
+     day-wise plan
+  5. **Voice, asking, what we learned** — voice capture, voice document, ask,
+     your taste, you
 - **`screens/*.dc.html`** — the source of each screen. Plain HTML with inline
   styles; open any file in a browser to see it at 390×844.
 - **`screens/canvas.json`** — page order and the sticky-note annotations.

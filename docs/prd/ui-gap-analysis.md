@@ -108,7 +108,33 @@ Genuine changes, now made:
 whether it came from *"You said this"* (explicit) or *"We noticed this"*
 (inferred). That distinction has to exist in the schema before the screen can ship.
 
-## 4. Suggested order
+## 4. Coverage after this pass
+
+The design set was 17 screens against 34 app routes, so roughly half the product
+had no design and several PRD sections had no screen anywhere. Now 29 artboards.
+
+Added in this pass:
+
+| Screen | PRD | Was it in the app? |
+| --- | --- | --- |
+| TasteCalibration | §9 | no |
+| ExperienceDNA | §44 | no |
+| Search | §16 natural language | yes, undesigned |
+| Ask | §45 personal AI | yes, undesigned |
+| Profile | §43 Me | yes, undesigned |
+| SavedMap | §33, §34 | yes, undesigned |
+| HomeEmpty | §13 zero-data home | yes, undesigned |
+| AddSave | §22 save + reason chips | yes, undesigned |
+| LowConfidence | §27 never silently save a wrong entity | **no** |
+| RemindMe | §31 | **no** |
+| TripCreate | §36 | **no** |
+| VisitedPrompt | §40 | **no** |
+
+Still undesigned, lower value: `collections` / `collection-detail`, `place`,
+`year-recap`, `weekend-plan`, `screenshot-summary`, `nearby`, auth screens, and
+§50 error states. §38 trip map and §39 group planning are later-phase per the PRD.
+
+## 5. Suggested order
 
 1. **Decide whether onboarding is re-enabled.** Everything in §1 is blocked on it,
    and the screens are already written — this is a product call, not a build
