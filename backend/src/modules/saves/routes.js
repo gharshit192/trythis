@@ -977,10 +977,9 @@ router.post('/screenshot-bundle/:sessionId/refine',
         .filter(Boolean);
 
       const response = await client.messages.create({
-        model: 'claude-sonnet-4-6',
+        model: 'claude-sonnet-5',
         max_tokens: 2048,
-        temperature: 0,
-        messages: [{
+        output_config: { effort: 'low' }, messages: [{
           role: 'user',
           content: [
             ...imageContents,

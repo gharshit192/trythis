@@ -16,7 +16,7 @@ const { observe } = require('../memory').observe;
 const logger = require('../../utils/logger');
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-const MODEL = process.env.CLAUDE_ASK_MODEL || process.env.CLAUDE_MEMORY_MODEL || 'claude-sonnet-4-6';
+const MODEL = process.env.CLAUDE_ASK_MODEL || process.env.CLAUDE_MEMORY_MODEL || 'claude-sonnet-5';
 const MAX_SAVES = 90;          // ~35k chars of index at the compact line size
 const MAX_TURNS = 12;          // prior messages sent back to the model
 
@@ -143,7 +143,9 @@ async function ask({ userId, question, conversationId, user }) {
   let out = null;
   for (let attempt = 0; attempt < 2 && !out; attempt += 1) {
     try {
-      const res = await client.messages.create({ model: MODEL, max_tokens: 900, temperature: 0.2, system: SYSTEM, messages: [{ role: 'user', content: prompt }] });
+      // No temperature: Sonnet 5 rejects sampling parameters with a 400, and omitting
+      // it is safe on every model this const can resolve to.
+      const res = await client.messages.create({ model: MODEL, max_tokens: 900, system: SYSTEM, messages: [{ role: 'user', content: prompt }] });
       const text = res.content?.[0]?.text || '';
       out = parseTagged(text) || (parseJsonSafely(text)?.answer ? parseJsonSafely(text) : null);
       if (!out) logger.warn(`[ask] unparseable reply (attempt ${attempt + 1}): ${text.slice(0, 200)}`);

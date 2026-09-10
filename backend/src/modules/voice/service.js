@@ -17,7 +17,7 @@ const { parseJsonSafely } = require('../../platform/llm/claude');
 const logger = require('../../utils/logger');
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-const MODEL = process.env.CLAUDE_MEMORY_MODEL || 'claude-sonnet-4-6';
+const MODEL = process.env.CLAUDE_MEMORY_MODEL || 'claude-sonnet-5';
 
 // The speech APIs are told the file is WAV; make sure it is. Opus bytes with a
 // .wav label decode as noise and come back as a confident, wrong transcript.
@@ -105,7 +105,7 @@ const resolveResurfaceAt = ({ relative, absoluteDate }, now = new Date()) => {
 
 const structure = async (transcript, now) => {
   const msg = await client.messages.create({
-    model: MODEL, max_tokens: 1500, temperature: 0, system: SYSTEM,   // the richer schema (key points, stops) overran 600 and truncated the JSON
+    model: MODEL, max_tokens: 1500, output_config: { effort: 'low' }, system: SYSTEM,   // the richer schema (key points, stops) overran 600 and truncated the JSON
     messages: [{ role: 'user', content: `Today is ${now.toISOString().slice(0, 10)}.\nNote (English translation of what was said):\n${transcript}` }],
   });
   const parsed = parseJsonSafely(msg?.content?.[0]?.text || '') || {};

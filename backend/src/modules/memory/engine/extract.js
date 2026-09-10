@@ -14,7 +14,7 @@ const { parseJsonSafely } = require('../../../platform/llm/claude');
 const logger = require('../../../utils/logger');
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-const MODEL = process.env.CLAUDE_MEMORY_MODEL || 'claude-sonnet-4-6';
+const MODEL = process.env.CLAUDE_MEMORY_MODEL || 'claude-sonnet-5';
 
 const SYSTEM = `You extract durable facts about a user from something they said, for an app where they save places, food, trips and ideas they want to try.
 
@@ -57,8 +57,7 @@ async function extractFromText(text, { now = new Date() } = {}) {
     const res = await client.messages.create({
       model: MODEL,
       max_tokens: 800,
-      temperature: 0,
-      system: SYSTEM,
+      output_config: { effort: 'low' }, system: SYSTEM,
       messages: [{ role: 'user', content: `Today is ${now.toISOString().slice(0, 10)}.\nThe user said:\n${input}` }],
     });
     parsed = parseJsonSafely(res?.content?.[0]?.text || '');

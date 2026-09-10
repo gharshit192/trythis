@@ -50,10 +50,17 @@ const parseJsonSafely = (text) => {
 };
 
 const callClaude = async ({ model, maxTokens, content }) => {
+  // The two model families take opposite parameters for the same intent. Haiku 4.5
+  // still takes `temperature`; Sonnet 5 rejects it with a 400 and expresses "be
+  // mechanical about this" as low effort, which also keeps it from paying for
+  // adaptive thinking on an OCR pass. This helper serves both, so it branches.
+  const mechanical = model.startsWith('claude-sonnet-5')
+    ? { output_config: { effort: 'low' } }
+    : { temperature: 0 };
   const response = await client.messages.create({
     model,
     max_tokens: maxTokens,
-    temperature: 0,
+    ...mechanical,
     messages: [{ role: 'user', content }],
   });
   return response.content[0]?.type === 'text' ? response.content[0].text : '';
@@ -791,7 +798,7 @@ const runWithGemini = async (imageContents) => {
 
 const runWithClaude = async (imageContents) => {
   const text = await callClaude({
-    model: 'claude-sonnet-4-6',
+    model: 'claude-sonnet-5',
     maxTokens: 4096,
     content: [...imageContents, { type: 'text', text: buildHindiOcrPrompt() }],
   });
@@ -1078,8 +1085,7 @@ const TESSERACT_MIN_CONFIDENCE = parseFloat(process.env.TESSERACT_MIN_CONFIDENCE
 const readNumbersPass = async (imageContents) => {
   try {
     const msg = await client.messages.create({
-      model: 'claude-sonnet-4-6', max_tokens: 700, temperature: 0,
-      messages: [{ role: 'user', content: [...imageContents, { type: 'text', text: 'List every number visible in this image, in reading order, one per line, exactly as printed (keep Devanagari digits as Devanagari, keep ₹, %, dates and phone numbers whole). Read each digit carefully. No commentary, no numbering of your own.' }] }],
+      model: 'claude-sonnet-5', max_tokens: 700, output_config: { effort: 'low' }, messages: [{ role: 'user', content: [...imageContents, { type: 'text', text: 'List every number visible in this image, in reading order, one per line, exactly as printed (keep Devanagari digits as Devanagari, keep ₹, %, dates and phone numbers whole). Read each digit carefully. No commentary, no numbering of your own.' }] }],
     });
     const text = msg.content?.[0]?.type === 'text' ? msg.content[0].text : '';
     return String(text).split('\n').map((l) => l.trim()).filter(Boolean);
@@ -1282,7 +1288,7 @@ const tileImage = async (content) => {
 // One band → its lines, in order.
 const readBand = async (band, index, total) => {
   const text = await callClaude({
-    model: 'claude-sonnet-4-6',
+    model: 'claude-sonnet-5',
     maxTokens: 1500,
     content: [band, { type: 'text', text: `This is band ${index + 1} of ${total} of a single page (they overlap slightly). Transcribe every line of text you can see, in order, one per line, exactly as written — same script, same digits (Devanagari stays Devanagari), same numbers and separators. Do not translate, do not tidy, do not invent. If a line is only partly visible at the very top or bottom edge, still include it. Output only the lines.` }],
   }).catch((err) => { logger.warn(`hindiOcr: band ${index + 1} failed: ${err.message}`); return ''; });
@@ -1475,7 +1481,7 @@ const translateLines = async (lines) => {
   if (!src.trim()) return [];
   try {
     const text = await callClaude({
-      model: 'claude-sonnet-4-6',
+      model: 'claude-sonnet-5',
       maxTokens: 2000,
       content: [{ type: 'text', text: `Translate this Hindi/Devanagari document into natural English, line by line. Keep one output line per input line, in the same order, numbered the same way.\n\nTRANSLATE, DO NOT TRANSLITERATE. This is the thing that keeps going wrong. Every Hindi word must come out as its English meaning, not as its sound spelled in Latin letters:\n- ज्वार is Sorghum, not \"Jowar\". मक्का is Maize. जव is Barley. चना is Gram (chickpea). गेहूँ is Wheat. सरसों is Mustard. मसूर is Lentil. मूंग is Mung bean. उड़द is Black gram. मोठ is Moth bean. तिल is Sesame. मेथी is Fenugreek.\n- A word you cannot translate confidently is [unclear] — never a phonetic guess. \"Selling jingapash\" and \"Shri Tigat's saavat\" are failures, not translations.\n- A proper noun — a person, a firm, a town — stays as it is written in the Latin alphabet. That is the ONLY case where sound is kept.\n\nWrite numbers in English digits (०१२ → 012) with the SAME values — ₹१०५५ becomes ₹1055, ९८७६५४३२१० becomes 9876543210, ४ सितम्बर २०२६ becomes 4 September 2026. Never change a value or recalculate anything.\n\nIf a line is already English, repeat it unchanged. If a line is unreadable, write [unclear]. No commentary.\n\n${src}` }],
     });

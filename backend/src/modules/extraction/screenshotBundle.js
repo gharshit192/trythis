@@ -133,10 +133,9 @@ const analyzeBundle = async (filePaths, sessionId, userTitle = null) => {
     ];
 
     const response = await client.messages.create({
-      model: 'claude-sonnet-4-6',
+      model: 'claude-sonnet-5',
       max_tokens: 2048,
-      temperature: 0,
-      messages: [{ role: 'user', content }]
+      output_config: { effort: 'low' }, messages: [{ role: 'user', content }]
     });
 
     const text = response.content[0]?.type === 'text' ? response.content[0].text : '';
