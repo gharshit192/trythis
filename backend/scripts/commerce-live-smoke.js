@@ -6,8 +6,8 @@ const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
 const assert = require('assert');
 const crypto = require('crypto');
-const User = require('../src/models/User');
-const Save = require('../src/models/Save');
+const User = require('../src/modules/users/models/User');
+const Save = require('../src/modules/saves/models/Save');
 const OfferClick = require('../src/modules/commerce/models/OfferClick');
 const API = 'https://trythis-am0j.onrender.com';
 

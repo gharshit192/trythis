@@ -1,6 +1,6 @@
 const {
   __test__: { stripAuthorTags, reconcileType, normalize },
-} = require('../../src/services/audioAnalyzer');
+} = require('../../src/modules/extraction/audioAnalyzer');
 
 describe('stripAuthorTags (P7)', () => {
   it('removes the kebab-cased handle itself', () => {

@@ -1,5 +1,5 @@
-const { fold, transliterate, withinEditDistance } = require('../../src/services/searchEngine/fold');
-const { searchSaves, scoreSave } = require('../../src/services/searchEngine');
+const { fold, transliterate, withinEditDistance } = require('../../src/modules/search/engine/fold');
+const { searchSaves, scoreSave } = require('../../src/modules/search/engine');
 
 const save = (over = {}) => ({
   _id: Math.random().toString(36).slice(2),
@@ -184,13 +184,13 @@ describe('document reads are searchable (regression from db4b290)', () => {
   });
 
   test('ignores machine keys so a type name is not a match', () => {
-    const { analysisText } = require('../../src/services/searchEngine').__test__;
+    const { analysisText } = require('../../src/modules/search/engine').__test__;
     expect(analysisText(letter.aiAnalysis.screenshotAnalysis)).not.toContain('handwritten_letter');
     expect(analysisText(letter.aiAnalysis.screenshotAnalysis)).toContain('Bikaner');
   });
 
   test('is bounded, so one enormous read cannot dominate scoring', () => {
-    const { analysisText } = require('../../src/services/searchEngine').__test__;
+    const { analysisText } = require('../../src/modules/search/engine').__test__;
     const huge = { data: { lines: Array.from({ length: 5000 }, () => ({ text: 'x'.repeat(500) })) } };
     expect(analysisText(huge).length).toBeLessThan(60000);
   });

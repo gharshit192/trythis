@@ -1,4 +1,4 @@
-const { __test__ } = require('../../src/services/voiceMemory');
+const { __test__ } = require('../../src/modules/voice/service');
 
 const { normalizeSttResult, resolveResurfaceAt } = __test__;
 

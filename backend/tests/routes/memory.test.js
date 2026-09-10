@@ -6,13 +6,13 @@ const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 
 const { startMongo, stopMongo, clearDb } = require('../helpers/mongo');
-const Memory = require('../../src/models/Memory');
-const MemoryTombstone = require('../../src/models/MemoryTombstone');
-const { buildBrief } = require('../../src/services/memoryEngine/brief');
+const Memory = require('../../src/modules/memory/models/Memory');
+const MemoryTombstone = require('../../src/modules/memory/models/MemoryTombstone');
+const { buildBrief } = require('../../src/modules/memory/engine/brief');
 
 const app = express();
 app.use(express.json());
-app.use('/memory', require('../../src/routes/memory'));
+app.use('/memory', require('../../src/modules/memory/routes'));
 
 const userId = new mongoose.Types.ObjectId();
 const token = jwt.sign({ id: userId.toString() }, process.env.JWT_SECRET);

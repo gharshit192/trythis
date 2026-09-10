@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const OfferClick = require('./models/OfferClick');
-const { track } = require('../../services/events');
+const { track } = require('../../platform/events');
 const cuelinks = require('./providers/cuelinks');
 const HOSTS = new Set(['www.redbus.in', 'www.agoda.com', 'search.hotellook.com', 'www.aviasales.com']);
 

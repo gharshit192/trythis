@@ -4,8 +4,8 @@
 require('dotenv').config({ path: require('path').join(__dirname, '../../.env') });
 if (process.env.ENV_FILE) require('dotenv').config({ path: require('path').join(__dirname, '../../', process.env.ENV_FILE), override: true });
 const mongoose = require('mongoose');
-const Post = require('../models/Post');
-const page = require('../services/blogPage');
+const Post = require('../modules/content/models/Post');
+const page = require('../modules/content/blogPage');
 
 const POSTS = [
   {

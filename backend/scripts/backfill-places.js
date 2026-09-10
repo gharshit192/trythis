@@ -5,8 +5,8 @@
 require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
 if (process.env.ENV_FILE) require('dotenv').config({ path: require('path').join(__dirname, '..', process.env.ENV_FILE), override: true });
 const mongoose = require('mongoose');
-const Save = require('../src/models/Save');
-const { resolvePlaceForSave } = require('../src/services/placeResolver');
+const Save = require('../src/modules/saves/models/Save');
+const { resolvePlaceForSave } = require('../src/modules/places/resolver');
 
 async function main() {
   const uri = process.env.DATABASE_URL || 'mongodb://localhost:27017/trythis';

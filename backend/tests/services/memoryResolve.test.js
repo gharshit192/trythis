@@ -1,4 +1,4 @@
-const { decide, resolveScope, reinforced, weakened } = require('../../src/services/memoryEngine/resolve');
+const { decide, resolveScope, reinforced, weakened } = require('../../src/modules/memory/engine/resolve');
 
 const mem = (over = {}) => ({
   _id: Math.random().toString(36).slice(2),

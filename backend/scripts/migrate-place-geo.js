@@ -15,10 +15,10 @@
 require('dotenv').config({ path: process.env.ENV_FILE || '.env' });
 
 const mongoose = require('mongoose');
-const Place = require('../src/models/Place');
-const Save = require('../src/models/Save');
+const Place = require('../src/modules/places/models/Place');
+const Save = require('../src/modules/saves/models/Save');
 const { toPoint, haversineMetres } = require('../src/utils/geo');
-const { __test__: { namesMatch } } = require('../src/services/placeResolver');
+const { __test__: { namesMatch } } = require('../src/modules/places/resolver');
 
 const APPLY = process.argv.includes('--apply');
 const MERGE_RADIUS_M = 400;

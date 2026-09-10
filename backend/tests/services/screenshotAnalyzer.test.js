@@ -1,4 +1,4 @@
-const { cleanOcrText, parseJsonSafely, VALID_TYPES } = require('../../src/services/screenshotAnalyzer');
+const { cleanOcrText, parseJsonSafely, VALID_TYPES } = require('../../src/modules/extraction/screenshotAnalyzer');
 
 // The previous version of this file tested `classifyScreenshot`, a keyword
 // classifier that was removed when the analyzer became LLM-based. It had been

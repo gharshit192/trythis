@@ -6,17 +6,17 @@ const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 
 const { startMongo, stopMongo, clearDb } = require('../helpers/mongo');
-const Save = require('../../src/models/Save');
-const UserBehavior = require('../../src/models/UserBehavior');
-const SearchLog = require('../../src/models/SearchLog');
+const Save = require('../../src/modules/saves/models/Save');
+const UserBehavior = require('../../src/modules/users/models/UserBehavior');
+const SearchLog = require('../../src/modules/search/models/SearchLog');
 
 // Mounted on a bare app rather than src/app.js: the full app pulls in `uuid`,
 // which ships ESM-only and Jest cannot parse (the same reason routes/api.test.js
 // currently fails to run). The routers under test are the real ones.
 const app = express();
 app.use(express.json());
-app.use('/search', require('../../src/routes/search'));
-app.use('/knowledge', require('../../src/routes/knowledge'));
+app.use('/search', require('../../src/modules/search/routes'));
+app.use('/knowledge', require('../../src/modules/search/knowledgeRoutes'));
 
 const userId = new mongoose.Types.ObjectId();
 const token = jwt.sign({ id: userId.toString() }, process.env.JWT_SECRET);

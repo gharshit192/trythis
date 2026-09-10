@@ -4,7 +4,7 @@ const {
   EXTRACTION_LAYERS,
   HEURISTIC_CONFIDENCE_THRESHOLD,
   __test__: { heuristics, safeHostname },
-} = require('../../src/services/extractionEngine');
+} = require('../../src/modules/extraction/extractionEngine');
 
 describe('extractionEngine.heuristics.extract', () => {
   it('extracts price, location, domain, title and reports confidence', () => {

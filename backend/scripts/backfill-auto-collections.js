@@ -4,8 +4,8 @@
 
 require('dotenv').config();
 const connectDB = require('../src/config/database');
-const Save = require('../src/models/Save');
-const autoCollectionEngine = require('../src/services/autoCollectionEngine');
+const Save = require('../src/modules/saves/models/Save');
+const autoCollectionEngine = require('../src/modules/saves/autoCollection');
 
 const args = process.argv.slice(2);
 const DRY_RUN = args.includes('--dry-run');

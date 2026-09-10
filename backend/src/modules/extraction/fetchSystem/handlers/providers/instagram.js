@@ -1,0 +1,236 @@
+const axios = require('axios');
+const cheerio = require('cheerio');
+const claudeService = require('../../../../../platform/llm/claude');
+const logger = require('../../../../../utils/logger');
+
+const match = (u) => {
+  try {
+    const parsed = new URL(u);
+    return /^https?:$/.test(parsed.protocol) && /^(?:www\.|m\.)?instagram\.com$/.test(parsed.hostname);
+  } catch { return false; }
+};
+
+const POST_ID_RE = /\/(?:p|reel|reels|tv)\/([^/?#]+)/i;
+const extractPostId = (u) => {
+  const m = u && u.match(POST_ID_RE);
+  return m ? m[1] : null;
+};
+const extractKind = (u) => {
+  if (!u) return 'Post';
+  if (/\/reels?\//i.test(u)) return 'Reel';
+  if (/\/tv\//i.test(u)) return 'IGTV';
+  return 'Post';
+};
+
+const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+const { cookieHeaderFor } = require('../../../../../utils/ytdlpCookies');
+
+// Strategy 0: Instagram's own JSON for the post, with the same session cookies
+// yt-dlp uses. This is the only path that returns a PHOTO post's images and
+// caption (yt-dlp answers "There is no video in this post"; the HTML is a
+// login wall without cookies). Works for reels too, and gives every carousel
+// image, not just the cover.
+const firstLine = (t) => String(t || '').split('\n').map((x) => x.trim()).find(Boolean) || '';
+let lastJsonFailure = null;   // 'no_cookies' | 'login_wall' | 'http_401' … read by the media processor's stage note
+const tryJsonWithCookies = async (url) => {
+  const cookie = cookieHeaderFor('www.instagram.com');
+  if (!cookie) { lastJsonFailure = 'no_cookies'; return null; }
+  try {
+    const clean = url.split('?')[0].replace(/\/$/, '') + '/';
+    const { data } = await axios.get(`${clean}?__a=1&__d=dis`, {
+      timeout: 8000, maxRedirects: 2,
+      headers: { 'User-Agent': UA, Accept: 'application/json,*/*', Cookie: cookie, 'x-ig-app-id': '936619743392459', 'x-requested-with': 'XMLHttpRequest' },
+    });
+    if (typeof data !== 'object' || data === null) { lastJsonFailure = 'login_wall'; return null; }   // HTML instead of JSON = session rejected
+    const item = data?.items?.[0] || data?.graphql?.shortcode_media || null;
+    if (!item) { lastJsonFailure = data?.require_login ? 'login_wall' : 'no_item'; return null; }
+    lastJsonFailure = null;
+    const caption = item.caption?.text || item.edge_media_to_caption?.edges?.[0]?.node?.text || '';
+    const user = item.user?.username || item.owner?.username || null;
+    const pick = (m) => m?.image_versions2?.candidates?.[0]?.url || m?.display_url || null;
+    const images = (item.carousel_media || []).map(pick).filter(Boolean);
+    const cover = pick(item) || images[0] || null;
+    const isVideo = !!(item.video_versions?.length || item.is_video);
+    const videoUrl = item.video_versions?.[0]?.url || item.video_url || null;
+    const allImages = images.length ? images : (cover ? [cover] : []);
+    return {
+      title: firstLine(caption).slice(0, 110) || (user ? `Post by @${user}` : 'Instagram post'),
+      description: caption || '',
+      image: cover, images: allImages, isPhotoPost: !isVideo && allImages.length > 0, videoUrl,
+      duration: item.video_duration || undefined,
+      author: user, authorId: user, likeCount: item.like_count, commentCount: item.comment_count,
+      uploadDate: item.taken_at ? new Date(item.taken_at * 1000).toISOString().slice(0, 10).replace(/-/g, '') : undefined,
+      provider: 'instagram-json',
+    };
+  } catch (err) {
+    lastJsonFailure = err.response?.status ? `http_${err.response.status}` : 'network';
+    logger.warn(`[instagram] json fetch failed: ${err.response?.status || err.message}`);
+    return null;
+  }
+};
+const jsonFailure = () => lastJsonFailure;
+
+// Strategy 1: Public oEmbed (deprecated for unauthenticated, often 403 — but cheap to try)
+const tryOembed = async (url) => {
+  try {
+    const { data } = await axios.get(
+      `https://api.instagram.com/oembed?url=${encodeURIComponent(url)}`,
+      { timeout: 4000, headers: { 'User-Agent': UA } }
+    );
+    if (!data) return null;
+    return {
+      title: data.title || null,
+      description: data.author_name ? `By ${data.author_name}` : null,
+      image: data.thumbnail_url || null,
+      author: data.author_name || null,
+      provider: 'instagram-oembed',
+    };
+  } catch {
+    return null;
+  }
+};
+
+// Strategy 2: Fetch HTML and read OG tags (often blocked / returns login page, but try)
+const tryHtmlOg = async (url) => {
+  try {
+    const cookie = cookieHeaderFor('www.instagram.com');
+    const { data } = await axios.get(url, {
+      timeout: 5000,
+      headers: { 'User-Agent': UA, 'Accept': 'text/html,*/*', ...(cookie ? { Cookie: cookie } : {}) },
+      maxRedirects: 3,
+    });
+    const $ = cheerio.load(data);
+    const ogTitle = $('meta[property="og:title"]').attr('content');
+    const ogDesc = $('meta[property="og:description"]').attr('content');
+    const ogImage = $('meta[property="og:image"]').attr('content');
+    if (!ogTitle && !ogDesc && !ogImage) return null;
+    // Instagram returns a "Login" page sometimes — detect that.
+    if (ogTitle && /login.*instagram/i.test(ogTitle)) return null;
+    const captionMatch = String(ogDesc || '').match(/^\s*"([\s\S]+?)"\s*[-–]\s*[^"]*on Instagram/);
+    const caption = captionMatch ? captionMatch[1].trim() : null;
+    return {
+      title: (caption ? firstLine(caption).slice(0, 110) : null) || ogTitle || null,
+      description: caption || ogDesc || null,
+      image: ogImage || null,
+      images: ogImage ? [ogImage] : [],
+      isPhotoPost: false, // A cover image alone cannot distinguish a photo from a video.
+      provider: 'instagram-og',
+    };
+  } catch {
+    return null;
+  }
+};
+
+// Strategy 3: Use Claude to extract title from transcript when available
+const tryClaudeTitle = async (transcript, kind, postId) => {
+  if (!transcript || typeof transcript !== 'string' || transcript.trim().length < 10) {
+    return null;
+  }
+  try {
+    const analysis = await claudeService.analyzeTranscript({
+      transcript: transcript.slice(0, 2000),
+      category: 'general',
+      title: `Instagram ${kind}`,
+    });
+    if (analysis && analysis.summary && analysis.summary.trim().length > 5) {
+      return {
+        title: analysis.summary,
+        description: `Extracted from ${kind.toLowerCase()} caption`,
+        provider: 'instagram-claude-transcript',
+      };
+    }
+  } catch (err) {
+    // Distinguish error types to provide proper feedback
+    if (err.message?.includes('API key') || err.status === 401 || err.code === 'ERR_AUTH') {
+      logger.error(`[instagram] Claude API authentication failed — check ANTHROPIC_API_KEY: ${err.message}`);
+      // Re-throw auth errors — these need attention, not silent swallowing
+      throw err;
+    }
+    if (err.status === 429 || err.message?.includes('rate limit')) {
+      logger.warn(`[instagram] Claude API rate limited — title extraction skipped for ${postId}`);
+      return null; // Rate limit: okay to skip silently and let fallback handle
+    }
+    // Network errors and timeouts: log but don't throw
+    logger.warn(`[instagram] tryClaudeTitle failed (network/timeout): ${err.message}`);
+    return null;
+  }
+  return null;
+};
+
+const fetch = async (source) => {
+  const url = typeof source === 'string' ? source : source.url;
+  if (!match(url)) return null;
+  const postId = extractPostId(url);
+  const kind = extractKind(url);
+  const transcript = typeof source === 'object' ? source.transcript : null;
+
+  // Layer 0: the post's own JSON via session cookies — images + caption, photo posts included.
+  const json = await tryJsonWithCookies(url);
+  if (json && (json.description || json.images?.length)) {
+    return { ...json, url, source: 'instagram', postId, kind: json.isPhotoPost ? 'Post' : kind };
+  }
+
+  // Layer 1: oEmbed
+  const oembed = await tryOembed(url);
+  if (oembed && oembed.title) {
+    return {
+      title: oembed.title,
+      description: oembed.description || `Instagram ${kind.toLowerCase()}`,
+      image: oembed.image || null,
+      url,
+      source: 'instagram',
+      provider: oembed.provider,
+      author: oembed.author,
+      postId,
+      kind,
+    };
+  }
+
+  // Layer 2: HTML OG tags
+  const og = await tryHtmlOg(url);
+  if (og && og.title) {
+    return {
+      title: og.title,
+      description: og.description || `Instagram ${kind.toLowerCase()}`,
+      image: og.image || null,
+      images: og.images || [],
+      isPhotoPost: og.isPhotoPost || false,
+      url,
+      source: 'instagram',
+      provider: og.provider,
+      postId,
+      kind,
+    };
+  }
+
+  // Layer 3: Claude transcript analysis
+  if (transcript) {
+    const claudeResult = await tryClaudeTitle(transcript, kind, postId);
+    if (claudeResult && claudeResult.title) {
+      return {
+        title: claudeResult.title,
+        description: claudeResult.description,
+        image: (oembed?.image || og?.image) || null,
+        url,
+        source: 'instagram',
+        provider: claudeResult.provider,
+        postId,
+        kind,
+      };
+    }
+  }
+
+  // Layer 4: Fallback
+  return {
+    title: `Instagram ${kind}${postId ? ' ' + postId : ''}`,
+    description: `Instagram ${kind.toLowerCase()}`,
+    image: (oembed?.image || og?.image) || null,
+    url,
+    source: 'instagram',
+    provider: 'instagram-fallback',
+    postId,
+    kind,
+  };
+};
+
+module.exports = { match, fetch, name: 'instagram', jsonFailure, __test__: { extractPostId, extractKind } };

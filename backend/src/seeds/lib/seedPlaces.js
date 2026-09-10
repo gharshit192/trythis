@@ -4,8 +4,8 @@
 require('dotenv').config({ path: require('path').join(__dirname, '../../../.env') });
 if (process.env.ENV_FILE) require('dotenv').config({ path: require('path').join(__dirname, '../../../', process.env.ENV_FILE), override: true });
 const mongoose = require('mongoose');
-const Place = require('../../models/Place');
-const { geocode } = require('../../services/geocoder');
+const Place = require('../../modules/places/models/Place');
+const { geocode } = require('../../modules/places/geocoder');
 const { buildCanonicalKey } = require('../../utils/canonicalKey');
 
 // places: [name, area, category, vibeTags, take][]

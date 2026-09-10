@@ -1,9 +1,9 @@
-jest.mock('../../src/services/fetchSystem/handlers/urlHandler', () => ({
+jest.mock('../../src/modules/extraction/fetchSystem/handlers/urlHandler', () => ({
   fetch: jest.fn(),
 }));
 
-const fetchSystem = require('../../src/services/fetchSystem');
-const urlHandler = require('../../src/services/fetchSystem/handlers/urlHandler');
+const fetchSystem = require('../../src/modules/extraction/fetchSystem');
+const urlHandler = require('../../src/modules/extraction/fetchSystem/handlers/urlHandler');
 
 describe('fetchSystem.fetchContent', () => {
   beforeEach(() => urlHandler.fetch.mockReset());

@@ -1,5 +1,5 @@
 const { toPoint, fromPoint, haversineMetres } = require('../../src/utils/geo');
-const { __test__: { namesMatch } } = require('../../src/services/placeResolver');
+const { __test__: { namesMatch } } = require('../../src/modules/places/resolver');
 
 describe('geo helpers', () => {
   test('GeoJSON is [lng, lat] — the opposite of how everyone says it', () => {

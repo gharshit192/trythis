@@ -3,8 +3,8 @@ process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret';
 const request = require('supertest');
 
 // Mock fetchSystem so the API doesn't hit the real internet on POST /saves
-jest.mock('../../src/services/fetchSystem', () => {
-  const real = jest.requireActual('../../src/services/fetchSystem');
+jest.mock('../../src/modules/extraction/fetchSystem', () => {
+  const real = jest.requireActual('../../src/modules/extraction/fetchSystem');
   return {
     ...real,
     fetchContent: jest.fn(async (source) => ({
@@ -278,7 +278,7 @@ describe('/notifications', () => {
   });
 
   it('mark as read then dismiss', async () => {
-    const Notification = require('../../src/models/Notification');
+    const Notification = require('../../src/modules/notifications/models/Notification');
     const n = await Notification.create({
       userId,
       type: 'nearby_rediscovery',

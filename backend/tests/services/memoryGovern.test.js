@@ -1,4 +1,4 @@
-const { govern } = require('../../src/services/memoryEngine/govern');
+const { govern } = require('../../src/modules/memory/engine/govern');
 
 const cand = (over = {}) => ({
   statement: 'Prefers cheaper stays',

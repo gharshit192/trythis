@@ -1,7 +1,7 @@
 // The dual-model agreement rule decides every line's confidence and whether the
 // user is told to go verify it. Exact string equality marked ~100% of real
 // production lines "disputed" on documents that had in fact been read correctly.
-const { __test__ } = require('../../src/services/hindiOcr');
+const { __test__ } = require('../../src/modules/extraction/hindiOcr');
 const { canonicalizeDevanagari, similarity, mergeTranscriptions } = __test__;
 
 const lines = (arr) => ({ transcription: { lines: arr.map((text, i) => ({ line: i + 1, text, confidence: 0.9 })) } });
@@ -98,7 +98,7 @@ describe('mergeTranscriptions', () => {
   });
 
   it('never emits confirmed/disputed as a browsable tag', () => {
-    const { toBundleShape } = require('../../src/services/hindiOcr');
+    const { toBundleShape } = require('../../src/modules/extraction/hindiOcr');
     const shaped = toBundleShape(
       { transcription: { lines: [{ line: 1, text: 'परिणय', agreed: false, altText: 'परिनय' }] }, summary: 's' },
       1,
@@ -110,7 +110,7 @@ describe('mergeTranscriptions', () => {
 });
 
 describe('salvageLines', () => {
-  const { salvageLines } = require('../../src/services/hindiOcr').__test__;
+  const { salvageLines } = require('../../src/modules/extraction/hindiOcr').__test__;
 
   test('keeps line text from a truncated Gemini JSON response', () => {
     const raw = '{"transcription":{"lines":[{"line":1,"text":"श्री १००८"},{"line":2,"text":"परिणय';
@@ -119,7 +119,7 @@ describe('salvageLines', () => {
 });
 
 describe('dandaDatesToSlashes', () => {
-  const { dandaDatesToSlashes } = require('../../src/services/hindiOcr').__test__;
+  const { dandaDatesToSlashes } = require('../../src/modules/extraction/hindiOcr').__test__;
   const run = (text) => { const lines = [{ text }]; dandaDatesToSlashes(lines); return lines[0].text; };
 
   test('rewrites a three-part date', () => {
@@ -147,7 +147,7 @@ describe('dandaDatesToSlashes', () => {
 });
 
 describe('reconcileDigits', () => {
-  const { reconcileDigits } = require('../../src/services/hindiOcr').__test__;
+  const { reconcileDigits } = require('../../src/modules/extraction/hindiOcr').__test__;
 
   test('corrects a digit when two other readers agree against it', () => {
     const r = reconcileDigits('₹१००५', ['₹१०५५', '₹१०५५']);
