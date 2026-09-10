@@ -7,10 +7,15 @@ jest.mock('../../src/modules/notifications', () => ({
 }));
 jest.mock('../../src/modules/saves', () => ({
   autoCollection: { assignSave: jest.fn(async () => ({ ok: true })) },
+  Save: {},
+}));
+jest.mock('../../src/modules/search', () => ({
+  indexer: { indexSave: jest.fn(async () => true) },
 }));
 
 const notifications = require('../../src/modules/notifications');
 const saves = require('../../src/modules/saves');
+const search = require('../../src/modules/search');
 
 beforeAll(() => require('../../src/subscriptions')());
 beforeEach(() => jest.clearAllMocks());
@@ -18,7 +23,7 @@ beforeEach(() => jest.clearAllMocks());
 describe('event wiring', () => {
   it('registers exactly the expected subscribers', () => {
     expect(events.subscribers(events.names.SAVE_PROCESSED)).toEqual(['notifications']);
-    expect(events.subscribers(events.names.SAVE_ENRICHED)).toEqual(['auto-collections']);
+    expect(events.subscribers(events.names.SAVE_ENRICHED)).toEqual(['auto-collections', 'semantic-index']);
   });
 
   it('a processed save notifies the user', async () => {
@@ -37,6 +42,19 @@ describe('event wiring', () => {
   it('an enriched save gets filed into collections', async () => {
     const save = { _id: 's3', userId: 'u1' };
     await events.emitAndWait(events.names.SAVE_ENRICHED, { saveId: 's3', userId: 'u1', save });
+    expect(saves.autoCollection.assignSave).toHaveBeenCalledWith(save);
+  });
+
+  it('an enriched save is also indexed for semantic search', async () => {
+    const save = { _id: 's5', userId: 'u1', title: 'Blue Tokai' };
+    await events.emitAndWait(events.names.SAVE_ENRICHED, { saveId: 's5', userId: 'u1', save });
+    expect(search.indexer.indexSave).toHaveBeenCalledWith(expect.anything(), save);
+  });
+
+  it('indexing failing does not stop the save being filed', async () => {
+    search.indexer.indexSave.mockRejectedValueOnce(new Error('embeddings down'));
+    const save = { _id: 's6', userId: 'u1' };
+    await expect(events.emitAndWait(events.names.SAVE_ENRICHED, { save })).resolves.toBeUndefined();
     expect(saves.autoCollection.assignSave).toHaveBeenCalledWith(save);
   });
 

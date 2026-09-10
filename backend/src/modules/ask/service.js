@@ -8,6 +8,7 @@
 const Anthropic = require('@anthropic-ai/sdk');
 const Save = require('../saves').Save;
 const Conversation = require('./models/Conversation');
+const vector = require('../search').vector;
 const { parseJsonSafely } = require('../../platform/llm/claude');
 const { buildBrief } = require('../memory').brief;
 const { extractFromText } = require('../memory').extract;
@@ -90,10 +91,33 @@ const parseTagged = (text = '') => {
   return { answer, saveRefs: refs, followUps };
 };
 
+// Two ways to choose which saves the answer may draw on.
+//
+// Semantic, when embeddings are configured: the question is embedded and matched
+// against the whole library, so "somewhere quiet for a date" reaches a save
+// worded "peaceful rooftop" and a save from two years ago is as reachable as
+// yesterday's.
+//
+// Keyword otherwise, which is what this did before: the newest 600 saves ranked
+// by literal token overlap. That misses synonyms, and anything past 600 is
+// invisible — the reason for the semantic path.
+async function retrieve(userId, q) {
+  const hits = await vector.search(Save, userId, q, MAX_SAVES);
+  if (hits && hits.length) {
+    const byId = new Map(hits.map((h, i) => [h.id, i]));
+    const rows = await Save.find({ _id: { $in: hits.map((h) => h.id) }, status: 'active' })
+      .select(SELECT).lean();
+    // Keep the retriever's order; find() does not preserve $in order.
+    return rows.sort((a, b) => byId.get(String(a._id)) - byId.get(String(b._id)));
+  }
+  const saves = await Save.find({ userId, status: 'active' })
+    .select(SELECT).sort({ createdAt: -1 }).limit(600).lean();
+  return rank(saves, q);
+}
+
 async function ask({ userId, question, conversationId, user }) {
   const q = clip(question, 600);
-  const saves = await Save.find({ userId, status: 'active' }).select(SELECT).sort({ createdAt: -1 }).limit(600).lean();
-  const picked = rank(saves, q);
+  const picked = await retrieve(userId, q);
   const index = picked.map((s, i) => line(s, i + 1)).join('\n');
 
   let convo = conversationId ? await Conversation.findOne({ _id: conversationId, userId }) : null;

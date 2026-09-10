@@ -4,4 +4,6 @@ module.exports = {
   get routes() { return require('./routes'); },
   get knowledgeRoutes() { return require('./knowledgeRoutes'); },
   get fold() { return require('./engine/fold'); },
+  get vector() { return require('./engine/vector'); },
+  get indexer() { return require('./engine/indexer'); },
 };

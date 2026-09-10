@@ -29,6 +29,13 @@ module.exports = function wireSubscriptions() {
     if (save) await require('./modules/saves').autoCollection.assignSave(save);
   });
 
+  // Enrichment is also when a save first has enough text to be worth indexing.
+  events.on(events.names.SAVE_ENRICHED, 'semantic-index', async ({ save }) => {
+    if (!save) return;
+    const { Save } = require('./modules/saves');
+    await require('./modules/search').indexer.indexSave(Save, save);
+  });
+
   logger.debug('[events] subscriptions wired', {
     processed: events.subscribers(events.names.SAVE_PROCESSED).join(','),
     enriched: events.subscribers(events.names.SAVE_ENRICHED).join(','),

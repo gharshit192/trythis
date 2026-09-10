@@ -319,6 +319,16 @@ const intentItemSchema = new mongoose.Schema({
     default: 'active',
   },
 
+  // Semantic index of this save, written after enrichment (P2.5). Kept on the
+  // document so an Atlas vector index can read it directly; `model` is stored so
+  // a provider change can be detected and re-embedded rather than silently
+  // comparing vectors from two different spaces.
+  embedding: {
+    vector: { type: [Number], default: undefined, select: false },
+    model: { type: String, default: null },
+    at: { type: Date, default: null },
+  },
+
   // Shared save feature: unique ID for public sharing via /s/:shareId route
   shareId: { type: String, index: true, default: null },
 
