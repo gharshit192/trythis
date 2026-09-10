@@ -1,8 +1,9 @@
+import { vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import CompleteYourTrip from './CompleteYourTrip';
 import SavedMerchant from './SavedMerchant';
 import api from '../../api';
-jest.mock('../../api', () => ({ __esModule: true, default: { getTripOffers: jest.fn() } }));
+vi.mock('../../api', () => ({ __esModule: true, default: { getTripOffers: vi.fn() } }));
 const offer = { provider: 'links', title: 'Find stays for Goa', source: 'utility', href: '/go/test', options: [{ provider: 'ITC Hotels', href: '/go/itc' }] };
 beforeEach(() => { api.getTripOffers.mockReset(); });
 test('trip options are clearly deferred without booking controls or offer requests', () => {

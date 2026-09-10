@@ -52,6 +52,8 @@ backend/src/modules/    One folder per domain. A module's index.js is its ONLY
                 target module's index.js instead of reaching past it.
 backend/src/platform/   Cross-cutting, no domain logic: llm, events, storage, http.
 frontend-app/   Capacitor + PWA client (web dev loop + Android). ACTIVE.
+                Vite + Vitest. `npm start` dev, `npm run build` -> build/
+                (Capacitor webDir). Env vars keep the REACT_APP_ prefix.
 frontend/       Expo/React Native client. LEGACY.
 shared/         Shared spec docs (API_SPEC, DATA_MODELS).
 trythis-seed-data/  Seed URLs for exercising the extraction pipeline.

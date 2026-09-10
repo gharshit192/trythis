@@ -5,7 +5,7 @@
 | Layer | Service | Notes |
 |---|---|---|
 | API | **Render** web service, Docker (`Dockerfile` at repo root) | Free tier: sleeps after 15 min idle; ~10 min deploys after the `.dockerignore` fix |
-| Frontend | **Vercel** (CRA build, SPA rewrites) | `trythis-frontend.vercel.app` |
+| Frontend | **Vercel** (Vite build, SPA rewrites) | `trythis-frontend.vercel.app` |
 | Database | **MongoDB Atlas** | one cluster; no backups configured beyond Atlas defaults |
 | Media | **Cloudinary** (+ local `uploads/` on the container, ephemeral) | thumbnails cached, screenshots |
 | Jobs | in-process worker + notification scheduler; **GitHub Actions** cron drives notifications (3×/day) and keepalive | scheduler cannot fire while Render sleeps |

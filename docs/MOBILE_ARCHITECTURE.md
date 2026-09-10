@@ -1,6 +1,6 @@
 # Mobile Architecture — web + Android first, iOS later
 
-Grounded in the repo as of 3 Sep 2026. One frontend (`frontend-app`, React 19 / CRA, no router: `screenMap` in `app/App.js`) serves web, PWA and the native shells through Capacitor 6.
+Grounded in the repo as of 3 Sep 2026. One frontend (`frontend-app`, React 19 / Vite, no router: `screenMap` in `app/App.js`) serves web, PWA and the native shells through Capacitor 6.
 
 ## Current state (facts)
 

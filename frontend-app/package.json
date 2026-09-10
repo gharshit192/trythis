@@ -20,37 +20,25 @@
     "leaflet": "^1.9.4",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
-    "react-scripts": "5.0.1",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "build:native": "REACT_APP_API_URL=${REACT_APP_API_URL:-https://trythis-am0j.onrender.com} react-scripts build",
+    "start": "vite",
+    "build": "vite build",
+    "build:native": "REACT_APP_API_URL=${REACT_APP_API_URL:-https://trythis-am0j.onrender.com} vite build",
     "cap:sync": "npm run build:native && cap sync",
     "cap:android": "npm run build:native && cap run android",
     "cap:ios": "npm run build:native && cap run ios",
     "cap:open:android": "cap open android",
     "cap:open:ios": "cap open ios",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "test": "vitest run",
+    "preview": "vite preview",
+    "test:watch": "vitest"
   },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
-  },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.7.0",
+    "jsdom": "^25.0.1",
+    "vite": "^6.4.3",
+    "vitest": "^2.1.9"
   }
 }
