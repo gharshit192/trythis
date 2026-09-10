@@ -82,17 +82,31 @@ Building it needs, in order:
 It depends on the event bus (proposal P2). Weighted traits over fourteen hashed
 analytics names would be inventing confidence the data does not support.
 
-## 3. Other surfaces the PRD would change
+## 3. Other surfaces — what the code actually shows
 
-| Area | PRD | Shipped | Note |
+Several gaps assumed on a first pass did **not** survive checking the artboards.
+Recorded here so they are not "fixed" again:
+
+| Area | PRD | Actual | Verdict |
 | --- | --- | --- | --- |
-| Cards | §19 image-led, `[IMAGE]` hero | Text-first, no thumbnails | Direct conflict with [ADR 0013](../adr/0013-text-first-ui-no-thumbnails.md). Decide explicitly |
-| Bottom nav | §5 Home / Discover / Saved / Me | Explore parked; Tried is a tab | PRD predates the Discover deprioritisation |
-| Save states | §23 seven states | Fewer | Want to Try / Considering / Planned / Booked / Visited / Completed / Not for me |
-| Save reason chips | §22 "Why do you want to try this?" | Removed recently | PRD treats these as memory input, not preference settings — different purpose from the chips that were cut |
-| Rating | §41 ❤️ 👍 😐 👎 + optional voice | Partial | Feeds §42 memory update |
-| "Why you may like this" | §21, evidence-only | Not present | Needs the same signals as DNA |
-| Visited flow | §40 "Did you try this?" | Partial | Trigger after planned date |
+| Rating | §41 wants 4 levels incl. "Okay" | `Tried.dc.html` already has **5**: Not for me / Meh / Good / Really good / Would go again | **No change.** Richer than the PRD |
+| "Why you may like this" | §21 evidence-based explanation | `Main.dc.html` already shows *"Because you saved 3 cafes in Hauz Khas"* | **No change** on Home |
+| Notifications | §46 wants four type labels | `Notifications.dc.html` groups by urgency — Right now / This week / Earlier — and covers all four kinds | **No change.** Urgency beats taxonomy here |
+| Interests | §8 scopes to Travel + Food | Multi-category: cafes, films, books, gadgets, fashion | **Keep ours.** Multi-category is the stated differentiator vs Gumo |
+
+Genuine changes, now made:
+
+| Screen | Change |
+| --- | --- |
+| **Detail** | 92px hero photo (ADR 0024); new *"Why we're showing you this"* block — the **system's** inference, distinct from the existing *"Why you saved it"*, which is the **user's** own reason |
+| **Main**, **Saved** | Leading tile becomes the photo when one exists, category icon when not (ADR 0024) |
+| **Interests** | Step counter 2 of 2 → 2 of 3, since taste calibration was added |
+| **TasteCalibration** *(new)* | PRD §9. Paired either/or picks, 4 pairs, skippable |
+| **ExperienceDNA** *(new)* | PRD §44. Trait strengths, an explicit "not enough yet" section, 90-day decay note, and an Ask entry point |
+
+`ExperienceDNA` also implements technical PRD §52 visually: every trait line says
+whether it came from *"You said this"* (explicit) or *"We noticed this"*
+(inferred). That distinction has to exist in the schema before the screen can ship.
 
 ## 4. Suggested order
 

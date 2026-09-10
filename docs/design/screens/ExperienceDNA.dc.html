@@ -1,0 +1,124 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Work+Sans:wght@400;500;600;700&display=swap">
+  <style>
+    :root{--ink:#15201E;--mute:#6E7B78;--faint:#9BA5A2;--bg:#FAF8F5;--card:#fff;--line:#E7E2DA;
+      --teal:#0E7C7B;--teal-d:#0A5A59;--teal-soft:#E4EFEE;--gold:#C99425;}
+    *{box-sizing:border-box;}
+    body{margin:0;width:390px;height:844px;overflow:hidden;background:var(--bg);
+      font-family:"Work Sans",-apple-system,system-ui,sans-serif;color:var(--ink);}
+  </style>
+</helmet>
+
+<div style="width:390px;height:844px;display:flex;flex-direction:column;background:var(--bg);">
+
+  <div style="padding:56px 24px 0;">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#15201E" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      <span style="font-size:15px;font-weight:600;">Your taste</span>
+    </div>
+    <h1 style="font-family:'DM Serif Display',Georgia,serif;font-weight:400;font-size:30px;line-height:1.1;margin:0 0 6px;">What we've worked out</h1>
+    <p style="font-size:13.5px;color:var(--mute);margin:0 0 22px;">From 38 saves and 11 things you tried. Tap any line to correct it.</p>
+  </div>
+
+  <div style="padding:0 24px;display:flex;flex-direction:column;gap:12px;">
+
+    <div style="display:flex;flex-direction:column;gap:5px;">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;">
+        <span style="font-size:15px;font-weight:600;">Scenic &amp; outdoors</span>
+        <span style="font-size:12.5px;font-weight:600;color:var(--teal);">Strong</span>
+      </div>
+      <div style="height:7px;border-radius:4px;background:#EDE8E0;position:relative;">
+        <div style="position:absolute;left:0;top:0;bottom:0;width:88%;border-radius:4px;background:var(--teal);"></div>
+      </div>
+      <span style="font-size:12px;color:var(--faint);">You said this &middot; and 9 saves agree</span>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:5px;">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;">
+        <span style="font-size:15px;font-weight:600;">Small, quiet cafes</span>
+        <span style="font-size:12.5px;font-weight:600;color:var(--teal);">Strong</span>
+      </div>
+      <div style="height:7px;border-radius:4px;background:#EDE8E0;position:relative;">
+        <div style="position:absolute;left:0;top:0;bottom:0;width:80%;border-radius:4px;background:var(--teal);"></div>
+      </div>
+      <span style="font-size:12px;color:var(--faint);">We noticed this &middot; 12 saves, 4 tried</span>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:5px;">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;">
+        <span style="font-size:15px;font-weight:600;">Street food</span>
+        <span style="font-size:12.5px;font-weight:600;color:var(--gold);">Some</span>
+      </div>
+      <div style="height:7px;border-radius:4px;background:#EDE8E0;position:relative;">
+        <div style="position:absolute;left:0;top:0;bottom:0;width:46%;border-radius:4px;background:var(--gold);"></div>
+      </div>
+      <span style="font-size:12px;color:var(--faint);">We noticed this &middot; 5 saves</span>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:5px;">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;">
+        <span style="font-size:15px;font-weight:600;">Crowded, popular spots</span>
+        <span style="font-size:12.5px;font-weight:600;color:var(--mute);">Rarely</span>
+      </div>
+      <div style="height:7px;border-radius:4px;background:#EDE8E0;position:relative;">
+        <div style="position:absolute;left:0;top:0;bottom:0;width:17%;border-radius:4px;background:#C2CAC7;"></div>
+      </div>
+      <span style="font-size:12px;color:var(--faint);">You skipped 6 of these</span>
+    </div>
+
+  </div>
+
+  <div style="margin:16px 24px 0;padding:13px 15px;border-radius:13px;background:var(--card);border:1px solid var(--line);">
+    <div style="display:flex;gap:10px;align-items:flex-start;">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#6E7B78" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg>
+      <div style="display:flex;flex-direction:column;gap:3px;">
+        <span style="font-size:13.5px;font-weight:600;">Not enough yet: budget, who you go with</span>
+        <span style="font-size:12.5px;line-height:1.45;color:var(--mute);">We'd rather say nothing than guess. These show up once there's real evidence.</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin:10px 24px 0;">
+    <span style="font-size:12.5px;color:var(--faint);">Based on the last 90 days. Older saves count for less.</span>
+  </div>
+
+  <div style="margin:14px 24px 0;padding:14px;border-radius:14px;background:var(--card);border:1px solid var(--line);">
+    <div style="font-family:'DM Serif Display',Georgia,serif;font-size:19px;line-height:1.2;margin-bottom:4px;">Ask about your taste</div>
+    <div style="font-size:13px;color:var(--mute);margin-bottom:13px;">Answers come only from what you've saved and tried.</div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <div style="padding:10px 13px;border-radius:11px;background:var(--bg);border:1px solid var(--line);font-size:13.5px;">What haven't I tried yet?</div>
+      <div style="padding:10px 13px;border-radius:11px;background:var(--bg);border:1px solid var(--line);font-size:13.5px;">What did I love most this year?</div>
+    </div>
+  </div>
+
+  <div style="position:absolute;left:0;right:0;bottom:0;height:86px;padding:10px 22px 22px;background:var(--card);border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--faint);">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5"/><path d="M5 10v10h14V10"/></svg>
+      <span style="font-size:10.5px;font-weight:500;">Home</span>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--faint);">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+      <span style="font-size:10.5px;font-weight:500;">Explore</span>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--faint);">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h12v16l-6-4-6 4z"/></svg>
+      <span style="font-size:10.5px;font-weight:500;">Saved</span>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--ink);">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 20c0-3.5 3.1-5.5 7-5.5s7 2 7 5.5"/></svg>
+      <span style="font-size:10.5px;font-weight:600;">You</span>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>
