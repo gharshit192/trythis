@@ -1,6 +1,6 @@
 const { fork } = require('child_process');
 const path = require('path');
-const logger = require('../utils/logger');
+const logger = require('../../../utils/logger');
 let timer;
 let child;
 function start() {

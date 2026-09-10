@@ -1,5 +1,5 @@
 const fs = require('fs');
-const { syncCampaigns, CONFIG_FILE } = require('../services/commerce/providers/cuelinks');
+const { syncCampaigns, CONFIG_FILE } = require('../providers/cuelinks');
 
 async function run() {
   const configs = await syncCampaigns();

@@ -1,5 +1,5 @@
 const axios = require('axios');
-const c = require('../../src/services/commerce/providers/cuelinks');
+const c = require('../../src/modules/commerce/providers/cuelinks');
 const tracked = (url) => 'https://linksredirect.com/?cid=123&source=api&url=' + encodeURIComponent(url);
 const original = { ...process.env };
 beforeEach(() => { process.env.CUELINKS_CAMPAIGNS_JSON = '{}'; });

@@ -21,7 +21,7 @@ const voiceRoutes = require('./routes/voice');
 const askRoutes = require('./routes/ask');
 const blogRoutes = require('./routes/blog');
 const plansRoutes = require('./routes/plans');
-const goRoutes = require('./routes/go');
+const goRoutes = require('./modules/commerce/routes');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
@@ -71,7 +71,7 @@ app.get('/status', (req, res) => {
     instagramSession: process.env.YTDLP_COOKIES_B64 || process.env.YTDLP_COOKIES_FILE ? 'SET' : 'NOT SET',
     emailFrom: process.env.RESEND_FROM || process.env.EMAIL_FROM || 'Wanna Try <onboarding@resend.dev> (sandbox: delivers only to the Resend account owner)',
     frontend: process.env.FRONTEND_URL || 'NOT SET',
-    commerce: require('./services/commerce/providers/cuelinks').status(),
+    commerce: require('./modules/commerce/providers/cuelinks').status(),
   });
 });
 

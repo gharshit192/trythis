@@ -1889,7 +1889,7 @@ router.post('/:id/split', async (req, res) => {
 // /go hrefs. Live prices when a provider is configured; partner links always.
 router.get('/:id/offers', async (req, res) => {
   try {
-    const data = await require('../services/commerce').offersForUser(req.params.id, req.user.id, req.query);
+    const data = await require('../modules/commerce/service').offersForUser(req.params.id, req.user.id, req.query);
     res.json({ status: 'success', data });
   } catch (e) {
     logger.error(`[offers] ${e.message}`);

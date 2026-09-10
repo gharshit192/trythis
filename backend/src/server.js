@@ -67,7 +67,7 @@ const initializeServer = async () => {
         console.log('⏭️  Redis skipped (no REDIS_URL)');
       }
 
-      require('./workers/cuelinksWorker').start();
+      require('./modules/commerce/workers/cuelinksWorker').start();
 
       // Start upload worker (runs in all modes)
       console.log('[DEBUG] Starting upload worker...');

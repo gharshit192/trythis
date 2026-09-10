@@ -1,5 +1,5 @@
 const router = require('express').Router();
-const redirects = require('../services/commerce/redirect');
+const redirects = require('./redirect');
 
 router.get('/:token', (req, res) => {
   try {
