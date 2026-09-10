@@ -111,7 +111,7 @@ export default function Itinerary({ onNavigate, onBack, payload }) {
         </div>
       )}
       {plan && tab === 'book' && (
-        <CompleteYourTrip saveId={id} defaultNights={Math.max(1, Math.min(7, Math.ceil(days.length / Math.max(1, (plan.destinations || []).length || 1))))} origin={plan.origin || undefined} />
+        <CompleteYourTrip />
       )}
       {days.length > 0 && tab === 'days' && (
         <>

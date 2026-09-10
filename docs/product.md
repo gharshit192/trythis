@@ -42,7 +42,7 @@ product brief is in [`research/revamp-brief-status.md`](research/revamp-brief-st
 - **Phase 2 — Nearby & the personal layer:** done in the PWA. Seeded city
   places + everyone's saves in one nearby index; Discover with reasons; Starter
   picks, Made for you, Surprise me; weekend plan from your own saves; trip
-  plans with stays and transport; map view of your saves; Ask (grounded in
+  plans (hotel, bus and flight booking options deferred as "Coming soon"); map view of your saves; Ask (grounded in
   your saves); preferences (budget, company, nudge time, vibes); Your 2026.
   Geofenced native nudges (Capacitor) remain the native-app step
   ([ADR 0007](adr/0007-dual-frontend-capacitor-pwa.md)).

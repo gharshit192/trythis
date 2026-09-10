@@ -69,7 +69,7 @@ export default function Trip({ save, onNavigate, onBack, onMore, onShare, status
         <p style={{ fontSize: 15, lineHeight: 1.55, color: 'var(--mute)', margin: '0 0 20px' }}>{save.aiAnalysis.summary}</p>
       )}
       <SaveSections save={save} hideItinerary />
-      {planned && <CompleteYourTrip compact saveId={save._id} defaultNights={Math.max(1, Math.min(7, days || 2))} origin={save.tripPlan?.origin || undefined} onSeeAll={() => onNavigate('itinerary', { id: save._id, title: save.title, destination: dest, days, tab: 'book' })} />}
+      {planned && <CompleteYourTrip />}
 
       {planned
         ? <Banner icon="calendar">Your {plannedDays ? `${plannedDays}-day ` : ''}plan is saved with this trip — planned {new Date(save.tripPlan.generatedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}.</Banner>

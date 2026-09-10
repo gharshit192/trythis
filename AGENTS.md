@@ -316,6 +316,10 @@ See [ADR 0007](docs/adr/0007-dual-frontend-capacitor-pwa.md) (platform),
 
 See [ADR 0022](docs/adr/0022-cuelinks-contextual-merchant-links.md).
 
+- Trip booking is deferred: the active client shows Hotels, Buses and Flights
+  as non-interactive "Coming soon" options without fetching trip offers.
+  Day-by-day planning remains available.
+
 - Cuelinks tracking requires a successful redirect probe to the expected merchant,
   not only API conversion approval. Failed probes use direct merchant URLs.
 - Cuelinks supplies verified attribution, not live inventory. Never label

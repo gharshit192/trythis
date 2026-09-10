@@ -49,3 +49,12 @@ platform exclusions, stale grants, ownership, invalid dates/counts, outages,
 quoted versus unpriced results and signed redirects. Frontend tests cover trip
 links, disclosure, comparison expansion, empty/error results and Nykaa context.
 Browser and live deployment checks are recorded in docs/CUELINKS_SETUP.md.
+
+## Product scope amendment — 2026-09-09
+
+Travel booking UI is deferred while capture quality and latency take priority.
+The active client's trip preview and Stay & travel tab display non-interactive
+Hotels, Buses and Flights rows labeled "Coming soon", without fetching offers,
+showing merchant links or collecting booking dates and guests. Day-by-day
+planning remains available. Backend commerce integration and the saved Nykaa
+product flow remain in place for their existing scope.

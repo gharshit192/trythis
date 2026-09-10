@@ -1,0 +1,5 @@
+.trip-options { margin-bottom: 22px; }
+.trip-options-note { color: var(--mute); font-size: 14px; line-height: 1.5; margin: 8px 0; }
+.trip-options-list { list-style: none; margin: 0; padding: 0; }
+.trip-options-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.trip-options-status { color: var(--mute); font-size: 13px; white-space: nowrap; }
