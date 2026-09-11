@@ -144,7 +144,10 @@ See [ADR 0016](docs/adr/0016-voice-capture-to-structured-memory.md).
 
 ## Ask (chat over your saves)
 
-See [ADR 0017](docs/adr/0017-ask-is-grounded-in-your-saves.md).
+See [ADR 0017](docs/adr/0017-ask-is-grounded-in-your-saves.md). Ask may now also use the web:
+memory is the context, not the boundary, and web sources stay in a separate
+`sources` field from the user's own saves — see
+[ADR 0025](docs/adr/0025-memory-is-context-not-boundary.md).
 
 - `POST /ask { question, conversationId? }` → `services/askService.js` →
   `{ answer, references, followUps, conversationId }`; threads live in

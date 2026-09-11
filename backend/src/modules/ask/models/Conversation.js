@@ -8,6 +8,9 @@ const messageSchema = new mongoose.Schema({
   content: { type: String, required: true },
   refs: { type: [{ saveId: mongoose.Schema.Types.ObjectId, title: String, category: String, city: String }], default: undefined },
   followUps: { type: [String], default: undefined },
+  // Web sources this turn leaned on (ADR 0025). Kept separate from `refs`,
+  // which are the user's own saves — the two must never be shown as one thing.
+  sources: { type: [{ title: String, url: String }], default: undefined },
   createdAt: { type: Date, default: () => new Date() },
 }, { _id: false });
 
