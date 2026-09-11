@@ -1,4 +1,4 @@
-const { needsEnglishNormalization } = require('../../src/services/geminiText');
+const { needsEnglishNormalization } = require('../../src/platform/llm/gemini');
 
 describe('geminiText helpers', () => {
   test('normalizes known Indian language codes', () => {

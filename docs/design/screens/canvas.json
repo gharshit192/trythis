@@ -1,183 +1,339 @@
 {
-  "artboards": [
-    {
-      "file": "Welcome.dc.html",
-      "x": 0,
-      "y": 0,
-      "w": 390,
-      "h": 844,
-      "title": "1 · Welcome"
-    },
-    {
-      "file": "City.dc.html",
-      "x": 470,
-      "y": 0,
-      "w": 390,
-      "h": 844,
-      "title": "2 · Your city"
-    },
-    {
-      "file": "Interests.dc.html",
-      "x": 940,
-      "y": 0,
-      "w": 390,
-      "h": 844,
-      "title": "3 · Interests",
-      "is_interactive": true
-    },
-    {
-      "file": "Import.dc.html",
-      "x": 1410,
-      "y": 0,
-      "w": 390,
-      "h": 844,
-      "title": "4 · Bring your saves"
-    },
-    {
-      "file": "Extracting.dc.html",
-      "x": 1880,
-      "y": 0,
-      "w": 390,
-      "h": 844,
-      "title": "5 · Reading reels"
-    },
-    {
-      "file": "Starter.dc.html",
-      "x": 2350,
-      "y": 0,
-      "w": 390,
-      "h": 844,
-      "title": "6 · Your list"
-    },
-    {
-      "file": "Main.dc.html",
-      "x": 0,
-      "y": 1000,
-      "w": 390,
-      "h": 844,
-      "title": "Home"
-    },
-    {
-      "file": "Explore.dc.html",
-      "x": 470,
-      "y": 1000,
-      "w": 390,
-      "h": 844,
-      "title": "Explore"
-    },
-    {
-      "file": "Detail.dc.html",
-      "x": 940,
-      "y": 1000,
-      "w": 390,
-      "h": 844,
-      "title": "Item"
-    },
-    {
-      "file": "MultiExtract.dc.html",
-      "x": 1410,
-      "y": 1000,
-      "w": 390,
-      "h": 844,
-      "title": "5 places in one reel",
-      "is_interactive": true
-    },
-    {
-      "file": "Saved.dc.html",
-      "x": 1880,
-      "y": 1000,
-      "w": 390,
-      "h": 844,
-      "title": "Saved"
-    },
-    {
-      "file": "Tried.dc.html",
-      "x": 2350,
-      "y": 1000,
-      "w": 390,
-      "h": 844,
-      "title": "Tried it",
-      "is_interactive": true
-    },
-    {
-      "file": "Notifications.dc.html",
-      "x": 0,
-      "y": 2000,
-      "w": 390,
-      "h": 844,
-      "title": "Smart notifications"
-    },
-    {
-      "file": "Trip.dc.html",
-      "x": 470,
-      "y": 2000,
-      "w": 390,
-      "h": 844,
-      "title": "Travel save"
-    },
-    {
-      "file": "Itinerary.dc.html",
-      "x": 940,
-      "y": 2000,
-      "w": 390,
-      "h": 844,
-      "title": "Day-wise plan"
-    },
-    {
-      "file": "Voice.dc.html",
-      "x": 1880,
-      "y": 2000,
-      "w": 390,
-      "h": 844,
-      "title": "Voice capture"
-    },
-    {
-      "file": "VoiceResult.dc.html",
-      "x": 2350,
-      "y": 2000,
-      "w": 390,
-      "h": 844,
-      "title": "Voice → document"
-    }
-  ],
-  "annotations": [
-    {
-      "id": "row-onboarding",
-      "x": 0,
-      "y": -150,
-      "w": 560,
-      "text": "FIRST TEN MINUTES\nTwo questions, then import what they already saved. The app is full before they ever see Home."
-    },
-    {
-      "id": "row-app",
-      "x": 0,
-      "y": 850,
-      "w": 560,
-      "text": "THE APP — NO THUMBNAILS\nCategory icon + serif title + one meta line + a reason. The photo is kept on the save and reachable from the item screen, never shown in lists."
-    },
-    {
-      "id": "row-more",
-      "x": 0,
-      "y": 1850,
-      "w": 700,
-      "text": "NOTIFICATIONS · TRIPS · VOICE\nBell on Home opens 'For you'. Travel saves get a 'Plan this trip' offer pre-filled from the reels → day-wise plan, every stop credited to its reel. Voice: speak in Hindi/English/mixed → Whisper/Sarvam transcript → Claude pulls out who / where / about / remind-me and writes the document."
-    },
-    {
-      "id": "note-data",
-      "x": 1410,
-      "y": 2000,
-      "w": 380,
-      "text": "WHERE EXPLORE / NEARBY DATA COMES FROM\n\n1. The user's own saves — always, from day one (GET /saves/nearby).\n2. Seeded places for the launch city — Place.source = 'seed' (GET /places/nearby).\n3. Other users' saves — Place.saveCount, shown only past a threshold (GET /places/trending).\n\nA row's reason line says which one it is. No LLM-generated places."
-    },
-    {
-      "id": "note-palette",
-      "x": 2820,
-      "y": 0,
-      "w": 300,
-      "text": "Same tokens as the live app: teal #0E7C7B, DM Serif Display + Work Sans, mustard / brown / plum by category."
-    }
-  ],
-  "launch": {
-    "view": "canvas"
+ "artboards": [
+  {
+   "file": "Welcome.dc.html",
+   "x": 0,
+   "y": 0,
+   "w": 390,
+   "h": 844,
+   "title": "1 · Welcome"
+  },
+  {
+   "file": "City.dc.html",
+   "x": 470,
+   "y": 0,
+   "w": 390,
+   "h": 844,
+   "title": "2 · Your city"
+  },
+  {
+   "file": "Interests.dc.html",
+   "x": 940,
+   "y": 0,
+   "w": 390,
+   "h": 844,
+   "title": "3 · Interests"
+  },
+  {
+   "file": "TasteCalibration.dc.html",
+   "x": 1410,
+   "y": 0,
+   "w": 390,
+   "h": 844,
+   "title": "4 · Taste"
+  },
+  {
+   "file": "Import.dc.html",
+   "x": 1880,
+   "y": 0,
+   "w": 390,
+   "h": 844,
+   "title": "5 · Bring your saves"
+  },
+  {
+   "file": "Extracting.dc.html",
+   "x": 2350,
+   "y": 0,
+   "w": 390,
+   "h": 844,
+   "title": "6 · Reading reels"
+  },
+  {
+   "file": "Starter.dc.html",
+   "x": 2820,
+   "y": 0,
+   "w": 390,
+   "h": 844,
+   "title": "7 · Your list"
+  },
+  {
+   "file": "Main.dc.html",
+   "x": 0,
+   "y": 1000,
+   "w": 390,
+   "h": 844,
+   "title": "Home"
+  },
+  {
+   "file": "HomeEmpty.dc.html",
+   "x": 470,
+   "y": 1000,
+   "w": 390,
+   "h": 844,
+   "title": "Home · nothing saved yet"
+  },
+  {
+   "file": "Explore.dc.html",
+   "x": 940,
+   "y": 1000,
+   "w": 390,
+   "h": 844,
+   "title": "Explore"
+  },
+  {
+   "file": "Search.dc.html",
+   "x": 1410,
+   "y": 1000,
+   "w": 390,
+   "h": 844,
+   "title": "Search · plain English"
+  },
+  {
+   "file": "Detail.dc.html",
+   "x": 1880,
+   "y": 1000,
+   "w": 390,
+   "h": 844,
+   "title": "Item"
+  },
+  {
+   "file": "Place.dc.html",
+   "x": 2350,
+   "y": 1000,
+   "w": 390,
+   "h": 844,
+   "title": "Place"
+  },
+  {
+   "file": "Saved.dc.html",
+   "x": 2820,
+   "y": 1000,
+   "w": 390,
+   "h": 844,
+   "title": "Saved"
+  },
+  {
+   "file": "SavedMap.dc.html",
+   "x": 3290,
+   "y": 1000,
+   "w": 390,
+   "h": 844,
+   "title": "Saved on a map"
+  },
+  {
+   "file": "Collections.dc.html",
+   "x": 3760,
+   "y": 1000,
+   "w": 390,
+   "h": 844,
+   "title": "Collections"
+  },
+  {
+   "file": "MultiExtract.dc.html",
+   "x": 0,
+   "y": 2000,
+   "w": 390,
+   "h": 844,
+   "title": "5 places in one reel"
+  },
+  {
+   "file": "ScreenshotSummary.dc.html",
+   "x": 470,
+   "y": 2000,
+   "w": 390,
+   "h": 844,
+   "title": "7 screenshots"
+  },
+  {
+   "file": "AddSave.dc.html",
+   "x": 940,
+   "y": 2000,
+   "w": 390,
+   "h": 844,
+   "title": "Saved · why this one"
+  },
+  {
+   "file": "LowConfidence.dc.html",
+   "x": 1410,
+   "y": 2000,
+   "w": 390,
+   "h": 844,
+   "title": "Saved · one question"
+  },
+  {
+   "file": "VisitedPrompt.dc.html",
+   "x": 1880,
+   "y": 2000,
+   "w": 390,
+   "h": 844,
+   "title": "Did you go?"
+  },
+  {
+   "file": "Tried.dc.html",
+   "x": 2350,
+   "y": 2000,
+   "w": 390,
+   "h": 844,
+   "title": "Tried it"
+  },
+  {
+   "file": "Notifications.dc.html",
+   "x": 0,
+   "y": 3000,
+   "w": 390,
+   "h": 844,
+   "title": "Smart notifications"
+  },
+  {
+   "file": "Nearby.dc.html",
+   "x": 470,
+   "y": 3000,
+   "w": 390,
+   "h": 844,
+   "title": "Near you now"
+  },
+  {
+   "file": "RemindMe.dc.html",
+   "x": 940,
+   "y": 3000,
+   "w": 390,
+   "h": 844,
+   "title": "Remind me"
+  },
+  {
+   "file": "WeekendPlan.dc.html",
+   "x": 1410,
+   "y": 3000,
+   "w": 390,
+   "h": 844,
+   "title": "A day from your saves"
+  },
+  {
+   "file": "Trip.dc.html",
+   "x": 1880,
+   "y": 3000,
+   "w": 390,
+   "h": 844,
+   "title": "Travel save"
+  },
+  {
+   "file": "TripCreate.dc.html",
+   "x": 2350,
+   "y": 3000,
+   "w": 390,
+   "h": 844,
+   "title": "New trip"
+  },
+  {
+   "file": "Itinerary.dc.html",
+   "x": 2820,
+   "y": 3000,
+   "w": 390,
+   "h": 844,
+   "title": "Day-wise plan"
+  },
+  {
+   "file": "Voice.dc.html",
+   "x": 0,
+   "y": 4000,
+   "w": 390,
+   "h": 844,
+   "title": "Voice capture"
+  },
+  {
+   "file": "VoiceResult.dc.html",
+   "x": 470,
+   "y": 4000,
+   "w": 390,
+   "h": 844,
+   "title": "Voice → document"
+  },
+  {
+   "file": "Ask.dc.html",
+   "x": 940,
+   "y": 4000,
+   "w": 390,
+   "h": 844,
+   "title": "Ask Wanna Try"
+  },
+  {
+   "file": "ExperienceDNA.dc.html",
+   "x": 1410,
+   "y": 4000,
+   "w": 390,
+   "h": 844,
+   "title": "Your taste"
+  },
+  {
+   "file": "YearRecap.dc.html",
+   "x": 1880,
+   "y": 4000,
+   "w": 390,
+   "h": 844,
+   "title": "Your 2026"
+  },
+  {
+   "file": "Profile.dc.html",
+   "x": 2350,
+   "y": 4000,
+   "w": 390,
+   "h": 844,
+   "title": "You"
+  },
+  {
+   "file": "ErrorStates.dc.html",
+   "x": 0,
+   "y": 5000,
+   "w": 390,
+   "h": 844,
+   "title": "Error states"
   }
+ ],
+ "annotations": [
+  {
+   "id": "row-0",
+   "x": 0,
+   "y": -150,
+   "w": 620,
+   "text": "FIRST TEN MINUTES\nThree questions — city, interests, then four either/or picks — and we import what they already saved. The app is full before they ever see Home."
+  },
+  {
+   "id": "row-1000",
+   "x": 0,
+   "y": 850,
+   "w": 620,
+   "text": "THE APP — PHOTO WHEN WE HAVE ONE\nCategory icon + serif title + one meta line + a reason. When extraction returned a usable photo the icon tile becomes the photo; when it didn't, nothing breaks and the row reads exactly as before (ADR 0024). Home has a real zero-data state — the app is never empty."
+  },
+  {
+   "id": "row-2000",
+   "x": 0,
+   "y": 1850,
+   "w": 620,
+   "text": "CAPTURE — SAVE FIRST, UNDERSTAND AFTER\nThe save is safe before any AI runs. The reason chip is memory input, not a setting. When the match is weak we ask instead of guessing, and it stays saved either way."
+  },
+  {
+   "id": "row-3000",
+   "x": 0,
+   "y": 2850,
+   "w": 620,
+   "text": "BRINGING IT BACK\nThe half that makes saving worth anything. Reminders are tied to the reason it was saved, not to a generic timer. A trip is a shape for saves that already exist."
+  },
+  {
+   "id": "row-4000",
+   "x": 0,
+   "y": 3850,
+   "w": 620,
+   "text": "VOICE, ASKING, AND WHAT WE LEARNED\nVoice is a way into memory, not just search. Ask answers only from your own saves. Your taste says which parts you told us and which parts we worked out."
+  },
+  {
+   "id": "row-5000",
+   "x": 0,
+   "y": 4850,
+   "w": 620,
+   "text": "WHEN IT DOES NOT WORK\nEvery failure says what happened and offers the way out. None is a dead end, and none loses the save (mobile PRD §50)."
+  }
+ ],
+ "launch": {
+  "view": "canvas"
+ }
 }

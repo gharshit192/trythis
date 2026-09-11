@@ -19,16 +19,16 @@ const https = require('https');
 const http  = require('http');
 
 const connectDB         = require('../src/config/database');
-const Save              = require('../src/models/Save');
-const User              = require('../src/models/User');
-const fetchSystem       = require('../src/services/fetchSystem');
-const extractionEngine  = require('../src/services/extractionEngine');
-const { classifyByDomainFull } = require('../src/services/extractionEngine/domainClassifier');
-const audioAnalyzer     = require('../src/services/audioAnalyzer');
-const frameExtractor    = require('../src/services/frameExtractor');
-const mediaProcessor    = require('../src/services/mediaProcessor');
-const thumbnailCache    = require('../src/services/thumbnailCache');
-const autoCollectionEngine = require('../src/services/autoCollectionEngine');
+const Save              = require('../src/modules/saves').Save;
+const User              = require('../src/modules/users').User;
+const fetchSystem       = require('../src/modules/extraction').fetchSystem;
+const extractionEngine  = require('../src/modules/extraction').engine;
+const { classifyByDomainFull } = require('../src/modules/extraction').domainClassifier;
+const audioAnalyzer     = require('../src/modules/extraction/audioAnalyzer');
+const frameExtractor    = require('../src/modules/extraction/frameExtractor');
+const mediaProcessor    = require('../src/modules/extraction').mediaProcessor;
+const thumbnailCache    = require('../src/modules/extraction').thumbnailCache;
+const autoCollectionEngine = require('../src/modules/saves').autoCollection;
 
 const url  = process.argv[2];
 const dry  = process.argv.includes('--dry');

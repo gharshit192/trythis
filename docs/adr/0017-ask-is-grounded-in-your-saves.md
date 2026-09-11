@@ -1,6 +1,10 @@
 # ADR 0017 — "Ask Wanna Try" answers only from your own saves
 
-**Status:** Accepted · 2026-09-02
+**Status:** Partly superseded by [ADR 0025](0025-memory-is-context-not-boundary.md) · 2026-09-02
+
+> Decision 1 below ("general knowledge is out of scope on purpose") is reversed by
+> ADR 0025: Ask may use the web, with saves and web sources kept separately
+> attributed. The compact index and citing saves by number still stand.
 
 ## Context
 

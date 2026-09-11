@@ -4,8 +4,8 @@ const fs = require('fs');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 const connectDB = require('../src/config/database');
-const Save = require('../src/models/Save');
-const sweep = require('../src/jobs/purgeScreenshots');
+const Save = require('../src/modules/saves').Save;
+const sweep = require('../src/modules/extraction/purgeScreenshots');
 
 (async () => {
   await connectDB();

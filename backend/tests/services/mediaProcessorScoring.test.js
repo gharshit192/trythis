@@ -1,6 +1,6 @@
 // Title and confidence are what the card actually shows. Both had gaps that made
 // a fully-successful extraction look like an empty save in the UI.
-const { __test__ } = require('../../src/services/mediaProcessor');
+const { __test__ } = require('../../src/modules/extraction').mediaProcessor;
 const { pickBetterTitle, scoreConfidence } = __test__;
 
 describe('pickBetterTitle', () => {

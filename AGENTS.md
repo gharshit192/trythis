@@ -46,12 +46,21 @@ This is an **npm workspaces** monorepo. The authoritative lockfile is the root
 
 ```
 backend/        Node.js/Express API (MongoDB + Redis/Bull). The product brain.
+backend/src/modules/    One folder per domain. A module's index.js is its ONLY
+                importable surface — importing anything deeper from another
+                module fails `npm run lint` (ADR 0023). Add an export to the
+                target module's index.js instead of reaching past it.
+backend/src/platform/   Cross-cutting, no domain logic: llm, events, storage, http.
 frontend-app/   Capacitor + PWA client (web dev loop + Android). ACTIVE.
+                Vite + Vitest. `npm start` dev, `npm run build` -> build/
+                (Capacitor webDir). Env vars keep the REACT_APP_ prefix.
 frontend/       Expo/React Native client. LEGACY.
 shared/         Shared spec docs (API_SPEC, DATA_MODELS).
 trythis-seed-data/  Seed URLs for exercising the extraction pipeline.
 docs/           Canonical documentation (see README for the map).
 docs/design/    The UI design: PDF + per-screen HTML sources (ADR 0013).
+docs/prd/       Author-written PRDs. TARGET-STATE, NOT ADOPTED — see docs/prd/README.md.
+                Stack response is decided: ADR 0023 (Node monolith; PRD stack rejected).
 uploads/        Local upload/bundle storage (screenshot bundles, thumbnails).
 ```
 
@@ -135,7 +144,10 @@ See [ADR 0016](docs/adr/0016-voice-capture-to-structured-memory.md).
 
 ## Ask (chat over your saves)
 
-See [ADR 0017](docs/adr/0017-ask-is-grounded-in-your-saves.md).
+See [ADR 0017](docs/adr/0017-ask-is-grounded-in-your-saves.md). Ask may now also use the web:
+memory is the context, not the boundary, and web sources stay in a separate
+`sources` field from the user's own saves — see
+[ADR 0025](docs/adr/0025-memory-is-context-not-boundary.md).
 
 - `POST /ask { question, conversationId? }` → `services/askService.js` →
   `{ answer, references, followUps, conversationId }`; threads live in

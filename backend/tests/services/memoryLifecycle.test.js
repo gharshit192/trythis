@@ -1,6 +1,6 @@
 const {
   decayedStrength, reinforcedStrength, sweepOne, findMergeable, findPromotable, DORMANT_BELOW,
-} = require('../../src/services/memoryEngine/lifecycle');
+} = require('../../src/modules/memory/engine/lifecycle');
 
 const ago = (days) => new Date(Date.now() - days * 86400000);
 const mem = (over = {}) => ({

@@ -1,6 +1,6 @@
 // Usage: node scripts/extract.js "<url>" [--type=url|instagram|screenshot]
-const fetchSystem = require('../src/services/fetchSystem');
-const extractionEngine = require('../src/services/extractionEngine');
+const fetchSystem = require('../src/modules/extraction').fetchSystem;
+const extractionEngine = require('../src/modules/extraction').engine;
 
 const args = process.argv.slice(2);
 const url = args.find((a) => !a.startsWith('--'));

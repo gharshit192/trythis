@@ -6,7 +6,7 @@
 const mockCreate = jest.fn();
 jest.mock('@anthropic-ai/sdk', () => function Anthropic() { return { messages: { create: mockCreate } }; });
 
-const { extractFromText, fromRating } = require('../../src/services/memoryEngine/extract');
+const { extractFromText, fromRating } = require('../../src/modules/memory').extract;
 
 const reply = (obj) => ({ content: [{ type: 'text', text: JSON.stringify(obj) }] });
 const one = (over = {}) => ({
@@ -39,7 +39,7 @@ describe('extractFromText — the evidence guard', () => {
     const [m] = await extractFromText(said);
     expect(m.quote).toBe('');
 
-    const { govern } = require('../../src/services/memoryEngine/govern');
+    const { govern } = require('../../src/modules/memory/engine/govern');
     expect(govern(m)).toMatchObject({ ok: false, reason: 'no-evidence' });
   });
 });

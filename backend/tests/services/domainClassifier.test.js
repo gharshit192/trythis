@@ -1,4 +1,4 @@
-const { classifyByDomain, classifyByDomainFull } = require('../../src/services/extractionEngine/domainClassifier');
+const { classifyByDomain, classifyByDomainFull } = require('../../src/modules/extraction').domainClassifier;
 
 describe('classifyByDomain', () => {
   it.each([

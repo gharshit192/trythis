@@ -4,8 +4,8 @@ if (process.env.ENV_FILE) require('dotenv').config({ path: require('path').join(
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
-const User = require('../models/User');
-const Save = require('../models/Save');
+const User = require('../modules/users').User;
+const Save = require('../modules/saves').Save;
 
 const TEMPLATE_SAVES = [
   {

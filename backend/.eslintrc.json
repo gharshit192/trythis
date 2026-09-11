@@ -1,0 +1,225 @@
+{
+  "root": true,
+  "env": {
+    "node": true,
+    "es2022": true,
+    "jest": true
+  },
+  "parserOptions": {
+    "ecmaVersion": 2022,
+    "sourceType": "script"
+  },
+  "rules": {},
+  "overrides": [
+    {
+      "files": [
+        "src/modules/admin/**/*.js"
+      ],
+      "rules": {
+        "no-restricted-syntax": [
+          "error",
+          {
+            "selector": "CallExpression[callee.name='require'] > Literal[value=/^(\\.\\.\\/)+(ask|auth|commerce|content|extraction|feed|memory|notifications|places|plans|saves|search|users|voice)\\/.+/]",
+            "message": "Module boundary (ADR 0023): `admin` may import another module's index.js and nothing deeper. Use require('../<module>').<export>, adding the export to that module's index.js if it is missing."
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "src/modules/ask/**/*.js"
+      ],
+      "rules": {
+        "no-restricted-syntax": [
+          "error",
+          {
+            "selector": "CallExpression[callee.name='require'] > Literal[value=/^(\\.\\.\\/)+(admin|auth|commerce|content|extraction|feed|memory|notifications|places|plans|saves|search|users|voice)\\/.+/]",
+            "message": "Module boundary (ADR 0023): `ask` may import another module's index.js and nothing deeper. Use require('../<module>').<export>, adding the export to that module's index.js if it is missing."
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "src/modules/auth/**/*.js"
+      ],
+      "rules": {
+        "no-restricted-syntax": [
+          "error",
+          {
+            "selector": "CallExpression[callee.name='require'] > Literal[value=/^(\\.\\.\\/)+(admin|ask|commerce|content|extraction|feed|memory|notifications|places|plans|saves|search|users|voice)\\/.+/]",
+            "message": "Module boundary (ADR 0023): `auth` may import another module's index.js and nothing deeper. Use require('../<module>').<export>, adding the export to that module's index.js if it is missing."
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "src/modules/commerce/**/*.js"
+      ],
+      "rules": {
+        "no-restricted-syntax": [
+          "error",
+          {
+            "selector": "CallExpression[callee.name='require'] > Literal[value=/^(\\.\\.\\/)+(admin|ask|auth|content|extraction|feed|memory|notifications|places|plans|saves|search|users|voice)\\/.+/]",
+            "message": "Module boundary (ADR 0023): `commerce` may import another module's index.js and nothing deeper. Use require('../<module>').<export>, adding the export to that module's index.js if it is missing."
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "src/modules/content/**/*.js"
+      ],
+      "rules": {
+        "no-restricted-syntax": [
+          "error",
+          {
+            "selector": "CallExpression[callee.name='require'] > Literal[value=/^(\\.\\.\\/)+(admin|ask|auth|commerce|extraction|feed|memory|notifications|places|plans|saves|search|users|voice)\\/.+/]",
+            "message": "Module boundary (ADR 0023): `content` may import another module's index.js and nothing deeper. Use require('../<module>').<export>, adding the export to that module's index.js if it is missing."
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "src/modules/extraction/**/*.js"
+      ],
+      "rules": {
+        "no-restricted-syntax": [
+          "error",
+          {
+            "selector": "CallExpression[callee.name='require'] > Literal[value=/^(\\.\\.\\/)+(admin|ask|auth|commerce|content|feed|memory|notifications|places|plans|saves|search|users|voice)\\/.+/]",
+            "message": "Module boundary (ADR 0023): `extraction` may import another module's index.js and nothing deeper. Use require('../<module>').<export>, adding the export to that module's index.js if it is missing."
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "src/modules/feed/**/*.js"
+      ],
+      "rules": {
+        "no-restricted-syntax": [
+          "error",
+          {
+            "selector": "CallExpression[callee.name='require'] > Literal[value=/^(\\.\\.\\/)+(admin|ask|auth|commerce|content|extraction|memory|notifications|places|plans|saves|search|users|voice)\\/.+/]",
+            "message": "Module boundary (ADR 0023): `feed` may import another module's index.js and nothing deeper. Use require('../<module>').<export>, adding the export to that module's index.js if it is missing."
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "src/modules/memory/**/*.js"
+      ],
+      "rules": {
+        "no-restricted-syntax": [
+          "error",
+          {
+            "selector": "CallExpression[callee.name='require'] > Literal[value=/^(\\.\\.\\/)+(admin|ask|auth|commerce|content|extraction|feed|notifications|places|plans|saves|search|users|voice)\\/.+/]",
+            "message": "Module boundary (ADR 0023): `memory` may import another module's index.js and nothing deeper. Use require('../<module>').<export>, adding the export to that module's index.js if it is missing."
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "src/modules/notifications/**/*.js"
+      ],
+      "rules": {
+        "no-restricted-syntax": [
+          "error",
+          {
+            "selector": "CallExpression[callee.name='require'] > Literal[value=/^(\\.\\.\\/)+(admin|ask|auth|commerce|content|extraction|feed|memory|places|plans|saves|search|users|voice)\\/.+/]",
+            "message": "Module boundary (ADR 0023): `notifications` may import another module's index.js and nothing deeper. Use require('../<module>').<export>, adding the export to that module's index.js if it is missing."
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "src/modules/places/**/*.js"
+      ],
+      "rules": {
+        "no-restricted-syntax": [
+          "error",
+          {
+            "selector": "CallExpression[callee.name='require'] > Literal[value=/^(\\.\\.\\/)+(admin|ask|auth|commerce|content|extraction|feed|memory|notifications|plans|saves|search|users|voice)\\/.+/]",
+            "message": "Module boundary (ADR 0023): `places` may import another module's index.js and nothing deeper. Use require('../<module>').<export>, adding the export to that module's index.js if it is missing."
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "src/modules/plans/**/*.js"
+      ],
+      "rules": {
+        "no-restricted-syntax": [
+          "error",
+          {
+            "selector": "CallExpression[callee.name='require'] > Literal[value=/^(\\.\\.\\/)+(admin|ask|auth|commerce|content|extraction|feed|memory|notifications|places|saves|search|users|voice)\\/.+/]",
+            "message": "Module boundary (ADR 0023): `plans` may import another module's index.js and nothing deeper. Use require('../<module>').<export>, adding the export to that module's index.js if it is missing."
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "src/modules/saves/**/*.js"
+      ],
+      "rules": {
+        "no-restricted-syntax": [
+          "error",
+          {
+            "selector": "CallExpression[callee.name='require'] > Literal[value=/^(\\.\\.\\/)+(admin|ask|auth|commerce|content|extraction|feed|memory|notifications|places|plans|search|users|voice)\\/.+/]",
+            "message": "Module boundary (ADR 0023): `saves` may import another module's index.js and nothing deeper. Use require('../<module>').<export>, adding the export to that module's index.js if it is missing."
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "src/modules/search/**/*.js"
+      ],
+      "rules": {
+        "no-restricted-syntax": [
+          "error",
+          {
+            "selector": "CallExpression[callee.name='require'] > Literal[value=/^(\\.\\.\\/)+(admin|ask|auth|commerce|content|extraction|feed|memory|notifications|places|plans|saves|users|voice)\\/.+/]",
+            "message": "Module boundary (ADR 0023): `search` may import another module's index.js and nothing deeper. Use require('../<module>').<export>, adding the export to that module's index.js if it is missing."
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "src/modules/users/**/*.js"
+      ],
+      "rules": {
+        "no-restricted-syntax": [
+          "error",
+          {
+            "selector": "CallExpression[callee.name='require'] > Literal[value=/^(\\.\\.\\/)+(admin|ask|auth|commerce|content|extraction|feed|memory|notifications|places|plans|saves|search|voice)\\/.+/]",
+            "message": "Module boundary (ADR 0023): `users` may import another module's index.js and nothing deeper. Use require('../<module>').<export>, adding the export to that module's index.js if it is missing."
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "src/modules/voice/**/*.js"
+      ],
+      "rules": {
+        "no-restricted-syntax": [
+          "error",
+          {
+            "selector": "CallExpression[callee.name='require'] > Literal[value=/^(\\.\\.\\/)+(admin|ask|auth|commerce|content|extraction|feed|memory|notifications|places|plans|saves|search|users)\\/.+/]",
+            "message": "Module boundary (ADR 0023): `voice` may import another module's index.js and nothing deeper. Use require('../<module>').<export>, adding the export to that module's index.js if it is missing."
+          }
+        ]
+      }
+    }
+  ]
+}

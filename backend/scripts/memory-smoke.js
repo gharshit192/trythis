@@ -14,12 +14,12 @@
 require('dotenv').config({ path: process.env.ENV_FILE || '.env' });
 
 const mongoose = require('mongoose');
-const Memory = require('../src/models/Memory');
-const MemoryTombstone = require('../src/models/MemoryTombstone');
-const { extractFromText } = require('../src/services/memoryEngine/extract');
-const { observe } = require('../src/services/memoryEngine/observe');
-const { buildBrief } = require('../src/services/memoryEngine/brief');
-const { retract } = require('../src/services/memoryEngine/observe');
+const Memory = require('../src/modules/memory/models/Memory');
+const MemoryTombstone = require('../src/modules/memory/models/MemoryTombstone');
+const { extractFromText } = require('../src/modules/memory').extract;
+const { observe } = require('../src/modules/memory').observe;
+const { buildBrief } = require('../src/modules/memory').brief;
+const { retract } = require('../src/modules/memory').observe;
 
 const userId = new mongoose.Types.ObjectId();
 const KEEP = process.argv.includes('--keep');

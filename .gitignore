@@ -54,3 +54,4 @@ backend/uploads/*
 
 # Runtime upload artifacts written at repo root by the screenshot pipeline
 /uploads/
+frontend-app/build/

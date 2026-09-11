@@ -13,10 +13,49 @@ const starters = (city) => [
   'What recipes did I save that take under 30 minutes?',
   'What did I plan for my next trip?',
   'What have I saved but never tried?',
+  'When is the best time to do my next trip?',
 ];
 
+// Where the non-saved part of an answer came from (ADR 0025). Kept visually
+// apart from the save rows above: those are the user's own things, these are the
+// open web, and the product breaks the moment those two read as one list.
+function Sources({ items }) {
+  if (!items?.length) return null;
+  const host = (u) => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch { return u; } };
+  return (
+    <div style={{ marginTop: 10 }}>
+      <div style={{ fontSize: 11.5, fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--faint)', marginBottom: 6 }}>
+        From the web
+      </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+        {items.map((sItem) => (
+          <a key={sItem.url} href={sItem.url} target="_blank" rel="noopener noreferrer"
+            style={{ fontSize: 12.5, padding: '5px 10px', borderRadius: 14, background: 'var(--bg)', border: '1px solid var(--line)', color: 'var(--mute)', textDecoration: 'none' }}>
+            {host(sItem.url)}
+          </a>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Rejoin wrapped bullets before rendering. A searched answer quotes fragments
+// from its sources, and those arrive with newlines inside them — split naively,
+// one bullet becomes three, chopped mid-sentence. A line only starts something
+// new if it begins with a bullet; otherwise it is the continuation of the last.
+function reflow(text) {
+  const out = [];
+  for (const raw of String(text || '').split('\n')) {
+    const line = raw.trim();
+    if (!line) continue;
+    if (/^[-•]\s+/.test(line) || !out.length) out.push(line);
+    else out[out.length - 1] += ` ${line}`;
+  }
+  return out;
+}
+
 function Answer({ text }) {
-  const lines = String(text || '').split('\n').filter((l) => l.trim());
+  const lines = reflow(text);
   return (
     <div style={{ fontSize: 15.5, lineHeight: 1.55 }}>
       {lines.map((l, i) => {
@@ -95,7 +134,7 @@ export default function Ask({ onNavigate, onBack, payload }) {
       const r = await api.ask(question, conversationId);
       if (r?.status === 'success') {
         setConversationId(r.data.conversationId);
-        setMessages((m) => [...m, { role: 'assistant', content: r.data.answer, refs: r.data.references, followUps: r.data.followUps, usedMemories: r.data.usedMemories }]);
+        setMessages((m) => [...m, { role: 'assistant', content: r.data.answer, refs: r.data.references, followUps: r.data.followUps, usedMemories: r.data.usedMemories, sources: r.data.sources }]);
       } else {
         setMessages((m) => [...m, { role: 'assistant', content: r?.error?.message || "Couldn't answer that just now. Try again in a moment." }]);
       }
@@ -131,7 +170,7 @@ export default function Ask({ onNavigate, onBack, payload }) {
         <div style={{ marginTop: 18 }}>
           <div style={{ width: 44, height: 44, borderRadius: 22, background: 'var(--teal-soft)', color: 'var(--teal)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}><Icon name="sparkle" size={22} /></div>
           <h1 className="wt-title" style={{ marginBottom: 8 }}>Ask anything<br />about what you saved.</h1>
-          <p style={{ fontSize: 14.5, color: 'var(--mute)', lineHeight: 1.5, margin: '0 0 20px' }}>It only answers from your own saves — places, recipes, trips, notes — and shows you which ones it used.</p>
+          <p style={{ fontSize: 14.5, color: 'var(--mute)', lineHeight: 1.5, margin: '0 0 20px' }}>It starts from your own saves — places, recipes, trips, notes — and looks things up when your saves cannot answer. It always shows you which is which.</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {starters(city).map((s) => (
               <button key={s} type="button" onClick={() => send(s)} style={{ textAlign: 'left', fontSize: 14.5, padding: '12px 14px', borderRadius: 12, background: 'var(--card)', border: '1px solid var(--line)', color: 'var(--ink)', cursor: 'pointer', fontFamily: 'inherit' }}>{s}</button>
@@ -153,6 +192,7 @@ export default function Ask({ onNavigate, onBack, payload }) {
                   ))}
                 </div>
               )}
+              <Sources items={m.sources} />
               <UsedMemories items={m.usedMemories} onForget={forgetMemory} />
               {m.followUps?.length > 0 && i === messages.length - 1 && (
                 <div className="wt-chips" style={{ marginTop: 10 }}>

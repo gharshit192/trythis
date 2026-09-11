@@ -1,0 +1,17 @@
+{
+  "//": "This app is plain JS. It exists so Vite's tsconfig scan stops here instead of walking up to the repo root, whose tsconfig extends expo/tsconfig.base — a dependency of the legacy frontend/ app that is not installed here.",
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["DOM", "DOM.Iterable", "ES2022"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "allowJs": true,
+    "checkJs": false,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "resolveJsonModule": true
+  },
+  "include": ["src", "vite.config.js"]
+}

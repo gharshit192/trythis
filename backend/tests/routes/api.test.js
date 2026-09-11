@@ -3,8 +3,8 @@ process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret';
 const request = require('supertest');
 
 // Mock fetchSystem so the API doesn't hit the real internet on POST /saves
-jest.mock('../../src/services/fetchSystem', () => {
-  const real = jest.requireActual('../../src/services/fetchSystem');
+jest.mock('../../src/modules/extraction/fetchSystem', () => {
+  const real = jest.requireActual('../../src/modules/extraction/fetchSystem');
   return {
     ...real,
     fetchContent: jest.fn(async (source) => ({
@@ -19,6 +19,7 @@ jest.mock('../../src/services/fetchSystem', () => {
 
 const app = require('../../src/app');
 const { startMongo, stopMongo, clearDb } = require('../helpers/mongo');
+const Save = require('../../src/modules/saves').Save;
 
 beforeAll(() => startMongo());
 afterAll(() => stopMongo());
@@ -262,8 +263,22 @@ describe('/recommendations', () => {
   it('returns recs when peers exist in same category', async () => {
     const a = await request(app).post('/saves').set('Authorization', `Bearer ${token}`).send({ url: 'https://a.com' }).expect(201);
     await request(app).post('/saves').set('Authorization', `Bearer ${token}`).send({ url: 'https://b.com' }).expect(201);
+    // Pin the category. Enrichment runs after the response and can re-categorise
+    // one save before the other, which made this assert the scheduler rather than
+    // the engine — it failed about 1 run in 6. The claim under test is "peers in
+    // the same category produce a rec", so state the category outright.
+    await Save.updateMany({}, { $set: { category: 'cafe' } });
     const r = await request(app).get(`/recommendations/${a.body.data._id}`).set('Authorization', `Bearer ${token}`).expect(200);
     expect(r.body.data.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('does not recommend across category families', async () => {
+    const a = await request(app).post('/saves').set('Authorization', `Bearer ${token}`).send({ url: 'https://a.com' }).expect(201);
+    const b = await request(app).post('/saves').set('Authorization', `Bearer ${token}`).send({ url: 'https://b.com' }).expect(201);
+    await Save.updateOne({ _id: a.body.data._id }, { $set: { category: 'cafe' } });
+    await Save.updateOne({ _id: b.body.data._id }, { $set: { category: 'trek' } });
+    const r = await request(app).get(`/recommendations/${a.body.data._id}`).set('Authorization', `Bearer ${token}`).expect(200);
+    expect(r.body.data).toEqual([]);
   });
 });
 
@@ -278,7 +293,7 @@ describe('/notifications', () => {
   });
 
   it('mark as read then dismiss', async () => {
-    const Notification = require('../../src/models/Notification');
+    const Notification = require('../../src/modules/notifications').Notification;
     const n = await Notification.create({
       userId,
       type: 'nearby_rediscovery',

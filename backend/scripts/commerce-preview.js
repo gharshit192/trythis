@@ -4,8 +4,8 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 process.env.JWT_SECRET = 'local-commerce-preview-only';
 const app = require('../src/app');
-const User = require('../src/models/User');
-const Save = require('../src/models/Save');
+const User = require('../src/modules/users').User;
+const Save = require('../src/modules/saves').Save;
 
 async function main() {
   const mongo = await MongoMemoryServer.create();

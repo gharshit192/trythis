@@ -1,4 +1,4 @@
-const { extractLocation, findKnownLocation } = require('../../src/services/locationExtractor');
+const { extractLocation, findKnownLocation } = require('../../src/modules/extraction/locationExtractor');
 
 describe('locationExtractor', () => {
   test('matches English city names on word boundaries', async () => {

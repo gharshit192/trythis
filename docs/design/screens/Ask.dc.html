@@ -1,0 +1,77 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Work+Sans:wght@400;500;600;700&display=swap">
+  <style>
+    :root{--ink:#15201E;--mute:#6E7B78;--faint:#9BA5A2;--bg:#FAF8F5;--card:#fff;--line:#E7E2DA;
+      --teal:#0E7C7B;--teal-d:#0A5A59;--teal-soft:#E4EFEE;--gold:#C99425;--gold-soft:#F6EDD6;
+      --plum:#6B5B95;--plum-soft:#ECE8F3;--clay:#8B5E3C;--clay-soft:#F1E7DF;}
+    *{box-sizing:border-box;}
+    body{margin:0;width:390px;height:844px;overflow:hidden;background:var(--bg);
+      font-family:"Work Sans",-apple-system,system-ui,sans-serif;color:var(--ink);}
+  </style>
+</helmet>
+
+<div style="width:390px;height:844px;display:flex;flex-direction:column;background:var(--bg);position:relative;">
+  <div style="padding:56px 24px 0;">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#15201E" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      <span style="font-size:15px;font-weight:600;">Ask Wanna Try</span>
+    </div>
+  </div>
+  <div style="padding:0 24px;display:flex;flex-direction:column;gap:14px;">
+    <div style="align-self:flex-end;max-width:78%;padding:12px 15px;border-radius:16px 16px 4px 16px;background:var(--teal);color:#fff;font-size:14.5px;line-height:1.45;">What haven't I tried in Hauz Khas?</div>
+    <div style="align-self:flex-start;max-width:88%;padding:14px 15px;border-radius:16px 16px 16px 4px;background:var(--card);border:1px solid var(--line);">
+      <p style="margin:0 0 11px;font-size:14.5px;line-height:1.5;">Four things, all saved more than a month ago:</p>
+      <div style="display:flex;flex-direction:column;gap:9px;">
+        <div style="display:flex;gap:9px;align-items:center;"><span style="width:6px;height:6px;border-radius:3px;background:var(--teal);flex-shrink:0;"></span><span style="font-size:14px;">Kunzum &mdash; <span style="color:var(--mute);">bookshop cafe, saved in June</span></span></div>
+        <div style="display:flex;gap:9px;align-items:center;"><span style="width:6px;height:6px;border-radius:3px;background:var(--gold);flex-shrink:0;"></span><span style="font-size:14px;">Naivedyam &mdash; <span style="color:var(--mute);">South Indian, saved in May</span></span></div>
+        <div style="display:flex;gap:9px;align-items:center;"><span style="width:6px;height:6px;border-radius:3px;background:var(--teal);flex-shrink:0;"></span><span style="font-size:14px;">Coast Cafe &mdash; <span style="color:var(--mute);">rooftop, saved in April</span></span></div>
+      </div>
+      <div style="margin-top:12px;padding-top:11px;border-top:1px solid var(--line);display:flex;gap:8px;align-items:flex-start;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9BA5A2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg>
+        <span style="font-size:12px;line-height:1.4;color:var(--faint);">Only from your 38 saves. Nothing invented, nothing from the web.</span>
+      </div>
+    </div>
+  </div>
+  <div style="position:absolute;left:0;right:0;bottom:86px;padding:12px 24px;background:var(--bg);">
+    <div style="display:flex;gap:9px;margin-bottom:11px;">
+      <span style="padding:8px 12px;border-radius:16px;background:var(--card);border:1px solid var(--line);font-size:12.5px;font-weight:500;">Plan a weekend</span>
+      <span style="padding:8px 12px;border-radius:16px;background:var(--card);border:1px solid var(--line);font-size:12.5px;font-weight:500;">What did I love?</span>
+    </div>
+    <div style="height:48px;border-radius:24px;background:var(--card);border:1px solid var(--line);display:flex;align-items:center;padding:0 8px 0 16px;gap:10px;">
+      <span style="flex-grow:1;font-size:14.5px;color:var(--faint);">Ask about anything you saved</span>
+      <span style="width:34px;height:34px;border-radius:17px;background:var(--teal);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </span>
+    </div>
+  </div>
+    <div style="position:absolute;left:0;right:0;bottom:0;height:86px;padding:10px 22px 22px;background:var(--card);border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--faint);">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5"/><path d="M5 10v10h14V10"/></svg>
+      <span style="font-size:10.5px;font-weight:500;">Home</span>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--faint);">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+      <span style="font-size:10.5px;font-weight:500;">Explore</span>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--faint);">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h12v16l-6-4-6 4z"/></svg>
+      <span style="font-size:10.5px;font-weight:500;">Saved</span>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--ink);">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 20c0-3.5 3.1-5.5 7-5.5s7 2 7 5.5"/></svg>
+      <span style="font-size:10.5px;font-weight:600;">Me</span>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

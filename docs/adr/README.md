@@ -66,6 +66,9 @@ Status format: `Proposed - YYYY-MM-DD` / `Accepted - YYYY-MM-DD` /
   the API for SEO; one env-configured web admin writes it
 
 - [ADR 0022](0022-cuelinks-contextual-merchant-links.md) - Verified Cuelinks links, platform restrictions and separate inventory. *Accepted*
+- [ADR 0023](0023-one-node-modular-monolith.md) - One Node modular monolith; PRD polyglot stack (Flutter/Java/FastAPI/Postgres) rejected. *Accepted*
+- [ADR 0024](0024-photo-when-we-have-one.md) - Photo on a card when extraction returned one, text-first fallback otherwise; amends ADR 0013. *Accepted*
+- [ADR 0025](0025-memory-is-context-not-boundary.md) - Ask may use the web; memory is the context, not the knowledge boundary. Supersedes part of ADR 0017. *Accepted*
 
 ## Maintenance Rules
 

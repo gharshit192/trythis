@@ -2,27 +2,27 @@ const express = require('express');
 const compression = require('compression');
 const path = require('path');
 const cors = require('cors');
-const authRoutes = require('./routes/auth');
-const savesRoutes = require('./routes/saves');
-const collectionsRoutes = require('./routes/collections');
-const searchRoutes = require('./routes/search');
-const knowledgeRoutes = require('./routes/knowledge');
-const memoryRoutes = require('./routes/memory');
-const recommendationsRoutes = require('./routes/recommendations');
-const notificationsRoutes = require('./routes/notifications');
-const pushPublicRoutes = require('./routes/pushPublic');
-const notificationTestRoutes = require('./routes/notificationTest');
-const uploadsRoutes = require('./routes/uploads');
-const audioProcessingRoutes = require('./routes/audioProcessing');
-const adminRoutes = require('./routes/admin');
-const shareRoutes = require('./routes/share');
-const placesRoutes = require('./routes/places');
-const voiceRoutes = require('./routes/voice');
-const askRoutes = require('./routes/ask');
-const blogRoutes = require('./routes/blog');
-const plansRoutes = require('./routes/plans');
-const goRoutes = require('./routes/go');
-const errorHandler = require('./middleware/errorHandler');
+const authRoutes = require('./modules/auth').routes;
+const savesRoutes = require('./modules/saves').routes;
+const collectionsRoutes = require('./modules/saves').collectionRoutes;
+const searchRoutes = require('./modules/search').routes;
+const knowledgeRoutes = require('./modules/search').knowledgeRoutes;
+const memoryRoutes = require('./modules/memory').routes;
+const recommendationsRoutes = require('./modules/feed').routes;
+const notificationsRoutes = require('./modules/notifications').routes;
+const pushPublicRoutes = require('./modules/notifications').pushPublicRoutes;
+const notificationTestRoutes = require('./modules/notifications').testRoutes;
+const uploadsRoutes = require('./modules/extraction').uploadRoutes;
+const audioProcessingRoutes = require('./modules/extraction').audioRoutes;
+const adminRoutes = require('./modules/admin').routes;
+const shareRoutes = require('./modules/content').shareRoutes;
+const placesRoutes = require('./modules/places').routes;
+const voiceRoutes = require('./modules/voice').routes;
+const askRoutes = require('./modules/ask').routes;
+const blogRoutes = require('./modules/content').blogRoutes;
+const plansRoutes = require('./modules/plans').routes;
+const goRoutes = require('./modules/commerce').routes;
+const errorHandler = require('./platform/http/errorHandler');
 
 const app = express();
 
@@ -45,6 +45,9 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
+require('./subscriptions')();   // who reacts to which event — see platform/events/names.js
+const requestContext = require('./platform/observability/requestContext');
+app.use(requestContext);   // request id + per-route latency + one structured line per response
 app.use(compression());
 app.use(express.json({ limit: '5mb' }));
 
@@ -56,6 +59,13 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'TryThis API is running' });
 });
 
+app.get('/metrics', (req, res) => {
+  // Guarded when a token is configured; open otherwise so it is usable in dev.
+  const want = process.env.METRICS_TOKEN;
+  if (want && req.get('x-metrics-token') !== want) return res.status(404).end();
+  res.json({ status: 'success', data: require('./platform/observability/metrics').snapshot() });
+});
+
 app.get('/status', (req, res) => {
   res.json({
     env: process.env.NODE_ENV,
@@ -63,42 +73,52 @@ app.get('/status', (req, res) => {
     db: process.env.DATABASE_URL ? 'SET' : 'NOT SET',
     redis: process.env.REDIS_URL ? 'SET' : 'NOT SET',
     jwt: process.env.JWT_SECRET ? 'SET' : 'NOT SET',
-    email: require('./services/emailService').emailProvider(),
+    email: require('./modules/notifications').emailService.emailProvider(),
     // Why the last email did not go. Resend accepts the call and then refuses
     // delivery when the sender is its sandbox address, so a 200 in the logs is
     // not proof anything arrived.
-    lastEmailError: require('./services/emailService').lastEmailError() || null,
+    lastEmailError: require('./modules/notifications').emailService.lastEmailError() || null,
     instagramSession: process.env.YTDLP_COOKIES_B64 || process.env.YTDLP_COOKIES_FILE ? 'SET' : 'NOT SET',
     emailFrom: process.env.RESEND_FROM || process.env.EMAIL_FROM || 'Wanna Try <onboarding@resend.dev> (sandbox: delivers only to the Resend account owner)',
     frontend: process.env.FRONTEND_URL || 'NOT SET',
-    commerce: require('./services/commerce/providers/cuelinks').status(),
+    commerce: require('./modules/commerce').cuelinks.status(),
   });
 });
 
-app.use('/auth', authRoutes);
-app.use('/saves', savesRoutes);
-app.use('/collections', collectionsRoutes);
-app.use('/search', searchRoutes);
-app.use('/knowledge', knowledgeRoutes);  // derived signals — ADR 0019
-app.use('/memory', memoryRoutes);        // stated facts, and the controls over them — ADR 0020
-app.use('/recommendations', recommendationsRoutes);
-app.use('/places', placesRoutes);   // was only in routes/index.js, which nothing mounted
-app.use('/voice', voiceRoutes);     // ADR 0016
-app.use('/ask', askRoutes);         // ADR 0017
-app.use('/plans', plansRoutes);     // weekend plans from your saves
-app.use('/go', goRoutes);           // partner redirects (MONETIZATION_ARCHITECTURE.md)
+// Every API route is reachable at both `/x` and `/api/v1/x` (technical PRD §35).
+// Dual-mounted rather than moved: the deployed web and Android clients call the
+// unprefixed paths, and a version prefix is not worth a forced client update.
+// New clients should use /api/v1; the bare paths stay until they stop being used.
+const API_PREFIX = '/api/v1';
+const mount = (path, ...handlers) => {
+  app.use(path, ...handlers);
+  app.use(API_PREFIX + path, ...handlers);
+};
+
+mount('/auth', authRoutes);
+mount('/saves', savesRoutes);
+mount('/collections', collectionsRoutes);
+mount('/search', searchRoutes);
+mount('/knowledge', knowledgeRoutes);  // derived signals — ADR 0019
+mount('/memory', memoryRoutes);        // stated facts, and the controls over them — ADR 0020
+mount('/recommendations', recommendationsRoutes);
+mount('/places', placesRoutes);   // was only in routes/index.js, which nothing mounted
+mount('/voice', voiceRoutes);     // ADR 0016
+mount('/ask', askRoutes);         // ADR 0017
+mount('/plans', plansRoutes);     // weekend plans from your saves
+mount('/go', goRoutes);           // partner redirects (MONETIZATION_ARCHITECTURE.md)
 // Order matters: both routers below apply authMiddleware to everything they
 // see, so any route that must skip user auth has to be mounted ahead of them.
 // pushPublicRoutes first: /notifications/resubscribe comes from the service
 // worker, which has no token. Then notificationTestRoutes, whose
 // /notifications/run is secret-protected rather than user-authed.
-app.use('/notifications', pushPublicRoutes);        // /notifications/resubscribe
-app.use('/notifications', notificationTestRoutes);  // /notifications/run + /test/*
-app.use('/notifications', notificationsRoutes);
-app.use('/uploads', uploadsRoutes);
-app.use('/admin', adminRoutes);
-app.use('/s', shareRoutes);
-app.use('/blog', blogRoutes);        // ADR 0018 — public journal + web admin
+mount('/notifications', pushPublicRoutes);        // /notifications/resubscribe
+mount('/notifications', notificationTestRoutes);  // /notifications/run + /test/*
+mount('/notifications', notificationsRoutes);
+mount('/uploads', uploadsRoutes);
+mount('/admin', adminRoutes);
+mount('/s', shareRoutes);
+mount('/blog', blogRoutes);        // ADR 0018 — public journal + web admin
 app.get('/robots.txt', (req, res) => res.type('text/plain').send(`User-agent: *\nAllow: /blog\nAllow: /s/\nDisallow: /blog/admin\nDisallow: /saves\nDisallow: /auth\nSitemap: ${require('./utils/publicUrl').publicBaseUrl()}/blog/sitemap.xml\n`));
 app.use(audioProcessingRoutes);  // mounts /saves/:id/process-audio etc. at root
 
