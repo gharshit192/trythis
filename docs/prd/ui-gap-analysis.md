@@ -130,9 +130,14 @@ Added in this pass:
 | TripCreate | §36 | **no** |
 | VisitedPrompt | §40 | **no** |
 
-Still undesigned, lower value: `collections` / `collection-detail`, `place`,
-`year-recap`, `weekend-plan`, `screenshot-summary`, `nearby`, auth screens, and
-§50 error states. §38 trip map and §39 group planning are later-phase per the PRD.
+Since designed, closing the rest of the gap: `Collections`, `Place`,
+`YearRecap`, `WeekendPlan`, `ScreenshotSummary` (§28), `Nearby` (§34) and
+`ErrorStates` (§50 — four recoveries on one board: extraction failed, no
+location, offline, send failed).
+
+**36 artboards against 34 app routes.** Still undesigned: `collection-detail`
+and the auth screens (login/signup), both trivial variants of boards that exist.
+§38 trip map and §39 group planning stay later-phase per the PRD itself.
 
 ## 5. Suggested order
 

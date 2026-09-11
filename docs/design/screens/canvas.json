@@ -97,8 +97,16 @@
    "title": "Item"
   },
   {
-   "file": "Saved.dc.html",
+   "file": "Place.dc.html",
    "x": 2350,
+   "y": 1000,
+   "w": 390,
+   "h": 844,
+   "title": "Place"
+  },
+  {
+   "file": "Saved.dc.html",
+   "x": 2820,
    "y": 1000,
    "w": 390,
    "h": 844,
@@ -106,11 +114,19 @@
   },
   {
    "file": "SavedMap.dc.html",
-   "x": 2820,
+   "x": 3290,
    "y": 1000,
    "w": 390,
    "h": 844,
    "title": "Saved on a map"
+  },
+  {
+   "file": "Collections.dc.html",
+   "x": 3760,
+   "y": 1000,
+   "w": 390,
+   "h": 844,
+   "title": "Collections"
   },
   {
    "file": "MultiExtract.dc.html",
@@ -121,8 +137,16 @@
    "title": "5 places in one reel"
   },
   {
-   "file": "AddSave.dc.html",
+   "file": "ScreenshotSummary.dc.html",
    "x": 470,
+   "y": 2000,
+   "w": 390,
+   "h": 844,
+   "title": "7 screenshots"
+  },
+  {
+   "file": "AddSave.dc.html",
+   "x": 940,
    "y": 2000,
    "w": 390,
    "h": 844,
@@ -130,7 +154,7 @@
   },
   {
    "file": "LowConfidence.dc.html",
-   "x": 940,
+   "x": 1410,
    "y": 2000,
    "w": 390,
    "h": 844,
@@ -138,7 +162,7 @@
   },
   {
    "file": "VisitedPrompt.dc.html",
-   "x": 1410,
+   "x": 1880,
    "y": 2000,
    "w": 390,
    "h": 844,
@@ -146,7 +170,7 @@
   },
   {
    "file": "Tried.dc.html",
-   "x": 1880,
+   "x": 2350,
    "y": 2000,
    "w": 390,
    "h": 844,
@@ -161,16 +185,32 @@
    "title": "Smart notifications"
   },
   {
-   "file": "RemindMe.dc.html",
+   "file": "Nearby.dc.html",
    "x": 470,
+   "y": 3000,
+   "w": 390,
+   "h": 844,
+   "title": "Near you now"
+  },
+  {
+   "file": "RemindMe.dc.html",
+   "x": 940,
    "y": 3000,
    "w": 390,
    "h": 844,
    "title": "Remind me"
   },
   {
+   "file": "WeekendPlan.dc.html",
+   "x": 1410,
+   "y": 3000,
+   "w": 390,
+   "h": 844,
+   "title": "A day from your saves"
+  },
+  {
    "file": "Trip.dc.html",
-   "x": 940,
+   "x": 1880,
    "y": 3000,
    "w": 390,
    "h": 844,
@@ -178,7 +218,7 @@
   },
   {
    "file": "TripCreate.dc.html",
-   "x": 1410,
+   "x": 2350,
    "y": 3000,
    "w": 390,
    "h": 844,
@@ -186,7 +226,7 @@
   },
   {
    "file": "Itinerary.dc.html",
-   "x": 1880,
+   "x": 2820,
    "y": 3000,
    "w": 390,
    "h": 844,
@@ -225,12 +265,28 @@
    "title": "Your taste"
   },
   {
-   "file": "Profile.dc.html",
+   "file": "YearRecap.dc.html",
    "x": 1880,
    "y": 4000,
    "w": 390,
    "h": 844,
+   "title": "Your 2026"
+  },
+  {
+   "file": "Profile.dc.html",
+   "x": 2350,
+   "y": 4000,
+   "w": 390,
+   "h": 844,
    "title": "You"
+  },
+  {
+   "file": "ErrorStates.dc.html",
+   "x": 0,
+   "y": 5000,
+   "w": 390,
+   "h": 844,
+   "title": "Error states"
   }
  ],
  "annotations": [
@@ -268,6 +324,13 @@
    "y": 3850,
    "w": 620,
    "text": "VOICE, ASKING, AND WHAT WE LEARNED\nVoice is a way into memory, not just search. Ask answers only from your own saves. Your taste says which parts you told us and which parts we worked out."
+  },
+  {
+   "id": "row-5000",
+   "x": 0,
+   "y": 4850,
+   "w": 620,
+   "text": "WHEN IT DOES NOT WORK\nEvery failure says what happened and offers the way out. None is a dead end, and none loses the save (mobile PRD §50)."
   }
  ],
  "launch": {
