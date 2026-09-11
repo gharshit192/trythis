@@ -3,6 +3,11 @@ import { API_BASE_URL, authHeader, handle } from './client';
 // What the assistant knows because you told it — as opposed to /knowledge,
 // which is what it noticed from your saves.
 const memory = {
+  // Experience DNA (§44): what we have worked out, with the evidence behind it.
+  async getDna() {
+    const res = await fetch(`${API_BASE_URL}/memory/dna`, { headers: authHeader() });
+    return handle(res);
+  },
   async getMemories() {
     const res = await fetch(`${API_BASE_URL}/memory`, { headers: authHeader() });
     return handle(res);

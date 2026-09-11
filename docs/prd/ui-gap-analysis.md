@@ -79,8 +79,20 @@ Building it needs, in order:
    able to not exist yet
 3. **The screen**, with the *"Based on your recent experiences"* caption
 
-It depends on the event bus (proposal P2). Weighted traits over fourteen hashed
-analytics names would be inventing confidence the data does not support.
+**Built (11 Sep 2026).** `modules/memory/engine/dna.js` + `GET /memory/dna` +
+`features/profile/ExperienceDNA.jsx`, reachable from Profile → "Your taste".
+
+Both §44 rules are enforced in the engine rather than left to the UI: a trait
+below the evidence threshold is not returned as a trait at all — it comes back
+in `notEnough` so the screen can say what it is still working on — and every
+trait carries its `basis` (stated / observed / mixed) plus the counts behind it,
+so an inference can never be worded as something the user said. With no
+qualifying trait the screen renders "Not yet — keep saving" rather than a thin
+guess.
+
+Weighting: a stated preference outranks a merely saved one, a try counts more
+than a save, a bad rating counts against, and evidence decays to half weight at
+the 90-day window edge.
 
 ## 3. Other surfaces — what the code actually shows
 

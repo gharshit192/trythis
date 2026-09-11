@@ -49,6 +49,20 @@ const shape = (m) => ({
   pinned: !!m.pinned,
 });
 
+// Experience DNA (mobile PRD §44). Read-only: it derives from memories and saves
+// that already exist and stores nothing of its own.
+router.get('/dna', async (req, res) => {
+  try {
+    const { computeDna } = require('./engine/dna');
+    const { Save } = require('../saves');
+    const data = await computeDna({ Memory, Save }, req.user.id);
+    return res.json({ status: 'success', data });
+  } catch (err) {
+    logger.error('[memory] dna failed', { error: err.message });
+    return res.status(500).json({ status: 'error', error: { message: 'Could not work that out right now.' } });
+  }
+});
+
 router.get('/', async (req, res) => {
   try {
     // The user is looking, so this is the moment the numbers should be right.

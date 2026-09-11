@@ -6,4 +6,5 @@ module.exports = {
   get extract() { return require('./engine/extract'); },
   get observe() { return require('./engine/observe'); },
   get provenance() { return require('./provenance'); },
+  get dna() { return require('./engine/dna'); },
 };

@@ -147,6 +147,7 @@ export default function Profile({ onNavigate }) {
       <Row icon="pin" kind="food" title="Know where I am" sub={loc ? 'For "near you" and the nearby nudge' : 'Off — nearby is off too'} right={<Switch on={loc} onClick={toggleLoc} />} />
       {note && <div className="wt-note info" style={{ marginTop: 12 }}>{note}</div>}
 
+      <Row icon="sparkle" kind="place" title="Your taste" sub="What we've worked out — and what you told us" onClick={() => onNavigate('taste')} right={<Icon name="forward" size={18} style={{ color: 'var(--faint)' }} />} />
       <Row icon="star" kind="food" title={`Your ${new Date().getFullYear()}`} sub={tried ? `${tried} tried so far — see the year` : 'Everything you try this year, in one place'} onClick={() => onNavigate('year-recap')} right={<Icon name="forward" size={18} style={{ color: 'var(--faint)' }} />} />
 
       {/* One section about the user, not three. Stated facts and noticed
